@@ -5,86 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trusty Blackjack</title>
     <style>
-        /* --- GENERAL STYLING --- */
         body {
-            /* Changed background to a rich casino dark color */
-            background: #1a1a2e; 
-            color: #f0f0f0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            padding: 0;
-            margin: 0;
-        }
-
-        /* --- HEADER/NAVIGATION --- */
-        #header {
-            background: #0f132a;
-            padding: 15px 0;
-            border-bottom: 3px solid #334;
-        }
-
-        #header h1 {
-            display: inline-block;
-            margin: 0 50px 0 0;
-        }
-
-        #header a {
-            color: #ffcc00; /* Gold/Yellow accent */
-            text-decoration: none;
-            font-size: 1.2em;
-            margin: 0 15px;
-            transition: color 0.3s;
-        }
-
-        #header a:hover {
+            background: #0b0b0b;
             color: white;
-        }
-        
-        /* Main content container */
-        #main-content {
+            font-family: Arial, sans-serif;
+            text-align: center;
             padding: 30px;
-        }
-        
-        h1 a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        /* --- BLACKJACK TABLE STYLING --- */
-        #money {
-            margin-top: 15px;
-            font-size: 22px;
-            color: #ffcc00; /* Highlight money */
         }
 
         #table {
-            /* Kept a deep green for the table */
-            background: #004d40; 
+            background: #006400;
             padding: 25px;
-            border: 3px solid #334;
+            border: 3px solid #111;
             border-radius: 10px;
             display: inline-block;
             min-width: 400px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-            margin-top: 20px;
         }
 
         .hand {
             margin: 15px;
             padding: 20px;
-            /* Lighter green/teal for hand area */
-            background: #00796b; 
+            border: 2px solid #333;
+            background: #013220;
             border-radius: 8px;
-            border: none;
         }
 
-        .hand h3 {
-            margin-top: 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 5px;
-        }
-
-        /* --- CARD STYLING --- */
         .card {
             display: inline-block;
             padding: 10px 14px;
@@ -95,87 +40,47 @@
             font-weight: bold;
             border: 1px solid black;
             min-width: 40px;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s;
-        }
-
-        /* --- CONTROLS STYLING --- */
-        #controls {
-            margin-top: 20px;
         }
 
         #controls input {
             padding: 8px;
             font-size: 16px;
             width: 120px;
-            border: none;
-            border-radius: 4px;
-            background: #f0f0f0;
-            color: black;
         }
 
         #controls button {
-            padding: 10px 20px;
+            padding: 8px 15px;
             margin: 5px;
             font-size: 16px;
             cursor: pointer;
-            border: none;
-            border-radius: 4px;
-            /* Primary button color - used for Deal/Start */
-            background: #ffcc00; 
-            color: #1a1a2e;
-            font-weight: bold;
-            transition: background 0.3s;
         }
 
-        #controls button:nth-of-type(2), #controls button:nth-of-type(3) {
-            /* Secondary button color - Hit/Stand */
-            background: #00bcd4; 
-        }
-
-        #controls button:hover {
-            opacity: 0.8;
-        }
-
-        #status {
-            margin-top: 30px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #ff4081; /* Accent color for status/messages */
+        #money {
+            margin-top: 15px;
+            font-size: 22px;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="header">
-        <h1><a href="index.html">The Casino Site</a></h1>
-        <nav>
-            <a href="casino.html">Blackjack</a>
-            <a href="game.html">Roulette</a>
-        </nav>
-    </div>
+<h1>Trusty Blackjack</h1>
 
-    <div id="main-content">
-        <h1>Trusty Blackjack</h1>
+<div id="money">Money: $100</div>
 
-        <div id="money">Money: $100</div>
+<div id="controls">
+    <input id="bet-input" type="number" placeholder="Enter bet">
+    <button onclick="startGame()">Deal</button>
+    <button onclick="hit()">Hit</button>
+    <button onclick="stand()">Stand</button>
+</div>
 
-        <div id="controls">
-            <input id="bet-input" type="number" placeholder="Enter bet">
-            <button onclick="startGame()">Deal</button>
-            <button onclick="hit()">Hit</button>
-            <button onclick="stand()">Stand</button>
-        </div>
+<div id="table">
+    <div id="dealer" class="hand"></div>
+    <div id="player" class="hand"></div>
+</div>
 
-        <div id="table">
-            <div id="dealer" class="hand"></div>
-            <div id="player" class="hand"></div>
-        </div>
-
-        <div id="status" style="margin-top:20px; font-size:20px;"></div>
-    </div>
-
+<div id="status" style="margin-top:20px; font-size:20px;"></div>
 
 <script>
     // -------------------------
@@ -188,21 +93,18 @@
     let currentBet = 0;
     let dealerHiddenCard = null;
     let revealDealer = false;
-    let gameActive = false; // Add a flag to prevent actions when not playing
 
     // -------------------------
     // DECK FUNCTIONS
     // -------------------------
     function createDeck() {
         const suits = ["♠", "♥", "♦", "♣"];
-        // Ensure black suits are visually black and red suits are red
-        const suitColor = { "♠": "black", "♣": "black", "♥": "red", "♦": "red" };
         const ranks = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
         deck = [];
 
         for (let suit of suits) {
             for (let rank of ranks) {
-                deck.push({ rank, suit, color: suitColor[suit] });
+                deck.push({ rank, suit });
             }
         }
 
@@ -253,16 +155,12 @@
     // -------------------------
     function cardHTML(card) {
         if (card.hidden) {
-            // Updated hidden card back style
-            return `<div class="card" style="background:#555; color:#333;">🂠</div>`;
+            return `<div class="card">🂠</div>`;
         }
 
         if (card.card) card = card.card;
-        
-        // Add color for suits
-        const colorStyle = card.color === 'red' ? 'color: red;' : 'color: black;';
 
-        return `<div class="card" style="${colorStyle}">${card.rank}${card.suit}</div>`;
+        return `<div class="card">${card.rank}${card.suit}</div>`;
     }
 
     function renderHands() {
@@ -271,7 +169,7 @@
         dealerHand.forEach(card => {
             dealerHTML += cardHTML(card);
         });
-        dealerHTML += `<p>Value: ${revealDealer ? handValue(dealerHand) : (handValue(dealerHand) - (handValue([{rank: dealerHiddenCard.rank, suit: dealerHiddenCard.suit}])) + ' + ?')}</p>`;
+        dealerHTML += `<p>Value: ${handValue(dealerHand)}</p>`;
         document.getElementById("dealer").innerHTML = dealerHTML;
 
         // Player
@@ -284,41 +182,26 @@
 
         document.getElementById("money").innerText = `Money: $${playerMoney}`;
     }
-    
-    // Initial render when the page loads
-    window.onload = function() {
-        renderHands(); 
-        document.getElementById("dealer").innerHTML = "<h3>Dealer</h3><p>Waiting for bet...</p>";
-        document.getElementById("player").innerHTML = "<h3>You</h3><p>Waiting for bet...</p>";
-        document.getElementById("status").innerText = "Enter your bet and press 'Deal' to begin.";
-    }
-
 
     // -------------------------
     // GAME FLOW
     // -------------------------
     function startGame() {
-        if (gameActive) return; // Prevent new game while one is active
-
-        const betInput = document.getElementById("bet-input");
-        const bet = Number(betInput.value);
-
-        if (isNaN(bet) || bet <= 0 || bet > playerMoney) {
-            alert(`Enter a valid bet between $1 and $${playerMoney}.`);
+        const bet = Number(document.getElementById("bet-input").value);
+        if (isNaN(bet) || bet === 0) {
+            alert("Enter a valid bet.");
             return;
         }
 
         currentBet = bet;
         playerMoney -= bet;
-        gameActive = true;
 
         createDeck();
         playerHand = [];
         dealerHand = [];
         revealDealer = false;
 
-        document.getElementById("status").innerText = "Dealing cards...";
-        betInput.disabled = true; // Disable betting during the hand
+        document.getElementById("status").innerText = "";
 
         // Deal cards
         playerHand.push(drawCard());
@@ -328,111 +211,63 @@
         dealerHand.push(drawCard());
 
         renderHands();
-        
-        // Check for Blackjacks immediately
-        const playerTotal = handValue(playerHand);
-        const dealerTotal = handValue(dealerHand);
-
-        if (playerTotal === 21) {
-            // A simple delay to let the user see their hand before the end
-            setTimeout(() => {
-                revealDealer = true;
-                dealerHand[0] = dealerHiddenCard;
-                renderHands();
-                if (dealerTotal === 21) {
-                     endGame("Push! Both hit Blackjack.", true);
-                } else {
-                     // 2.5x payout for Blackjack
-                     endGame("Blackjack! You win 1.5x your bet!", false, currentBet * 2.5); 
-                }
-            }, 1500);
-        } else if (dealerTotal === 21) {
-             setTimeout(() => {
-                revealDealer = true;
-                dealerHand[0] = dealerHiddenCard;
-                renderHands();
-                endGame("Dealer Blackjack! You lose.", true);
-            }, 1500);
-        }
     }
 
     function hit() {
-        if (!gameActive) {
-            document.getElementById("status").innerText = "Press 'Deal' to start a game.";
-            return;
-        }
-
-        playerHand.push(drawCard());
-        renderHands();
-
         if (handValue(playerHand) > 21) {
             revealDealer = true;
             dealerHand[0] = dealerHiddenCard; 
             renderHands();
-            endGame("You busted!", true);
+            endGame("You busted!");
+        }
+        else{
+            playerHand.push(drawCard());
+            renderHands();
+
+            if (handValue(playerHand) > 21) {
+                revealDealer = true;
+                dealerHand[0] = dealerHiddenCard; 
+                renderHands();
+                endGame("You busted!");
+            }
         }
     }
 
     function stand() {
-        if (!gameActive) return;
-
         revealDealer = true;
         dealerHand[0] = dealerHiddenCard;
         renderHands();
 
-        document.getElementById("status").innerText = "Dealer drawing...";
-
         // dealer draws to 17
-        const dealerDrawInterval = setInterval(() => {
-            if (handValue(dealerHand) < 17) {
-                dealerHand.push(drawCard());
-                renderHands();
-            } else {
-                clearInterval(dealerDrawInterval);
-                checkWinner();
-            }
-        }, 1000); // 1-second delay for visual drama
-    }
+        while (handValue(dealerHand) < 17) {
+            dealerHand.push(drawCard());
+            renderHands();
+        }
 
-    function checkWinner() {
         const playerTotal = handValue(playerHand);
         const dealerTotal = handValue(dealerHand);
-        
-        if (playerTotal > 21) {
-             endGame("You busted!", true);
-        } else if (dealerTotal > 21) {
-            endGame("Dealer busts! You win!", false);
+
+        if (dealerTotal > 21) {
+            endGame("Dealer busts! You win!");
         } else if (playerTotal > dealerTotal) {
-            endGame("You win!", false);
+            endGame("You win!");
         } else if (playerTotal < dealerTotal) {
-            endGame("You lose!", true);
+            endGame("You lose!");
         } else {
-            endGame("Push!", false, currentBet);
+            endGame("Push!");
         }
     }
 
-
-    function endGame(result, loss = false, payout = currentBet * 2) {
-        if (result.includes("win") || result.includes("Blackjack")) {
-            playerMoney += payout; // includes standard win (x2) and blackjack win (x2.5)
+    function endGame(result) {
+        if (result.includes("win")) {
+            playerMoney += currentBet * 2;
         } else if (result.includes("Push")) {
             playerMoney += currentBet;
         }
-        
-        // Reset state
-        gameActive = false;
-        document.getElementById("bet-input").disabled = false;
+
         document.getElementById("status").innerText = result;
         renderHands();
-
-        if (playerMoney <= 0) {
-            document.getElementById("status").innerText = "Game Over! You're out of money! Refresh to restart.";
-            document.getElementById("controls").innerHTML = ''; // Hide controls
-        }
     }
-
-    // Initialize the money display
-    renderHands();
 </script>
 
 </body>
