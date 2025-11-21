@@ -4,8 +4,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrustyGPT - Trusty Comics</title>
+    <title>Comics - Trusty Comics</title>
+    <link rel="stylesheet" href="../styles/stylesheet.css">
     <style>
-        @import url('../styles/stylesheet.css');
+        /* Specific CSS for the Comics page layout */
+        .comic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .comic-item {
+            padding: 15px;
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 4px 4px 0px 0px #111;
+        }
+        .comic-item img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #111;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
+<body>
+
+    <header>
+        <h1>Our Latest Comics</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="comics.html">Comics</a></li>
+            <li><a href="about.html">About Trusty</a></li>
+            <li><a href="trustyGPT.html">TrustyGPT</a></li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <h2>Trusty Comics!</h2>
+        <p>This is where we will post comics</p>
+
+        <div class="comic-grid">
+            <div class="comic-item">
+                <img src="https://via.placeholder.com/300x400/000000/FFFFFF?text=ISSUE+01" alt="Comic 1 Cover">
+                <h3>Comic 1</h3>
+                <p>Something something trusty da horse</p>
+                <a href="#">View Comic</a>
+            </div>
+
+            <div class="comic-item">
+                <img src="https://via.placeholder.com/300x400/000000/FFFFFF?text=ISSUE+02" alt="Comic 2 Cover">
+                <h3>Comic 2</h3>
+                <p>Something something trusty da horse</p>
+                <a href="#">View Comic</a>
+            </div>
+
+            <div class="comic-item">
+                <img src="https://via.placeholder.com/300x400/000000/FFFFFF?text=ISSUE+03" alt="Comic 3 Cover">
+                <h3>Comic 3</h3>
+                <p>Something something trusty da horse</p>
+                <a href="#">View Comic</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Trusty Comics</p>
+    </footer>
+
+</body>
+</html>
