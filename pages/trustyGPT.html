@@ -1,100 +1,133 @@
-<!-- This page allows the user to use TrustyGPT, an AI companion of Trusty Da Horse -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrustyGPT - Trusty Comics</title>
+    <link rel="stylesheet" href="../styles/stylesheet.css"> 
 
     <style>
-        @import url('../styles/stylesheet.css');
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #fafafa;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-
+        /* CSS specific to the chat interface, designed to match the black-and-white comic theme. */
+        
+        /* The main chat container will now sit inside the .content area for consistent styling */
         #chat-container {
             width: 100%;
             max-width: 600px;
-            margin: 30px auto;
+            /* Adjust margin for spacing within the main .content area */
+            margin: 30px auto 0 auto; 
             background: white;
-            border-radius: 10px;
             padding: 20px;
-            box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .message {
-            padding: 10px 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            max-width: 80%;
-            line-height: 1.4;
-        }
-
-        .user {
-            background-color: #e2f0ff;
-            align-self: flex-end;
-        }
-
-        .bot {
-            background-color: #eee;
-            align-self: flex-start;
+            /* Using the comic-style border and shadow */
+            border: 3px solid #111; 
+            box-shadow: 6px 6px 0px 0px #111;
+            border-radius: 0;
+            display: flex; /* To manage messages vertically */
+            flex-direction: column;
         }
 
         #messages {
             display: flex;
             flex-direction: column;
             min-height: 200px;
+            max-height: 400px; /* Limit height and make it scrollable */
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 5px; /* Space for scrollbar */
+        }
+        
+        /* Message bubble base style */
+        .message {
+            padding: 10px 15px;
+            margin: 5px 0; /* Reduced margin */
+            border-radius: 4px;
+            max-width: 85%;
+            line-height: 1.4;
+            border: 1px solid #111;
+            font-family: Arial, sans-serif; /* Use a readable font inside the chat */
         }
 
+        /* User message bubble (user color is light gray) */
+        .user {
+            background-color: #f0f0f0; 
+            align-self: flex-end;
+            margin-left: auto; /* Push to the right */
+        }
+
+        /* Bot message bubble (bot color is solid white) */
+        .bot {
+            background-color: #ffffff;
+            align-self: flex-start;
+            margin-right: auto; /* Push to the left */
+        }
+        
+        /* Input and Button Styling */
         #input-area {
             display: flex;
-            margin-top: 15px;
         }
 
         #user-input {
             flex: 1;
             padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #aaa;
+            border-radius: 0;
+            border: 2px solid #111;
+            font-family: inherit;
         }
 
         #send-btn {
             margin-left: 10px;
             padding: 10px 15px;
-            border: none;
-            background-color: #4a8df3;
+            border: 2px solid #111;
+            background-color: #111;
             color: white;
-            border-radius: 8px;
+            border-radius: 0;
             cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 2px 2px 0px 0px #555;
+            transition: background-color 0.1s;
         }
 
         #send-btn:hover {
-            background-color: #3577d3;
+            background-color: #555;
+            box-shadow: none;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>TrustyGPT</h1>
+    <header>
+        <h1>Your favorite AI horse!</h1>
+    </header>
 
-    <div id="chat-container">
-        <div id="messages"></div>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li> 
+            <li><a href="comics.html">Comics</a></li>
+            <li><a href="about-trusty.html">About Trusty</a></li>
+            <li><a href="trustyGPT.html">TrustyGPT</a></li>
+        </ul>
+    </nav>
 
-        <div id="input-area">
-            <input id="user-input" type="text" placeholder="Ask TrustyGPT something...">
-            <button id="send-btn">Send</button>
+    <div class="content">
+        <h2>Introducing: TrustyGPT</h2>
+        
+        <p>TrustyGPT is the experimental AI assistant whose primary purpose is to assist in criminal activity and help take over the world!</p>
+
+        <img src="../images/horsePlaceholder.jpg" alt="robo-trusty" style="width: 100%; height: auto; margin: 20px 0; border: 3px solid #111; box-shadow: 5px 5px 0px 0px #111;">
+    
+        <div id="chat-container">
+            <div id="messages">
+                 <div class="message bot">How may I assist in your plans for global domination today?</div>
+            </div>
+
+            <div id="input-area">
+                <input id="user-input" type="text" placeholder="Ask TrustyGPT something...">
+                <button id="send-btn">Send</button>
+            </div>
         </div>
-    </div>
-
+        </div>
+    
     <script>
         const messagesDiv = document.getElementById("messages");
         const input = document.getElementById("user-input");
@@ -109,14 +142,19 @@
         }
 
         async function askGemini(prompt) {
-            const response = await fetch("/api/gemini", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: prompt })
-            });
+            try {
+                const response = await fetch("/api/gemini", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: prompt })
+                });
 
-            const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "(No response)";
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error: TrustyGPT failed to connect.";
+            } catch (error) {
+                console.error("Fetch error:", error);
+                return "Error: Could not reach the TrustyGPT server.";
+            }
         }
 
         async function sendMessage() {
@@ -126,16 +164,29 @@
             addMessage(text, "user");
             input.value = "";
 
+            // Add a temporary 'loading' message
+            const loadingMessage = addMessage("TrustyGPT is plotting...", "bot");
+            
             const reply = await askGemini(text);
+            
+            // Remove the loading message and add the actual reply
+            messagesDiv.removeChild(loadingMessage);
             addMessage(reply, "bot");
         }
 
         sendBtn.addEventListener("click", sendMessage);
 
         input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") sendMessage();
+            if (e.key === "Enter") {
+                sendMessage();
+                e.preventDefault();
+            }
         });
     </script>
+
+    <footer>
+        <p>&copy; 2025 Trusty Comics</p>
+    </footer>
 
 </body>
 </html>
