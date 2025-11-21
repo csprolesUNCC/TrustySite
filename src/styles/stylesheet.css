@@ -1,0 +1,105 @@
+/* --- stylesheet.css --- */
+
+/* GENERAL BODY STYLES */
+body {
+    /* Set the background to a light, off-white (like aged paper) */
+    background-color: #f0f0f0;
+    /* Set the text color to deep black for high contrast */
+    color: #111;
+    font-family: 'Arial Black', Gadget, sans-serif; /* Bold, punchy font */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* HEADINGS */
+h1 {
+    text-transform: uppercase; /* Makes headings look more like comic titles */
+    border-bottom: 3px solid #111; /* A heavy line under the title */
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    color: white;
+}
+
+h2, h3 {
+    text-transform: uppercase; /* Makes headings look more like comic titles */
+    border-bottom: 3px solid #111; /* A heavy line under the title */
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    color: #111;
+}
+
+/* HEADER - The top banner */
+header {
+    background-color: #111; /* Black banner */
+    color: white; /* White text */
+    padding: 1.5em 0;
+    text-align: center;
+    border-bottom: 5px double white; /* Strong white border for separation */
+}
+
+/* NAVIGATION - The tabs */
+nav {
+    background-color: #333; /* Dark gray background for the nav bar */
+    border-bottom: 2px solid #111;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+nav ul li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: background-color 0.3s;
+}
+
+nav ul li a:hover {
+    background-color: #000; /* Black hover effect */
+    color: #fff;
+    /* Optional: Add a box shadow for a 'pressed' button effect */
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* MAIN CONTENT AREA */
+.content {
+    max-width: 900px;
+    margin: 30px auto; /* Center the content area */
+    padding: 20px;
+    background-color: #fff; /* White content box */
+    border: 3px solid #111; /* Heavy border like a comic panel */
+    box-shadow: 8px 8px 0px 0px #111; /* Strong offset shadow for depth (pop-out effect) */
+}
+
+/* FOOTER */
+footer {
+    text-align: center;
+    padding: 1em 0;
+    margin-top: 40px;
+    background-color: #111;
+    color: white;
+    font-size: 0.8em;
+    border-top: 5px double white;
+}
+
+/* LINKS */
+a {
+    color: #111; /* Black links */
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+a:hover {
+    color: #555; /* Dark gray on hover */
+    text-decoration: none;
+}
