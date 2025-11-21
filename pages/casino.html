@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Roulette Wheel - Trusty Comics</title>
+
+    <link rel="stylesheet" href="../styles/stylesheet.css">
+
+    <style>
+        /* Override body styles from stylesheet.css to only set center alignment,
+           as the other necessary styles (background/font/color) are in the main CSS */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0; /* Remove top/bottom padding to let header/footer control boundaries */
+        }
+
+        /* The canvas itself should look clean */
+        #rouletteCanvas {
+            background: transparent;
+        }
+
+        /* Style the Spin button to match the comic/site theme */
+        #spinBtn {
+            margin-top: 25px;
+            padding: 12px 25px;
+            background: #111; /* Black button */
+            color: white; /* White text */
+            border: 3px solid #f00; /* Dramatic red border */
+            box-shadow: 4px 4px 0px 0px #555; /* Comic-style offset shadow */
+            border-radius: 0; /* Square corners */
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        
+        #spinBtn:hover {
+            background: #555; /* Darker grey on hover */
+            box-shadow: none; /* Shadow disappears on hover for 'press' effect */
+            border-color: #f80; /* Yellow/Orange hover border */
+        }
+
+        /* Center the canvas and button area within the content box */
+        #game-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        /* Adjust the h2 on this page to use the site's styling */
+        .content h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Spin for World Domination!</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="comics.html">Comics</a></li>
+            <li><a href="about.html">About Trusty</a></li>
+            <li><a href="trustyGPT.html">TrustyGPT</a></li>
+            <li><a href="viewer.html">3D Viewer</a></li>
+            <li><a href="roulette.html">Casino</a></li>
+            <li><a href="credits.html">Credits</a></li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <h2>🎰 Trusty's Roulette Wheel 😈</h2>
+        
+        <p style="text-align: center;">Place your bets on the horse of destiny!</p>
+
+        <div id="game-section">
+            <canvas id="rouletteCanvas" width="450" height="450"></canvas>
+            <button id="spinBtn">SPIN</button>
+        </div>
+        
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Winwheel.js/2.7.0/Winwheel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+
+        // European wheel number order
+        const numbers = [
+            0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6,
+            27, 13, 36, 11, 30, 8, 23, 10, 5, 24,
+            16, 33, 1, 20, 14, 31, 9, 22, 18, 29,
+            7, 28, 12, 35, 3, 26
+        ];
+
+        // Colors matching real roulette
+        const colors = numbers.map((n, i) => {
+            if (n === 0) return "#0f0"; // green
+            return i % 2 === 0 ? "#e74c3c" : "#2c3e50"; // red/black
+        });
+
+        // Convert into Winwheel segments
+        const segments = numbers.map((num, i) => ({
+            fillStyle: colors[i],
+            textFillStyle: "#fff",
+            textFontSize: 16,
+            textFontFamily: "Arial",
+            text: num.toString()
+        }));
+
+        // CREATE THE WHEEL
+        let wheel = new Winwheel({
+            canvasId: "rouletteCanvas",
+            numSegments: segments.length,
+            outerRadius: 220,
+
+            // prevents blank-wheel bug
+            responsive: false,             
+
+            segments: segments,
+
+            animation: {
+                type: "spinToStop",
+                duration: 5,
+                spins: 14,
+                callbackFinished: announceResult
+            }
+        });
+
+        // SPIN BUTTON
+        document.getElementById("spinBtn").onclick = () => {
+            const spinBtn = document.getElementById("spinBtn");
+            
+            // Prevent multiple rapid clicks while spinning
+            if (wheel.animation.isspinning) {
+                return;
+            }
+            spinBtn.disabled = true; // Disable button
+            
+            // Reset wheel if it has been spun before
+            wheel.stop(false); 
+            wheel.rotationAngle = 0; 
+            wheel.draw();
+
+            // Calculate a random stop angle
+            const stopAt = Math.random() * 360;
+            wheel.animation.stopAngle = stopAt;
+            wheel.startAnimation();
+        };
+
+        // ANNOUNCE WINNER
+        function announceResult(indicatedSegment) {
+            document.getElementById("spinBtn").disabled = false; // Re-enable button
+            alert("Winning number: " + indicatedSegment.text + "!");
+        }
+
+    </script>
+
+    <footer>
+        <p>&copy; 2025 Trusty Comics</p>
+    </footer>
+
+</body>
+</html>
