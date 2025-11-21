@@ -3,171 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casino Roulette Wheel - Trusty Comics</title>
-
-    <link rel="stylesheet" href="../styles/stylesheet.css">
-
+    <title>Trusty Blackjack</title>
     <style>
-        /* Override body styles from stylesheet.css to only set center alignment,
-           as the other necessary styles (background/font/color) are in the main CSS */
+        /* --- GENERAL STYLING --- */
         body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 0; /* Remove top/bottom padding to let header/footer control boundaries */
+            /* Changed background to a rich casino dark color */
+            background: #1a1a2e; 
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 0;
+            margin: 0;
         }
 
-        /* The canvas itself should look clean */
-        #rouletteCanvas {
-            background: transparent;
+        /* --- HEADER/NAVIGATION --- */
+        #header {
+            background: #0f132a;
+            padding: 15px 0;
+            border-bottom: 3px solid #334;
         }
 
-        /* Style the Spin button to match the comic/site theme */
-        #spinBtn {
-            margin-top: 25px;
-            padding: 12px 25px;
-            background: #111; /* Black button */
-            color: white; /* White text */
-            border: 3px solid #f00; /* Dramatic red border */
-            box-shadow: 4px 4px 0px 0px #555; /* Comic-style offset shadow */
-            border-radius: 0; /* Square corners */
-            font-size: 18px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.1s;
+        #header h1 {
+            display: inline-block;
+            margin: 0 50px 0 0;
+        }
+
+        #header a {
+            color: #ffcc00; /* Gold/Yellow accent */
+            text-decoration: none;
+            font-size: 1.2em;
+            margin: 0 15px;
+            transition: color 0.3s;
+        }
+
+        #header a:hover {
+            color: white;
         }
         
-        #spinBtn:hover {
-            background: #555; /* Darker grey on hover */
-            box-shadow: none; /* Shadow disappears on hover for 'press' effect */
-            border-color: #f80; /* Yellow/Orange hover border */
+        /* Main content container */
+        #main-content {
+            padding: 30px;
+        }
+        
+        h1 a {
+            color: inherit;
+            text-decoration: none;
         }
 
-        /* Center the canvas and button area within the content box */
-        #game-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
+        /* --- BLACKJACK TABLE STYLING --- */
+        #money {
+            margin-top: 15px;
+            font-size: 22px;
+            color: #ffcc00; /* Highlight money */
         }
 
-        /* Adjust the h2 on this page to use the site's styling */
-        .content h2 {
-            text-align: center;
+        #table {
+            /* Kept a deep green for the table */
+            background: #004d40; 
+            padding: 25px;
+            border: 3px solid #334;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 400px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+
+        .hand {
+            margin: 15px;
+            padding: 20px;
+            /* Lighter green/teal for hand area */
+            background: #00796b; 
+            border-radius: 8px;
+            border: none;
+        }
+
+        .hand h3 {
+            margin-top: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 5px;
+        }
+
+        /* --- CARD STYLING --- */
+        .card {
+            display: inline-block;
+            padding: 10px 14px;
+            margin: 5px;
+            background: white;
+            color: black;
+            border-radius: 6px;
+            font-weight: bold;
+            border: 1px solid black;
+            min-width: 40px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        /* --- CONTROLS STYLING --- */
+        #controls {
+            margin-top: 20px;
+        }
+
+        #controls input {
+            padding: 8px;
+            font-size: 16px;
+            width: 120px;
+            border: none;
+            border-radius: 4px;
+            background: #f0f0f0;
+            color: black;
+        }
+
+        #controls button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            /* Primary button color - used for Deal/Start */
+            background: #ffcc00; 
+            color: #1a1a2e;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        #controls button:nth-of-type(2), #controls button:nth-of-type(3) {
+            /* Secondary button color - Hit/Stand */
+            background: #00bcd4; 
+        }
+
+        #controls button:hover {
+            opacity: 0.8;
+        }
+
+        #status {
+            margin-top: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff4081; /* Accent color for status/messages */
         }
     </style>
 </head>
 
 <body>
 
-    <header>
-        <h1>Spin for World Domination!</h1>
-    </header>
-
-    <nav>
-        <ul>
-            <li><a href="../index.html">Home</a></li>
-            <li><a href="comics.html">Comics</a></li>
-            <li><a href="about.html">About Trusty</a></li>
-            <li><a href="trustyGPT.html">TrustyGPT</a></li>
-            <li><a href="viewer.html">3D Viewer</a></li>
-            <li><a href="roulette.html">Casino</a></li>
-            <li><a href="credits.html">Credits</a></li>
-        </ul>
-    </nav>
-
-    <div class="content">
-        <h2>🎰 Trusty's Roulette Wheel 😈</h2>
-        
-        <p style="text-align: center;">Place your bets on the horse of destiny!</p>
-
-        <div id="game-section">
-            <canvas id="rouletteCanvas" width="450" height="450"></canvas>
-            <button id="spinBtn">SPIN</button>
-        </div>
-        
+    <div id="header">
+        <h1><a href="index.html">The Casino Site</a></h1>
+        <nav>
+            <a href="casino.html">Blackjack</a>
+            <a href="game.html">Roulette</a>
+        </nav>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Winwheel.js/2.7.0/Winwheel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <div id="main-content">
+        <h1>Trusty Blackjack</h1>
 
-    <script>
+        <div id="money">Money: $100</div>
 
-        // European wheel number order
-        const numbers = [
-            0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6,
-            27, 13, 36, 11, 30, 8, 23, 10, 5, 24,
-            16, 33, 1, 20, 14, 31, 9, 22, 18, 29,
-            7, 28, 12, 35, 3, 26
-        ];
+        <div id="controls">
+            <input id="bet-input" type="number" placeholder="Enter bet">
+            <button onclick="startGame()">Deal</button>
+            <button onclick="hit()">Hit</button>
+            <button onclick="stand()">Stand</button>
+        </div>
 
-        // Colors matching real roulette
-        const colors = numbers.map((n, i) => {
-            if (n === 0) return "#0f0"; // green
-            return i % 2 === 0 ? "#e74c3c" : "#2c3e50"; // red/black
-        });
+        <div id="table">
+            <div id="dealer" class="hand"></div>
+            <div id="player" class="hand"></div>
+        </div>
 
-        // Convert into Winwheel segments
-        const segments = numbers.map((num, i) => ({
-            fillStyle: colors[i],
-            textFillStyle: "#fff",
-            textFontSize: 16,
-            textFontFamily: "Arial",
-            text: num.toString()
-        }));
+        <div id="status" style="margin-top:20px; font-size:20px;"></div>
+    </div>
 
-        // CREATE THE WHEEL
-        let wheel = new Winwheel({
-            canvasId: "rouletteCanvas",
-            numSegments: segments.length,
-            outerRadius: 220,
 
-            // prevents blank-wheel bug
-            responsive: false,             
+<script>
+    // -------------------------
+    // GAME STATE
+    // -------------------------
+    let deck = [];
+    let playerHand = [];
+    let dealerHand = [];
+    let playerMoney = 100;
+    let currentBet = 0;
+    let dealerHiddenCard = null;
+    let revealDealer = false;
+    let gameActive = false; // Add a flag to prevent actions when not playing
 
-            segments: segments,
+    // -------------------------
+    // DECK FUNCTIONS
+    // -------------------------
+    function createDeck() {
+        const suits = ["♠", "♥", "♦", "♣"];
+        // Ensure black suits are visually black and red suits are red
+        const suitColor = { "♠": "black", "♣": "black", "♥": "red", "♦": "red" };
+        const ranks = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+        deck = [];
 
-            animation: {
-                type: "spinToStop",
-                duration: 5,
-                spins: 14,
-                callbackFinished: announceResult
+        for (let suit of suits) {
+            for (let rank of ranks) {
+                deck.push({ rank, suit, color: suitColor[suit] });
             }
-        });
-
-        // SPIN BUTTON
-        document.getElementById("spinBtn").onclick = () => {
-            const spinBtn = document.getElementById("spinBtn");
-            
-            // Prevent multiple rapid clicks while spinning
-            if (wheel.animation.isspinning) {
-                return;
-            }
-            spinBtn.disabled = true; // Disable button
-            
-            // Reset wheel if it has been spun before
-            wheel.stop(false); 
-            wheel.rotationAngle = 0; 
-            wheel.draw();
-
-            // Calculate a random stop angle
-            const stopAt = Math.random() * 360;
-            wheel.animation.stopAngle = stopAt;
-            wheel.startAnimation();
-        };
-
-        // ANNOUNCE WINNER
-        function announceResult(indicatedSegment) {
-            document.getElementById("spinBtn").disabled = false; // Re-enable button
-            alert("Winning number: " + indicatedSegment.text + "!");
         }
 
-    </script>
+        // Shuffle
+        for (let i = deck.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i+1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+    }
 
-    <footer>
-        <p>&copy; 2025 Trusty Comics</p>
-    </footer>
+    function drawCard() {
+        return deck.pop();
+    }
+
+    // -------------------------
+    // HAND VALUE
+    // -------------------------
+    function handValue(hand) {
+        let sum = 0;
+        let aces = 0;
+
+        for (let card of hand) {
+            if (card.hidden) continue;
+
+            if (card.card) card = card.card;
+
+            if (card.rank === "A") {
+                aces++;
+                sum += 11;
+            } else if (["J","Q","K"].includes(card.rank)) {
+                sum += 10;
+            } else {
+                sum += Number(card.rank);
+            }
+        }
+
+        // Adjust aces from 11 → 1
+        while (sum > 21 && aces > 0) {
+            sum -= 10;
+            aces--;
+        }
+
+        return sum;
+    }
+
+    // -------------------------
+    // RENDERING
+    // -------------------------
+    function cardHTML(card) {
+        if (card.hidden) {
+            // Updated hidden card back style
+            return `<div class="card" style="background:#555; color:#333;">🂠</div>`;
+        }
+
+        if (card.card) card = card.card;
+        
+        // Add color for suits
+        const colorStyle = card.color === 'red' ? 'color: red;' : 'color: black;';
+
+        return `<div class="card" style="${colorStyle}">${card.rank}${card.suit}</div>`;
+    }
+
+    function renderHands() {
+        // Dealer
+        let dealerHTML = "<h3>Dealer</h3>";
+        dealerHand.forEach(card => {
+            dealerHTML += cardHTML(card);
+        });
+        dealerHTML += `<p>Value: ${revealDealer ? handValue(dealerHand) : (handValue(dealerHand) - (handValue([{rank: dealerHiddenCard.rank, suit: dealerHiddenCard.suit}])) + ' + ?')}</p>`;
+        document.getElementById("dealer").innerHTML = dealerHTML;
+
+        // Player
+        let playerHTML = "<h3>You</h3>";
+        playerHand.forEach(card => {
+            playerHTML += cardHTML(card);
+        });
+        playerHTML += `<p>Value: ${handValue(playerHand)}</p>`;
+        document.getElementById("player").innerHTML = playerHTML;
+
+        document.getElementById("money").innerText = `Money: $${playerMoney}`;
+    }
+    
+    // Initial render when the page loads
+    window.onload = function() {
+        renderHands(); 
+        document.getElementById("dealer").innerHTML = "<h3>Dealer</h3><p>Waiting for bet...</p>";
+        document.getElementById("player").innerHTML = "<h3>You</h3><p>Waiting for bet...</p>";
+        document.getElementById("status").innerText = "Enter your bet and press 'Deal' to begin.";
+    }
+
+
+    // -------------------------
+    // GAME FLOW
+    // -------------------------
+    function startGame() {
+        if (gameActive) return; // Prevent new game while one is active
+
+        const betInput = document.getElementById("bet-input");
+        const bet = Number(betInput.value);
+
+        if (isNaN(bet) || bet <= 0 || bet > playerMoney) {
+            alert(`Enter a valid bet between $1 and $${playerMoney}.`);
+            return;
+        }
+
+        currentBet = bet;
+        playerMoney -= bet;
+        gameActive = true;
+
+        createDeck();
+        playerHand = [];
+        dealerHand = [];
+        revealDealer = false;
+
+        document.getElementById("status").innerText = "Dealing cards...";
+        betInput.disabled = true; // Disable betting during the hand
+
+        // Deal cards
+        playerHand.push(drawCard());
+        dealerHiddenCard = drawCard();
+        dealerHand.push({ hidden: true, card: dealerHiddenCard });
+        playerHand.push(drawCard());
+        dealerHand.push(drawCard());
+
+        renderHands();
+        
+        // Check for Blackjacks immediately
+        const playerTotal = handValue(playerHand);
+        const dealerTotal = handValue(dealerHand);
+
+        if (playerTotal === 21) {
+            // A simple delay to let the user see their hand before the end
+            setTimeout(() => {
+                revealDealer = true;
+                dealerHand[0] = dealerHiddenCard;
+                renderHands();
+                if (dealerTotal === 21) {
+                     endGame("Push! Both hit Blackjack.", true);
+                } else {
+                     // 2.5x payout for Blackjack
+                     endGame("Blackjack! You win 1.5x your bet!", false, currentBet * 2.5); 
+                }
+            }, 1500);
+        } else if (dealerTotal === 21) {
+             setTimeout(() => {
+                revealDealer = true;
+                dealerHand[0] = dealerHiddenCard;
+                renderHands();
+                endGame("Dealer Blackjack! You lose.", true);
+            }, 1500);
+        }
+    }
+
+    function hit() {
+        if (!gameActive) {
+            document.getElementById("status").innerText = "Press 'Deal' to start a game.";
+            return;
+        }
+
+        playerHand.push(drawCard());
+        renderHands();
+
+        if (handValue(playerHand) > 21) {
+            revealDealer = true;
+            dealerHand[0] = dealerHiddenCard; 
+            renderHands();
+            endGame("You busted!", true);
+        }
+    }
+
+    function stand() {
+        if (!gameActive) return;
+
+        revealDealer = true;
+        dealerHand[0] = dealerHiddenCard;
+        renderHands();
+
+        document.getElementById("status").innerText = "Dealer drawing...";
+
+        // dealer draws to 17
+        const dealerDrawInterval = setInterval(() => {
+            if (handValue(dealerHand) < 17) {
+                dealerHand.push(drawCard());
+                renderHands();
+            } else {
+                clearInterval(dealerDrawInterval);
+                checkWinner();
+            }
+        }, 1000); // 1-second delay for visual drama
+    }
+
+    function checkWinner() {
+        const playerTotal = handValue(playerHand);
+        const dealerTotal = handValue(dealerHand);
+        
+        if (playerTotal > 21) {
+             endGame("You busted!", true);
+        } else if (dealerTotal > 21) {
+            endGame("Dealer busts! You win!", false);
+        } else if (playerTotal > dealerTotal) {
+            endGame("You win!", false);
+        } else if (playerTotal < dealerTotal) {
+            endGame("You lose!", true);
+        } else {
+            endGame("Push!", false, currentBet);
+        }
+    }
+
+
+    function endGame(result, loss = false, payout = currentBet * 2) {
+        if (result.includes("win") || result.includes("Blackjack")) {
+            playerMoney += payout; // includes standard win (x2) and blackjack win (x2.5)
+        } else if (result.includes("Push")) {
+            playerMoney += currentBet;
+        }
+        
+        // Reset state
+        gameActive = false;
+        document.getElementById("bet-input").disabled = false;
+        document.getElementById("status").innerText = result;
+        renderHands();
+
+        if (playerMoney <= 0) {
+            document.getElementById("status").innerText = "Game Over! You're out of money! Refresh to restart.";
+            document.getElementById("controls").innerHTML = ''; // Hide controls
+        }
+    }
+
+    // Initialize the money display
+    renderHands();
+</script>
 
 </body>
 </html>
