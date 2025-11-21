@@ -73,6 +73,7 @@
     <button onclick="startGame()">Deal</button>
     <button onclick="hit()">Hit</button>
     <button onclick="stand()">Stand</button>
+    <button onclick="double()">Double</button>
 </div>
 
 <div id="table">
@@ -257,6 +258,44 @@
             endGame("Push!");
         }
     }
+
+    function double() {
+        playerMoney -= currentBet
+        currentBet *= 2
+        playerHand.push(drawCard());
+        renderHands();
+
+        if (handValue(playerHand) > 21) {
+            revealDealer = true;
+            dealerHand[0] = dealerHiddenCard; 
+            renderHands();
+            endGame("You busted!");
+        }
+        else{
+            revealDealer = true;
+            dealerHand[0] = dealerHiddenCard;
+            renderHands();
+
+            // dealer draws to 17
+            while (handValue(dealerHand) < 17) {
+                dealerHand.push(drawCard());
+                renderHands();
+            }
+
+            const playerTotal = handValue(playerHand);
+            const dealerTotal = handValue(dealerHand);
+
+            if (dealerTotal > 21) {
+                endGame("Dealer busts! You win!");
+            } else if (playerTotal > dealerTotal) {
+                endGame("You win!");
+            } else if (playerTotal < dealerTotal) {
+                endGame("You lose!");
+            } else {
+                endGame("Push!");
+            }
+        }
+        }
 
     function endGame(result) {
         if (result.includes("win")) {
