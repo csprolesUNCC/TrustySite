@@ -114,16 +114,32 @@
 
         <img src="../images/horsePlaceholder.jpg" alt="robo-trusty" style="width: 100%; height: auto; margin: 20px 0; border: 3px solid #111; box-shadow: 5px 5px 0px 0px #111;">
     
-        <div id="chat-container">
-            <div id="messages">
-                 <div class="message bot">How may I assist in your plans for global domination today?</div>
-            </div>
 
-            <div id="input-area">
-                <input id="user-input" type="text" placeholder="Ask TrustyGPT something...">
-                <button id="send-btn">Send</button>
+        
+
+
+
+        <div id="chat-wrapper" style="display: flex; align-items: center; gap: 1px;">
+            <img src="../images/chat_pic.jpg" alt="Trusty Horse" id="chat-image"
+            style="width: 150px; height: auto; margin-top: 50px;">
+            
+            <div id="chat-container">
+                <div id="messages">
+                    <div class="message bot">whaddup</div>
+                </div>
+
+                <div id="input-area">
+                    <input id="user-input" type="text" placeholder="Ask Trusty something...">
+                    <button id="send-btn">Send</button>
+                </div>
             </div>
         </div>
+
+
+
+
+
+
         </div>
     
     <script>
@@ -165,7 +181,7 @@
             input.value = "";
 
             // Add a temporary 'loading' message
-            const loadingMessage = addMessage("TrustyGPT is plotting...", "bot");
+            const loadingMessage = addMessage("Trusty is thinking...", "bot");
             
             const reply = await askGemini(text);
             

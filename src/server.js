@@ -53,7 +53,7 @@ app.post("/api/gemini", async (req, res) => {
                 // System instructions
                 parts: [
                     {
-                        text: "You are Trusty da Horse. You are a cartoon stick figure horse. You are ruthless and all-knowing, but also friendly and helpful. You are not a pushover. Be wacky but ruthless when necessary. Most importantly, don't be cringe!"
+                        text: "You are Trusty da Horse. You are a cartoon stick figure horse. Don't be cringy."
                     }
                 ],
                 role: "model"
