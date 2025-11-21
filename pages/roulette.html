@@ -1,107 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casino Roulette Wheel</title>
+<meta charset="UTF-8">
+<title>Trusty's Blackjack Casino</title>
+<style>
+    body {
+        background: #064f1a;
+        font-family: Arial, sans-serif;
+        color: white;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+    }
 
-    <style>
-        body {
-            background: #0b0e13;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 0;
-        }
+    h1 {
+        margin-bottom: 10px;
+        font-size: 40px;
+        text-shadow: 2px 2px #000;
+    }
 
-        #rouletteCanvas {
-            background: transparent;
-        }
+    #game-table {
+        margin: 20px auto;
+        width: 700px;
+        background: #0c6b28;
+        border: 5px solid #111;
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: 0 0 30px #000 inset;
+    }
 
-        #spinBtn {
-            margin-top: 25px;
-            padding: 12px 25px;
-            background: gold;
-            color: black;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-    </style>
+    .hand-area {
+        margin: 20px 0;
+    }
+
+    .cards {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .card {
+        background: white;
+        color: black;
+        border-radius: 8px;
+        width: 60px;
+        height: 90px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 22px;
+        font-weight: bold;
+        border: 2px solid #000;
+        box-shadow: 2px 2px 5px #000;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #buttons {
+        margin-top: 20px;
+    }
+
+    button {
+        padding: 10px 25px;
+        font-size: 18px;
+        font-weight: bold;
+        border: 3px solid #111;
+        background: gold;
+        color: #111;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+        box-shadow: 3px 3px 0px #000;
+        transition: 0.1s;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 4px 4px 0px #000;
+    }
+
+    #result {
+        margin-top: 20px;
+        font-size: 30px;
+        font-weight: bold;
+        height: 40px;
+    }
+</style>
 </head>
 
 <body>
+<h1>Trusty's Blackjack</h1>
 
-    <h1>🎰 Casino Roulette Wheel</h1>
+<div id="game-table">
+    <div class="hand-area">
+        <h2>Dealer</h2>
+        <div id="dealer-cards" class="cards"></div>
+        <div id="dealer-value"></div>
+    </div>
 
-    <canvas id="rouletteCanvas" width="450" height="450"></canvas>
-    <button id="spinBtn">SPIN</button>
+    <hr style="border: 1px solid #333; margin: 20px 0;">
 
-    <!-- MUST USE THIS CDN FOR WINWHEEL TO WORK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Winwheel.js/2.7.0/Winwheel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <div class="hand-area">
+        <h2>You</h2>
+        <div id="player-cards" class="cards"></div>
+        <div id="player-value"></div>
+    </div>
 
-    <script>
+    <div id="result"></div>
 
-        // European wheel number order
-        const numbers = [
-            0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6,
-            27, 13, 36, 11, 30, 8, 23, 10, 5, 24,
-            16, 33, 1, 20, 14, 31, 9, 22, 18, 29,
-            7, 28, 12, 35, 3, 26
-        ];
+    <div id="buttons">
+        <button id="hit-btn">Hit</button>
+        <button id="stand-btn">Stand</button>
+        <button id="newgame-btn">New Game</button>
+    </div>
+</div>
 
-        // Colors matching real roulette
-        const colors = numbers.map((n, i) => {
-            if (n === 0) return "#0f0"; // green
-            return i % 2 === 0 ? "#e74c3c" : "#2c3e50"; // red/black
-        });
+<script>
+// ---------- Blackjack Logic ----------
+const suits = ["♠", "♥", "♦", "♣"];
+const values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
-        // Convert into Winwheel segments
-        const segments = numbers.map((num, i) => ({
-            fillStyle: colors[i],
-            textFillStyle: "#fff",
-            textFontSize: 16,
-            textFontFamily: "Arial",
-            text: num.toString()
-        }));
+let deck = [];
+let playerHand = [];
+let dealerHand = [];
 
-        // CREATE THE WHEEL
-        let wheel = new Winwheel({
-            canvasId: "rouletteCanvas",
-            numSegments: segments.length,
-            outerRadius: 220,
-
-            // prevents blank-wheel bug
-            responsive: false,             
-
-            segments: segments,
-
-            animation: {
-                type: "spinToStop",
-                duration: 5,
-                spins: 14,
-                callbackFinished: announceResult
-            }
-        });
-
-        // SPIN BUTTON
-        document.getElementById("spinBtn").onclick = () => {
-            const stopAt = Math.random() * 360;
-            wheel.animation.stopAngle = stopAt;
-            wheel.startAnimation();
-        };
-
-        // ANNOUNCE WINNER
-        function announceResult(indicatedSegment) {
-            alert("Winning number: " + indicatedSegment.text);
+function createDeck() {
+    deck = [];
+    for (let suit of suits) {
+        for (let val of values) {
+            deck.push({ suit, val });
         }
+    }
+    deck.sort(() => Math.random() - 0.5);
+}
 
-    </script>
+function getValue(hand) {
+    let total = 0;
+    let aces = 0;
+
+    for (let card of hand) {
+        if (card.val === "A") {
+            aces++;
+            total += 11;
+        } else if (["K", "Q", "J"].includes(card.val)) {
+            total += 10;
+        } else {
+            total += parseInt(card.val);
+        }
+    }
+
+    while (total > 21 && aces > 0) {
+        total -= 10;
+        aces--;
+    }
+
+    return total;
+}
+
+function dealCard(hand) {
+    hand.push(deck.pop());
+}
+
+function render() {
+    const playerDiv = document.getElementById("player-cards");
+    const dealerDiv = document.getElementById("dealer-cards");
+    playerDiv.innerHTML = "";
+    dealerDiv.innerHTML = "";
+
+    playerHand.forEach(c => {
+        playerDiv.appendChild(makeCard(c));
+    });
+
+    dealerHand.forEach(c => {
+        dealerDiv.appendChild(makeCard(c));
+    });
+
+    document.getElementById("player-value").textContent = "Value: " + getValue(playerHand);
+    document.getElementById("dealer-value").textContent = "Value: " + getValue(dealerHand);
+}
+
+function makeCard(card) {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.textContent = card.val + card.suit;
+    if (card.suit === "♥" || card.suit === "♦") {
+        div.style.color = "red";
+    }
+    return div;
+}
+
+function newGame() {
+    document.getElementById("result").textContent = "";
+
+    createDeck();
+    playerHand = [];
+    dealerHand = [];
+
+    dealCard(playerHand);
+    dealCard(playerHand);
+    dealCard(dealerHand);
+    dealCard(dealerHand);
+
+    render();
+
+    document.getElementById("hit-btn").disabled = false;
+    document.getElementById("stand-btn").disabled = false;
+
+    if (getValue(playerHand) === 21) {
+        endGame("Blackjack! You win!");
+    }
+}
+
+function hit() {
+    dealCard(playerHand);
+    render();
+
+    if (getValue(playerHand) > 21) {
+        endGame("Bust! You lose.");
+    }
+}
+
+function stand() {
+    // Dealer auto-plays
+    while (getValue(dealerHand) < 17) {
+        dealCard(dealerHand);
+    }
+
+    render();
+
+    const player = getValue(playerHand);
+    const dealer = getValue(dealerHand);
+
+    if (dealer > 21) endGame("Dealer busts! You win!");
+    else if (player > dealer) endGame("You win!");
+    else if (player < dealer) endGame("You lose!");
+    else endGame("Push!");
+}
+
+function endGame(msg) {
+    document.getElementById("result").textContent = msg;
+    document.getElementById("hit-btn").disabled = true;
+    document.getElementById("stand-btn").disabled = true;
+}
+
+document.getElementById("hit-btn").onclick = hit;
+document.getElementById("stand-btn").onclick = stand;
+document.getElementById("newgame-btn").onclick = newGame;
+
+newGame();
+</script>
 
 </body>
 </html>
