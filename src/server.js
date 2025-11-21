@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, "../pages")));
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../src/pages/trustyGPT.html"));
+  res.sendFile(path.join(__dirname, "../pages/trustyGPT.html"));
 });
  // folder where your HTML lives
 
