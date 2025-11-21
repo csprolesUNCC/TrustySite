@@ -103,3 +103,66 @@ a:hover {
     color: #555; /* Dark gray on hover */
     text-decoration: none;
 }
+
+/* --- MOBILE RESPONSIVENESS (Max width 600px) --- */
+@media (max-width: 600px) {
+
+    /* HEADER */
+    header h1 {
+        /* Reduce header padding for smaller screens */
+        font-size: 1.5em; 
+        padding: 0 10px; /* Add horizontal padding for text */
+    }
+
+    /* NAVIGATION */
+    nav ul {
+        /* Change flex direction to stack items vertically on mobile */
+        flex-direction: column;
+    }
+
+    nav ul li a {
+        /* Increase vertical padding and make text smaller */
+        padding: 10px 15px; 
+        font-size: 0.9em;
+    }
+
+    /* MAIN CONTENT AREA */
+    .content {
+        /* Reduce the max-width and margin for a better fit */
+        max-width: 100%;
+        margin: 15px 10px; /* Smaller vertical margin, add horizontal margin */
+        padding: 15px; /* Reduce padding */
+        /* Reduce the box shadow to be less intrusive on small screens */
+        box-shadow: 4px 4px 0px 0px #111;
+        border: 2px solid #111; /* Slightly thinner border */
+    }
+    
+    /* FOOTER */
+    footer {
+        padding: 0.8em 10px;
+    }
+
+    /* SPECIFIC PAGE ADJUSTMENTS: About Page Bio Section */
+    /* Check for the specific flex layout in about.html and break it */
+    .bio-section {
+        flex-direction: column; /* Stack image and text vertically */
+        gap: 15px;
+    }
+
+    .bio-section img {
+        width: 100%; /* Make the image take full width */
+        max-width: 300px; /* Limit the max size so it doesn't get too big */
+        margin: 0 auto; /* Center the image */
+    }
+
+    /* SPECIFIC PAGE ADJUSTMENTS: TrustyGPT (Chat) */
+    #chat-wrapper {
+        flex-direction: column; /* Stack the image and chat container */
+    }
+
+    #chat-image {
+        /* Center and reduce the size of the chat image */
+        width: 100px !important;
+        margin: 15px auto 0 auto !important;
+    }
+}
