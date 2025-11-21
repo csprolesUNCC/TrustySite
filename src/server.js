@@ -39,7 +39,7 @@ app.post("/api/gemini", async (req, res) => {
     console.log("Incoming message:", message);
 
     // 1. Check for API Key
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {w
         console.error("Error: GEMINI_API_KEY is missing.");
         return res.status(500).json({ error: "Server configuration error" });
     }

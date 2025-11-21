@@ -149,12 +149,13 @@
                 });
 
                 const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error: TrustyGPT failed to connect.";
+                return data.reply || "Error: TrustyGPT failed to connect.";
             } catch (error) {
                 console.error("Fetch error:", error);
                 return "Error: Could not reach the TrustyGPT server.";
             }
         }
+
 
         async function sendMessage() {
             const text = input.value.trim();
