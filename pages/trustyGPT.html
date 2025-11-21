@@ -137,6 +137,7 @@
             div.textContent = text;
             messagesDiv.appendChild(div);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return div; // <-- return the div
         }
 
         async function askGemini(prompt) {
