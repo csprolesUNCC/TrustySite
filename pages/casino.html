@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trusty Blackjack</title>
+    <style>
+        body {
+            background: #0b0b0b;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+
+        #table {
+            background: #006400;
+            padding: 25px;
+            border: 3px solid #111;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 400px;
+        }
+
+        .hand {
+            margin: 15px;
+            padding: 20px;
+            border: 2px solid #333;
+            background: #013220;
+            border-radius: 8px;
+        }
+
+        .card {
+            display: inline-block;
+            padding: 10px 14px;
+            margin: 5px;
+            background: white;
+            color: black;
+            border-radius: 6px;
+            font-weight: bold;
+            border: 1px solid black;
+            min-width: 40px;
+        }
+
+        #controls input {
+            padding: 8px;
+            font-size: 16px;
+            width: 120px;
+        }
+
+        #controls button {
+            padding: 8px 15px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #money {
+            margin-top: 15px;
+            font-size: 22px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Trusty Blackjack</h1>
+
+<div id="money">Money: $100</div>
+
+<div id="controls">
+    <input id="bet-input" type="number" placeholder="Enter bet">
+    <button onclick="startGame()">Deal</button>
+    <button onclick="hit()">Hit</button>
+    <button onclick="stand()">Stand</button>
+</div>
+
+<div id="table">
+    <div id="dealer" class="hand"></div>
+    <div id="player" class="hand"></div>
+</div>
+
+<div id="status" style="margin-top:20px; font-size:20px;"></div>
+
+<script>
+    // -------------------------
+    // GAME STATE
+    // -------------------------
+    let deck = [];
+    let playerHand = [];
+    let dealerHand = [];
+    let playerMoney = 100;
+    let currentBet = 0;
+    let dealerHiddenCard = null;
+    let revealDealer = false;
+
+    // -------------------------
+    // DECK FUNCTIONS
+    // -------------------------
+    function createDeck() {
+        const suits = ["♠", "♥", "♦", "♣"];
+        const ranks = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+        deck = [];
+
+        for (let suit of suits) {
+            for (let rank of ranks) {
+                deck.push({ rank, suit });
+            }
+        }
+
+        // Shuffle
+        for (let i = deck.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i+1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+    }
+
+    function drawCard() {
+        return deck.pop();
+    }
+
+    // -------------------------
+    // HAND VALUE
+    // -------------------------
+    function handValue(hand) {
+        let sum = 0;
+        let aces = 0;
+
+        for (let card of hand) {
+            if (card.hidden) continue;
+
+            if (card.card) card = card.card;
+
+            if (card.rank === "A") {
+                aces++;
+                sum += 11;
+            } else if (["J","Q","K"].includes(card.rank)) {
+                sum += 10;
+            } else {
+                sum += Number(card.rank);
+            }
+        }
+
+        // Adjust aces from 11 → 1
+        while (sum > 21 && aces > 0) {
+            sum -= 10;
+            aces--;
+        }
+
+        return sum;
+    }
+
+    // -------------------------
+    // RENDERING
+    // -------------------------
+    function cardHTML(card) {
+        if (card.hidden) {
+            return `<div class="card">🂠</div>`;
+        }
+
+        if (card.card) card = card.card;
+
+        return `<div class="card">${card.rank}${card.suit}</div>`;
+    }
+
+    function renderHands() {
+        // Dealer
+        let dealerHTML = "<h3>Dealer</h3>";
+        dealerHand.forEach(card => {
+            dealerHTML += cardHTML(card);
+        });
+        dealerHTML += `<p>Value: ${handValue(dealerHand)}</p>`;
+        document.getElementById("dealer").innerHTML = dealerHTML;
+
+        // Player
+        let playerHTML = "<h3>You</h3>";
+        playerHand.forEach(card => {
+            playerHTML += cardHTML(card);
+        });
+        playerHTML += `<p>Value: ${handValue(playerHand)}</p>`;
+        document.getElementById("player").innerHTML = playerHTML;
+
+        document.getElementById("money").innerText = `Money: $${playerMoney}`;
+    }
+
+    // -------------------------
+    // GAME FLOW
+    // -------------------------
+    function startGame() {
+        const bet = Number(document.getElementById("bet-input").value);
+        if (isNaN(bet) || bet === 0) {
+            alert("Enter a valid bet.");
+            return;
+        }
+
+        currentBet = bet;
+        playerMoney -= bet;
+
+        createDeck();
+        playerHand = [];
+        dealerHand = [];
+        revealDealer = false;
+
+        document.getElementById("status").innerText = "";
+
+        // Deal cards
+        playerHand.push(drawCard());
+        dealerHiddenCard = drawCard();
+        dealerHand.push({ hidden: true, card: dealerHiddenCard });
+        playerHand.push(drawCard());
+        dealerHand.push(drawCard());
+
+        renderHands();
+    }
+
+    function hit() {
+        if (handValue(playerHand) > 21) {
+            revealDealer = true;
+            dealerHand[0] = dealerHiddenCard; 
+            renderHands();
+            endGame("You busted!");
+        }
+        else{
+            playerHand.push(drawCard());
+            renderHands();
+
+            if (handValue(playerHand) > 21) {
+                revealDealer = true;
+                dealerHand[0] = dealerHiddenCard; 
+                renderHands();
+                endGame("You busted!");
+            }
+        }
+    }
+
+    function stand() {
+        revealDealer = true;
+        dealerHand[0] = dealerHiddenCard;
+        renderHands();
+
+        // dealer draws to 17
+        while (handValue(dealerHand) < 17) {
+            dealerHand.push(drawCard());
+            renderHands();
+        }
+
+        const playerTotal = handValue(playerHand);
+        const dealerTotal = handValue(dealerHand);
+
+        if (dealerTotal > 21) {
+            endGame("Dealer busts! You win!");
+        } else if (playerTotal > dealerTotal) {
+            endGame("You win!");
+        } else if (playerTotal < dealerTotal) {
+            endGame("You lose!");
+        } else {
+            endGame("Push!");
+        }
+    }
+
+    function endGame(result) {
+        if (result.includes("win")) {
+            playerMoney += currentBet * 2;
+        } else if (result.includes("Push")) {
+            playerMoney += currentBet;
+        }
+
+        document.getElementById("status").innerText = result;
+        renderHands();
+    }
+</script>
+
+</body>
+</html>
