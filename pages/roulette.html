@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Roulette Wheel</title>
+
+    <style>
+        body {
+            background: #0b0e13;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 5px black;
+        }
+
+        #rouletteCanvas {
+            background: #222;
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+        }
+
+        #spinBtn {
+            margin-top: 25px;
+            padding: 12px 25px;
+            background: gold;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0px 0px 10px rgba(255,255,255,0.4);
+        }
+
+        #spinBtn:hover {
+            background: #ffd700;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎰 Casino Roulette Wheel</h1>
+
+    <canvas id="rouletteCanvas" width="400" height="400"></canvas>
+    <button id="spinBtn">SPIN</button>
+
+    <!-- Winwheel + TweenJS (animation engine) -->
+    <script src="https://cdn.jsdelivr.net/npm/winwheel@2.7.0/dist/Winwheel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tweenjs@1.0.2/lib/tweenjs.min.js"></script>
+
+    <script>
+        // European roulette numbers in correct physical wheel order
+        const numbers = [
+            0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6,
+            27, 13, 36, 11, 30, 8, 23, 10, 5, 24,
+            16, 33, 1, 20, 14, 31, 9, 22, 18, 29,
+            7, 28, 12, 35, 3, 26
+        ];
+
+        // Color scheme: green for 0, red/black alternating
+        const colors = numbers.map((n, i) => {
+            if (n === 0) return "#0f0"; // green
+            return i % 2 === 0 ? "#e74c3c" : "#2c3e50"; // red/black
+        });
+
+        // Convert numbers + colors into Winwheel segments
+        const segments = numbers.map((n, i) => ({
+            fillStyle: colors[i],
+            text: n.toString(),
+            textFillStyle: "#fff"
+        }));
+
+        // Create the roulette wheel
+        const rouletteWheel = new Winwheel({
+            canvasId: "rouletteCanvas",
+            numSegments: segments.length,
+            outsideRadius: 190,
+            textFontSize: 16,
+            textOrientation: "curved",
+            textAlignment: "outer",
+            segments: segments,
+            animation: {
+                type: "spinToStop",
+                duration: 6,
+                spins: 12,
+                callbackFinished: displayResult
+            }
+        });
+
+        // When spin button is clicked
+        document.getElementById("spinBtn").onclick = () => {
+            const stopAt = Math.floor(Math.random() * 360);
+            rouletteWheel.animation.stopAngle = stopAt;
+            rouletteWheel.startAnimation();
+        };
+
+        // Winning result alert
+        function displayResult(segment) {
+            alert("Winning Number: " + segment.text);
+        }
+    </script>
+
+</body>
+</html>
