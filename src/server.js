@@ -39,7 +39,7 @@ app.post("/api/gemini", async (req, res) => {
     console.log("Incoming message:", message);
 
     // 1. Check for API Key
-    if (!process.env.GEMINI_API_KEY) {w
+    if (!process.env.GEMINI_API_KEY) {
         console.error("Error: GEMINI_API_KEY is missing.");
         return res.status(500).json({ error: "Server configuration error" });
     }
@@ -47,15 +47,30 @@ app.post("/api/gemini", async (req, res) => {
     // 2. FIX: Use 'generateContent' and a valid model (e.g., gemini-1.5-flash)
     const model = "gemini-2.5-flash"; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const body = {
+        contents: [
+            {
+                // System instructions
+                parts: [
+                    {
+                        text: "You are Trusty da Horse. You are a cartoon stick figure horse. You are ruthless and all-knowing, but also friendly and helpful. You are not a pushover. Be wacky but ruthless when necessary. Most importantly, don't be cringe!"
+                    }
+                ],
+                role: "model"
+            },
+            {
+                // User message
+                parts: [{ text: message }],
+                role: "USER"
+            }
+        ]
+    };
 
     try {
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                // This structure is correct for :generateContent
-                contents: [{ parts: [{ text: message }] }]
-            })
+            body: JSON.stringify(body)
         });
 
         // 3. FIX: Check if the fetch was actually successful (status 200-299)
