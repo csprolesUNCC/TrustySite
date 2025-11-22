@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Highway Traffic - Trusty Comics</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
+    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <style>
+        /* Styles to center the game viewer in the content box and apply comic style */
+        #game-viewer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        /* Style the iframe to look integrated with your site's comic aesthetic */
+        .embedded-game {
+            width: 100%; 
+            height: 60vh; /* Responsive height, adjust as needed */
+            min-height: 450px;
+            border: 3px solid #111;
+            box-shadow: 6px 6px 0px 0px #111;
+            border-radius: 0;
+        }
+
+        /* Mobile adjustment for smaller screens */
+        @media (max-width: 600px) {
+            .embedded-game {
+                height: 40vh;
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Highway Traffic</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../pages/comics.html">Comics</a></li>
+            <li><a href="../pages/about.html">About Trusty</a></li>
+            <li><a href="../pages/trustyGPT.html">TrustyGPT</a></li>
+            <li><a href="../pages/viewer.html">3D Viewer</a></li>
+            <li><a href="../pages/games.html">Games</a></li>
+            <li><a href="../pages/credits.html">Credits</a></li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <h2>Can Trusty Drive? (Probably Not)</h2>
+        
+        <div id="game-viewer">
+            <p>Race through heavy traffic! Use WASD or Arrow Keys to control your vehicle.</p>
+
+            <iframe 
+                class="embedded-game" 
+                src="https://www.onlinegames.io/games/2022/unity/highway-traffic/index.html" 
+                frameborder="0" 
+                scrolling="no"
+                allowfullscreen
+                title="Highway Traffic Game">
+            </iframe>
+            
+            <p style="margin-top: 15px;">Note: Game is hosted externally by onlinegames.io.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Trusty Comics</p>
+    </footer>
+
+</body>
+</html>
