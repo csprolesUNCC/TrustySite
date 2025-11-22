@@ -187,15 +187,8 @@
                 if (horse.y > floorY) {
                     horse.y = floorY;
                     horse.velocity = 0;
-                    gameOver = true; // Make hitting the floor end the game
                 }
                 
-                // Check for ceiling collision
-                if (horse.y < 0) {
-                    horse.y = 0;
-                    horse.velocity = 0;
-                }
-
                 if (frame % 120 === 0) {
                     createPipe();
                 }
