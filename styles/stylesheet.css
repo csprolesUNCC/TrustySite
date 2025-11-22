@@ -165,7 +165,7 @@ a:hover {
         width: 100px !important;
         margin: 15px auto 0 auto !important;
     }
-}
+
 
 /* Container for the dropdown */
 .dropdown {
@@ -226,4 +226,5 @@ a:hover {
 /* Optional: Add a hover effect to the main 'Games' link */
 .dropdown:hover .dropbtn {
     background-color: #555; /* A subtle hover color */
+}
 }
