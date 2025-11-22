@@ -107,9 +107,21 @@
         let pipeTimer = 0;
         let lastTime = 0;
         // Jump event
+        let justTapped = false;
+
+        document.addEventListener("touchstart", e => {
+            e.preventDefault();
+            justTapped = true;
+            jump();
+        }, { passive: false });
+
+        document.addEventListener("mousedown", () => {
+            if (justTapped) return;
+            jump();
+        });
+
         document.addEventListener("keydown", jump);
-        document.addEventListener("mousedown", jump);
-        document.addEventListener("touchstart", jump);
+
 
         function jump() {
             if (!gameOver) {
@@ -176,7 +188,8 @@
             });
         }
 
-        function loop(timestamp) {
+        function loop(timestamp){
+            justTapped = false;
             if (!lastTime) lastTime = timestamp;
             const delta = (timestamp - lastTime) / 16.666; // normalize to 60 FPS
             lastTime = timestamp;
