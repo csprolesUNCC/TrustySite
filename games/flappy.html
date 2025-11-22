@@ -99,7 +99,7 @@
 
         // Pipes
         let pipes = [];
-        const pipeGap = 275;
+        const pipeGap = 250;
         const pipeWidth = 65;
         let frame = 0;
         let score = 0;
@@ -109,6 +109,7 @@
         // Jump event
         document.addEventListener("keydown", jump);
         document.addEventListener("mousedown", jump);
+        document.addEventListener("touchstart", jump);
 
         function jump() {
             if (!gameOver) {
