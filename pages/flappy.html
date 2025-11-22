@@ -1,186 +1,246 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flappy Horse</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Horse - Trusty Comics</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
+    <link rel="stylesheet" href="../styles/stylesheet.css">
     <style>
+        /* Specific overrides for the Flappy Horse page */
         body {
-            background: #111;
+            /* Override the dark background set in the original flappy.html,
+               but ensure the main body background from stylesheet.css is used */
+            background: #f0f0f0; /* Default body background from stylesheet.css */
+            display: block; /* Change display from flex to block for standard layout */
+            height: auto;
+            min-height: 100vh; /* Ensure full viewport height */
+        }
+
+        /* Center the canvas within the content area */
+        .content {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial;
+            text-align: center;
         }
 
         canvas {
-            border: 3px solid #111;
+            border: 3px solid #111; /* Use the comic-style heavy border */
             background: #70c5ce;
+            box-shadow: 6px 6px 0px 0px #111; /* Add comic-style shadow */
+            margin-top: 20px;
         }
     </style>
 </head>
 
 <body>
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+    <header>
+        <h1>Flappy Horse</h1>
+    </header>
 
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="comics.html">Comics</a></li>
+            <li><a href="about.html">About Trusty</a></li>
+            <li><a href="trustyGPT.html">TrustyGPT</a></li>
+            <li><a href="viewer.html">3D Viewer</a></li>
+            <li><a href="games.html">Games</a></li>
+            <li><a href="credits.html">Credits</a></li>
+        </ul>
+    </nav>
 
-// Horse image
-const trustyImg = new Image();
-trustyImg.src = "../images/trusty.png";
+    <div class="content">
+        <h2>Can Trusty Fly? (No)</h2>
+        <p>A classic test of patience and physics! Click or press any key to flap your way through the deadly pipes.</p>
 
-// Player
-let horse = {
-    x: 80,
-    y: 250,
-    width: null, // placeholder, updated when image loads
-    height: null,
-    velocity: -3
-};
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
 
-let imageLoaded = false;
+    <footer>
+        <p>&copy; 2025 Trusty Comics</p>
+    </footer>
 
-trustyImg.onload = () => {
-    horse.width = trustyImg.width / 16;
-    horse.height = trustyImg.height / 16;
-    imageLoaded = true;
-    loop();
-};
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-const gravity = 0.18;
-const jumpStrength = -6;
+        // Horse image
+        const trustyImg = new Image();
+        trustyImg.src = "../images/trusty.png";
 
-let gameOver = false;
+        // Player
+        let horse = {
+            x: 80,
+            y: 250,
+            width: null, // placeholder, updated when image loads
+            height: null,
+            velocity: -3
+        };
 
-// Pipes
-let pipes = [];
-const pipeGap = 275;
-const pipeWidth = 65;
-let frame = 0;
-let score = 0;
-let highScore = 0;
+        let imageLoaded = false;
 
-// Jump event
-document.addEventListener("keydown", jump);
-document.addEventListener("mousedown", jump);
+        trustyImg.onload = () => {
+            // Note: The original values were trustyImg.width / 16 and trustyImg.height / 16.
+            // Using slightly larger values here might make the game easier to see.
+            // Reverting to original values to match original game code.
+            horse.width = trustyImg.width / 16;
+            horse.height = trustyImg.height / 16;
+            imageLoaded = true;
+            loop();
+        };
 
-function jump() {
-    if (!gameOver) {
-        horse.velocity = jumpStrength;
-    } else {
-        resetGame();
-    }
-}
+        const gravity = 0.18;
+        const jumpStrength = -6;
 
-function resetGame() {
-    horse.y = 250;
-    horse.velocity = -3;
-    pipes = [];
-    score = 0;
-    frame = 0;
-    gameOver = false;
-}
+        let gameOver = false;
 
-// Create pipes
-function createPipe() {
-    let topHeight = Math.floor(Math.random() * 250) + 50;
-    let bottomY = topHeight + pipeGap;
+        // Pipes
+        let pipes = [];
+        const pipeGap = 275;
+        const pipeWidth = 65;
+        let frame = 0;
+        let score = 0;
+        let highScore = 0;
 
-    pipes.push({
-        x: canvas.width,
-        topHeight: topHeight,
-        bottomY: bottomY
-    });
-}
+        // Jump event
+        document.addEventListener("keydown", jump);
+        document.addEventListener("mousedown", jump);
 
-function drawHorse() {
-    if (imageLoaded) {
-        ctx.drawImage(trustyImg, horse.x, horse.y, horse.width, horse.height);
-    } else {
-        // fallback rectangle
-        ctx.fillStyle = "red";
-        ctx.fillRect(horse.x, horse.y, horse.width, horse.height);
-    }
-}
-
-function drawPipes() {
-    ctx.fillStyle = "green";
-    pipes.forEach(pipe => {
-        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight); // top pipe
-        ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY); // bottom pipe
-    });
-}
-
-function checkCollision() {
-
-    pipes.forEach(pipe => {
-        let withinPipeX = horse.x + horse.width > pipe.x && horse.x < pipe.x + pipeWidth;
-        let hitsTop = horse.y < pipe.topHeight;
-        let hitsBottom = horse.y + horse.height > pipe.bottomY;
-
-        if (withinPipeX && (hitsTop || hitsBottom)) {
-            gameOver = true;
-        }
-    });
-}
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (!gameOver) {
-        frame++;
-        horse.velocity += gravity;
-        horse.y += horse.velocity;
-        const floorY = canvas.height - horse.height;
-        if (horse.y > floorY) {
-            horse.y = floorY;
-            horse.velocity = 0;
-        }
-        if (frame % 120 === 0) {
-            createPipe();
+        function jump() {
+            if (!gameOver) {
+                horse.velocity = jumpStrength;
+            } else {
+                resetGame();
+            }
         }
 
-        pipes.forEach(pipe => pipe.x -= 2);
-
-        // Remove off-screen pipes
-        if (pipes.length && pipes[0].x < -pipeWidth) {
-            pipes.shift();
-            score++;
+        function resetGame() {
+            horse.y = 250;
+            horse.velocity = -3;
+            pipes = [];
+            score = 0;
+            frame = 0;
+            gameOver = false;
         }
-    }
 
-    drawHorse();
-    drawPipes();
-    checkCollision();
+        // Create pipes
+        function createPipe() {
+            let topHeight = Math.floor(Math.random() * 250) + 50;
+            let bottomY = topHeight + pipeGap;
 
-    // Score
-    ctx.fillStyle = "white";
-    ctx.font = "30px Arial";
-    ctx.fillText(score, 20, 40);
-    if (score > highScore){
-        highScore = score
-    }
-    // Draw high score
-    ctx.fillStyle = "yellow";
-    ctx.font = "25px Arial";
-    ctx.fillText("High: " + highScore, 20, 70);
+            pipes.push({
+                x: canvas.width,
+                topHeight: topHeight,
+                bottomY: bottomY
+            });
+        }
+
+        function drawHorse() {
+            if (imageLoaded) {
+                ctx.drawImage(trustyImg, horse.x, horse.y, horse.width, horse.height);
+            } else {
+                // fallback rectangle
+                ctx.fillStyle = "red";
+                ctx.fillRect(horse.x, horse.y, horse.width, horse.height);
+            }
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = "green";
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight); // top pipe
+                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY); // bottom pipe
+            });
+        }
+
+        function checkCollision() {
+
+            // Check for floor collision (handled in loop, but useful to keep in mind)
+            // if (horse.y + horse.height >= canvas.height) {
+            //     gameOver = true;
+            // }
+
+            pipes.forEach(pipe => {
+                let withinPipeX = horse.x + horse.width > pipe.x && horse.x < pipe.x + pipeWidth;
+                let hitsTop = horse.y < pipe.topHeight;
+                let hitsBottom = horse.y + horse.height > pipe.bottomY;
+
+                if (withinPipeX && (hitsTop || hitsBottom)) {
+                    gameOver = true;
+                }
+            });
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!gameOver) {
+                frame++;
+                horse.velocity += gravity;
+                horse.y += horse.velocity;
+                const floorY = canvas.height - horse.height;
+                // Check for floor collision
+                if (horse.y > floorY) {
+                    horse.y = floorY;
+                    horse.velocity = 0;
+                    gameOver = true; // Make hitting the floor end the game
+                }
+                
+                // Check for ceiling collision
+                if (horse.y < 0) {
+                    horse.y = 0;
+                    horse.velocity = 0;
+                }
+
+                if (frame % 120 === 0) {
+                    createPipe();
+                }
+
+                pipes.forEach(pipe => pipe.x -= 2);
+
+                // Remove off-screen pipes
+                if (pipes.length && pipes[0].x < -pipeWidth) {
+                    pipes.shift();
+                    score++;
+                }
+            }
+
+            drawHorse();
+            drawPipes();
+            checkCollision();
+
+            // Score
+            ctx.fillStyle = "white";
+            ctx.font = "30px Arial";
+            ctx.fillText(score, 20, 40);
+            if (score > highScore){
+                highScore = score
+            }
+            // Draw high score
+            ctx.fillStyle = "yellow";
+            ctx.font = "25px Arial";
+            ctx.fillText("High: " + highScore, 20, 70);
 
 
-    if (gameOver) {
+            if (gameOver) {
+                // Draw a semi-transparent overlay to make the text stand out
+                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+                ctx.fillStyle = "white";
+                ctx.font = "40px Arial Black";
+                ctx.fillText("Game Over", 300, 300);
+                ctx.font = "20px Arial Black";
+                ctx.fillText("Press any key or click to restart", 263, 340);
+            }
 
-        ctx.fillStyle = "black";
-        ctx.font = "40px Arial";
-        ctx.fillText("Game Over", 300, 300);
-        ctx.font = "20px Arial";
-        ctx.fillText("Press any key or click to restart", 263, 340);
-    }
-
-    requestAnimationFrame(loop);
-}
-</script>
+            requestAnimationFrame(loop);
+        }
+    </script>
 
 </body>
 </html>
