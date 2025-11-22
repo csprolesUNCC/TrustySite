@@ -166,3 +166,64 @@ a:hover {
         margin: 15px auto 0 auto !important;
     }
 }
+
+/* Container for the dropdown */
+.dropdown {
+    /* Inherit the list item style but allow relative positioning for the menu */
+    float: left;
+    overflow: hidden;
+    position: relative;
+}
+
+/* The button/link that opens the dropdown content */
+.dropdown .dropbtn {
+    /* Match the existing navigation links */
+    display: inline-block;
+    color: white; /* Assuming your main nav links are white */
+    text-align: center;
+    padding: 14px 16px; /* Match your existing link padding */
+    text-decoration: none;
+    font-size: 17px; /* Match your existing font size */
+    border: none;
+    outline: none;
+    background-color: inherit;
+    font-family: inherit; /* Important for button-like elements */
+    margin: 0;
+}
+
+/* Style the links inside the dropdown */
+.dropdown-content a {
+    float: none;
+    color: black; /* Set link color for the dropdown items */
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+
+/* The actual container for the dropdown links */
+.dropdown-content {
+    /* Initially hide the dropdown */
+    display: none;
+    /* Position it directly below the 'Games' button */
+    position: absolute;
+    background-color: #f9f9f9; /* Light background for contrast */
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1; /* Ensures it appears above other page content */
+}
+
+/* Add a background color on hover for the links inside the dropdown */
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
+
+/* Show the dropdown menu when the user hovers over the dropdown container */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* Optional: Add a hover effect to the main 'Games' link */
+.dropdown:hover .dropbtn {
+    background-color: #555; /* A subtle hover color */
+}
