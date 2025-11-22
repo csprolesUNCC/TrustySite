@@ -3,38 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comics - Trusty Comics</title>
+    <title>Games - Trusty Comics</title>
     <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
     <link rel="stylesheet" href="../styles/stylesheet.css">
     <style>
-        /* Specific CSS for the Comics page layout */
-        .comic-grid {
+        /* Reusing the comic-grid style from comics.html for the game links */
+        .game-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 25px;
             margin-top: 20px;
             text-align: center;
         }
-        .comic-item {
+        .game-item {
             padding: 15px;
             border: 2px solid #333;
             background-color: #fff;
             box-shadow: 4px 4px 0px 0px #111;
         }
-        .comic-item img {
+        .game-item img {
             width: 100%;
             height: auto;
+            /* Placeholder style for game thumbnail images */
+            min-height: 150px; 
             border: 1px solid #111;
             margin-bottom: 10px;
+            object-fit: cover;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Our Latest Comics</h1>
+        <h1>Trusty's Game Corner</h1>
     </header>
 
     <nav>
@@ -50,30 +53,24 @@
     </nav>
 
     <div class="content">
-        <h2>Trusty Comics!</h2>
-        <p>This is where we will post comics</p>
+        <h2>Play with Trusty!</h2>
+        <p>Try your luck and skill with Trusty Da Horse in a variety of fun (and probably rigged) games!</p>
 
-        <div class="comic-grid">
-            <div class="comic-item">
-                <img src="../images/horsePlaceholder.jpg" alt="Comic 1 Cover">
-                <h3>Comic 1</h3>
-                <p>Something something trusty da horse</p>
-                <a href="#">View Comic</a>
+        <div class="game-grid">
+            <div class="game-item">
+                <img src="../images/casino_thumbnail.jpg" alt="Blackjack Table Thumbnail">
+                <h3>Trusty Blackjack</h3>
+                <p>Beat the dealer! Test your luck at the horse casino.</p>
+                <a href="casino.html">Play Now</a>
             </div>
 
-            <div class="comic-item">
-                <img src="../images/horsePlaceholder.jpg" alt="Comic 2 Cover">
-                <h3>Comic 2</h3>
-                <p>Something something trusty da horse</p>
-                <a href="#">View Comic</a>
+            <div class="game-item">
+                <img src="../images/flappy_thumbnail.jpg" alt="Flappy Trusty Screenshot">
+                <h3>Flappy Trusty</h3>
+                <p>A true test of skill. Can you guide Trusty through the pipes?</p>
+                <a href="flappy.html">Play Now</a>
             </div>
-
-            <div class="comic-item">
-                <img src="../images/horsePlaceholder.jpg" alt="Comic 3 Cover">
-                <h3>Comic 3</h3>
-                <p>Something something trusty da horse</p>
-                <a href="#">View Comic</a>
-            </div>
+            
         </div>
     </div>
 
