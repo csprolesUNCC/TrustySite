@@ -90,11 +90,10 @@
             horse.width = trustyImg.width / 16;
             horse.height = trustyImg.height / 16;
             imageLoaded = true;
-            loop();
         };
 
-        const gravity = 0.18;
-        const jumpStrength = -6;
+        const gravity = 0.4;
+        const jumpStrength = -8;
 
         let gameOver = false;
 
@@ -105,7 +104,8 @@
         let frame = 0;
         let score = 0;
         let highScore = 0;
-
+        let pipeTimer = 0;
+        let lastTime = 0;
         // Jump event
         document.addEventListener("keydown", jump);
         document.addEventListener("mousedown", jump);
@@ -175,13 +175,17 @@
             });
         }
 
-        function loop() {
+        function loop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const delta = (timestamp - lastTime) / 16.666; // normalize to 60 FPS
+            lastTime = timestamp;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (!gameOver) {
                 frame++;
-                horse.velocity += gravity;
-                horse.y += horse.velocity;
+                horse.velocity += gravity * delta;;
+                horse.y += horse.velocity * delta;;
                 const floorY = canvas.height - horse.height;
                 // Check for floor collision
                 if (horse.y > floorY) {
@@ -189,11 +193,13 @@
                     horse.velocity = 0;
                 }
                 
-                if (frame % 120 === 0) {
+                pipeTimer += delta;
+                if (pipeTimer > 60) {  // same spacing as before (120 frames @ 60fps)
                     createPipe();
+                    pipeTimer = 0;
                 }
 
-                pipes.forEach(pipe => pipe.x -= 2);
+                pipes.forEach(pipe => pipe.x -= 4 * delta);
 
                 // Remove off-screen pipes
                 if (pipes.length && pipes[0].x < -pipeWidth) {
@@ -233,6 +239,8 @@
 
             requestAnimationFrame(loop);
         }
+        requestAnimationFrame(loop);
+
     </script>
 
 </body>
