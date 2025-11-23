@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Stick Figure Grading Game</title>
+<style>
+    body { 
+        background:#f0f0f0; 
+        display:flex; 
+        flex-direction:column; 
+        align-items:center; 
+        font-family:Arial, sans-serif;
+    }
+    canvas {
+        background:white;
+        border:4px solid black;
+        box-shadow:6px 6px 0px #222;
+        touch-action:none; /* critical for mobile drawing input */
+    }
+    button {
+        margin-top:15px;
+        padding:10px 20px;
+        font-size:18px;
+        cursor:pointer;
+    }
+    #scoreBox {
+        margin-top:15px;
+        font-size:26px;
+        font-weight:bold;
+    }
+    #buttonContainer {
+    display: flex;
+    justify-content: center; /* center under canvas */
+    gap: 10px;               /* space between buttons */
+    margin-top: 15px;
+    }
+
+</style>
+</head>
+<body>
+
+<h1>Stick Figure Grading Game</h1>
+<p>Draw over the stick figure as accurately as you can, then press DONE.</p>
+<canvas id="gameCanvas" width="500" height="600"></canvas>
+<div id="buttonContainer">
+    <button id="finishBtn">DONE</button>
+    <button id="restartBtn">RESTART</button>
+</div>
+<div id="scoreBox"></div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const finishButton = document.getElementById("finishBtn");
+const scoreBox = document.getElementById("scoreBox");
+
+let drawing = false;
+let lastX = 0, lastY = 0;
+let drawingEnabled = false; // prevent drawing until preview ends
+
+// ---- Draw stick figure reference ----
+function drawReference(ctxToDraw) {
+    const ctxUse = ctxToDraw;
+    ctxUse.strokeStyle = "black";
+    ctxUse.lineWidth = 6;
+
+    // head
+    ctxUse.beginPath();
+    ctxUse.ellipse(100, 180, 75, 75 * 1.25, 0, 0, Math.PI * 2);
+    ctxUse.stroke();
+
+    // smile
+    ctxUse.beginPath();
+    ctxUse.ellipse(100, 220, 28, 25 * 1.25, 0, -Math.PI/20, Math.PI + Math.PI/20);
+    ctxUse.stroke();
+
+    // eyes
+    ctxUse.beginPath();
+    ctxUse.moveTo(80, 130); ctxUse.lineTo(80, 180); ctxUse.stroke();
+    ctxUse.beginPath();
+    ctxUse.moveTo(120, 130); ctxUse.lineTo(120, 180); ctxUse.stroke();
+
+    // neck
+    ctxUse.beginPath();
+    ctxUse.moveTo(100, 275); ctxUse.lineTo(150, 340); ctxUse.stroke();
+
+    // body
+    ctxUse.beginPath();
+    ctxUse.moveTo(150, 340); ctxUse.lineTo(425, 340); ctxUse.stroke();
+
+    // left legs
+    ctxUse.beginPath();
+    ctxUse.moveTo(200, 345); ctxUse.lineTo(150, 445); ctxUse.stroke();
+    ctxUse.beginPath();
+    ctxUse.moveTo(200, 345); ctxUse.lineTo(250, 445); ctxUse.stroke();
+
+    // right legs
+    ctxUse.beginPath();
+    ctxUse.moveTo(350, 345); ctxUse.lineTo(300, 445); ctxUse.stroke();
+    ctxUse.beginPath();
+    ctxUse.moveTo(350, 345); ctxUse.lineTo(400, 445); ctxUse.stroke();
+}
+
+// ---- Player drawing ----
+ctx.lineWidth = 5;
+ctx.strokeStyle = "black";
+ctx.lineCap = "round";
+
+function startDraw(x, y) {
+    if (!drawingEnabled) return;
+    drawing = true;
+    lastX = x; lastY = y;
+}
+function draw(x, y) {
+    if (!drawing || !drawingEnabled) return;
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    lastX = x; lastY = y;
+}
+function stopDraw() { drawing = false; }
+
+// Mouse events
+canvas.addEventListener("mousedown", e => startDraw(e.offsetX, e.offsetY));
+canvas.addEventListener("mousemove", e => draw(e.offsetX, e.offsetY));
+canvas.addEventListener("mouseup", stopDraw);
+canvas.addEventListener("mouseenter", e => {
+    lastX = e.offsetX;
+    lastY = e.offsetY;
+});
+
+// Touch events
+canvas.addEventListener("touchstart", e => {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    startDraw(t.clientX - r.left, t.clientY - r.top);
+});
+canvas.addEventListener("touchmove", e => {
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    draw(t.clientX - r.left, t.clientY - r.top);
+});
+canvas.addEventListener("touchend", stopDraw);
+
+// restart
+const restartButton = document.getElementById("restartBtn");
+
+restartButton.addEventListener("click", () => {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Reset player points
+    playerPoints = [];
+
+    
+    drawingEnabled = false;
+    // Optionally, show the reference briefly again
+    drawReference(ctx);
+    setTimeout(() => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Enable drawing again
+        drawingEnabled = true;
+    }, 2000);
+
+    // Clear previous score
+    scoreBox.textContent = "";
+});
+
+// ---- Start game function ----
+function startGame(){
+    // 1. HITBOX (fatter target)
+    const hitCanvas = document.createElement("canvas");
+    hitCanvas.width=canvas.width; hitCanvas.height=canvas.height;
+    const hitCtx=hitCanvas.getContext("2d");
+    hitCtx.lineWidth=35; // slightly fatter, more generous
+    hitCtx.lineCap="round";
+    drawReference(hitCtx);
+    const hitData = hitCtx.getImageData(0,0,canvas.width,canvas.height).data;
+
+    // 2. EXPECTATION (thin reference)
+    const expectCanvas = document.createElement("canvas");
+    expectCanvas.width=canvas.width; expectCanvas.height=canvas.height;
+    const expectCtx=expectCanvas.getContext("2d");
+    expectCtx.lineWidth=8;
+    expectCtx.lineCap="round";
+    drawReference(expectCtx);
+    const expectData = expectCtx.getImageData(0,0,canvas.width,canvas.height).data;
+
+    // 3. SAFE ZONE
+    const zoneCanvas = document.createElement("canvas");
+    zoneCanvas.width=canvas.width; zoneCanvas.height=canvas.height;
+    const zoneCtx=zoneCanvas.getContext("2d");
+    zoneCtx.lineWidth=60;
+    zoneCtx.lineCap="round";
+    drawReference(zoneCtx);
+    const zoneData = zoneCtx.getImageData(0,0,canvas.width,canvas.height).data;
+
+    // Show reference briefly
+    ctx.lineWidth=6; drawReference(ctx);
+
+    setTimeout(()=>{
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        drawingEnabled=true;
+
+        const newBtn = finishButton.cloneNode(true);
+        finishButton.parentNode.replaceChild(newBtn, finishButton);
+
+        newBtn.addEventListener("click", ()=>{
+            drawingEnabled=false;
+            const playerPixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+            let matchedPixels=0, expectedRefPixels=0, strayPixels=0, totalPlayerPixels=0;
+
+            // expected pixels (denominator)
+            for(let i=3;i<expectData.length;i+=4) if(expectData[i]>0) expectedRefPixels++;
+
+            // check each player pixel
+            for(let i=3;i<hitData.length;i+=4){
+                const isHitbox=hitData[i]>0;
+                const isZone=zoneData[i]>0;
+                const isPlayer=playerPixels[i]>0;
+
+                if(isPlayer){
+                    totalPlayerPixels++;
+                    if(isHitbox) matchedPixels++;
+                    else if(!isZone) strayPixels++;
+                }
+            }
+
+            if(expectedRefPixels===0) expectedRefPixels=1;
+            if(totalPlayerPixels===0) totalPlayerPixels=1;
+
+            // --- SCORING ---
+            let coverage = matchedPixels / expectedRefPixels;
+            if(coverage>1.2) coverage=1.2; // allow some extra bonus
+
+            // soften stray penalty
+            let accuracy = 1 - (strayPixels / totalPlayerPixels) * 0.5; // max 50% penalty
+            if(accuracy<0) accuracy=0;
+
+            // final score: 70% coverage, 30% accuracy
+            let scoreRaw = coverage*0.7 + accuracy*0.3;
+            if(scoreRaw>1) scoreRaw=1;
+
+            if(totalPlayerPixels<30) scoreRaw=0; // very small drawings ignored
+
+            let score=Math.round(scoreRaw*100);
+
+            let msg=
+                score>90?"🎉 PERFECT!":
+                score>70?"💪 Very good!":
+                score>50?"🙂 Not bad — keep practicing!":
+                "😅 Keep trying!";
+
+            scoreBox.textContent=`Score: ${score}% — ${msg}`;
+
+            // Visual feedback
+            ctx.globalCompositeOperation='destination-over';
+            ctx.strokeStyle='#90EE90'; ctx.lineWidth=6;
+            drawReference(ctx);
+            ctx.globalCompositeOperation='source-over';
+        });
+    },2000);
+}
+
+
+
+
+// ---- Call startGame when page loads ----
+startGame();
+</script>
+</body>
+</html>
