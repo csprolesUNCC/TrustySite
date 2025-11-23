@@ -1,7 +1,7 @@
 // api/get-scores.js
-const { connectToDatabase } = require('./db');
+import { connectToDatabase } from './db.js'; // Note the .js extension
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
     try {
         const db = await connectToDatabase();
         const collection = db.collection('scores');
@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
         // Fetch top 10 scores, sorted by score descending, and limit the fields
         const scores = await collection
             .find({})
-            .sort({ score: -1, timestamp: 1 }) // Secondary sort by timestamp for ties
+            .sort({ score: -1, timestamp: 1 })
             .limit(10)
             .toArray();
 

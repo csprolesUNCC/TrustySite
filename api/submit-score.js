@@ -1,7 +1,7 @@
 // api/submit-score.js
-const { connectToDatabase } = require('./db');
+import { connectToDatabase } from './db.js'; // Note the .js extension
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).send('Method Not Allowed');
     }
@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
         const collection = db.collection('scores');
         
         const newScore = {
-            name: String(name).substring(0, 20), // Truncate name to prevent abuse
+            name: String(name).substring(0, 20), // Truncate name
             score: score,
             timestamp: new Date(),
         };
