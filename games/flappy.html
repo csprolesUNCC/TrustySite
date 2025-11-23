@@ -70,6 +70,44 @@
             border: 1px solid #111;
             border-radius: 4px;
         }
+
+        /* NEW: Styles for the Daily Leaderboard Container */
+        #daily-leaderboard-container {
+            width: 800px; /* Match canvas width */
+            margin-top: 15px; /* Reduced margin */
+            padding: 15px;
+            border: 3px solid #111;
+            background-color: #ffd9d9; /* Light, contrasting background (e.g., light red/pink) */
+            box-shadow: 6px 6px 0px 0px #111;
+            text-align: left;
+        }
+        
+        /* Apply existing styles to the new container's children */
+        #daily-leaderboard-container h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #111;
+            padding-bottom: 5px;
+            text-align: center;
+        }
+
+        #daily-leaderboard-container ol {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        #daily-leaderboard-container li {
+            font-size: 1.1em;
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background-color: #ffffff; /* White list item background */
+            border: 1px solid #111;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -95,9 +133,13 @@
         <p>A classic test of patience and physics! Click or press any key to flap your way through the deadly pipes.</p>
 
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        
+    
         <div id="leaderboard-container">
             <h3>Leaderboard Loading...</h3>
+        </div>
+    
+        <div id="daily-leaderboard-container">
+            <h3>Daily Leaderboard Loading...</h3>
         </div>
     </div>
 
@@ -108,7 +150,8 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const leaderboardContainer = document.getElementById("leaderboard-container"); // NEW: Get the container
+        const leaderboardContainer = document.getElementById("leaderboard-container");
+        const dailyLeaderboardContainer = document.getElementById("daily-leaderboard-container");
 
         // Horse image
         const trustyImg = new Image();
@@ -146,6 +189,7 @@
         let pipeTimer = 0;
         let lastTime = 0;
         let leaderboard = [];
+        let dailyLeaderboard = [];
         // Jump event
         let justTapped = false;
         let previousScore = 0; // Track score change for game over logic
@@ -163,7 +207,7 @@
 
         document.addEventListener("keydown", jump);
 
-        // --- UPDATED: Leaderboard Functions ---
+        // --- Leaderboard Functions ---
 
         // 1. Fetch scores from the API
         async function fetchLeaderboard() {
@@ -202,7 +246,7 @@
             }
         }
 
-        // 3. UPDATED: Draw the leaderboard (to the HTML element)
+        // 3. Draw leaderboard (to the HTML element)
         function drawLeaderboard() {
             let html = '<h3>🏆 Trusty\'s Top Flaps 🏆</h3><ol>';
             
@@ -224,7 +268,43 @@
             leaderboardContainer.innerHTML = html;
         }
 
-        // --- Game Logic Updates ---
+        // 1. Fetch daily scores from the API
+        async function fetchDailyLeaderboard() {
+            try {
+                const response = await fetch('../api/get-daily-scores'); 
+                if (!response.ok) throw new Error('Failed to fetch daily leaderboard');
+                dailyLeaderboard = await response.json();
+            } catch (error) {
+                console.error("Error fetching daily leaderboard:", error);
+                dailyLeaderboard = []; // Clear on failure
+            }
+            drawDailyLeaderboard(); // Draw the leaderboard after fetching
+        }
+
+        // 2. Draw the daily leaderboard (to the HTML element)
+        function drawDailyLeaderboard() {
+            let html = '<h3>📅 24 Hour Top Flaps 📅</h3><ol>';
+            
+            if (dailyLeaderboard.length === 0) {
+                html += '<p style="text-align:center;">No scores in the last 24 hours!</p>';
+            } else {
+                dailyLeaderboard.slice(0, 10).forEach((entry, index) => { // Show top 10
+                    // Display name and score
+                    html += `
+                        <li>
+                            <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
+                            <span>**${entry.score}**</span>
+                        </li>
+                    `;
+                });
+            }
+            
+            html += '</ol>';
+            dailyLeaderboardContainer.innerHTML = html;
+        }
+
+
+        // --- Game Logic ---
 
         function jump() {
             if (!gameOver) {
@@ -376,6 +456,7 @@
 
         // Fetch leaderboard immediately when the script runs
         fetchLeaderboard(); 
+        fetchDailyLeaderboard();
         requestAnimationFrame(loop);
 
     </script>
