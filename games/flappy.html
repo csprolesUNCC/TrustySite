@@ -28,10 +28,47 @@
         }
 
         canvas {
-            border: 3px solid #111; /* Use the comic-style heavy border */
+            border: 3px solid #111;
             background: #70c5ce;
-            box-shadow: 6px 6px 0px 0px #111; /* Add comic-style shadow */
+            box-shadow: 6px 6px 0px 0px #111;
             margin-top: 20px;
+        }
+
+        /* NEW: Styles for the Leaderboard Container */
+        #leaderboard-container {
+            width: 800px; /* Match canvas width */
+            margin-top: 30px;
+            padding: 15px;
+            border: 3px solid #111;
+            background-color: #ffe08d; /* Light, contrasting background */
+            box-shadow: 6px 6px 0px 0px #111;
+            text-align: left; /* Align text within the container */
+        }
+        
+        #leaderboard-container h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #111;
+            padding-bottom: 5px;
+            text-align: center;
+        }
+
+        #leaderboard-container ol {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        #leaderboard-container li {
+            font-size: 1.1em;
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background-color: #fff9e6;
+            border: 1px solid #111;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -58,6 +95,10 @@
         <p>A classic test of patience and physics! Click or press any key to flap your way through the deadly pipes.</p>
 
         <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="leaderboard-container">
+            <h3>Leaderboard Loading...</h3>
+        </div>
     </div>
 
     <footer>
@@ -67,6 +108,7 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const leaderboardContainer = document.getElementById("leaderboard-container"); // NEW: Get the container
 
         // Horse image
         const trustyImg = new Image();
@@ -84,9 +126,6 @@
         let imageLoaded = false;
 
         trustyImg.onload = () => {
-            // Note: The original values were trustyImg.width / 16 and trustyImg.height / 16.
-            // Using slightly larger values here might make the game easier to see.
-            // Reverting to original values to match original game code.
             horse.width = trustyImg.width / 16;
             horse.height = trustyImg.height / 16;
             imageLoaded = true;
@@ -106,8 +145,10 @@
         let highScore = 0;
         let pipeTimer = 0;
         let lastTime = 0;
+        let leaderboard = [];
         // Jump event
         let justTapped = false;
+        let previousScore = 0; // Track score change for game over logic
 
         document.addEventListener("touchstart", e => {
             e.preventDefault();
@@ -122,6 +163,68 @@
 
         document.addEventListener("keydown", jump);
 
+        // --- UPDATED: Leaderboard Functions ---
+
+        // 1. Fetch scores from the API
+        async function fetchLeaderboard() {
+            try {
+                // NOTE: Use the full URL (e.g., https://your-site.vercel.app/api/get-scores) 
+                // if running locally or not deployed on Vercel yet.
+                const response = await fetch('/api/get-scores'); 
+                if (!response.ok) throw new Error('Failed to fetch leaderboard');
+                leaderboard = await response.json();
+            } catch (error) {
+                console.error("Error fetching leaderboard:", error);
+                leaderboard = []; // Clear on failure
+            }
+            drawLeaderboard(); // Draw the leaderboard after fetching
+        }
+
+        // 2. Submit score to the API
+        async function submitScore(name, finalScore) {
+            try {
+                const response = await fetch('/api/submit-score', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, score: finalScore })
+                });
+
+                if (response.ok) {
+                    console.log('Score submitted successfully!');
+                    await fetchLeaderboard(); // Refresh the leaderboard after submission
+                } else {
+                    console.error('Score submission failed.');
+                }
+            } catch (error) {
+                console.error("Error submitting score:", error);
+            }
+        }
+
+        // 3. UPDATED: Draw the leaderboard (to the HTML element)
+        function drawLeaderboard() {
+            let html = '<h3>🏆 Trusty\'s Top Flaps 🏆</h3><ol>';
+            
+            if (leaderboard.length === 0) {
+                html += '<p style="text-align:center;">No scores yet! Be the first.</p>';
+            } else {
+                leaderboard.slice(0, 10).forEach((entry, index) => { // Show top 10
+                    // Display name and score
+                    html += `
+                        <li>
+                            <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
+                            <span>**${entry.score}**</span>
+                        </li>
+                    `;
+                });
+            }
+            
+            html += '</ol>';
+            leaderboardContainer.innerHTML = html;
+        }
+
+        // --- Game Logic Updates ---
 
         function jump() {
             if (!gameOver) {
@@ -132,6 +235,18 @@
         }
 
         function resetGame() {
+            if (gameOver && score > 0) {
+                // Check if this score makes the leaderboard (top 10)
+                const isHighScore = leaderboard.length < 10 || score > (leaderboard[leaderboard.length - 1]?.score || 0);
+
+                if (isHighScore) {
+                    let name = prompt(`New High Score! Your score: ${score}. Enter your name (max 15 chars):`);
+                    if (name) {
+                        submitScore(name.trim(), score);
+                    }
+                }
+            }
+
             horse.y = 250;
             horse.velocity = -3;
             pipes = [];
@@ -170,13 +285,8 @@
             });
         }
 
+
         function checkCollision() {
-
-            // Check for floor collision (handled in loop, but useful to keep in mind)
-            // if (horse.y + horse.height >= canvas.height) {
-            //     gameOver = true;
-            // }
-
             pipes.forEach(pipe => {
                 let withinPipeX = horse.x + horse.width > pipe.x && horse.x < pipe.x + pipeWidth;
                 let hitsTop = horse.y < pipe.topHeight;
@@ -198,17 +308,18 @@
 
             if (!gameOver) {
                 frame++;
-                horse.velocity += gravity * delta;;
-                horse.y += horse.velocity * delta;;
+                horse.velocity += gravity * delta;
+                horse.y += horse.velocity * delta;
                 const floorY = canvas.height - horse.height;
                 // Check for floor collision
                 if (horse.y > floorY) {
                     horse.y = floorY;
                     horse.velocity = 0;
+                    gameOver = true; // Floor collision should also end the game
                 }
                 
                 pipeTimer += delta;
-                if (pipeTimer > 60) {  // same spacing as before (120 frames @ 60fps)
+                if (pipeTimer > 60) {
                     createPipe();
                     pipeTimer = 0;
                 }
@@ -220,24 +331,34 @@
                     pipes.shift();
                     score++;
                 }
+                previousScore = score; 
+            } else if (gameOver && previousScore > 0) {
+                // Only trigger the high score check once when game over state is hit
+                resetGame(); 
+                previousScore = 0; // Reset to prevent re-triggering
             }
+
 
             drawHorse();
             drawPipes();
             checkCollision();
-
+            
+            // --- Score Display (High Score remains on canvas) ---
+            
             // Score
             ctx.fillStyle = "white";
             ctx.font = "30px Arial";
             ctx.fillText(score, 20, 40);
+
+            // High Score
             if (score > highScore){
                 highScore = score
             }
-            // Draw high score
             ctx.fillStyle = "yellow";
             ctx.font = "25px Arial";
             ctx.fillText("High: " + highScore, 20, 70);
 
+            // NOTE: drawLeaderboard() is now called only after fetching data, not in the loop.
 
             if (gameOver) {
                 // Draw a semi-transparent overlay to make the text stand out
@@ -253,6 +374,9 @@
 
             requestAnimationFrame(loop);
         }
+
+        // Fetch leaderboard immediately when the script runs
+        fetchLeaderboard(); 
         requestAnimationFrame(loop);
 
     </script>
