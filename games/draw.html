@@ -117,10 +117,10 @@ canvas.addEventListener("touchstart", e => { const r = canvas.getBoundingClientR
 canvas.addEventListener("touchmove", e => { e.preventDefault(); const r = canvas.getBoundingClientRect(); const t = e.touches[0]; draw(t.clientX - r.left, t.clientY - r.top); });
 canvas.addEventListener("touchend", stopDraw);
 
+// Global variables for hit detection
 let hitData, expectData, zoneData;
 
-// ---- Grade drawing ----
-// ---- Grade drawing (more generous) ----
+// 1. THE GENEROUS GRADING FUNCTION
 function gradeDrawing() {
     drawingEnabled = false;
     timerDisplay.style.display = "none";
@@ -128,54 +128,79 @@ function gradeDrawing() {
 
     const playerPixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-    let matchedPixels = 0;       // Correct pixels
-    let attemptedRefPixels = 0;  // Reference pixels where player tried something
-    let totalRefPixels = 0;      // Total reference pixels
-    let strayPixels = 0;         // Player pixels outside reference
+    let matchedScore = 0;       // Points for accuracy
+    let validPlayerPixels = 0;  // Number of pixels that hit ANY target
+    let totalRefPixels = 0;     // Total pixels in the reference image
+    let strayPixels = 0;        // Pixels completely outside
 
+    // Count reference pixels (The denominator)
     for (let i = 3; i < expectData.length; i += 4) {
         if (expectData[i] > 100) totalRefPixels++;
-        if (playerPixels[i] > 0 && expectData[i] > 100) {
-            matchedPixels++;
-            attemptedRefPixels++;
-        } else if (playerPixels[i] > 0 && expectData[i] <= 100 && zoneData[i] === 0) {
+    }
+
+    // Evaluate player pixels
+    let totalPlayerInk = 0;
+    for (let i = 3; i < playerPixels.length; i += 4) {
+        if (playerPixels[i] < 10) continue; // Skip transparent pixels
+        
+        totalPlayerInk++;
+
+        const near  = expectData[i] > 100; // Precision
+        const close = hitData[i] > 0;      // Forgiving
+        const safe  = zoneData[i] > 0;     // Way off but valid
+
+        if (near) {
+            matchedScore += 1.0;
+            validPlayerPixels++;
+        } else if (close) {
+            matchedScore += 0.8;  // Generous points (was 0.7)
+            validPlayerPixels++;
+        } else if (safe) {
+            matchedScore += 0.5;  // Generous points (was 0.45)
+            validPlayerPixels++;
+        } else {
             strayPixels++;
-        } else if (playerPixels[i] > 0 && expectData[i] > 100) {
-            attemptedRefPixels++;
         }
     }
 
-    // Prevent divide-by-zero
+    // Safety Math (Prevent divide by zero)
     totalRefPixels = Math.max(totalRefPixels, 1);
-    attemptedRefPixels = Math.max(attemptedRefPixels, 1);
+    validPlayerPixels = Math.max(validPlayerPixels, 1);
+    totalPlayerInk = Math.max(totalPlayerInk, 1);
 
-    // Coverage: fraction of reference attempted
-    let coverage = attemptedRefPixels / totalRefPixels;
+    // --- CALCULATE SCORE ---
 
-    // Accuracy: fraction of attempted pixels that are correct
-    let accuracy = matchedPixels / attemptedRefPixels;
+    // 1. Accuracy (Quality of hits)
+    let accuracy = matchedScore / validPlayerPixels;
 
-    // Stray penalty
-    const totalPlayerPixels = Math.max(
-        playerPixels.filter((v, idx) => idx % 4 === 3 && v > 0).length,
-        1
-    );
-    const strayPenalty = Math.min(strayPixels / totalPlayerPixels, 1);
+    // 2. Coverage (Did they finish?)
+    // FIX: Multiply by 8.0 because player line (6px) is thinner than target (50px)
+    // This allows a single trace to count as 100% coverage.
+    let coverage = (validPlayerPixels * 8.0) / totalRefPixels;
+    coverage = Math.min(coverage, 1.0); 
 
-    // Weighted score
-    let scoreRaw = coverage * 0.7 + accuracy * 0.3; // coverage matters most
-    scoreRaw *= 1 - strayPenalty; // apply stray penalty
+    // 3. Soft Stray Penalty (Buffer)
+    let strayRatio = strayPixels / totalPlayerInk;
+    let strayPenalty = 0;
+    // Allow 20% messiness for FREE before penalizing
+    if (strayRatio > 0.20) {
+        strayPenalty = (strayRatio - 0.20) * 0.5;
+    }
 
-    // Punish tiny scribbles
-    if (totalPlayerPixels < 20) scoreRaw *= 0.3;
-    else if (totalPlayerPixels < 50) scoreRaw *= 0.6;
+    // Weighted Final Score
+    let scoreRaw = (coverage * 0.6) + (accuracy * 0.4);
+    scoreRaw -= strayPenalty;
 
-    // Optional small bonus if coverage is high but accuracy slightly off
-    if (coverage > 0.9 && accuracy > 0.8) scoreRaw = Math.min(scoreRaw + 0.05, 1.0);
+    // Anti-cheat for empty drawing (<50 pixels)
+    if (totalPlayerInk < 50) scoreRaw *= 0.2;
 
+    // Generosity Bonus (Bump B+ to A)
+    if (scoreRaw > 0.85) scoreRaw += 0.08;
+
+    scoreRaw = Math.min(Math.max(scoreRaw, 0), 1);
     let score = Math.round(scoreRaw * 100);
 
-    // Feedback message
+    // Feedback
     let msg = score >= 95 ? "🎉 PERFECT!" :
               score >= 80 ? "💪 Very good!" :
               score >= 60 ? "🙂 Not bad!" :
@@ -183,7 +208,7 @@ function gradeDrawing() {
 
     scoreBox.textContent = `Score: ${score}% — ${msg}`;
 
-    // Draw reference behind player's drawing
+    // Show Reference Line
     ctx.globalCompositeOperation = 'destination-over';
     ctx.strokeStyle = '#90EE90';
     ctx.lineWidth = 6;
@@ -191,36 +216,40 @@ function gradeDrawing() {
     ctx.globalCompositeOperation = 'source-over';
 }
 
-
-
-// ---- Start game ----
+// 2. START GAME (FIXED BUTTON LOGIC)
 function startGame() {
     if(timerInterval) clearInterval(timerInterval);
     timerDisplay.textContent="";
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawingEnabled = false;
 
-    // HITBOX
+    // HITBOX (Forgiving - 75px)
     const hitCanvas=document.createElement("canvas");
     hitCanvas.width=canvas.width; hitCanvas.height=canvas.height;
-    const hitCtx=hitCanvas.getContext("2d"); hitCtx.lineWidth=28; hitCtx.lineCap="round"; drawReference(hitCtx); hitData=hitCtx.getImageData(0,0,canvas.width,canvas.height).data;
+    const hitCtx=hitCanvas.getContext("2d"); hitCtx.lineWidth=75; hitCtx.lineCap="round"; drawReference(hitCtx); 
+    hitData=hitCtx.getImageData(0,0,canvas.width,canvas.height).data;
 
-    // EXPECT
+    // EXPECT (Precision - 50px)
     const expectCanvas=document.createElement("canvas");
     expectCanvas.width=canvas.width; expectCanvas.height=canvas.height;
-    const expectCtx=expectCanvas.getContext("2d"); expectCtx.lineWidth=8; expectCtx.lineCap="round"; drawReference(expectCtx); expectData=expectCtx.getImageData(0,0,canvas.width,canvas.height).data;
+    const expectCtx=expectCanvas.getContext("2d"); expectCtx.lineWidth=50; expectCtx.lineCap="round"; drawReference(expectCtx); 
+    expectData=expectCtx.getImageData(0,0,canvas.width,canvas.height).data;
 
-    // SAFE ZONE
+    // SAFE ZONE (Wide - 100px)
     const zoneCanvas=document.createElement("canvas");
     zoneCanvas.width=canvas.width; zoneCanvas.height=canvas.height;
-    const zoneCtx=zoneCanvas.getContext("2d"); zoneCtx.lineWidth=50; zoneCtx.lineCap="round"; drawReference(zoneCtx); zoneData=zoneCtx.getImageData(0,0,canvas.width,canvas.height).data;
+    const zoneCtx=zoneCanvas.getContext("2d"); zoneCtx.lineWidth=100; zoneCtx.lineCap="round"; drawReference(zoneCtx); 
+    zoneData=zoneCtx.getImageData(0,0,canvas.width,canvas.height).data;
 
-    ctx.lineWidth=6; drawReference(ctx);
+    // Draw visual guide
+    ctx.lineWidth=6; 
+    ctx.strokeStyle = '#000000';
+    drawReference(ctx);
 
     setTimeout(()=>{
         ctx.clearRect(0,0,canvas.width,canvas.height);
         drawingEnabled = true;
-        timerDisplay.style.display = "block"; // show timer
+        timerDisplay.style.display = "block"; 
         let timeLeft = 25;
         timerDisplay.textContent = `Time left: ${timeLeft}s`;
 
@@ -233,12 +262,13 @@ function startGame() {
             }
         },1000);
 
-    },2000);
+    }, 2000);
 
-    const newBtn=finishButton.cloneNode(true);
-    finishButton.parentNode.replaceChild(newBtn,finishButton);
-    newBtn.addEventListener("click",gradeDrawing);
+    // FIX: Use onclick directly. 
+    // Replacing the child node breaks the variable reference for future games.
+    finishButton.onclick = gradeDrawing;
 }
+
 
 // ---- Restart ----
 restartButton.addEventListener("click", () => {
