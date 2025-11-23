@@ -170,7 +170,7 @@
             try {
                 // NOTE: Use the full URL (e.g., https://your-site.vercel.app/api/get-scores) 
                 // if running locally or not deployed on Vercel yet.
-                const response = await fetch('/api/get-scores'); 
+                const response = await fetch('../api/get-scores'); 
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 leaderboard = await response.json();
             } catch (error) {
@@ -183,7 +183,7 @@
         // 2. Submit score to the API
         async function submitScore(name, finalScore) {
             try {
-                const response = await fetch('/api/submit-score', {
+                const response = await fetch('../api/submit-score', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
