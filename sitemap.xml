@@ -76,6 +76,12 @@
         <priority>0.6</priority>
     </url>
     <url>
+        <loc>https://trustydahorse.com/games/football.html</loc>
+        <lastmod>2025-11-22</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
         <loc>https://trustydahorse.com/games/draw.html</loc>
         <lastmod>2025-11-23</lastmod>
         <changefreq>monthly</changefreq>
