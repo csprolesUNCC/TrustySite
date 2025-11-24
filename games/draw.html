@@ -55,6 +55,7 @@ const restartButton = document.getElementById("restartBtn");
 const scoreBox = document.getElementById("scoreBox");
 
 let drawing = false;
+let gameFinished = false;
 let lastX = 0, lastY = 0;
 let drawingEnabled = false; // prevent drawing until preview ends
 let timerInterval = null;
@@ -120,7 +121,11 @@ canvas.addEventListener("touchend", stopDraw);
 let hitData, expectData, closeData, zoneData;
 
 function gradeDrawing() {
+    if (gameFinished) return; // Prevent scoring twice
+
     resetGameState();
+    gameFinished = true;
+
     drawingEnabled = false;
     timerDisplay.style.display = "none";
     clearInterval(timerInterval);
@@ -192,6 +197,9 @@ function gradeDrawing() {
             else if (ghostAlpha3 > 50) {
                 overlapCount=overlapCount+0.7; // Count how much of that ink is "Correct"
             }
+            else{
+                overlapCount=overlapCount-0.25;
+            }
         }
     }
 
@@ -221,7 +229,7 @@ function gradeDrawing() {
     let finalScore = Math.floor(finalScoreRaw * 100);
 
     if (finalScore > 100) finalScore = 100;
-
+    if (finalScore < 0) finalScore = 0;
     const msg = finalScore === 100 ? "🎉 PERFECT! (100% Guaranteed)" : "";
 
     scoreBox.textContent = `Score: ${finalScore}% ${msg}`;
@@ -235,6 +243,7 @@ function gradeDrawing() {
 }
 
 function resetGameState() {
+    gameFinished = false;
     if (timerInterval) clearInterval(timerInterval);
     if (startTimeout) clearTimeout(startTimeout); // Stops the pending game start
     timerInterval = null;
@@ -246,8 +255,10 @@ function resetGameState() {
 function startGame() {
     // 1. Kill any existing timers or pending starts immediately
     resetGameState();
-
-    timerDisplay.textContent = "";
+    timerDisplay.style.display = "block"; 
+    timerDisplay.textContent = "Memorize Trusty!";
+    scoreBox.textContent = "";
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.lineWidth = 6; 
@@ -287,13 +298,7 @@ function startGame() {
 finishButton.addEventListener("click", gradeDrawing);
 
 // ---- Restart ----
-restartButton.addEventListener("click", () => {
-    if (timerInterval) clearInterval(timerInterval);
-    scoreBox.textContent = "";
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    timerDisplay.style.display = "none"; // hide timer immediately
-    startGame();
-});
+restartButton.addEventListener("click", startGame);
 
 
 
