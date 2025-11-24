@@ -181,10 +181,10 @@ function gradeDrawing() {
         if (userAlpha > 100) {
             totalUserPixels++; // Count total amount of ink used
             if (perfectAlpha > 50) {
-                overlapCount=overlapCount+1.2; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+1; // Count how much of that ink is "Correct"
             }
             else if (ghostAlpha > 50) {
-                overlapCount++; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+0.9; // Count how much of that ink is "Correct"
             }
             else if (ghostAlpha2 > 50) {
                 overlapCount=overlapCount+0.8; // Count how much of that ink is "Correct"
