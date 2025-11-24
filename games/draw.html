@@ -2,19 +2,26 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Stick Figure Grading Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Draw Trusty! - Trusty da Horse</title>
+<link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
+<link rel="stylesheet" href="../styles/stylesheet.css">
 <style>
-    body { 
-        background:#f0f0f0; 
-        display:flex; 
-        flex-direction:column; 
-        align-items:center; 
-        font-family:Arial, sans-serif;
+    /* New styles for comic-style integration */
+    .content {
+        display: flex; /* Allow content to align canvas */
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
+    
     canvas {
         background:white;
-        border:4px solid black;
-        box-shadow:6px 6px 0px #222;
+        /* Updated border and shadow to match the comic style */
+        border: 3px solid #111; 
+        box-shadow: 6px 6px 0px 0px #111;
         touch-action:none; /* critical for mobile drawing input */
     }
     button {
@@ -22,6 +29,17 @@
         padding:10px 20px;
         font-size:18px;
         cursor:pointer;
+        /* Button style matching other Trusty elements */
+        border: 2px solid #111;
+        background-color: #ffe08d;
+        font-weight: bold;
+        box-shadow: 3px 3px 0px 0px #555;
+        border-radius: 0;
+        transition: all 0.1s;
+    }
+    button:active {
+        box-shadow: 1px 1px 0px 0px #555;
+        transform: translate(2px, 2px);
     }
     #scoreBox {
         margin-top:15px;
@@ -34,17 +52,47 @@
         gap: 10px;               /* space between buttons */
         margin-top: 15px;
     }
+    /* Style for the timer text */
+    #gameCanvas + div { /* Selects the div immediately after the canvas (the timer) */
+        font-size: 22px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
 </style>
 </head>
 <body>
 
-<h1>Draw Trusty!</h1>
-<canvas id="gameCanvas" width="500" height="500"></canvas>
-<div id="scoreBox"></div>
-<div id="buttonContainer">
-    <button id="finishBtn">DONE</button>
-    <button id="restartBtn">RESTART</button>
-</div>
+    <header>
+        <h1>Draw Trusty!</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../pages/comics.html">Comics</a></li>
+            <li><a href="../pages/about.html">About Trusty</a></li>
+            <li><a href="../pages/trustyGPT.html">TrustyGPT</a></li>
+            <li><a href="../pages/viewer.html">3D Viewer</a></li>
+            <li><a href="../pages/games.html">Games</a></li>
+            <li><a href="../pages/credits.html">Credits</a></li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <h2>Memorize and Draw!</h2>
+        
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
+        <div id="scoreBox"></div>
+        <div id="buttonContainer">
+            <button id="finishBtn">DONE</button>
+            <button id="restartBtn">RESTART</button>
+        </div>
+    </div>
+
+
+    <footer>
+        <p>&copy; 2025 Trusty Comics</p>
+    </footer>
 
 
 <script>
