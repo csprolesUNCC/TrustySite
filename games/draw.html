@@ -171,6 +171,7 @@ canvas.addEventListener("touchend", stopDraw);
 let hitData, expectData, closeData, zoneData;
 
 function gradeDrawing() {
+    if (!drawingEnabled && !gameFinished) return; // prevent scoring w/ reference image
     if (gameFinished) return; // Prevent scoring twice
 
     resetGameState();
@@ -201,14 +202,20 @@ function gradeDrawing() {
     const ghostCtx2 = ghostCanvas2.getContext('2d');
     const ghostImgData2 = ghostCtx2.getImageData(0, 0, width, height).data;
 
-    const ghostCanvas3 = getGhostCanvas(60);
+    const ghostCanvas3 = getGhostCanvas(70);
     const ghostCtx3 = ghostCanvas3.getContext('2d');
     const ghostImgData3 = ghostCtx3.getImageData(0, 0, width, height).data;
+
+    const ghostCanvas4 = getGhostCanvas(140);
+    const ghostCtx4 = ghostCanvas4.getContext('2d');
+    const ghostImgData4 = ghostCtx4.getImageData(0, 0, width, height).data;
 
 
 
     let overlapCount = 0;
     let totalUserPixels = 0;
+
+    let perfectUserPixels = 0;
     let totalRefPixels = 0;
 
     // 3. The Comparison Loop
@@ -222,11 +229,18 @@ function gradeDrawing() {
         const ghostAlpha = ghostImgData[i + 3];
         const ghostAlpha2 = ghostImgData2[i + 3];
         const ghostAlpha3 = ghostImgData3[i + 3];
+        const ghostAlpha4 = ghostImgData4[i + 3];
 
-
+        // completeness logic
         if (perfectAlpha > 50) {
             totalRefPixels++; // count pixels in the perfect one!
+            if (userAlpha > 50){
+                perfectUserPixels++;
+            }
+
         }
+
+        // precision logic
         // CHECK 1: Did the user draw here?
         // We set threshold > 100 to ignore the faint gray guide lines 
         // and only count the dark black ink the user drew.
@@ -236,7 +250,7 @@ function gradeDrawing() {
         if (userAlpha > 100) {
             totalUserPixels++; // Count total amount of ink used
             if (perfectAlpha > 50) {
-                overlapCount=overlapCount+1; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+1.05; // Count how much of that ink is "Correct"
             }
             else if (ghostAlpha > 50) {
                 overlapCount=overlapCount+0.9; // Count how much of that ink is "Correct"
@@ -247,8 +261,11 @@ function gradeDrawing() {
             else if (ghostAlpha3 > 50) {
                 overlapCount=overlapCount+0.7; // Count how much of that ink is "Correct"
             }
+            else if (ghostAlpha4 > 50) {
+                overlapCount=overlapCount+0.5; // Count how much of that ink is "Correct"
+            }
             else{
-                overlapCount=overlapCount-0.25;
+                overlapCount=overlapCount-1.5;
             }
         }
     }
@@ -269,18 +286,39 @@ function gradeDrawing() {
     // We cap this at 1.0 so drawing EXTRA ink doesn't give > 100%
     let completeness = 0;
     if (totalRefPixels > 0) {
-        completeness = (overlapCount / totalRefPixels);
+        completeness = (perfectUserPixels / totalRefPixels) * 4;
     }
     if (completeness > 1) completeness = 1;
 
     // FINAL MIX: 50% precision, 50% Completeness
     // This rewards neat lines AND finishing the drawing.
-    const finalScoreRaw = (precision * 0.5) + (completeness * 0.5);
+    let finalScoreRaw = (precision * 0.5) + (completeness * 0.5);
+
+
+    // too much ink penalty
+    let inkRatio = 0;
+    if (totalRefPixels > 0) {
+        inkRatio = totalUserPixels / totalRefPixels;
+    }
+
+    // Set a threshold. 
+    // If the user uses 5x more pixels than the reference, that's fine (normal brush).
+    // If they go above 5x, we start penalizing.
+    const maxAllowedRatio = 1.3; 
+    let thicknessPenalty = 1.0; // Default: No penalty (100% of score)
+
+    if (inkRatio > maxAllowedRatio) {
+        // The penalty gets harsher the more they scribble.
+        // Example: If ratio is 10.0, penalty becomes (5 / 10) = 0.5. Score is cut in half.
+        thicknessPenalty = maxAllowedRatio / inkRatio;
+    }
+
+    // Apply the penalty
+    finalScoreRaw = finalScoreRaw * thicknessPenalty;
     let finalScore = Math.floor(finalScoreRaw * 100);
 
-    if (finalScore > 100) finalScore = 100;
     if (finalScore < 0) finalScore = 0;
-    const msg = finalScore === 100 ? "🎉 PERFECT! (100% Guaranteed)" : "";
+    const msg = finalScore === 100 ? "🎉 PERFECT!" : "";
 
     scoreBox.textContent = `Score: ${finalScore}% ${msg}`;
 
@@ -342,8 +380,6 @@ function startGame() {
 }
 
 
-
-
 // THIS LINE WAS MISSING:
 finishButton.addEventListener("click", gradeDrawing);
 
@@ -357,30 +393,7 @@ restartButton.addEventListener("click", startGame);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// making grading layers
 function getGhostCanvas(lineWidth) {
     // 1. Create an off-screen canvas
     const canvas = document.createElement('canvas');

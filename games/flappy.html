@@ -317,7 +317,12 @@
             }
         }
 
-        function resetGame() {
+
+
+
+
+
+        function checkLeaderboard() {
             if (gameOver && score > 0) {
                 // Check if this score makes the leaderboard (top 10)
                 const isHighScore = leaderboard.length < 10 || score > (leaderboard[leaderboard.length - 1]?.score || 0);
@@ -329,6 +334,14 @@
                     }
                 }
             }
+        }
+
+
+
+
+
+        function resetGame() {
+            
 
             horse.y = 250;
             horse.velocity = -3;
@@ -416,7 +429,7 @@
                 previousScore = score; 
             } else if (gameOver && previousScore > 0) {
                 // Only trigger the high score check once when game over state is hit
-                resetGame(); 
+                checkLeaderboard(); 
                 previousScore = 0; // Reset to prevent re-triggering
             }
 
