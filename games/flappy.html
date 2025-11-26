@@ -119,17 +119,7 @@
         <h1>Flappy Trusty</h1>
     </header>
 
-    <nav>
-        <ul>
-            <li><a href="../index.html">Home</a></li>
-            <li><a href="../pages/comics.html">Comics</a></li>
-            <li><a href="../pages/about.html">About Trusty</a></li>
-            <li><a href="../pages/trustyGPT.html">TrustyGPT</a></li>
-            <li><a href="../pages/viewer.html">3D Viewer</a></li>
-            <li><a href="../pages/games.html">Games</a></li>
-            <li><a href="../pages/credits.html">Credits</a></li>
-        </ul>
-    </nav>
+    <nav id="navbar-placeholder"></nav>
 
     <div class="content">
         <h2>Can Trusty Fly? (No)</h2>
@@ -146,9 +136,9 @@
         </div>
     </div>
 
-    <footer>
-        <p>&copy; 2025 Trusty Comics</p>
-    </footer>
+    <footer><p id="footer-placeholder"></p></footer>
+    
+    <script src="../scripts/componentLoader.js"></script>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
