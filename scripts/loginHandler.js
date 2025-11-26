@@ -1,3 +1,29 @@
+window.logoutUser = async function(event) {
+    event.preventDefault();
+    
+    try {
+        // 1. Call the Serverless Function to destroy the secure cookie
+        const response = await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            // 2. Client-side cleanup (only runs if the server succeeded)
+            localStorage.removeItem('isUserLoggedIn');
+            localStorage.removeItem('username');
+            
+            // 3. Redirect
+            window.location.href = '/index.html'; 
+        } else {
+            console.error('Logout failed on the server.');
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        console.error('Network error during logout:', error);
+        alert('A network error occurred. Could not log out securely.');
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
