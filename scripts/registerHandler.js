@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // 3. Redirect to the login page after a short delay
                     setTimeout(() => {
-                        window.location.href = '/pages/login.html';
+                        window.location.href = '/pages/auth/login.html';
                     }, 1500); 
 
                 } else {
