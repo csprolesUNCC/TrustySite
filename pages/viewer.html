@@ -9,11 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    
-    <!-- Link to the existing stylesheet for consistent comic book aesthetic -->
     <link rel="stylesheet" href="../styles/stylesheet.css">
-
-    <!-- Import the Google Model Viewer component (MUST use type="module") -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
     <style>
@@ -54,17 +50,7 @@
         <h1>Trusty in 3 Dimensions!</h1>
     </header>
 
-    <nav>
-        <ul>
-            <li><a href="../index.html">Home</a></li>
-            <li><a href="comics.html">Comics</a></li>
-            <li><a href="about.html">About Trusty</a></li>
-            <li><a href="trustyGPT.html">TrustyGPT</a></li>
-            <li><a href="viewer.html">3D Viewer</a></li>
-            <li><a href="games.html">Games</a></li>
-            <li><a href="credits.html">Credits</a></li>
-        </ul>
-    </nav>
+    <nav id="navbar-placeholder"></nav>
 
     <div class="content">
         <h2>View Trusty!</h2>
@@ -91,9 +77,9 @@
         </div>
     </div>
 
-    <footer>
-        <p>&copy; 2025 Trusty Comics</p>
-    </footer>
+    <footer><p id="footer-placeholder"></p></footer>
+    
+    <script src="scripts/componentLoader.js"></script>
 
 </body>
 </html>
