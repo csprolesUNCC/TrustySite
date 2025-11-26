@@ -33,10 +33,10 @@ function loadAuthComponent() {
     
     if (isLoggedIn) {
         // If logged in, load the welcome/logout component
-        authComponentPath = 'components/auth-logged-in.html';
+        authComponentPath = '/components/auth-logged-in.html';
     } else {
         // If logged out, load the login/register component
-        authComponentPath = 'components/auth-logged-out.html';
+        authComponentPath = '/components/auth-logged-out.html';
     }
     
     // Load the selected component into the placeholder
@@ -45,7 +45,7 @@ function loadAuthComponent() {
 
 // Load the components once the page structure is ready
 document.addEventListener('DOMContentLoaded', () => {
-    loadComponent('navbar-placeholder', '../components/nav.html');
-    loadComponent('footer-placeholder', '../components/footer.html');
+    loadComponent('navbar-placeholder', '/components/nav.html');
+    loadComponent('footer-placeholder', '/components/footer.html');
     loadAuthComponent();
 });
