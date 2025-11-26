@@ -1,8 +1,8 @@
-const bcrypt = require('bcrypt');
-const connectToDatabase = require('./connect');
+import bcrypt from 'bcrypt'; // Use import
+import connectToDatabase from './connect.js';
 const SALT_ROUNDS = 10;
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
     // Vercel serverless functions often handle the request body automatically, 
     // but we add a check for safety.
     if (req.method !== 'POST') {

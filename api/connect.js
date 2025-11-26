@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
 // Get the MongoDB URI from Vercel environment variables
 const uri = process.env.USERS_MONGODB_URI;
@@ -37,4 +37,4 @@ async function connectToDatabase() {
     }
 }
 
-module.exports = connectToDatabase;
+export default connectToDatabase;

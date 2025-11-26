@@ -1,6 +1,6 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const connectToDatabase = require('./connect');
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import connectToDatabase from './connect.js';
 
 // Get JWT Secret from Vercel environment variables
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -8,7 +8,7 @@ if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not defined in environment variables.');
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
