@@ -8,6 +8,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/login",
+      "destination": "/api/login.cjs"
+    },
+    {
+      "source": "/api/register",
+      "destination": "/api/register.cjs"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }
