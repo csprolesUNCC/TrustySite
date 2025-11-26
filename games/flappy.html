@@ -304,10 +304,6 @@
         }
 
 
-
-
-
-
         function checkLeaderboard() {
     if (gameOver && score > 0) {
         if (!isUserLoggedIn) {
@@ -320,7 +316,6 @@
             console.log(`New personal high score! Submitting ${score}. (Previous high: ${highScore})`);
             submitScore(score);
         } else {
-            // This is the message you are seeing prematurely, 
             // but after the fix, it should be accurate.
             console.log(`Score ${score} did not beat personal high score ${highScore}.`);
         }
@@ -437,9 +432,6 @@
             ctx.fillText(score, 20, 40);
 
             // High Score
-            if (score > highScore){
-                highScore = score
-            }
             ctx.fillStyle = "yellow";
             ctx.font = "25px Arial";
             if (isUserLoggedIn) {
