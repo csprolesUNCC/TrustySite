@@ -24,8 +24,8 @@ function loadComponent(targetElementId, componentFile) {
 // Load the components once the page structure is ready
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load the Navigation Bar (nav.html) into the nav#navbar-placeholder
-    loadComponent('navbar-placeholder', 'nav.html');
+    loadComponent('navbar-placeholder', 'components/nav.html');
     
     // 2. Load the Footer content (footer.html) into the p#footer-placeholder
-    loadComponent('footer-placeholder', 'footer.html');
+    loadComponent('footer-placeholder', 'components/footer.html');
 });
