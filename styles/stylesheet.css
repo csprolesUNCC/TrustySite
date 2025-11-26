@@ -32,15 +32,15 @@ h2, h3 {
 /* HEADER - The top banner */
 header {
     background-color: #111; /* Black banner */
-    color: white; /* White text */
-    padding: 1.5em 20px; /* Added 20px horizontal padding for spacing */
-    /* text-align: center; REMOVED this line as Flexbox will handle alignment */
-    border-bottom: 5px double white; /* Strong white border for separation */
+    color: white; /* White text for the H1 and general text */
+    padding: 1.5em 0;
     
-    /* ADDED: Flexbox to space out h1 and auth links */
-    display: flex;
-    justify-content: space-between; /* Pushes content to the edges */
-    align-items: center; /* Vertically centers h1 and auth-links */
+    /* Revert to center for H1 and text, but use position: relative 
+       to anchor the absolute positioned auth component */
+    text-align: center; 
+    position: relative; 
+    
+    border-bottom: 5px double white; /* Strong white border for separation */
 }
 
 /* NAVIGATION - The tabs */
@@ -277,24 +277,33 @@ a:hover {
     }
 }
 
-#auth-links {
+#auth-component-placeholder {
+    /* Use absolute positioning to move it to the top right */
+    position: absolute; 
+    top: 1.5em; /* Matches the header padding for vertical alignment */
+    right: 20px; /* Spacing from the right edge */
+    
+    /* Ensure all text/links inside this component are WHITE */
+    color: white !important; 
+    
     font-size: 1.1em;
     font-weight: bold;
     white-space: nowrap; /* Keeps links on one line */
-    /* Pushing the links up slightly to align visually with the top of the header */
-    margin-top: -1em; 
-}
-
-#auth-links a {
-    color: white; /* Match the header text color */
-    text-decoration: none;
-    margin: 0 5px;
     /* Use the same bold, punchy font family */
     font-family: 'Arial Black', Gadget, sans-serif;
     text-transform: uppercase;
+    /* Reset text align so the content lines up correctly */
+    text-align: right; 
 }
 
-#auth-links a:hover {
+/* Style the links inside the auth component */
+#auth-component-placeholder a {
+    color: white !important; /* Force links to white */
+    text-decoration: none;
+    margin: 0 5px;
+}
+
+#auth-component-placeholder a:hover {
     color: #f0f0f0; /* Slight color change on hover */
     text-decoration: underline;
 }
