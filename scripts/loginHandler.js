@@ -49,13 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Add this logic to a file that runs on your main pages (e.g., componentHandler.js)
-
 document.addEventListener('DOMContentLoaded', () => {
-    const logoutButton = document.getElementById('logout-button');
+    // Target the specific ID you put on the anchor tag
+    const logoutLink = document.getElementById('logout-link'); 
 
-    if (logoutButton) {
-        logoutButton.addEventListener('click', async function(e) {
+    if (logoutLink) {
+        logoutLink.addEventListener('click', async function(e) {
             e.preventDefault();
 
             try {
