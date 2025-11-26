@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'; // Use import
+import bcrypt from 'bcryptjs'; // Use import
 import connectToDatabase from './connect.js';
 const SALT_ROUNDS = 10;
 
