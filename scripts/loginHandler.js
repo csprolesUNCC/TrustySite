@@ -48,33 +48,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const logoutLink = document.getElementById('logout-link');
-
-    if (logoutLink) {
-        logoutLink.addEventListener('click', async function(e) {
-            e.preventDefault();
-
-            try {
-                // 1. Call the Serverless Function to destroy the secure HTTP-only cookie
-                const response = await fetch('/api/logout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-
-                if (response.ok) {
-                    // 2. Client-side cleanup
-                    localStorage.removeItem('isUserLoggedIn');
-                    localStorage.removeItem('username');
-                    
-                    // 3. Redirect
-                    window.location.href = '/index.html'; 
-                } else {
-                    alert('Logout failed on the server. Please try again.');
-                }
-            } catch (error) {
-                console.error('Network error during logout:', error);
-                alert('A network error occurred during logout.');
-            }
-        });
-    }
 });
