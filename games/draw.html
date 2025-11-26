@@ -278,7 +278,7 @@ function gradeDrawing() {
     // We cap this at 1.0 so drawing EXTRA ink doesn't give > 100%
     let completeness = 0;
     if (totalRefPixels > 0) {
-        completeness = (perfectUserPixels / totalRefPixels) * 3;
+        completeness = (perfectUserPixels / totalRefPixels) * 4;
     }
     if (completeness > 1) completeness = 1;
 
