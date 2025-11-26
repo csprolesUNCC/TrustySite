@@ -1,3 +1,20 @@
 {
-  "outputDirectory": "."
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.cjs",
+      "use": "@vercel/node"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
 }
