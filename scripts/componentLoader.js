@@ -22,10 +22,6 @@ function loadComponent(targetElementId, componentFile) {
 }
 
 function loadAuthComponent() {
-    // --- THIS IS THE KEY LOGIC FOR DYNAMIC SWITCHING ---
-    // In a real application, you would check a cookie, sessionStorage, 
-    // or run an API call here.
-    
     // Placeholder check: Assume logged out unless a session flag is found
     const isLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
     
@@ -34,13 +30,41 @@ function loadAuthComponent() {
     if (isLoggedIn) {
         // If logged in, load the welcome/logout component
         authComponentPath = '/components/auth-logged-in.html';
+        
+        // Load the component and pass the logout logic as a callback
+        loadComponent('auth-component-placeholder', authComponentPath, () => {
+            // This code runs *after* auth-logged-in.html is injected
+            const logoutLink = document.getElementById('logout-link');
+
+            if (logoutLink) {
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Clear client-side flags
+                    localStorage.removeItem('isUserLoggedIn');
+                    localStorage.removeItem('username');
+                    
+                    // Call the logout API to expire the HTTP-only cookie
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(() => {
+                            // After successfully expiring the cookie, redirect to the home page
+                            window.location.href = '/index.html'; 
+                        })
+                        .catch(error => {
+                            console.error('Logout error:', error);
+                            // Fallback: force redirect even on error
+                            window.location.href = '/index.html';
+                        });
+                });
+            }
+        });
+
     } else {
         // If logged out, load the login/register component
         authComponentPath = '/components/auth-logged-out.html';
+        // Load the selected component into the placeholder
+        loadComponent('auth-component-placeholder', authComponentPath);
     }
-    
-    // Load the selected component into the placeholder
-    loadComponent('auth-component-placeholder', authComponentPath);
 }
 
 // Load the components once the page structure is ready
