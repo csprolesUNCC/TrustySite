@@ -3,7 +3,7 @@ const { MongoClient } = require('mongodb');
 // Get the MongoDB URI from Vercel environment variables
 const uri = process.env.USERS_MONGODB_URI;
 if (!uri) {
-    throw new Error('USERS_MONGODB_URI is not defined in environment variables.');
+    throw new Error('MONGODB_URI is not defined in environment variables.');
 }
 
 // Instantiate the MongoClient and cache the connection

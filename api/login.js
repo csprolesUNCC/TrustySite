@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const connectToDatabase = require('./connect.cjs');
+const connectToDatabase = require('./connect');
 
 // Get JWT Secret from Vercel environment variables
 const JWT_SECRET = process.env.JWT_SECRET;

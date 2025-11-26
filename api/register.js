@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const connectToDatabase = require('./connect.cjs');
+const connectToDatabase = require('./connect');
 const SALT_ROUNDS = 10;
 
 module.exports = async (req, res) => {
