@@ -32,9 +32,14 @@ h2, h3 {
 /* HEADER - The top banner */
 header {
     background-color: #111; /* Black banner */
-    color: white; /* White text */
+    color: white; /* White text for the H1 and general text */
     padding: 1.5em 0;
-    text-align: center;
+    
+    /* Revert to center for H1 and text, but use position: relative 
+       to anchor the absolute positioned auth component */
+    text-align: center; 
+    position: relative; 
+    
     border-bottom: 5px double white; /* Strong white border for separation */
 }
 
@@ -174,10 +179,27 @@ a:hover {
 @media (max-width: 600px) {
 
     /* HEADER */
+    header {
+        /* Change flex direction to stack items vertically on mobile */
+        flex-direction: column;
+        /* Revert to center text alignment for stacked items */
+        text-align: center;
+        padding: 1em 10px;
+    }
+    
     header h1 {
         /* Reduce header padding for smaller screens */
         font-size: 1.5em;
-        padding: 0 10px; /* Add horizontal padding for text */
+        padding: 0 0; 
+        margin-bottom: 5px; /* Reduce space below h1 */
+    }
+
+    /* AUTH LINKS - Mobile Adjustment */
+    #auth-links {
+        /* Reset vertical alignment and add padding for separation */
+        margin-top: 5px; 
+        margin-bottom: 5px;
+        font-size: 1em; /* Slightly smaller on mobile */
     }
 
     /* NAVIGATION */
@@ -253,4 +275,35 @@ a:hover {
         width: 100px !important;
         margin: 15px auto 0 auto !important;
     }
-} /* <--- This is the ONLY closing brace for the @media block */
+}
+
+#auth-component-placeholder {
+    /* Use absolute positioning to move it to the top right */
+    position: absolute; 
+    top: 1.5em; /* Matches the header padding for vertical alignment */
+    right: 20px; /* Spacing from the right edge */
+    
+    /* Ensure all text/links inside this component are WHITE */
+    color: white !important; 
+    
+    font-size: 1.1em;
+    font-weight: bold;
+    white-space: nowrap; /* Keeps links on one line */
+    /* Use the same bold, punchy font family */
+    font-family: 'Arial Black', Gadget, sans-serif;
+    text-transform: uppercase;
+    /* Reset text align so the content lines up correctly */
+    text-align: right; 
+}
+
+/* Style the links inside the auth component */
+#auth-component-placeholder a {
+    color: white !important; /* Force links to white */
+    text-decoration: none;
+    margin: 0 5px;
+}
+
+#auth-component-placeholder a:hover {
+    color: #f0f0f0; /* Slight color change on hover */
+    text-decoration: underline;
+}

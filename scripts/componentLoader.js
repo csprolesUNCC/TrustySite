@@ -21,11 +21,31 @@ function loadComponent(targetElementId, componentFile) {
         });
 }
 
+function loadAuthComponent() {
+    // --- THIS IS THE KEY LOGIC FOR DYNAMIC SWITCHING ---
+    // In a real application, you would check a cookie, sessionStorage, 
+    // or run an API call here.
+    
+    // Placeholder check: Assume logged out unless a session flag is found
+    const isLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
+    
+    let authComponentPath;
+    
+    if (isLoggedIn) {
+        // If logged in, load the welcome/logout component
+        authComponentPath = '/components/auth-logged-in.html';
+    } else {
+        // If logged out, load the login/register component
+        authComponentPath = '/components/auth-logged-out.html';
+    }
+    
+    // Load the selected component into the placeholder
+    loadComponent('auth-component-placeholder', authComponentPath);
+}
+
 // Load the components once the page structure is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Load the Navigation Bar (nav.html) into the nav#navbar-placeholder
-    loadComponent('navbar-placeholder', '../components/nav.html');
-    
-    // 2. Load the Footer content (footer.html) into the p#footer-placeholder
-    loadComponent('footer-placeholder', '../components/footer.html');
+    loadComponent('navbar-placeholder', '/components/nav.html');
+    loadComponent('footer-placeholder', '/components/footer.html');
+    loadAuthComponent();
 });

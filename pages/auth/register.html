@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Trusty da Horse</title>
+    <!-- Use root-relative path for stylesheet -->
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+</head>
+<body>
+
+    <header>
+        <h1>Trusty Da Horse!</h1>
+        <!-- Authentication Component Placeholder -->
+        <div id="auth-component-placeholder"></div>
+    </header>
+
+    <!-- Navigation Component Placeholder -->
+    <nav id="navbar-placeholder"></nav>
+
+    <div class="content">
+        <h2>Register New Account</h2>
+        
+        <!-- The Registration Form -->
+        <form id="register-form">
+            <p>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </p>
+            <p>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </p>
+            <p>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </p>
+            <p>
+                <label for="confirm-password">Confirm Password:</label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+            </p>
+            <p>
+                <button type="submit">Create Account</button>
+            </p>
+            <!-- Area to show status and error messages -->
+            <p id="status-message" style="color: red; font-weight: bold;"></p>
+        </form>
+
+        <p>Already have an account? <a href="/pages/auth/login.html">Login here!</a></p>
+    </div>
+
+    <!-- Footer Component Placeholder -->
+    <footer><p id="footer-placeholder"></p></footer>
+    
+    <!-- Component Loader (Root-Relative Path) -->
+    <script src="/scripts/componentLoader.js"></script>
+    
+    <!-- Registration Form Handler Script -->
+    <script src="/scripts/registerHandler.js"></script>
+
+</body>
+</html>

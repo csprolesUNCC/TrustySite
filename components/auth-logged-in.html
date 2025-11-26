@@ -1,0 +1,19 @@
+<span style="color: white;">
+    <script>
+        // Get username from localStorage (set by the login handler)
+        const username = localStorage.getItem('username') || 'Member';
+        document.write(`<span>Welcome, ${username}!</span> | `);
+    </script>
+    <a href="#" onclick="logoutUser(event)">Logout</a>
+
+    <!-- The Logout Function -->
+    <script>
+        function logoutUser(event) {
+            event.preventDefault();
+            localStorage.removeItem('isUserLoggedIn');
+            localStorage.removeItem('username'); // Clean up the name
+            // Use root-relative path for safety
+            window.location.href = '/index.html'; 
+        }
+    </script>
+</span>

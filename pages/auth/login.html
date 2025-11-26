@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Trusty da Horse</title>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+</head>
+<body>
+
+    <header>
+        <h1>Trusty Da Horse!</h1>
+        <div id="auth-component-placeholder"></div>
+    </header>
+
+    <nav id="navbar-placeholder"></nav>
+
+    <div class="content">
+        <h2>Member Login</h2>
+        
+        <form id="login-form">
+            <p>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </p>
+            <p>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </p>
+            <p>
+                <button type="submit">Login</button>
+            </p>
+            <p id="error-message" style="color: red; font-weight: bold;"></p>
+        </form>
+
+        <p>Don't have an account? <a href="/pages/auth/register.html">Register here!</a></p>
+    </div>
+
+    <footer><p id="footer-placeholder"></p></footer>
+    
+    <script src="/scripts/componentLoader.js"></script>
+    
+    <script src="/scripts/loginHandler.js"></script>
+
+</body>
+</html>
