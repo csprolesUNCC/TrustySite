@@ -188,6 +188,9 @@
         let dailyLeaderboard = [];
         // Jump event
         let justTapped = false;
+        let score = 0;
+        let highScore = 0; // This will now hold the *personal* high score
+        let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true'; // NEW: Check login status
         let previousScore = 0; // Track score change for game over logic
 
         document.addEventListener("touchstart", e => {
@@ -221,26 +224,54 @@
         }
 
         // 2. Submit score to the API
-        async function submitScore(name, finalScore) {
+        async function submitScore(finalScore) {
+            if (!isUserLoggedIn) {
+                console.log("Not logged in. Score not submitted.");
+                return;
+            }
+
             try {
+            // NEW: Name is no longer passed; it comes from the JWT on the server
                 const response = await fetch('../api/submit-score', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, score: finalScore })
+                    body: JSON.stringify({ score: finalScore })
                 });
 
-                if (response.ok) {
-                    console.log('Score submitted successfully!');
-                    await fetchLeaderboard(); // Refresh the leaderboard after submission
-                } else {
-                    console.error('Score submission failed.');
-                }
+            if (response.ok) {
+                console.log('Score submitted successfully!');
+                // Update personal high score and global leaderboards
+                await fetchPersonalHighScore(); // NEW: Refresh personal high score
+                await fetchLeaderboard(); // Refresh the global leaderboard
+            } else {
+                console.error('Score submission failed. Server said:', await response.json());
+            }
             } catch (error) {
                 console.error("Error submitting score:", error);
             }
         }
+
+        // 3. Fetch user's personal high score - NEW FUNCTION
+        async function fetchPersonalHighScore() {
+        if (!isUserLoggedIn) {
+            highScore = 0; // Reset to 0 if logged out
+            return;
+        }
+
+        try {
+            const response = await fetch('../api/get-user-highscore'); 
+            if (!response.ok) throw new Error('Failed to fetch user high score');
+            const data = await response.json();
+            // Update the global highScore variable
+            highScore = data.highScore; 
+            console.log('Personal High Score fetched:', highScore);
+        } catch (error) {
+            console.error("Error fetching personal high score:", error);
+            highScore = 0; // Default to 0 on failure
+        }
+    }
 
         // 3. Draw leaderboard (to the HTML element)
         function drawLeaderboard() {
@@ -317,14 +348,19 @@
 
         function checkLeaderboard() {
             if (gameOver && score > 0) {
-                // Check if this score makes the leaderboard (top 10)
-                const isHighScore = leaderboard.length < 10 || score > (leaderboard[leaderboard.length - 1]?.score || 0);
+            // 1. Check if the user is logged in
+                if (!isUserLoggedIn) {
+                    console.log("Game Over. User not logged in, score not saved.");
+                    return;
+                }
 
-                if (isHighScore) {
-                    let name = prompt(`New High Score! Your score: ${score}. Enter your name (max 15 chars):`);
-                    if (name) {
-                        submitScore(name.trim(), score);
-                    }
+            // 2. Check if the score is higher than the currently loaded personal highScore
+                if (score > highScore) {
+                // Submit the score (the API will do the final check and saving)
+                    console.log(`New personal high score! Submitting ${score}.`);
+                    submitScore(score);
+                } else {
+                    console.log(`Score ${score} did not beat personal high score ${highScore}.`);
                 }
             }
         }
@@ -444,7 +480,11 @@
             }
             ctx.fillStyle = "yellow";
             ctx.font = "25px Arial";
-            ctx.fillText("High: " + highScore, 20, 70);
+            if (isUserLoggedIn) {
+                ctx.fillText("High: " + highScore, 20, 70);
+            } else {
+                ctx.fillText("Log in to save score!", 20, 70);
+            }
 
             // NOTE: drawLeaderboard() is now called only after fetching data, not in the loop.
 
@@ -466,6 +506,7 @@
         // Fetch leaderboard immediately when the script runs
         fetchLeaderboard(); 
         fetchDailyLeaderboard();
+        fetchPersonalHighScore(); // NEW: Fetch personal high score on load
         requestAnimationFrame(loop);
 
     </script>
