@@ -33,14 +33,9 @@ h2, h3 {
 header {
     background-color: #111; /* Black banner */
     color: white; /* White text */
-    padding: 1.5em 20px; /* Added 20px horizontal padding for spacing */
-    /* text-align: center; REMOVED this line as Flexbox will handle alignment */
+    padding: 1.5em 0;
+    text-align: center;
     border-bottom: 5px double white; /* Strong white border for separation */
-    
-    /* ADDED: Flexbox to space out h1 and auth links */
-    display: flex;
-    justify-content: space-between; /* Pushes content to the edges */
-    align-items: center; /* Vertically centers h1 and auth-links */
 }
 
 /* NAVIGATION - The tabs */
@@ -179,27 +174,10 @@ a:hover {
 @media (max-width: 600px) {
 
     /* HEADER */
-    header {
-        /* Change flex direction to stack items vertically on mobile */
-        flex-direction: column;
-        /* Revert to center text alignment for stacked items */
-        text-align: center;
-        padding: 1em 10px;
-    }
-    
     header h1 {
         /* Reduce header padding for smaller screens */
         font-size: 1.5em;
-        padding: 0 0; 
-        margin-bottom: 5px; /* Reduce space below h1 */
-    }
-
-    /* AUTH LINKS - Mobile Adjustment */
-    #auth-links {
-        /* Reset vertical alignment and add padding for separation */
-        margin-top: 5px; 
-        margin-bottom: 5px;
-        font-size: 1em; /* Slightly smaller on mobile */
+        padding: 0 10px; /* Add horizontal padding for text */
     }
 
     /* NAVIGATION */
@@ -275,26 +253,4 @@ a:hover {
         width: 100px !important;
         margin: 15px auto 0 auto !important;
     }
-}
-
-#auth-links {
-    font-size: 1.1em;
-    font-weight: bold;
-    white-space: nowrap; /* Keeps links on one line */
-    /* Pushing the links up slightly to align visually with the top of the header */
-    margin-top: -1em; 
-}
-
-#auth-links a {
-    color: white; /* Match the header text color */
-    text-decoration: none;
-    margin: 0 5px;
-    /* Use the same bold, punchy font family */
-    font-family: 'Arial Black', Gadget, sans-serif;
-    text-transform: uppercase;
-}
-
-#auth-links a:hover {
-    color: #f0f0f0; /* Slight color change on hover */
-    text-decoration: underline;
-}
+} /* <--- This is the ONLY closing brace for the @media block */
