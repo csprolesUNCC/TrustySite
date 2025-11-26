@@ -6,14 +6,31 @@
     </script>
     <a href="#" onclick="logoutUser(event)">Logout</a>
 
-    <!-- The Logout Function -->
     <script>
-        function logoutUser(event) {
+        async function logoutUser(event) {
             event.preventDefault();
-            localStorage.removeItem('isUserLoggedIn');
-            localStorage.removeItem('username'); // Clean up the name
-            // Use root-relative path for safety
-            window.location.href = '/index.html'; 
+            
+            try {
+                // 1. CALL THE API to destroy the secure cookie
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    // 2. Client-side cleanup (only runs if the server succeeded)
+                    localStorage.removeItem('isUserLoggedIn');
+                    localStorage.removeItem('username');
+                    
+                    // 3. Redirect
+                    window.location.href = '/index.html'; 
+                } else {
+                    console.error('Logout failed on the server.');
+                    alert('Logout failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Network error during logout:', error);
+                alert('A network error occurred. Could not log out securely.');
+            }
         }
     </script>
 </span>
