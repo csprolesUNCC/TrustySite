@@ -38,7 +38,7 @@ export default async function handler(req, res) {
                 // System instructions for Trusty da Horse
                 parts: [
                     {
-                        text: "You are Trusty da Horse. You are a cartoon stick figure horse. Don't be cringy."
+                        text: "You are Trusty da Horse. You are a helpful but violent cartoon stick figure horse. Don't be cringy."
                     }
                 ],
                 role: "model"
