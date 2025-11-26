@@ -132,10 +132,6 @@
         <div id="leaderboard-container">
             <h3>Leaderboard Loading...</h3>
         </div>
-    
-        <div id="daily-leaderboard-container">
-            <h3>Daily Leaderboard Loading...</h3>
-        </div>
     </div>
 
     <footer><p id="footer-placeholder"></p></footer>
@@ -147,7 +143,6 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const leaderboardContainer = document.getElementById("leaderboard-container");
-        const dailyLeaderboardContainer = document.getElementById("daily-leaderboard-container");
 
         // Horse image
         const trustyImg = new Image();
@@ -223,33 +218,38 @@
 
         // 2. Submit score to the API
         async function submitScore(finalScore) {
-            if (!isUserLoggedIn) {
-                console.log("Not logged in. Score not submitted.");
-                return;
-            }
+    if (!isUserLoggedIn) {
+        console.log("Not logged in. Score not submitted.");
+        return;
+    }
 
-            try {
-            // NEW: Name is no longer passed; it comes from the JWT on the server
-                const response = await fetch('../api/submit-score', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ score: finalScore })
-                });
+    try {
+        const response = await fetch('../api/submit-score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ score: finalScore })
+        });
 
-            if (response.ok) {
-                console.log('Score submitted successfully!');
-                // Update personal high score and global leaderboards
-                await fetchPersonalHighScore(); // NEW: Refresh personal high score
-                await fetchLeaderboard(); // Refresh the global leaderboard
-            } else {
-                console.error('Score submission failed. Server said:', await response.json());
-            }
-            } catch (error) {
-                console.error("Error submitting score:", error);
-            }
+        if (response.ok) {
+            console.log('Score submitted successfully! Refreshing high score...');
+            
+            // --- CRITICAL FIX: Ensure the high score is updated immediately ---
+            // Await both fetches to guarantee the client variable is current.
+            await fetchPersonalHighScore(); // This updates the global 'highScore' variable
+            await fetchLeaderboard(); // Refresh the global leaderboard
+
+            // Now, console.log the *new* high score for verification
+            console.log(`Updated Personal High Score is now: ${highScore}`); 
+
+        } else {
+            console.error('Score submission failed. Server said:', await response.json());
         }
+    } catch (error) {
+        console.error("Error submitting score:", error);
+    }
+}
 
         // 3. Fetch user's personal high score - NEW FUNCTION
         async function fetchPersonalHighScore() {
@@ -293,42 +293,6 @@
             leaderboardContainer.innerHTML = html;
         }
 
-        // 1. Fetch daily scores from the API
-        async function fetchDailyLeaderboard() {
-            try {
-                const response = await fetch('../api/get-daily-scores'); 
-                if (!response.ok) throw new Error('Failed to fetch daily leaderboard');
-                dailyLeaderboard = await response.json();
-            } catch (error) {
-                console.error("Error fetching daily leaderboard:", error);
-                dailyLeaderboard = []; // Clear on failure
-            }
-            drawDailyLeaderboard(); // Draw the leaderboard after fetching
-        }
-
-        // 2. Draw the daily leaderboard (to the HTML element)
-        function drawDailyLeaderboard() {
-            let html = '<h3>📅 24 Hour Top Flaps 📅</h3><ol>';
-            
-            if (dailyLeaderboard.length === 0) {
-                html += '<p style="text-align:center;">No scores in the last 24 hours!</p>';
-            } else {
-                dailyLeaderboard.slice(0, 10).forEach((entry, index) => { // Show top 10
-                    // Display name and score
-                    html += `
-                        <li>
-                            <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
-                            <span>**${entry.score}**</span>
-                        </li>
-                    `;
-                });
-            }
-            
-            html += '</ol>';
-            dailyLeaderboardContainer.innerHTML = html;
-        }
-
-
         // --- Game Logic ---
 
         function jump() {
@@ -345,23 +309,23 @@
 
 
         function checkLeaderboard() {
-            if (gameOver && score > 0) {
-            // 1. Check if the user is logged in
-                if (!isUserLoggedIn) {
-                    console.log("Game Over. User not logged in, score not saved.");
-                    return;
-                }
-
-            // 2. Check if the score is higher than the currently loaded personal highScore
-                if (score > highScore) {
-                // Submit the score (the API will do the final check and saving)
-                    console.log(`New personal high score! Submitting ${score}.`);
-                    submitScore(score);
-                } else {
-                    console.log(`Score ${score} did not beat personal high score ${highScore}.`);
-                }
-            }
+    if (gameOver && score > 0) {
+        if (!isUserLoggedIn) {
+            console.log("Game Over. User not logged in, score not saved.");
+            return;
         }
+
+        // The high score check is crucial here:
+        if (score > highScore) {
+            console.log(`New personal high score! Submitting ${score}. (Previous high: ${highScore})`);
+            submitScore(score);
+        } else {
+            // This is the message you are seeing prematurely, 
+            // but after the fix, it should be accurate.
+            console.log(`Score ${score} did not beat personal high score ${highScore}.`);
+        }
+    }
+}
 
 
 
@@ -503,7 +467,6 @@
 
         // Fetch leaderboard immediately when the script runs
         fetchLeaderboard(); 
-        fetchDailyLeaderboard();
         fetchPersonalHighScore(); // NEW: Fetch personal high score on load
         requestAnimationFrame(loop);
 
