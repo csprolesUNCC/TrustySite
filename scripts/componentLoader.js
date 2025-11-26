@@ -1,5 +1,7 @@
 // Function to load a component (HTML snippet) into a target element
-function loadComponent(targetElementId, componentFile) {
+// Function to load a component (HTML snippet) into a target element
+// Added 'componentFile' to callback for context (though not strictly required for this fix)
+function loadComponent(targetElementId, componentFile, callback) { 
     const targetElement = document.getElementById(targetElementId);
 
     // Use the Fetch API to get the component content
@@ -14,6 +16,11 @@ function loadComponent(targetElementId, componentFile) {
         .then(data => {
             // Inject the HTML content into the target element
             targetElement.innerHTML = data;
+            
+            // Execute callback AFTER injection
+            if (callback) {
+                callback(componentFile); // Pass the file name
+            }
         })
         .catch(error => {
             console.error('Error loading component:', error);
@@ -22,23 +29,28 @@ function loadComponent(targetElementId, componentFile) {
 }
 
 function loadAuthComponent() {
+    
     // Placeholder check: Assume logged out unless a session flag is found
     const isLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
     
     let authComponentPath;
     
     if (isLoggedIn) {
-        // If logged in, load the welcome/logout component
         authComponentPath = '/components/auth-logged-in.html';
         
-        // Load the component and pass the logout logic as a callback
+        // Pass the callback to loadComponent
         loadComponent('auth-component-placeholder', authComponentPath, () => {
-            // This code runs *after* auth-logged-in.html is injected
+            
+            // --- LOGOUT LISTENER ATTACHMENT LOGIC ---
             const logoutLink = document.getElementById('logout-link');
 
             if (logoutLink) {
+                console.log('✅ Logout link found. Attaching event listener.'); // ADD THIS TEST LOG
+                
                 logoutLink.addEventListener('click', (e) => {
                     e.preventDefault();
+                    
+                    console.log('➡️ Logout button clicked! Initiating logout sequence.'); // ADD THIS TEST LOG
                     
                     // Clear client-side flags
                     localStorage.removeItem('isUserLoggedIn');
@@ -47,22 +59,21 @@ function loadAuthComponent() {
                     // Call the logout API to expire the HTTP-only cookie
                     fetch('/api/logout', { method: 'POST' })
                         .then(() => {
-                            // After successfully expiring the cookie, redirect to the home page
+                            // After successfully expiring the cookie, redirect
                             window.location.href = '/index.html'; 
                         })
                         .catch(error => {
-                            console.error('Logout error:', error);
-                            // Fallback: force redirect even on error
+                            console.error('Logout API Error:', error);
                             window.location.href = '/index.html';
                         });
                 });
+            } else {
+                console.error('❌ Error: Logout link with ID "logout-link" not found after component load.');
             }
         });
 
     } else {
-        // If logged out, load the login/register component
         authComponentPath = '/components/auth-logged-out.html';
-        // Load the selected component into the placeholder
         loadComponent('auth-component-placeholder', authComponentPath);
     }
 }

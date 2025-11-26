@@ -5,7 +5,7 @@ export default async (req, res) => {
     }
 
     try {
-        res.setHeader('Set-Cookie', 'authToken=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+        res.setHeader('Set-Cookie', 'authToken=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0'); //
         
         // Success response
         res.status(200).json({ message: 'Logged out successfully.' });
