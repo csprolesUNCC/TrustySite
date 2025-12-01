@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Resend } from 'resend'; //
-import connectToDatabase from './connect.js';
+import connectToDatabase from '../connect.js';
 
 // Initialize Resend with the key from Vercel Env Vars
 const resend = new Resend(process.env.RESEND_API_KEY);
