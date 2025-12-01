@@ -31,7 +31,7 @@ export default async (req, res) => {
         );
 
         const protocol = req.headers['x-forwarded-proto'] || 'http';
-        const host = req.headers['trustydahorse.com'];
+        const host = req.headers['host'];
         const resetLink = `${protocol}://${host}/pages/auth/reset-password.html?token=${resetToken}`;
 
         // IMPORTANT: Since we don't have an email provider set up, 
