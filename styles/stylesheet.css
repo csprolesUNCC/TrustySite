@@ -307,3 +307,26 @@ a:hover {
     color: #f0f0f0; /* Slight color change on hover */
     text-decoration: underline;
 }
+
+/* Update Box Styles */
+.update-box {
+    background-color: #f0f8ff; /* Light blue/white background */
+    border: 1px solid #cce5ff; /* Subtle border */
+    border-left: 5px solid #007bff; /* Thick blue accent on the left */
+    padding: 15px;
+    margin-bottom: 20px; /* Space between box and the Welcome title */
+    border-radius: 5px; /* Rounded corners */
+    font-family: sans-serif;
+}
+
+.update-box h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #0056b3; /* Darker blue for the title */
+    font-size: 1.1rem;
+}
+
+.update-box p {
+    margin: 0;
+    color: #333;
+}
