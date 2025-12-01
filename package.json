@@ -12,11 +12,12 @@
   "type": "module",
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
+    "bcryptjs": "^2.4.3",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.0.0",
     "node-fetch": "^3.0.0",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3"
+    "resend": "^6.5.2"
   }
 }
