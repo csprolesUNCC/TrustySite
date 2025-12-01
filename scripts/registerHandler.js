@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // 2. Send data to the Vercel Serverless Function
-                const response = await fetch('/api/register', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

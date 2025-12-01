@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import connectToDatabase from './connect.js';
+import connectToDatabase from '../connect.js';
 
 // Get JWT Secret from Vercel environment variables
 const JWT_SECRET = process.env.JWT_SECRET;

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import connectToDatabase from './connect.js';
+import connectToDatabase from '../connect.js';
 
 export default async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });

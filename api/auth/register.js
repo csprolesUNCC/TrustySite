@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'; // Use import
-import connectToDatabase from './connect.js';
+import connectToDatabase from '../connect.js';
 const SALT_ROUNDS = 10;
 
 export default async (req, res) => {

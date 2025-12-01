@@ -57,7 +57,7 @@ function loadAuthComponent() {
                     localStorage.removeItem('username');
                     
                     // Call the logout API to expire the HTTP-only cookie
-                    fetch('/api/logout', { method: 'POST' })
+                    fetch('/api/auth/logout', { method: 'POST' })
                         .then(() => {
                             // After successfully expiring the cookie, redirect
                             window.location.href = '/index.html'; 
