@@ -468,7 +468,7 @@ function getGhostCanvas(lineWidth) {
 //nLeaderboard & API Functions
 async function fetchLeaderboard() {
     try {
-        const response = await fetch('/api/draw/get-draw-scores'); 
+        const response = await fetch('/api/draw-api?action=get_leaderboard'); 
         if (!response.ok) throw new Error('Failed to fetch leaderboard');
         leaderboard = await response.json();
     } catch (error) {
@@ -482,7 +482,7 @@ async function submitScore(finalScore) {
     if (!isUserLoggedIn) return;
 
     try {
-        const response = await fetch('/api/draw/submit-draw-score', {
+        const response = await fetch('/api/draw-api?action=submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ score: finalScore })
@@ -507,7 +507,7 @@ async function fetchPersonalHighScore() {
     }
 
     try {
-        const response = await fetch('/api/draw/get-user-draw-highscore'); 
+        const response = await fetch('/api/draw-api?action=get_personal'); 
         if (!response.ok) throw new Error('Failed to fetch user high score');
         const data = await response.json();
         highScore = data.highScore || 0; 
