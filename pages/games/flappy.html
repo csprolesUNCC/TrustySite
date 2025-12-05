@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Trusty - Trusty da Horse</title>
     <meta name="description" content="Flappy Trusty: Test your patience with this retro arcade physics game! How far can Trusty the Horse fly through the deadly pipes?">
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
@@ -136,7 +136,7 @@
 
     <footer><p id="footer-placeholder"></p></footer>
     
-    <script src="../scripts/componentLoader.js"></script>
+    <script src="/scripts/componentLoader.js"></script>
     <script src="/scripts/loginHandler.js"></script>
 
     <script>
@@ -146,11 +146,11 @@
 
         // Horse image
         const trustyImg = new Image();
-        trustyImg.src = "../images/trusty.png";
+        trustyImg.src = "/images/trusty.png";
 
         // sound effect
-        const jumpSound = new Audio("../sound/vineboom.m4a"); 
-        const horseSound = new Audio("../sound/horse.m4a"); 
+        const jumpSound = new Audio("/sound/vineboom.m4a"); 
+        const horseSound = new Audio("/sound/horse.m4a"); 
         //jumpSound.volume = 0.4; 
 
         // Player
@@ -187,9 +187,9 @@
         // Jump event
         let justTapped = false;
         let score = 0;
-        let highScore = 0; // This will now hold the *personal* high score
-        let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true'; // NEW: Check login status
-        let previousScore = 0; // Track score change for game over logic
+        let highScore = 0;
+        let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
+        let previousScore = 0;
 
         document.addEventListener("touchstart", e => {
             e.preventDefault();
@@ -209,82 +209,73 @@
         // 1. Fetch scores from the API
         async function fetchLeaderboard() {
             try {
-                // NOTE: Use the full URL (e.g., https://your-site.vercel.app/api/get-scores) 
-                // if running locally or not deployed on Vercel yet.
-                const response = await fetch('../api/get-scores'); 
+                const response = await fetch('/api/get-scores'); 
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 leaderboard = await response.json();
             } catch (error) {
                 console.error("Error fetching leaderboard:", error);
-                leaderboard = []; // Clear on failure
+                leaderboard = [];
             }
-            drawLeaderboard(); // Draw the leaderboard after fetching
+            drawLeaderboard();
         }
 
         // 2. Submit score to the API
         async function submitScore(finalScore) {
-    if (!isUserLoggedIn) {
-        console.log("Not logged in. Score not submitted.");
-        return;
-    }
+            if (!isUserLoggedIn) {
+                console.log("Not logged in. Score not submitted.");
+                return;
+            }
 
-    try {
-        const response = await fetch('../api/submit-score', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ score: finalScore })
-        });
+            try {
+                const response = await fetch('/api/submit-score', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                body: JSON.stringify({ score: finalScore })
+            });
 
-        if (response.ok) {
-            console.log('Score submitted successfully! Refreshing high score...');
+            if (response.ok) {
+                console.log('Score submitted successfully! Refreshing high score...');
             
-            // --- CRITICAL FIX: Ensure the high score is updated immediately ---
-            // Await both fetches to guarantee the client variable is current.
-            await fetchPersonalHighScore(); // This updates the global 'highScore' variable
-            await fetchLeaderboard(); // Refresh the global leaderboard
-
-            // Now, console.log the *new* high score for verification
-            console.log(`Updated Personal High Score is now: ${highScore}`); 
-
-        } else {
-            console.error('Score submission failed. Server said:', await response.json());
+                await fetchPersonalHighScore();
+                await fetchLeaderboard();
+                console.log(`Updated Personal High Score is now: ${highScore}`); 
+            } else {
+                console.error('Score submission failed. Server said:', await response.json());
+            }
+        } catch (error) {
+            console.error("Error submitting score:", error);
         }
-    } catch (error) {
-        console.error("Error submitting score:", error);
     }
-}
 
-        // 3. Fetch user's personal high score - NEW FUNCTION
+        // 3. Fetch user's personal high score
         async function fetchPersonalHighScore() {
         if (!isUserLoggedIn) {
-            highScore = 0; // Reset to 0 if logged out
+            highScore = 0;
             return;
         }
 
         try {
-            const response = await fetch('../api/get-user-highscore'); 
+            const response = await fetch('/api/get-user-highscore'); 
             if (!response.ok) throw new Error('Failed to fetch user high score');
             const data = await response.json();
-            // Update the global highScore variable
             highScore = data.highScore; 
             console.log('Personal High Score fetched:', highScore);
         } catch (error) {
             console.error("Error fetching personal high score:", error);
-            highScore = 0; // Default to 0 on failure
+            highScore = 0;
         }
     }
 
-        // 3. Draw leaderboard (to the HTML element)
+        // 3. Draw leaderboard
         function drawLeaderboard() {
             let html = '<h3>🏆 Trusty\'s Top Flaps 🏆</h3><ol>';
             
             if (leaderboard.length === 0) {
                 html += '<p style="text-align:center;">No scores yet! Be the first.</p>';
             } else {
-                leaderboard.slice(0, 10).forEach((entry, index) => { // Show top 10
-                    // Display name and score
+                leaderboard.slice(0, 10).forEach((entry, index) => {
                     html += `
                         <li>
                             <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
@@ -318,12 +309,10 @@
             return;
         }
 
-        // The high score check is crucial here:
         if (score > highScore) {
             console.log(`New personal high score! Submitting ${score}. (Previous high: ${highScore})`);
             submitScore(score);
         } else {
-            // but after the fix, it should be accurate.
             console.log(`Score ${score} did not beat personal high score ${highScore}.`);
         }
     }
@@ -334,7 +323,7 @@
 
 
         function resetGame() {
-            trustyImg.src = "../images/trusty.png";
+            trustyImg.src = "/images/trusty.png";
 
             horse.y = 250;
             horse.velocity = -3;
@@ -344,7 +333,6 @@
             gameOver = false;
         }
 
-        // Create pipes
         function createPipe() {
             let topHeight = Math.floor(Math.random() * 250) + 50;
             let bottomY = topHeight + pipeGap;
@@ -360,7 +348,6 @@
             if (imageLoaded) {
                 ctx.drawImage(trustyImg, horse.x, horse.y, horse.width, horse.height);
             } else {
-                // fallback rectangle
                 ctx.fillStyle = "red";
                 ctx.fillRect(horse.x, horse.y, horse.width, horse.height);
             }
@@ -369,8 +356,8 @@
         function drawPipes() {
             ctx.fillStyle = "green";
             pipes.forEach(pipe => {
-                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight); // top pipe
-                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY); // bottom pipe
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY);
             });
         }
 
@@ -390,7 +377,7 @@
         function loop(timestamp){
             justTapped = false;
             if (!lastTime) lastTime = timestamp;
-            const delta = (timestamp - lastTime) / 16.666; // normalize to 60 FPS
+            const delta = (timestamp - lastTime) / 16.666;
             lastTime = timestamp;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -400,7 +387,6 @@
                 horse.velocity += gravity * delta;
                 horse.y += horse.velocity * delta;
                 const floorY = canvas.height - horse.height;
-                // Check for floor collision
                 if (horse.y > floorY) {
                     horse.y = floorY;
                     horse.velocity = 0;
@@ -414,20 +400,18 @@
 
                 pipes.forEach(pipe => pipe.x -= 4 * delta);
 
-                // Remove off-screen pipes
                 if (pipes.length && pipes[0].x < -pipeWidth) {
                     pipes.shift();
                     score++;
                     if (score == 10){
-                        trustyImg.src = "../images/detailed_horse.jpg";
+                        trustyImg.src = "/images/detailed_horse.jpg";
                         horseSound.play();
                     }
                 }
                 previousScore = score; 
             } else if (gameOver && previousScore > 0) {
-                // Only trigger the high score check once when game over state is hit
                 checkLeaderboard(); 
-                previousScore = 0; // Reset to prevent re-triggering
+                previousScore = 0;
             }
 
 
@@ -436,13 +420,11 @@
             checkCollision();
             
             // --- Score Display (High Score remains on canvas) ---
-            
-            // Score
+
             ctx.fillStyle = "white";
             ctx.font = "30px Arial";
             ctx.fillText(score, 20, 40);
 
-            // High Score
             ctx.fillStyle = "yellow";
             ctx.font = "25px Arial";
             if (isUserLoggedIn) {
@@ -451,10 +433,7 @@
                 ctx.fillText("Log in to save score!", 20, 70);
             }
 
-            // NOTE: drawLeaderboard() is now called only after fetching data, not in the loop.
-
             if (gameOver) {
-                // Draw a semi-transparent overlay to make the text stand out
                 ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -468,9 +447,8 @@
             requestAnimationFrame(loop);
         }
 
-        // Fetch leaderboard immediately when the script runs
         fetchLeaderboard(); 
-        fetchPersonalHighScore(); // NEW: Fetch personal high score on load
+        fetchPersonalHighScore();
         requestAnimationFrame(loop);
 
     </script>
