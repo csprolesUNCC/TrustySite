@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trusty Blackjack - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
@@ -142,9 +142,6 @@
 
 
 <script>
-    // -------------------------
-    // GAME STATE
-    // -------------------------
     let deck = [];
     let playerHand = [];
     let dealerHand = [];
@@ -153,9 +150,6 @@
     let dealerHiddenCard = null;
     let revealDealer = false;
 
-    // -------------------------
-    // DECK FUNCTIONS
-    // -------------------------
     function createDeck() {
         const suits = ["♠", "♥", "♦", "♣"];
         const ranks = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
@@ -167,7 +161,6 @@
             }
         }
 
-        // Shuffle
         for (let i = deck.length - 1; i > 0; i--) {
             let j = Math.floor(Math.random() * (i+1));
             [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -178,9 +171,6 @@
         return deck.pop();
     }
 
-    // -------------------------
-    // HAND VALUE
-    // -------------------------
     function handValue(hand) {
         let sum = 0;
         let aces = 0;
@@ -200,7 +190,6 @@
             }
         }
 
-        // Adjust aces from 11 → 1
         while (sum > 21 && aces > 0) {
             sum -= 10;
             aces--;
@@ -209,9 +198,6 @@
         return sum;
     }
 
-    // -------------------------
-    // RENDERING
-    // -------------------------
     function cardHTML(card) {
         if (card.hidden) {
             return `<div class="card">🂠</div>`;
@@ -223,17 +209,14 @@
     }
 
     function renderHands() {
-        // Dealer
         let dealerHTML = "<h3>Dealer</h3>";
         dealerHand.forEach(card => {
             dealerHTML += cardHTML(card);
         });
-        // Only show value if the dealer is revealed or if the first card is revealed (which it is, for one card)
         let dealerValueText = revealDealer ? `Value: ${handValue(dealerHand)}` : `Value: ${handValue(dealerHand) - (dealerHand[0].hidden ? handValue([dealerHiddenCard]) : 0)}`;
-        dealerHTML += `<p>Value: ${handValue(dealerHand)}</p>`; // Simplified as the hidden card logic is complex to fix here, sticking to original JS logic.
+        dealerHTML += `<p>Value: ${handValue(dealerHand)}</p>`;
         document.getElementById("dealer").innerHTML = dealerHTML;
 
-        // Player
         let playerHTML = "<h3>You</h3>";
         playerHand.forEach(card => {
             playerHTML += cardHTML(card);
@@ -244,13 +227,9 @@
         document.getElementById("money").innerText = `Money: $${playerMoney}`;
     }
     
-    // Initial render for money display
     renderHands();
 
 
-    // -------------------------
-    // GAME FLOW
-    // -------------------------
     function startGame() {
         const bet = Number(document.getElementById("bet-input").value);
         if (isNaN(bet) || bet <= 0 || bet > playerMoney) {
@@ -268,16 +247,13 @@
 
         document.getElementById("status").innerText = "";
 
-        // Deal cards
         playerHand.push(drawCard());
         dealerHiddenCard = drawCard();
         dealerHand.push({ hidden: true, card: dealerHiddenCard });
         playerHand.push(drawCard());
         dealerHand.push(drawCard());
         
-        // Initial check for Blackjack
         if (handValue(playerHand) === 21) {
-             // Delay the end game sequence to allow render
             setTimeout(() => {
                 revealDealer = true;
                 dealerHand[0] = dealerHiddenCard;
@@ -285,7 +261,7 @@
                 if (handValue(dealerHand) === 21) {
                     endGame("Push! (Blackjack)");
                 } else {
-                    playerMoney += currentBet * 2.5; // Blackjack pays 3:2
+                    playerMoney += currentBet * 2.5;
                     endGame("Blackjack! You win!");
                 }
             }, 100);
@@ -296,7 +272,7 @@
     }
 
     function hit() {
-        if (playerHand.length === 0 || handValue(playerHand) > 21) return; // Prevent hitting before game starts or after bust
+        if (playerHand.length === 0 || handValue(playerHand) > 21) return;
 
         playerHand.push(drawCard());
         renderHands();
@@ -310,13 +286,12 @@
     }
 
     function stand() {
-        if (playerHand.length === 0) return; // Prevent standing before game starts
+        if (playerHand.length === 0) return;
 
         revealDealer = true;
         dealerHand[0] = dealerHiddenCard;
         renderHands();
 
-        // dealer draws to 17
         while (handValue(dealerHand) < 17) {
             dealerHand.push(drawCard());
             renderHands();
@@ -337,9 +312,8 @@
     }
 
     function double() {
-        if (playerHand.length === 0 || playerMoney < currentBet) return; // Prevent doubling if no hand or not enough money
+        if (playerHand.length === 0 || playerMoney < currentBet) return;
         
-        // Only allow double on the first two cards
         if (playerHand.length > 2) {
             alert("You can only double down on your first two cards.");
             return;
@@ -357,23 +331,20 @@
             endGame("You busted!");
         }
         else{
-            // Auto-stand after doubling
             stand();
         }
     }
 
     function endGame(result) {
         if (result.includes("win")) {
-            // Check for Blackjack win (pays 3:2 = currentBet * 2.5)
-            // Note: The playerMoney adjustment for Blackjack is handled directly in startGame for the 3:2 payout.
             if (!result.includes("Blackjack")) {
-                 playerMoney += currentBet * 2; // Regular win pays 1:1
+                 playerMoney += currentBet * 2;
             }
         } else if (result.includes("Push")) {
             playerMoney += currentBet;
         }
         
-        currentBet = 0; // Reset bet
+        currentBet = 0;
 
         document.getElementById("status").innerText = result;
         renderHands();
@@ -382,7 +353,7 @@
 
     <footer><p id="footer-placeholder"></p></footer>
     
-    <script src="../scripts/componentLoader.js"></script>
+    <script src="/scripts/componentLoader.js"></script>
     <script src="/scripts/loginHandler.js"></script>
 
 </body>
