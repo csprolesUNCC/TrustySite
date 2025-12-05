@@ -148,6 +148,11 @@
         const trustyImg = new Image();
         trustyImg.src = "../images/trusty.png";
 
+        // sound effect
+        const jumpSound = new Audio("../sound/vineboom.m4a"); 
+        const horseSound = new Audio("../sound/horse.m4a"); 
+        //jumpSound.volume = 0.4; 
+
         // Player
         let horse = {
             x: 80,
@@ -298,6 +303,8 @@
         function jump() {
             if (!gameOver) {
                 horse.velocity = jumpStrength;
+                jumpSound.currentTime = 0;
+                jumpSound.play();
             } else {
                 resetGame();
             }
@@ -327,7 +334,7 @@
 
 
         function resetGame() {
-            
+            trustyImg.src = "../images/trusty.png";
 
             horse.y = 250;
             horse.velocity = -3;
@@ -411,6 +418,10 @@
                 if (pipes.length && pipes[0].x < -pipeWidth) {
                     pipes.shift();
                     score++;
+                    if (score == 10){
+                        trustyImg.src = "../images/detailed_horse.jpg";
+                        horseSound.play();
+                    }
                 }
                 previousScore = score; 
             } else if (gameOver && previousScore > 0) {
