@@ -14,20 +14,17 @@ export default async (req, res) => {
 
         const usersCollection = db.collection('users');
 
-        // 1. Find user with this token AND ensure token hasn't expired
         const user = await usersCollection.findOne({
             resetToken: token,
-            resetTokenExpiry: { $gt: Date.now() } // Expiry must be greater than "now"
+            resetTokenExpiry: { $gt: Date.now() }
         });
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired token.' });
         }
 
-        // 2. Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // 3. Update User: Set new password, remove reset fields
         await usersCollection.updateOne(
             { _id: user._id },
             { 

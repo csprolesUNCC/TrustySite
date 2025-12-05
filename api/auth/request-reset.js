@@ -1,8 +1,7 @@
 import crypto from 'crypto';
-import { Resend } from 'resend'; //
+import { Resend } from 'resend';
 import connectToDatabase from '../connect.js';
 
-// Initialize Resend with the key from Vercel Env Vars
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async (req, res) => {
@@ -18,26 +17,21 @@ export default async (req, res) => {
         const user = await usersCollection.findOne({ email });
 
         if (!user) {
-            // Security: Always return "success" even if user doesn't exist
             return res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
         }
 
-        // 1. Generate Token
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
-        // 2. Save Token to DB
         await usersCollection.updateOne(
             { email },
             { $set: { resetToken, resetTokenExpiry } }
         );
 
-        // 3. Construct Link
         const protocol = req.headers['x-forwarded-proto'] || 'http';
         const host = req.headers['host'];
         const resetLink = `${protocol}://${host}/pages/auth/reset-password.html?token=${resetToken}`;
 
-        // 4. Send Email via Resend
         const { data, error } = await resend.emails.send({
             from: 'Support <support@trustydahorse.com>', 
             to: [email], 

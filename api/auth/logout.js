@@ -1,4 +1,3 @@
-// This Vercel serverless function handles the logout process
 export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
@@ -7,7 +6,6 @@ export default async (req, res) => {
     try {
         res.setHeader('Set-Cookie', 'authToken=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0'); //
         
-        // Success response
         res.status(200).json({ message: 'Logged out successfully.' });
 
     } catch (error) {
