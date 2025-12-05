@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '../connect.js';
-import { authenticateUser } from '/utils/auth.js';
+import { authenticateUser } from '../../utils/auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
