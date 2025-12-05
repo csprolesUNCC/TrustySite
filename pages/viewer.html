@@ -13,28 +13,23 @@
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
     <style>
-        /* Specific styles for the 3D viewer section */
         #model-viewer-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px 0;
-            background-color: #f8f8f8; /* Slightly lighter background inside the content box */
-            border: 2px solid #111;
+            background-color: #f8f8f8;
             box-shadow: 4px 4px 0px 0px #333;
         }
 
         model-viewer {
-            /* Set a substantial, responsive size for the viewer */
             width: 90%; 
-            height: 60vh; /* Viewport height for a good size on various screens */
-            border: 3px solid #111;
-            box-shadow: 8px 8px 0px 0px #111; /* Use a dramatic red shadow for emphasis */
+            height: 60vh; 
+            box-shadow: 8px 8px 0px 0px #111;
             margin-top: 15px;
         }
 
-        /* Mobile adjustments */
         @media (max-width: 600px) {
             model-viewer {
                 width: 95%;

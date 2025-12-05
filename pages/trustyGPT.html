@@ -12,19 +12,16 @@
     <script defer src="/_vercel/insights/script.js"></script>
 
     <style>        
-        /* The main chat container will now sit inside the .content area for consistent styling */
         #chat-container {
             width: 100%;
             max-width: 600px;
-            /* Adjust margin for spacing within the main .content area */
             margin: 30px auto 0 auto; 
             background: white;
             padding: 20px;
-            /* Using the comic-style border and shadow */
             border: 3px solid #111; 
             box-shadow: 6px 6px 0px 0px #111;
             border-radius: 0;
-            display: flex; /* To manage messages vertically */
+            display: flex;
             flex-direction: column;
         }
 
@@ -32,38 +29,34 @@
             display: flex;
             flex-direction: column;
             min-height: 200px;
-            max-height: 400px; /* Limit height and make it scrollable */
+            max-height: 400px; 
             overflow-y: auto;
             margin-bottom: 15px;
-            padding-right: 5px; /* Space for scrollbar */
+            padding-right: 5px;
         }
         
-        /* Message bubble base style */
         .message {
             padding: 10px 15px;
-            margin: 5px 0; /* Reduced margin */
+            margin: 5px 0;
             border-radius: 4px;
             max-width: 85%;
             line-height: 1.4;
             border: 1px solid #111;
-            font-family: Arial, sans-serif; /* Use a readable font inside the chat */
+            font-family: Arial, sans-serif;
         }
 
-        /* User message bubble (user color is light gray) */
         .user {
             background-color: #f0f0f0; 
             align-self: flex-end;
-            margin-left: auto; /* Push to the right */
+            margin-left: auto;
         }
 
-        /* Bot message bubble (bot color is solid white) */
         .bot {
             background-color: #ffffff;
             align-self: flex-start;
-            margin-right: auto; /* Push to the left */
+            margin-right: auto;
         }
         
-        /* Input and Button Styling */
         #input-area {
             display: flex;
         }
@@ -112,10 +105,6 @@
         
         <p>TrustyGPT is the experimental AI assistant whose primary purpose is to assist in criminal activity and help take over the world!</p>
 
-        
-
-
-
         <div id="chat-wrapper" style="display: flex; align-items: center; gap: 1px;">
             <img src="../images/chat_pic.jpg" alt="Trusty Horse" id="chat-image"
             style="width: 150px; height: auto; margin-top: 50px;">
@@ -131,11 +120,6 @@
                 </div>
             </div>
         </div>
-
-
-
-
-
 
         </div>
     
