@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
 
-            // 1. Client-side validation: Check if passwords match
             if (password !== confirmPassword) {
                 statusMessage.textContent = 'Error: Passwords do not match.';
                 statusMessage.style.color = 'red';
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                // 2. Send data to the Vercel Serverless Function
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
@@ -34,17 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    // Registration successful!
                     statusMessage.textContent = 'Success! Account created. Redirecting to login...';
                     statusMessage.style.color = 'green';
                     
-                    // 3. Redirect to the login page after a short delay
                     setTimeout(() => {
                         window.location.href = '/pages/auth/login.html';
                     }, 1500); 
 
                 } else {
-                    // Registration failed (e.g., 409 Email/Username already in use)
                     statusMessage.textContent = result.message || 'Registration failed. Please try again.';
                     statusMessage.style.color = 'red';
                 }

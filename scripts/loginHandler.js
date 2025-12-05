@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault(); // Stop the default form submission
+            e.preventDefault();
 
             errorMessage.textContent = 'Logging in...';
 
@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('password').value;
 
             try {
-                // Send credentials to the Vercel Serverless Function
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -24,21 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    // Login successful!
-                    errorMessage.textContent = ''; // Clear status
+                    errorMessage.textContent = '';
                     
-                    // The JWT is automatically saved as a cookie by the browser.
-                    // Now, set the necessary client-side flags and redirect.
                     localStorage.setItem('isUserLoggedIn', 'true');
-                    
-                    // Store the username (sent back from the API) to display in the header component
                     localStorage.setItem('username', result.username);
 
-                    // Redirect to the home page
                     window.location.href = '/index.html';
 
                 } else {
-                    // Login failed (e.g., 401 Invalid credentials, 400 Missing fields)
                     errorMessage.textContent = result.message || 'Login failed. Please try again.';
                 }
             } catch (error) {

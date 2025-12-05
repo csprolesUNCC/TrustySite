@@ -7,6 +7,22 @@ if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not defined in environment variables.');
 }
 
+if (req.method === 'GET') {
+        const user = authenticateUser(req);
+
+        if (user) {
+            return res.status(200).json({ 
+                isLoggedIn: true, 
+                username: user.username 
+            });
+        } else {
+            return res.status(401).json({ 
+                isLoggedIn: false, 
+                message: 'Session expired' 
+            });
+        }
+}
+
 export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
