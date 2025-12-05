@@ -60,6 +60,43 @@
         font-weight: bold;
         margin-top: 10px;
     }
+
+    /* NEW: Leaderboard Styles (Ported from Flappy) */
+    #leaderboard-container {
+        width: 500px; /* Matched to canvas width */
+        margin-top: 30px;
+        padding: 15px;
+        border: 3px solid #111;
+        background-color: #ffe08d;
+        box-shadow: 6px 6px 0px 0px #111;
+        text-align: left;
+    }
+    
+    #leaderboard-container h3 {
+        margin-top: 0;
+        border-bottom: 2px solid #111;
+        padding-bottom: 5px;
+        text-align: center;
+    }
+
+    #leaderboard-container ol {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    #leaderboard-container li {
+        font-size: 1.1em;
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 10px;
+        background-color: #fff9e6;
+        border: 1px solid #111;
+        border-radius: 4px;
+    }
 </style>
 </head>
 <body>
@@ -81,6 +118,10 @@
             <button id="finishBtn">DONE</button>
             <button id="restartBtn">RESTART</button>
         </div>
+
+        <div id="leaderboard-container">
+            <h3>🎨 Master Artists Loading...</h3>
+        </div>
     </div>
 
 
@@ -95,11 +136,12 @@ const ctx = canvas.getContext("2d");
 const finishButton = document.getElementById("finishBtn");
 const restartButton = document.getElementById("restartBtn");
 const scoreBox = document.getElementById("scoreBox");
+const leaderboardContainer = document.getElementById("leaderboard-container");
 
 let drawing = false;
 let gameFinished = false;
 let lastX = 0, lastY = 0;
-let drawingEnabled = false; // prevent drawing until preview ends
+let drawingEnabled = false;
 let timerInterval = null;
 let startTimeout = null;
 const timerDisplay = document.createElement("div");
@@ -107,6 +149,10 @@ timerDisplay.style.fontSize = "22px";
 timerDisplay.style.fontWeight = "bold";
 timerDisplay.style.marginTop = "10px";
 canvas.parentNode.insertBefore(timerDisplay, canvas.nextSibling);
+
+let highScore = 0;
+let leaderboard = [];
+let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
 
 // ---- Draw stick figure reference ----
 function drawReference(ctxToDraw) {
@@ -163,8 +209,8 @@ canvas.addEventListener("touchend", stopDraw);
 let hitData, expectData, closeData, zoneData;
 
 function gradeDrawing() {
-    if (!drawingEnabled && !gameFinished) return; // prevent scoring w/ reference image
-    if (gameFinished) return; // Prevent scoring twice
+    if (!drawingEnabled && !gameFinished) return;
+    if (gameFinished) return;
 
     resetGameState();
     gameFinished = true;
@@ -176,12 +222,8 @@ function gradeDrawing() {
     const width = canvas.width;
     const height = canvas.height;
 
-    // 1. Get User Data (The raw pixel array from the screen)
     const userImgData = ctx.getImageData(0, 0, width, height).data;
 
-    // 2. Get Reference Data (The ghost canvas)
-    // We pass '25' as the lineWidth to create a thick "Tolerance Zone" or Hitbox.
-    // If the user's line touches anywhere inside this thick invisible line, it counts.
     const perfectCanvas = getGhostCanvas(6);
     const perfectCtx = perfectCanvas.getContext('2d');
     const perfectImgData = perfectCtx.getImageData(0, 0, width, height).data;
@@ -210,12 +252,8 @@ function gradeDrawing() {
     let perfectUserPixels = 0;
     let totalRefPixels = 0;
 
-    // 3. The Comparison Loop
-    // The data array is a long list of [Red, Green, Blue, Alpha, Red, Green, Blue, Alpha...]
-    // We step by 4 to look at each pixel one by one.
     for (let i = 0; i < userImgData.length; i += 4) {
         
-        // We look at index + 3, which is the Alpha (transparency) channel.
         const userAlpha = userImgData[i + 3];
         const perfectAlpha = perfectImgData[i + 3];
         const ghostAlpha = ghostImgData[i + 3];
@@ -225,7 +263,7 @@ function gradeDrawing() {
 
         // completeness logic
         if (perfectAlpha > 50) {
-            totalRefPixels++; // count pixels in the perfect one!
+            totalRefPixels++;
             if (userAlpha > 50){
                 perfectUserPixels++;
             }
@@ -233,28 +271,22 @@ function gradeDrawing() {
         }
 
         // precision logic
-        // CHECK 1: Did the user draw here?
-        // We set threshold > 100 to ignore the faint gray guide lines 
-        // and only count the dark black ink the user drew.
-
-        // CHECK 2: Is this pixel inside the Reference Hitbox?
-
         if (userAlpha > 100) {
-            totalUserPixels++; // Count total amount of ink used
+            totalUserPixels++;
             if (perfectAlpha > 50) {
-                overlapCount=overlapCount+1.05; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+1.05;
             }
             else if (ghostAlpha > 50) {
-                overlapCount=overlapCount+0.9; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+0.9; 
             }
             else if (ghostAlpha2 > 50) {
-                overlapCount=overlapCount+0.8; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+0.8; 
             }
             else if (ghostAlpha3 > 50) {
-                overlapCount=overlapCount+0.7; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+0.7;
             }
             else if (ghostAlpha4 > 50) {
-                overlapCount=overlapCount+0.5; // Count how much of that ink is "Correct"
+                overlapCount=overlapCount+0.5;
             }
             else{
                 overlapCount=overlapCount-1.5;
@@ -273,46 +305,46 @@ function gradeDrawing() {
     }
     if (precision > 1) precision = 1;
 
-    // COMPLETENESS: Did you draw the whole figure? 
-    // We compare user's correct pixels against the reference's total pixels.
-    // We cap this at 1.0 so drawing EXTRA ink doesn't give > 100%
     let completeness = 0;
     if (totalRefPixels > 0) {
         completeness = (perfectUserPixels / totalRefPixels) * 4;
     }
     if (completeness > 1) completeness = 1;
 
-    // FINAL MIX: 50% precision, 50% Completeness
-    // This rewards neat lines AND finishing the drawing.
     let finalScoreRaw = (precision * 0.5) + (completeness * 0.5);
 
-
-    // too much ink penalty
     let inkRatio = 0;
     if (totalRefPixels > 0) {
         inkRatio = totalUserPixels / totalRefPixels;
     }
 
-    // Set a threshold. 
-    // If the user uses 5x more pixels than the reference, that's fine (normal brush).
-    // If they go above 5x, we start penalizing.
     const maxAllowedRatio = 1.3; 
-    let thicknessPenalty = 1.0; // Default: No penalty (100% of score)
+    let thicknessPenalty = 1.0; 
 
     if (inkRatio > maxAllowedRatio) {
-        // The penalty gets harsher the more they scribble.
-        // Example: If ratio is 10.0, penalty becomes (5 / 10) = 0.5. Score is cut in half.
         thicknessPenalty = maxAllowedRatio / inkRatio;
     }
 
-    // Apply the penalty
     finalScoreRaw = finalScoreRaw * thicknessPenalty;
     let finalScore = Math.floor(finalScoreRaw * 100);
 
     if (finalScore < 0) finalScore = 0;
     const msg = finalScore === 100 ? "🎉 PERFECT!" : "";
 
-    scoreBox.textContent = `Score: ${finalScore}% ${msg}`;
+    let highScoreMsg = "";
+    if (isUserLoggedIn) {
+        if (finalScore > highScore) {
+            submitScore(finalScore);
+            highScore = finalScore;
+            highScoreMsg = ` (New Personal Best!)`;
+        } else {
+            highScoreMsg = ` (High: ${highScore}%)`;
+        }
+    } else {
+        highScoreMsg = " (Log in to save!)";
+    }
+
+    scoreBox.textContent = `Score: ${finalScore}%${msg}${highScoreMsg}`;
 
     // --- SHOW FINAL REFERENCE LINE ---
     ctx.globalCompositeOperation = 'destination-over';
@@ -325,15 +357,13 @@ function gradeDrawing() {
 function resetGameState() {
     gameFinished = false;
     if (timerInterval) clearInterval(timerInterval);
-    if (startTimeout) clearTimeout(startTimeout); // Stops the pending game start
+    if (startTimeout) clearTimeout(startTimeout);
     timerInterval = null;
     startTimeout = null;
     drawingEnabled = false;
 }
 
-
 function startGame() {
-    // 1. Kill any existing timers or pending starts immediately
     resetGameState();
     timerDisplay.style.display = "block"; 
     timerDisplay.textContent = "Memorize Trusty!";
@@ -345,11 +375,9 @@ function startGame() {
     ctx.strokeStyle = '#000000';
     drawReference(ctx);
 
-    // 2. Assign the timeout to the variable so we can cancel it if needed
     startTimeout = setTimeout(() => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Reset styles for user drawing (Important because drawReference changed them)
         ctx.lineWidth = 5;
         ctx.strokeStyle = "black";
         ctx.lineCap = "round";
@@ -363,7 +391,6 @@ function startGame() {
             timeLeft--;
             timerDisplay.textContent = `Time left: ${timeLeft}s`;
             if (timeLeft <= 0) {
-                //resetGameState(); // Stop timers
                 gradeDrawing();
             }
         }, 1000);
@@ -372,35 +399,22 @@ function startGame() {
 }
 
 
-// THIS LINE WAS MISSING:
 finishButton.addEventListener("click", gradeDrawing);
-
-// ---- Restart ----
 restartButton.addEventListener("click", startGame);
-
-
-
-
-
-
 
 
 // making grading layers
 function getGhostCanvas(lineWidth) {
-    // 1. Create an off-screen canvas
     const canvas = document.createElement('canvas');
     canvas.width = 500;
     canvas.height = 500;
     const ctx = canvas.getContext('2d');
 
-    // 2. Set the style
     ctx.lineWidth = lineWidth;
     ctx.strokeStyle = "black";
-    ctx.lineCap = "round"; // Important for smooth joints
+    ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // 3. Draw the Shape (Exact coordinates from your original code)
-    
     // -- Head --
     ctx.beginPath();
     ctx.ellipse(100, 180, 75, 75 * 1.25, 0, 0, Math.PI * 2);
@@ -451,32 +465,80 @@ function getGhostCanvas(lineWidth) {
     return canvas;
 }
 
+//nLeaderboard & API Functions
+async function fetchLeaderboard() {
+    try {
+        const response = await fetch('/api/draw/get-draw-scores'); 
+        if (!response.ok) throw new Error('Failed to fetch leaderboard');
+        leaderboard = await response.json();
+    } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+        leaderboard = []; 
+    }
+    drawLeaderboard(); 
+}
 
+async function submitScore(finalScore) {
+    if (!isUserLoggedIn) return;
 
+    try {
+        const response = await fetch('/api/draw/submit-draw-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ score: finalScore })
+        });
 
+        if (response.ok) {
+            console.log('Score submitted successfully! Refreshing...');
+            await fetchPersonalHighScore();
+            await fetchLeaderboard();
+        } else {
+            console.error('Score submission failed.');
+        }
+    } catch (error) {
+        console.error("Error submitting score:", error);
+    }
+}
 
+async function fetchPersonalHighScore() {
+    if (!isUserLoggedIn) {
+        highScore = 0;
+        return;
+    }
 
+    try {
+        const response = await fetch('/api/draw/get-user-draw-highscore'); 
+        if (!response.ok) throw new Error('Failed to fetch user high score');
+        const data = await response.json();
+        highScore = data.highScore || 0; 
+    } catch (error) {
+        console.error("Error fetching personal high score:", error);
+        highScore = 0; 
+    }
+}
 
+function drawLeaderboard() {
+    let html = '<h3>🎨 Master Artists 🎨</h3><ol>';
+    
+    if (leaderboard.length === 0) {
+        html += '<p style="text-align:center;">No drawings ranked yet!</p>';
+    } else {
+        leaderboard.slice(0, 10).forEach((entry, index) => { 
+            html += `
+                <li>
+                    <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
+                    <span>**${entry.score}%**</span>
+                </li>
+            `;
+        });
+    }
+    
+    html += '</ol>';
+    leaderboardContainer.innerHTML = html;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fetchLeaderboard();
+fetchPersonalHighScore();
 startGame();
 </script>
 </body>
