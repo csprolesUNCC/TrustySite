@@ -1,13 +1,16 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '../connect.js';
+import { authenticateUser } from '/utils/auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not defined in environment variables.');
 }
 
-if (req.method === 'GET') {
+export default async (req, res) => {
+
+    if (req.method === 'GET') {
         const user = authenticateUser(req);
 
         if (user) {
@@ -21,9 +24,8 @@ if (req.method === 'GET') {
                 message: 'Session expired' 
             });
         }
-}
+    }
 
-export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
