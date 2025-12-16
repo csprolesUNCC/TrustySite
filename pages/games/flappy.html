@@ -150,7 +150,9 @@
 
         // sound effect
         const jumpSound = new Audio("/sound/vineboom.m4a"); 
-        const horseSound = new Audio("/sound/horse.m4a"); 
+        const horseSound = new Audio("/sound/horse.m4a");
+        const bubbleSound = new Audio("/sound/bubble.m4a"); 
+        const seahorseSound = new Audio("/sound/SeahorseTrusty.m4a");
         //jumpSound.volume = 0.4; 
 
         // Player
@@ -406,6 +408,14 @@
                     if (score == 10){
                         trustyImg.src = "/images/detailed_horse.jpg";
                         horseSound.play();
+                    }
+                    else if (score == 20){
+                        trustyImg.src = "/images/seahorse.jpg";
+                        bubbleSound.play();
+                        canvas.style.background = "#00008B";
+                    }
+                    else if (score == 21){
+                        seahorseSound.play();
                     }
                 }
                 previousScore = score; 
