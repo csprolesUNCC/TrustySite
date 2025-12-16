@@ -250,7 +250,9 @@ function gradeDrawing() {
     let totalUserPixels = 0;
 
     let perfectUserPixels = 0;
-    let totalRefPixels = 0;
+    let totalRefPixels = 0
+
+    const radius = 5;
 
     for (let i = 0; i < userImgData.length; i += 4) {
         
@@ -264,8 +266,27 @@ function gradeDrawing() {
         // completeness logic
         if (perfectAlpha > 50) {
             totalRefPixels++;
-            if (userAlpha > 50){
-                perfectUserPixels++;
+            let matched = false;
+
+            const pixelIndex = i / 4;
+            const x = pixelIndex % width;
+            const y = Math.floor(pixelIndex / width);
+
+            for (let dx = -radius; dx <= radius && !matched; dx++) {
+                for (let dy = -radius; dy <= radius; dy++) {
+
+                    const nx = x + dx;
+                    const ny = y + dy;
+
+                    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+
+                    const ni = (ny * width + nx) * 4;
+                    if (userImgData[ni + 3] > 50) {
+                        perfectUserPixels++;
+                        matched = true;
+                        break;
+                    }
+                }
             }
 
         }
@@ -307,7 +328,7 @@ function gradeDrawing() {
 
     let completeness = 0;
     if (totalRefPixels > 0) {
-        completeness = (perfectUserPixels / totalRefPixels) * 4;
+        completeness = (perfectUserPixels / totalRefPixels);
     }
     if (completeness > 1) completeness = 1;
 
