@@ -193,7 +193,7 @@
         let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
         let previousScore = 0;
 
-        document.addEventListener("touchstart", e => {
+        canvas.addEventListener("touchstart", e => {
             e.preventDefault();
             justTapped = true;
             jump();
