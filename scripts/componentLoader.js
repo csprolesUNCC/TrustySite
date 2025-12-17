@@ -65,7 +65,7 @@ function loadAuthComponent() {
         const clickImg = document.getElementById('game-click-image');
         const display = document.getElementById('click-count');
         
-        fetch('/api/user/clicks')
+        fetch('/api/clicks')
             .then(res => res.json())
             .then(data => {
                 display.textContent = data.clicks || 0;
@@ -77,7 +77,7 @@ function loadAuthComponent() {
             display.textContent = currentClicks + 1;
 
             try {
-                const response = await fetch('/api/user/click', { 
+                const response = await fetch('/api/clicks', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
