@@ -52,21 +52,54 @@ function loadAuthComponent() {
     }
 
     function loadLoggedInUI() {
-        loadComponent('auth-component-placeholder', loggedInPath, () => {
-            const logoutLink = document.getElementById('logout-link');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    
-                    localStorage.removeItem('isUserLoggedIn');
-                    localStorage.removeItem('username');
-                    
-                    fetch('/api/auth/logout', { method: 'POST' })
-                        .then(() => { window.location.href = '/index.html'; })
-                        .catch(() => { window.location.href = '/index.html'; });
+        loadComponent('auth-component-placeholder', '/components/auth-logged-in.html', () => {
+            setupLogoutListener();
+        });
+
+        loadComponent('click-game-placeholder', '/components/click-game.html', () => {
+            initializeClickGame();
+        });
+    }
+
+    function initializeClickGame() {
+        const clickImg = document.getElementById('game-click-image');
+        const display = document.getElementById('click-count');
+        
+        fetch('/api/user/clicks')
+            .then(res => res.json())
+            .then(data => {
+                display.textContent = data.clicks || 0;
+            })
+            .catch(err => console.error("Failed to load clicks", err));
+
+        clickImg.addEventListener('click', async () => {
+            let currentClicks = parseInt(display.textContent);
+            display.textContent = currentClicks + 1;
+
+            try {
+                const response = await fetch('/api/user/click', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                const result = await response.json();
+                display.textContent = result.clicks;
+            } catch (error) {
+                console.error("Error saving click:", error);
             }
         });
+    }
+
+    function setupLogoutListener() {
+        const logoutLink = document.getElementById('logout-link');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('isUserLoggedIn');
+                localStorage.removeItem('username');
+                fetch('/api/auth/logout', { method: 'POST' })
+                    .then(() => { window.location.href = '/index.html'; });
+            });
+        }
     }
 }
 

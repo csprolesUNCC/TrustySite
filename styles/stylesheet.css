@@ -330,3 +330,17 @@ a:hover {
     margin: 0;
     color: #333;
 }
+
+#click-game-placeholder {
+    position: absolute;
+    top: 1.5em;
+    left: 20px;
+    color: white;
+    font-family: 'Arial Black', Gadget, sans-serif;
+    z-index: 100;
+}
+
+#game-click-image:active {
+    transform: scale(0.9);
+    filter: brightness(1.2);
+}
