@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db.js';
+import { connectToDatabase } from './connect.js';
 import { authenticateUser } from '../utils/auth.js';
 
 export default async (req, res) => {
@@ -7,7 +7,7 @@ export default async (req, res) => {
 
     try {
         const { db } = await connectToDatabase();
-        const collection = db.collection('scores');
+        const collection = db.collection('flappy-scores');
 
         // --- 1. SUBMIT SCORE (POST) ---
         if (method === 'POST') {
