@@ -266,7 +266,7 @@
         }
 
         try {
-            const response = await fetch('/api/flappy-api'); 
+            const response = await fetch('/api/flappy-api?action=personal'); 
             if (!response.ok) throw new Error('Failed to fetch user high score');
             const data = await response.json();
             highScore = data.highScore; 
