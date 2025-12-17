@@ -8,7 +8,7 @@ export default async (req, res) => {
     }
 
     try {
-        const { db } = await connectToDatabase();
+        const  db  = await connectToDatabase();
         const collection = db.collection('click_game');
 
         if (req.method === 'GET') {
