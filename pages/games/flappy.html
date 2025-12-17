@@ -111,6 +111,23 @@
             border: 1px solid #111;
             border-radius: 4px;
         }
+
+        /* trying to fix mobile view here! */
+        @media (max-width: 850px) {
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #leaderboard-container,
+        #daily-leaderboard-container {
+            max-width: 100%;
+            width: 800px;
+            box-sizing: border-box;
+        }
+        }
+        /* trying to fix mobile view here! */
+
     </style>
 </head>
 
@@ -124,8 +141,8 @@
     <nav id="navbar-placeholder"></nav>
 
     <div class="content">
-        <h2>Can Trusty Fly? (No)</h2>
-        <p>A classic test of patience and physics! Click or press any key to flap your way through the deadly pipes.</p>
+        <h2>Yo that horse flying!</h2>
+        <p>Click or press any key to start flappin!</p>
 
         <canvas id="gameCanvas" width="800" height="600"></canvas>
     
@@ -150,7 +167,9 @@
 
         // sound effect
         const jumpSound = new Audio("/sound/vineboom.m4a"); 
-        const horseSound = new Audio("/sound/horse.m4a"); 
+        const horseSound = new Audio("/sound/horse.m4a");
+        const bubbleSound = new Audio("/sound/bubble.mp3"); 
+        const seahorseSound = new Audio("/sound/SeahorseTrusty.m4a");
         //jumpSound.volume = 0.4; 
 
         // Player
@@ -191,7 +210,7 @@
         let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
         let previousScore = 0;
 
-        document.addEventListener("touchstart", e => {
+        canvas.addEventListener("touchstart", e => {
             e.preventDefault();
             justTapped = true;
             jump();
@@ -324,6 +343,7 @@
 
         function resetGame() {
             trustyImg.src = "/images/trusty.png";
+            canvas.style.background = "#70c5ce";
 
             horse.y = 250;
             horse.velocity = -3;
@@ -406,6 +426,14 @@
                     if (score == 10){
                         trustyImg.src = "/images/detailed_horse.jpg";
                         horseSound.play();
+                    }
+                    else if (score == 20){
+                        trustyImg.src = "/images/seahorse.jpg";
+                        bubbleSound.play();
+                        canvas.style.background = "#00008B";
+                    }
+                    else if (score == 21){
+                        seahorseSound.play();
                     }
                 }
                 previousScore = score; 
