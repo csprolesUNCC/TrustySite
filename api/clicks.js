@@ -1,4 +1,4 @@
-import connectToDatabase from 'connect.js';
+import connectToDatabase from 'db.js';
 import { authenticateUser } from '../utils/auth.js';
 
 export default async (req, res) => {
