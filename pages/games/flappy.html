@@ -12,17 +12,13 @@
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
     <style>
-        /* Specific overrides for the Flappy Horse page */
         body {
-            /* Override the dark background set in the original flappy.html,
-               but ensure the main body background from stylesheet.css is used */
-            background: #f0f0f0; /* Default body background from stylesheet.css */
-            display: block; /* Change display from flex to block for standard layout */
+            background: #f0f0f0; 
+            display: block;
             height: auto;
-            min-height: 100vh; /* Ensure full viewport height */
+            min-height: 100vh; 
         }
 
-        /* Center the canvas within the content area */
         .content {
             display: flex;
             flex-direction: column;
@@ -37,15 +33,14 @@
             margin-top: 20px;
         }
 
-        /* NEW: Styles for the Leaderboard Container */
         #leaderboard-container {
-            width: 800px; /* Match canvas width */
+            width: 800px;
             margin-top: 30px;
             padding: 15px;
             border: 3px solid #111;
-            background-color: #ffe08d; /* Light, contrasting background */
+            background-color: #ffe08d; 
             box-shadow: 6px 6px 0px 0px #111;
-            text-align: left; /* Align text within the container */
+            text-align: left;
         }
         
         #leaderboard-container h3 {
@@ -74,18 +69,16 @@
             border-radius: 4px;
         }
 
-        /* NEW: Styles for the Daily Leaderboard Container */
         #daily-leaderboard-container {
-            width: 800px; /* Match canvas width */
-            margin-top: 15px; /* Reduced margin */
+            width: 800px; 
+            margin-top: 15px; 
             padding: 15px;
             border: 3px solid #111;
-            background-color: #ffd9d9; /* Light, contrasting background (e.g., light red/pink) */
+            background-color: #ffd9d9;
             box-shadow: 6px 6px 0px 0px #111;
             text-align: left;
         }
         
-        /* Apply existing styles to the new container's children */
         #daily-leaderboard-container h3 {
             margin-top: 0;
             border-bottom: 2px solid #111;
@@ -107,12 +100,11 @@
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
-            background-color: #ffffff; /* White list item background */
+            background-color: #ffffff;
             border: 1px solid #111;
             border-radius: 4px;
         }
 
-        /* trying to fix mobile view here! */
         @media (max-width: 850px) {
         canvas {
             max-width: 100%;
@@ -126,8 +118,6 @@
             box-sizing: border-box;
         }
         }
-        /* trying to fix mobile view here! */
-
     </style>
 </head>
 
@@ -228,7 +218,7 @@
         // 1. Fetch scores from the API
         async function fetchLeaderboard() {
             try {
-                const response = await fetch('/api/get-scores'); 
+                const response = await fetch('/api/flappy-api'); 
                 if (!response.ok) throw new Error('Failed to fetch leaderboard');
                 leaderboard = await response.json();
             } catch (error) {
@@ -246,7 +236,7 @@
             }
 
             try {
-                const response = await fetch('/api/submit-score', {
+                const response = await fetch('/api/flappy-api', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -276,7 +266,7 @@
         }
 
         try {
-            const response = await fetch('/api/get-user-highscore'); 
+            const response = await fetch('/api/flappy-api'); 
             if (!response.ok) throw new Error('Failed to fetch user high score');
             const data = await response.json();
             highScore = data.highScore; 
