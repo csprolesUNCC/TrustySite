@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>da tractor crew - Trusty da Horse</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../images/icon-16x16.png">
+    <link rel="stylesheet" href="../../styles/stylesheet.css">
+    <style>
+        /* Replicating your comic-item style for the season buttons */
+        .season-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .season-card {
+            padding: 20px;
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 6px 6px 0px 0px #111;
+            text-align: center;
+            transition: transform 0.1s ease;
+        }
+
+        .season-card:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #111;
+        }
+
+        .season-card h3 {
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .view-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border: 2px solid #333;
+            text-decoration: none;
+            color: #111;
+            font-weight: bold;
+            box-shadow: 3px 3px 0px 0px #111;
+        }
+
+        .view-btn:hover {
+            background-color: #ffe100; /* A "Trusty" yellow accent */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div id="click-game-placeholder"></div>
+        <h1>da tractor crew</h1>
+        <div id="auth-component-placeholder"></div>
+    </header>
+
+    <nav id="navbar-placeholder"></nav>
+
+    <div class="content">
+        <a href="../../index.html" style="text-decoration: none;">← Back to All Comics</a>
+        
+        <h2>Select a Season</h2>
+        <p>Straight from the archives of Mrs. Cabasa's 8th Grade Math Class.</p>
+
+        <div class="season-grid">
+            <div class="season-card">
+                <h3>Season 1</h3>
+                <a href="season1.html" class="view-btn">View Episodes</a>
+            </div>
+
+            <div class="season-card">
+                <h3>Season 2</h3>
+                <a href="season2.html" class="view-btn">View Episodes</a>
+            </div>
+
+            <div class="season-card">
+                <h3>Season 3</h3>
+                <a href="season3.html" class="view-btn">View Episodes</a>
+            </div>
+
+            <div class="season-card">
+                <h3>Season 4</h3>
+                <a href="season4.html" class="view-btn">View Episodes</a>
+            </div>
+        </div>
+    </div>
+
+    <footer><p id="footer-placeholder"></p></footer>
+    
+    <script src="../../scripts/componentLoader.js"></script>
+    <script src="../../scripts/loginHandler.js"></script>
+
+</body>
+</html>
