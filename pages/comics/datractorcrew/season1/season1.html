@@ -12,7 +12,9 @@
     
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
+    
     <style>
+        /* Comic Grid Layout */
         .comic-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -32,9 +34,67 @@
             border: 1px solid #111;
             margin-bottom: 10px;
         }
+
+        /* The Overlay Reader */
+        #comic-reader {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            z-index: 9999;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .reader-content {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 10px;
+            border: 4px solid #111;
+            box-shadow: 10px 10px 0px #000;
+        }
+        .reader-content img {
+            width: 100%;
+            display: block;
+            margin-bottom: 2px; /* Seamless scroll look */
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* Brutalist Style Close Button */
+        .close-btn {
+            position: sticky;
+            top: 20px;
+            float: right;
+            background: #ffe100; /* Trusty Yellow */
+            color: #111;
+            border: 3px solid #111;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 900;
+            box-shadow: 6px 6px 0px #000;
+            text-transform: uppercase;
+            z-index: 10001;
+        }
+        .close-btn:hover {
+            background: #ff4444;
+            color: white;
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px #000;
+        }
+        .close-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
     </style>
 </head>
 <body>
+
+    <div id="comic-reader">
+        <button class="close-btn" onclick="closeReader()">Close Reader X</button>
+        <div class="reader-content" id="reader-images">
+            </div>
+    </div>
 
     <header>
         <div id="click-game-placeholder"></div>
@@ -45,42 +105,83 @@
     <nav id="navbar-placeholder"></nav>
 
     <div class="content">
-        <p><a href="../datractorcrew.html" style="text-decoration:none;">← Back to Season Select</a></p>
+        <p><a href="../datractorcrew.html" style="text-decoration:none; font-weight:bold;">← Back to Season Select</a></p>
 
         <div class="comic-grid">
+            
             <div class="comic-item">
                 <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 1 Cover">
                 <h3>Episode 1</h3>
-                <a href="#">View Comic</a>
+                <a href="javascript:void(0)" class="view-btn" onclick="openReader(1, 5)">View Comic</a>
             </div>
 
             <div class="comic-item">
                 <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 2 Cover">
                 <h3>Episode 2</h3>
-                <a href="#">View Comic</a>
+                <a href="javascript:void(0)" class="view-btn" onclick="openReader(2, 5)">View Comic</a>
             </div>
 
             <div class="comic-item">
                 <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 3 Cover">
                 <h3>Episode 3</h3>
-                <a href="#">View Comic</a>
+                <a href="javascript:void(0)" class="view-btn" onclick="openReader(3, 5)">View Comic</a>
             </div>
 
             <div class="comic-item">
                 <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 4 Cover">
                 <h3>Episode 4</h3>
-                <a href="#">View Comic</a>
+                <a href="javascript:void(0)" class="view-btn" onclick="openReader(4, 5)">View Comic</a>
             </div>
 
             <div class="comic-item">
                 <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 5 Cover">
                 <h3>Episode 5</h3>
-                <a href="#">View Comic</a>
+                <a href="javascript:void(0)" class="view-btn" onclick="openReader(5, 5)">View Comic</a>
             </div>
+
         </div>
     </div>
 
     <footer><p id="footer-placeholder"></p></footer>
+
+    <script>
+        function openReader(episodeNum, pageCount) {
+            const reader = document.getElementById('comic-reader');
+            const container = document.getElementById('reader-images');
+            
+            // 1. Clear previous content
+            container.innerHTML = '';
+
+            // 2. Loop and add images based on your path:
+            // images/comics/datractorcrew/s1/e[NUM]/p[PAGE].jpg
+            for (let i = 1; i <= pageCount; i++) {
+                const img = document.createElement('img');
+                img.src = `../../../../images/comics/datractorcrew/s1/e${episodeNum}/p${i}.jpg`;
+                img.alt = `Episode ${episodeNum} Page ${i}`;
+                
+                // If an image is missing, don't show a broken icon
+                img.onerror = function() { this.style.display = 'none'; };
+                
+                container.appendChild(img);
+            }
+
+            // 3. Show reader and lock scroll
+            reader.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            // Scroll reader to top in case it was open before
+            reader.scrollTop = 0;
+        }
+
+        function closeReader() {
+            document.getElementById('comic-reader').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close reader if user hits 'Escape' key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") closeReader();
+        });
+    </script>
     
     <script src="../../../../scripts/componentLoader.js"></script>
     <script src="../../../../scripts/loginHandler.js"></script>
