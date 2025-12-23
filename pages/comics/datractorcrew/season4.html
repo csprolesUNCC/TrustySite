@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Season 3 - Trusty da Horse</title>
+    <title>Season 4 - Trusty da Horse</title>
     
-    <link rel="apple-touch-icon" sizes="180x180" href="../../../../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../../../../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../../../../images/icon-16x16.png">
-    <link rel="stylesheet" href="../../../../styles/stylesheet.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="../../../images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../../images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../../images/icon-16x16.png">
+    <link rel="stylesheet" href="../../../styles/stylesheet.css">
     
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
@@ -98,7 +98,7 @@
 
     <header>
         <div id="click-game-placeholder"></div>
-        <h1>Season 3</h1>
+        <h1>Season 4</h1>
         <div id="auth-component-placeholder"></div>
     </header>
 
@@ -110,21 +110,15 @@
         <div class="comic-grid">
             
             <div class="comic-item">
-                <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 1 Cover">
+                <img src="../../../images/horsePlaceholder.jpg" alt="Episode 1 Cover">
                 <h3>Episode 1</h3>
                 <a href="javascript:void(0)" class="view-btn" onclick="openReader(1, 5)">View Comic</a>
             </div>
 
             <div class="comic-item">
-                <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 2 Cover">
+                <img src="../../../images/horsePlaceholder.jpg" alt="Episode 2 Cover">
                 <h3>Episode 2</h3>
                 <a href="javascript:void(0)" class="view-btn" onclick="openReader(2, 5)">View Comic</a>
-            </div>
-
-            <div class="comic-item">
-                <img src="../../../../images/horsePlaceholder.jpg" alt="Episode 3 Cover">
-                <h3>Episode 3</h3>
-                <a href="javascript:void(0)" class="view-btn" onclick="openReader(3, 5)">View Comic</a>
             </div>
 
         </div>
@@ -144,7 +138,7 @@
             // images/comics/datractorcrew/s1/e[NUM]/p[PAGE].jpg
             for (let i = 1; i <= pageCount; i++) {
                 const img = document.createElement('img');
-                img.src = `../../../../images/comics/datractorcrew/s3/e${episodeNum}/p${i}.jpg`;
+                img.src = `../../../images/comics/datractorcrew/s4/e${episodeNum}/p${i}.jpg`;
                 img.alt = `Episode ${episodeNum} Page ${i}`;
                 
                 // If an image is missing, don't show a broken icon
@@ -171,8 +165,8 @@
         });
     </script>
     
-    <script src="../../../../scripts/componentLoader.js"></script>
-    <script src="../../../../scripts/loginHandler.js"></script>
+    <script src="../../../scripts/componentLoader.js"></script>
+    <script src="../../../scripts/loginHandler.js"></script>
 
 </body>
 </html>
