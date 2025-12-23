@@ -15,8 +15,8 @@
             display: block; /* Changed from flex to block to allow header/footer to stack */
             font-family: "Arial Black", Arial, sans-serif;
             color: #111;
-            touch-action: none;
-            overscroll-behavior: none;
+            touch-action: auto;
+            overscroll-behavior: auto;
         }
 
         .content {
@@ -35,6 +35,7 @@
             image-rendering: pixelated;
             max-width: 95vw;
             height: auto;
+            touch-action: none;
         }
 
         /* Leaderboard styling from Flappy Trusty if you want it */
@@ -70,6 +71,8 @@
             flex-direction: column;
             align-items: center;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
         .d-row { display: flex; justify-content: center; }
         .d-btn {
