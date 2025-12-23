@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Centered Pipe Snake</title>
+  <style>
+    body {
+      background: #f0f0f0;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      font-family: "Arial Black", Arial, sans-serif;
+      color: #111;
+    }
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px 10px;
+    }
+    canvas {
+      margin-top: 10px;
+      background: #fff;
+      border: 4px solid #111;
+      box-shadow: 8px 8px 0px 0px #111;
+      image-rendering: pixelated;
+    }
+    #score {
+      margin-top: 15px;
+      font-size: 1.5rem;
+      border: 3px solid #111;
+      padding: 8px 20px;
+      background: #fff;
+      box-shadow: 5px 5px 0px 0px #111;
+    }
+    .controls {
+      margin-top: 15px;
+      border: 2px solid #111;
+      padding: 10px 15px;
+      background: #fff;
+      box-shadow: 4px 4px 0px 0px #111;
+    }
+    select {
+      font-family: inherit;
+      font-weight: bold;
+      border: 2px solid #111;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="content">
+  <h1>Snake</h1>
+  <canvas id="game" width="600" height="600"></canvas>
+  <div id="score">Score: 0</div>
+  <div class="controls">
+    Food:
+    <select id="foodSelect">
+      <option value="/images/orange.jpg">Orange</option>
+      <option value="/images/bigmac.jpg">Big Mac</option>
+    </select>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const gridSize = 40; 
+  const tiles = canvas.width / gridSize;
+
+  // --- Images ---
+  const headImg = new Image();
+  const bodyImg = new Image();
+  const tailImg = new Image();
+  const cornerImg = new Image();
+  const foodImg = new Image();
+
+  headImg.src = "/images/snakehead.jpg";
+  bodyImg.src = "/images/snakebody.jpg";
+  tailImg.src = "/images/snaketail.jpg";
+  cornerImg.src = "/images/snakecorner.jpg"; 
+  // Set default food to the first option in the dropdown
+  foodImg.src = "/images/orange.jpg";
+
+  document.getElementById("foodSelect").addEventListener("change", e => {
+    foodImg.src = e.target.value;
+  });
+
+  // --- Game State ---
+  let snake, dir, inputQueue, food, score, gameOver;
+
+  function resetGame() {
+    snake = [{ x: 7, y: 7 }];
+    dir = { x: 1, y: 0 };
+    inputQueue = [];
+    score = 0;
+    gameOver = false;
+    food = spawnFood();
+    updateScoreUI();
+  }
+
+  function spawnFood() {
+    let newFood;
+    while (true) {
+      newFood = { x: Math.floor(Math.random() * tiles), y: Math.floor(Math.random() * tiles) };
+      if (!snake.some(seg => seg.x === newFood.x && seg.y === newFood.y)) return newFood;
+    }
+  }
+
+  function updateScoreUI() { document.getElementById("score").textContent = `Score: ${score}`; }
+  function getDir(a, b) { return { x: a.x - b.x, y: a.y - b.y }; }
+
+  function update() {
+    if (gameOver) return;
+    if (inputQueue.length > 0) dir = inputQueue.shift();
+
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    if (head.x < 0 || head.y < 0 || head.x >= tiles || head.y >= tiles ||
+        snake.some(s => s.x === head.x && s.y === head.y)) {
+      gameOver = true;
+      return;
+    }
+
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      updateScoreUI();
+      food = spawnFood();
+    } else {
+      snake.pop();
+    }
+  }
+
+  function drawSegment(img, x, y, angle) {
+    ctx.save();
+    ctx.translate(x * gridSize + gridSize / 2, y * gridSize + gridSize / 2);
+    ctx.rotate(angle);
+    if (!img.complete || img.naturalWidth === 0) {
+      ctx.fillStyle = "#333";
+      ctx.fillRect(-gridSize/2 + 2, -gridSize/2 + 2, gridSize - 4, gridSize - 4);
+    } else {
+      ctx.drawImage(img, -gridSize / 2, -gridSize / 2, gridSize, gridSize);
+    }
+    ctx.restore();
+  }
+
+  function drawSnake() {
+    for (let i = 0; i < snake.length; i++) {
+      const seg = snake[i];
+      
+      if (i === 0) {
+        // --- Head ---
+        const d = snake.length > 1 ? getDir(seg, snake[1]) : { x: -dir.x, y: -dir.y };
+        drawSegment(headImg, seg.x, seg.y, Math.atan2(-d.y, -d.x));
+      } else if (i === snake.length - 1) {
+        // --- Tail (180 flip) ---
+        const d = getDir(snake[i-1], seg);
+        drawSegment(tailImg, seg.x, seg.y, Math.atan2(d.y, d.x) + Math.PI);
+      } else {
+        // --- Body / Corner Logic ---
+        const ahead = snake[i-1], behind = snake[i+1];
+        const dAhead = getDir(ahead, seg), dBehind = getDir(behind, seg);
+
+        if (dAhead.x + dBehind.x === 0 && dAhead.y + dBehind.y === 0) {
+          drawSegment(bodyImg, seg.x, seg.y, Math.atan2(dAhead.y, dAhead.x) + Math.PI);
+        } else {
+          const sX = dAhead.x + dBehind.x;
+          const sY = dAhead.y + dBehind.y;
+          let cAngle = 0;
+          if (sX === 1 && sY === 1) cAngle = 0;
+          else if (sX === -1 && sY === 1) cAngle = Math.PI / 2;
+          else if (sX === -1 && sY === -1) cAngle = Math.PI;
+          else if (sX === 1 && sY === -1) cAngle = -Math.PI / 2;
+
+          drawSegment(cornerImg, seg.x, seg.y, cAngle);
+        }
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#f0f0f0";
+    for(let i=0; i<=tiles; i++) {
+      ctx.beginPath(); ctx.moveTo(i*gridSize, 0); ctx.lineTo(i*gridSize, canvas.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i*gridSize); ctx.lineTo(canvas.width, i*gridSize, canvas.height); ctx.stroke();
+    }
+    drawSnake();
+    
+    // Draw Food
+    if (foodImg.complete && foodImg.naturalWidth !== 0) {
+        ctx.drawImage(foodImg, food.x * gridSize + 4, food.y * gridSize + 4, gridSize - 8, gridSize - 8);
+    } else {
+        ctx.fillStyle = "orange";
+        ctx.fillRect(food.x * gridSize + 4, food.y * gridSize + 4, gridSize - 8, gridSize - 8);
+    }
+
+    if (gameOver) {
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#111"; ctx.textAlign = "center";
+      ctx.font = "40px Arial Black"; ctx.fillText("Game Over", 300, 280);
+      ctx.font = "20px Arial Black"; ctx.fillText("Press any key to restart", 300, 330);
+    }
+  }
+
+  document.addEventListener("keydown", e => {
+    if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight", " "].includes(e.key)) e.preventDefault();
+    if (gameOver) { resetGame(); return; }
+    let nd = null;
+    if (e.key === "ArrowUp") nd = { x: 0, y: -1 };
+    if (e.key === "ArrowDown") nd = { x: 0, y: 1 };
+    if (e.key === "ArrowLeft") nd = { x: -1, y: 0 };
+    if (e.key === "ArrowRight") nd = { x: 1, y: 0 };
+    
+    if (nd) {
+      const lastMove = inputQueue.length ? inputQueue[inputQueue.length - 1] : dir;
+      if (nd.x + lastMove.x !== 0 || nd.y + lastMove.y !== 0) {
+        if (inputQueue.length < 2) inputQueue.push(nd);
+      }
+    }
+  });
+
+  resetGame();
+  setInterval(() => { update(); draw(); }, 125);
+</script>
+</body>
+</html>
