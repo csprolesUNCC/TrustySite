@@ -93,6 +93,27 @@
         border-radius: 4px;
     }
 
+    .leaderboard-entry {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .leaderboard-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-drawing-thumb {
+        width: 50px;
+        height: 50px;
+        border: 1px solid #111;
+        background: white;
+        object-fit: contain;
+    }
+
     /* trying to fix mobile view here! */
     @media (max-width: 850px) {
     canvas {
@@ -562,10 +583,20 @@ function drawLeaderboard() {
         html += '<p style="text-align:center;">No drawings ranked yet!</p>';
     } else {
         leaderboard.slice(0, 10).forEach((entry, index) => { 
+            const drawingImg = entry.drawing 
+                ? `<img src="${entry.drawing}" class="user-drawing-thumb" alt="${entry.name}'s drawing">` 
+                : `<div class="user-drawing-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;">N/A</div>`;
+
             html += `
                 <li>
-                    <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
-                    <span>**${entry.score}%**</span>
+                    <div class="leaderboard-entry">
+                        <div class="leaderboard-info">
+                            <span>**#${index + 1}**</span>
+                            ${drawingImg}
+                            <span>${entry.name.substring(0, 15)}</span>
+                        </div>
+                        <span>**${entry.score}%**</span>
+                    </div>
                 </li>
             `;
         });
