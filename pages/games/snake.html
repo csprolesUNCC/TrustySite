@@ -161,7 +161,7 @@
 
   function resetGame() {
     snake = [{ x: 7, y: 7 }];
-    dir = { x: 1, y: 0 };
+    dir = { x: -1, y: 0 };
     inputQueue = [];
     score = 0;
     gameOver = false;
@@ -237,8 +237,7 @@
     for (let i = 0; i < snake.length; i++) {
       const seg = snake[i];
       if (i === 0) {
-        const d = snake.length > 1 ? getDir(seg, snake[1]) : { x: -dir.x, y: -dir.y };
-        drawSegment(headImg, seg.x, seg.y, Math.atan2(-d.y, -d.x));
+        drawSegment(headImg, seg.x, seg.y, Math.atan2(dir.y, dir.x) + Math.PI);
       } else if (i === snake.length - 1) {
         const d = getDir(snake[i-1], seg);
         drawSegment(tailImg, seg.x, seg.y, Math.atan2(d.y, d.x) + Math.PI);
