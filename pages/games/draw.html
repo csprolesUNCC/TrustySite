@@ -229,14 +229,34 @@ ctx.lineCap = "round";
 function startDraw(x, y) { if(!drawingEnabled) return; drawing = true; lastX = x; lastY = y; }
 function draw(x, y) { if(!drawing || !drawingEnabled) return; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y;}
 function stopDraw() { drawing=false; }
+function getTouchPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    return {
+        x: (touch.clientX - rect.left) * scaleX,
+        y: (touch.clientY - rect.top) * scaleY
+    };
+}
 
 canvas.addEventListener("mousedown", e => startDraw(e.offsetX, e.offsetY));
 canvas.addEventListener("mousemove", e => draw(e.offsetX, e.offsetY));
 canvas.addEventListener("mouseup", stopDraw);
 canvas.addEventListener("mouseenter", e => { lastX = e.offsetX; lastY = e.offsetY; });
 
-canvas.addEventListener("touchstart", e => { const r = canvas.getBoundingClientRect(); const t = e.touches[0]; startDraw(t.clientX - r.left, t.clientY - r.top); });
-canvas.addEventListener("touchmove", e => { e.preventDefault(); const r = canvas.getBoundingClientRect(); const t = e.touches[0]; draw(t.clientX - r.left, t.clientY - r.top); });
+canvas.addEventListener("touchstart", e => { 
+    e.preventDefault(); // Prevents scrolling while drawing
+    const pos = getTouchPos(e);
+    startDraw(pos.x, pos.y); 
+});
+canvas.addEventListener("touchmove", e => { 
+    e.preventDefault(); 
+    const pos = getTouchPos(e);
+    draw(pos.x, pos.y); 
+});
 canvas.addEventListener("touchend", stopDraw);
 
 let hitData, expectData, closeData, zoneData;
