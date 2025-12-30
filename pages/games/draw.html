@@ -519,11 +519,16 @@ async function fetchLeaderboard() {
 async function submitScore(finalScore) {
     if (!isUserLoggedIn) return;
 
+    const imageData = canvas.toDataURL("image/png");
+
     try {
         const response = await fetch('/api/draw-api?action=submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ score: finalScore })
+            body: JSON.stringify({ 
+                score: finalScore,
+                image: imageData // This sends the drawing data
+            })
         });
 
         if (response.ok) {
