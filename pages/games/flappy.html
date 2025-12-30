@@ -153,8 +153,16 @@
         const leaderboardContainer = document.getElementById("leaderboard-container");
 
         // Horse image
-        const trustyImg = new Image();
-        trustyImg.src = "/images/trusty.png";
+        const originalImg = new Image();
+        originalImg.src = "/images/trusty.png";
+
+        const horseImg = new Image();
+        horseImg.src = "/images/detailed_horse.jpg";
+
+        const seahorseImg = new Image();
+        seahorseImg.src = "/images/seahorse.jpg";
+
+        trustyImg = originalImg;
 
         // sound effect
         const jumpSound = new Audio("/sound/vineboom.m4a"); 
@@ -415,11 +423,11 @@
                     pipes.shift();
                     score++;
                     if (score == 10){
-                        trustyImg.src = "/images/detailed_horse.jpg";
+                        trustyImg = horseImg;
                         horseSound.play();
                     }
                     else if (score == 20){
-                        trustyImg.src = "/images/seahorse.jpg";
+                        trustyImg = seahorseImg;
                         bubbleSound.play();
                         canvas.style.background = "#00008B";
                     }
