@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centered Pipe Snake - Trusty Style</title>
+    <title>Trusty Snake!</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
     <link rel="stylesheet" href="/styles/stylesheet.css">
     
     <style>
@@ -125,10 +128,6 @@
     <script src="/scripts/componentLoader.js"></script>
     <script src="/scripts/loginHandler.js"></script>
 
-    <script>
-        // ... (Keep all your existing Snake JavaScript here) ...
-        // Ensure you keep your resetGame, handleMoveInput, draw, etc.
-    </script>
 </body>
 </html>
 
@@ -144,6 +143,8 @@
   const tailImg = new Image();
   const cornerImg = new Image();
   const foodImg = new Image();
+
+  const twentyone = new Audio("/sound/21.mp3");
 
   headImg.src = "/images/snakehead.jpg";
   bodyImg.src = "/images/snakebody.jpg";
@@ -211,6 +212,9 @@
       score++;
       updateScoreUI();
       food = spawnFood();
+      if (score == 21){
+        twentyone.play()
+      }
     } else {
       snake.pop();
     }
