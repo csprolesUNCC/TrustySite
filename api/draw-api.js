@@ -11,7 +11,7 @@ export default async (req, res) => {
         if (req.method === 'GET' && action === 'get_leaderboard') {
             const scores = await collection
                 .find({})
-                .project({ name: 1, score: 1, _id: 0 })
+                .project({ name: 1, score: 1, drawing: 1, _id: 0 })
                 .sort({ score: -1, timestamp: 1 })
                 .limit(10)
                 .toArray();
