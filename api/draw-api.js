@@ -35,7 +35,7 @@ export default async (req, res) => {
             const user = authenticateUser(req);
             if (!user) return res.status(401).json({ error: 'Auth required' });
 
-            const { score } = req.body;
+            const { score, image } = req.body; 
             if (typeof score !== 'number' || score < 0) {
                 return res.status(400).json({ error: 'Invalid score' });
             }
@@ -56,6 +56,7 @@ export default async (req, res) => {
                         userId: user.userId, 
                         name: user.username, 
                         score: score, 
+                        drawing: image,
                         timestamp: new Date() 
                     } 
                 },
