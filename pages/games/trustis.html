@@ -244,8 +244,8 @@ function update(time = 0) {
             // AUTO LOCK: 1s Timer OR 15 Actions reached
             if (lockCounter >= LOCK_DELAY || player.lockActions >= 15) {
                 merge(arena, player);
-                playerReset();
                 arenaSweep();
+                playerReset();
                 lockCounter = 0;
             }
         } else {
@@ -356,8 +356,8 @@ document.addEventListener('keydown', e => {
         while (!collide(arena, player)) player.pos.y++;
         player.pos.y--;
         merge(arena, player);
-        playerReset();
         arenaSweep();
+        playerReset();
         lockCounter = 0; 
     }
 });
