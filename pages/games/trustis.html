@@ -178,12 +178,32 @@ function merge(arena, player) {
 
 function arenaSweep() {
     let rowCount = 1;
-    outer: for (let y = arena.length - 1; y >= 0; y--) {
-        for (let x = 0; x < arena[y].length; x++) { if (!arena[y][x]) continue outer; }
-        arena.splice(y, 1);
-        arena.unshift(Array(12).fill(0));
-        player.score += rowCount * 10;
-        rowCount *= 2;
+    // Walk through the arena from bottom to top
+    for (let y = arena.length - 1; y >= 0; y--) {
+        let isRowFull = true;
+        
+        // Check every cell in the current row
+        for (let x = 0; x < arena[y].length; x++) {
+            if (arena[y][x] === 0) {
+                isRowFull = false;
+                break;
+            }
+        }
+
+        if (isRowFull) {
+            // Remove the full row
+            const row = arena.splice(y, 1)[0].fill(0);
+            // Add a fresh empty row to the top
+            arena.unshift(row);
+            
+            // Because we spliced, we need to check this same 'y' index again
+            // as the row that was above it is now at this position.
+            y++; 
+
+            // Update score
+            player.score += rowCount * 10;
+            rowCount *= 2; // Multiplier for double/triple/tetris
+        }
     }
     scoreEl.textContent = player.score;
 }
