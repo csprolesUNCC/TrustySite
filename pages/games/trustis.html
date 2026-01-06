@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trustis</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <style>
+        body {
+            background: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            font-family: "Arial Black", Arial, sans-serif;
+            color: #111;
+            /* Re-enable scrolling for the page */
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            /* Allow content to determine height */
+            min-height: 100vh; 
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            justify-content: center;
+            margin-top: 5px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        canvas#tetris {
+            background: #333;
+            border: 4px solid #111;
+            box-shadow: 6px 6px 0px 0px #111;
+            max-width: 85vw; /* Slightly wider for better mobile view */
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+            /* This keeps the board from scrolling the page when you touch it */
+            touch-action: none; 
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: #fff;
+            padding: 10px;
+            border: 3px solid #111;
+            box-shadow: 4px 4px 0px 0px #111;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .label { font-size: 10px; text-transform: uppercase; color: #555; margin-bottom: 2px; }
+        .value { font-size: 18px; font-weight: bold; color: #111; }
+
+        canvas#next {
+            width: 60px;
+            height: 60px;
+            background: #333;
+            border: 2px solid #111;
+        }
+
+        header h1 { margin: 5px 0; font-size: 1.5rem; text-align: center; }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div id="click-game-placeholder"></div>
+        <h1>Trustis</h1>
+        <div id="auth-component-placeholder"></div>
+    </header>
+
+    <nav id="navbar-placeholder"></nav>
+
+    <div class="content">
+        <div class="game-wrapper">
+            <canvas id="tetris" width="1536" height="2560"></canvas>
+            
+            <div class="side-panel">
+                <div class="stat-box">
+                    <div class="label">Next</div>
+                    <canvas id="next" width="512" height="512"></canvas>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Score</div>
+                    <div id="score" class="value">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer><p id="footer-placeholder"></p></footer>
+
+    <script src="/scripts/componentLoader.js"></script>
+    <script src="/scripts/loginHandler.js"></script>
+
+<script>
+const canvas = document.getElementById('tetris');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('next');
+const nextCtx = nextCanvas.getContext('2d');
+
+const SCALE = 128;
+ctx.scale(SCALE, SCALE);
+nextCtx.scale(SCALE, SCALE);
+
+const spriteSheet = new Image();
+spriteSheet.src = "/images/sprites.png";
+
+let gameOver = false;
+
+/* ================= PIECES (ORIGINAL LOGIC) ================= */
+
+function createPiece(type) {
+    if (type === 'S') return [[0,{v:1,p:1},{v:1,p:0}],[{v:1,p:2},{v:1,p:3},0],[0,0,0]];
+    if (type === 'L') return [[0,{v:2,p:1},0],[0,{v:2,p:0},0],[0,{v:2,p:2},{v:2,p:3}]];
+    if (type === 'J') return [[0,{v:3,p:0},0],[0,{v:3,p:1},0],[{v:3,p:2},{v:3,p:3},0]];
+    if (type === 'Z') return [[{v:4,p:1},{v:4,p:0},0],[0,{v:4,p:2},{v:4,p:3}],[0,0,0]];
+    if (type === 'I') return [[0,0,0,0],[{v:5,p:0},{v:5,p:2},{v:5,p:3},{v:5,p:1}],[0,0,0,0],[0,0,0,0]];
+    if (type === 'T') return [[0,{v:6,p:0},0],[{v:6,p:1},{v:6,p:2},{v:6,p:3}],[0,0,0]];
+    if (type === 'O') return [[{v:7,p:0},{v:7,p:1}],[{v:7,p:2},{v:7,p:3}]];
+}
+
+/* ================= DRAWING (ORIGINAL LOGIC) ================= */
+
+function drawMatrix(matrix, offset, ctx, rotation = 0, alpha = 1) {
+    ctx.globalAlpha = alpha;
+    matrix.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (!cell) return;
+            const sx = (cell.v - 1) * 128 + (cell.p % 2) * 64;
+            const sy = Math.floor(cell.p / 2) * 64;
+            ctx.save();
+            ctx.translate(x + offset.x + 0.5, y + offset.y + 0.5);
+            const rot = cell.r !== undefined ? cell.r : rotation;
+            ctx.rotate(rot * Math.PI / 2);
+            ctx.drawImage(spriteSheet, sx, sy, 64, 64, -0.5, -0.5, 1, 1);
+            ctx.restore();
+        });
+    });
+    ctx.globalAlpha = 1;
+}
+
+/* ================= ENGINE ================= */
+
+function collide(arena, player) {
+    const m = player.matrix;
+    const o = player.pos;
+    for (let y = 0; y < m.length; y++) {
+        for (let x = 0; x < m[y].length; x++) {
+            if (m[y][x] && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+        }
+    }
+    return false;
+}
+
+function rotate(matrix, dir) {
+    for (let y = 0; y < matrix.length; y++) {
+        for (let x = 0; x < y; x++) { [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]]; }
+    }
+    dir > 0 ? matrix.forEach(r => r.reverse()) : matrix.reverse();
+}
+
+function merge(arena, player) {
+    player.matrix.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) arena[y + player.pos.y][x + player.pos.x] = { v: cell.v, p: cell.p, r: player.rotation };
+        });
+    });
+}
+
+function arenaSweep() {
+    let rowCount = 1;
+    for (let y = arena.length - 1; y >= 0; y--) {
+        let isRowFull = true;
+        for (let x = 0; x < arena[y].length; x++) {
+            if (arena[y][x] === 0) { isRowFull = false; break; }
+        }
+        if (isRowFull) {
+            const row = arena.splice(y, 1)[0].fill(0);
+            arena.unshift(row);
+            y++; 
+            player.score += rowCount * 10;
+            rowCount *= 2;
+        }
+    }
+    scoreEl.textContent = player.score;
+}
+
+function getGhostPos() {
+    const ghost = { matrix: player.matrix, pos: { x: player.pos.x, y: player.pos.y } };
+    while (!collide(arena, ghost)) ghost.pos.y++;
+    ghost.pos.y--;
+    return ghost.pos;
+}
+
+/* ================= PLAYER ACTIONS (CENTRALIZED) ================= */
+
+function actLeft() {
+    player.pos.x--; 
+    if (collide(arena, player)) {
+        player.pos.x++; 
+    } else if (lockCounter > 0 && player.lockActions < 15) {
+        lockCounter = 0;
+        player.lockActions++;
+    }
+}
+
+function actRight() {
+    player.pos.x++; 
+    if (collide(arena, player)) {
+        player.pos.x--; 
+    } else if (lockCounter > 0 && player.lockActions < 15) {
+        lockCounter = 0;
+        player.lockActions++;
+    }
+}
+
+function actRotate() {
+    const pos = player.pos.x;
+    let offset = 1;
+    rotate(player.matrix, 1);
+    player.rotation = (player.rotation + 1 + 4) % 4;
+
+    while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > player.matrix[0].length) {
+            rotate(player.matrix, -1);
+            player.rotation = (player.rotation - 1 + 4) % 4;
+            player.pos.x = pos;
+            return;
+        }
+    }
+    if (lockCounter > 0 && player.lockActions < 15) {
+        lockCounter = 0;
+        player.lockActions++;
+    }
+}
+
+function actHardDrop() {
+    while (!collide(arena, player)) player.pos.y++;
+    player.pos.y--;
+    merge(arena, player);
+    arenaSweep();
+    playerReset();
+    lockCounter = 0; 
+}
+
+function playerReset() {
+    const pieces = 'SLJZITO';
+    player.matrix = player.next || createPiece(pieces[Math.random() * 7 | 0]);
+    player.next = createPiece(pieces[Math.random() * 7 | 0]);
+    player.pos.y = 0;
+    player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+    player.rotation = 0;
+    player.lockActions = 0;
+    if (collide(arena, player)) gameOver = true;
+}
+
+function playerDrop() {
+    player.pos.y++;
+    if (collide(arena, player)) {
+        player.pos.y--;
+        return true; 
+    }
+    dropCounter = 0;
+    return false;
+}
+
+/* ================= LOOP ================= */
+
+let dropCounter = 0;
+let lockCounter = 0; 
+let dropInterval = 1000; 
+const LOCK_DELAY = 1000; 
+let lastTime = 0;
+const scoreEl = document.getElementById('score');
+
+function update(time = 0) {
+    const delta = time - lastTime;
+    lastTime = time;
+
+    if (!gameOver) {
+        dropInterval = Math.max(100, dropInterval - (delta * 0.005));
+        player.pos.y++;
+        const isTouching = collide(arena, player);
+        player.pos.y--;
+
+        if (isTouching) {
+            lockCounter += delta;
+            if (lockCounter >= LOCK_DELAY || player.lockActions >= 15) {
+                merge(arena, player);
+                arenaSweep();
+                playerReset();
+                lockCounter = 0;
+            }
+        } else {
+            lockCounter = 0;
+            dropCounter += delta;
+            if (dropCounter > dropInterval) {
+                playerDrop();
+                dropCounter = 0;
+            }
+        }
+    }
+
+    draw();
+    if (gameOver) drawGameOver();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.fillStyle = '#333';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const ghostPos = getGhostPos();
+    drawMatrix(player.matrix, ghostPos, ctx, player.rotation, 0.25);
+    drawMatrix(arena, {x:0,y:0}, ctx);
+    drawMatrix(player.matrix, player.pos, ctx, player.rotation);
+    nextCtx.fillStyle = '#333';
+    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    drawMatrix(player.next, {x:0.5,y:0.5}, nextCtx);
+}
+
+function drawGameOver() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#111';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '1.2px Segoe UI';
+    ctx.fillText('GAME OVER', arena[0].length / 2, arena.length / 2 - 1);
+    ctx.font = '0.5px Segoe UI';
+    ctx.fillText('Tap or Enter to Restart', arena[0].length / 2, arena.length / 2 + 0.5);
+    ctx.restore();
+}
+
+/* ================= TOUCH & KEYBOARD CONTROLLER ================= */
+
+// Touch State
+let touchStartX = 0;
+let touchStartY = 0;
+const minSwipeDistance = 30; // pixels
+
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (gameOver) {
+        restartGame();
+        return;
+    }
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    // Detect Swipe vs Tap
+    if (Math.abs(dx) > minSwipeDistance || Math.abs(dy) > minSwipeDistance) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal Swipes
+            if (dx > 0) actRight();
+            else actLeft();
+        } else {
+            // Vertical Swipes
+            if (dy > 0) playerDrop(); // Down Swipe -> Soft Drop
+            else actHardDrop();        // Up Swipe -> Hard Drop
+        }
+    } else {
+        // It was a Tap
+        actRotate();
+    }
+}, { passive: false });
+
+function restartGame() {
+    arena.forEach(r => r.fill(0));
+    player.score = 0;
+    dropInterval = 1000; 
+    gameOver = false;
+    playerReset();
+}
+
+/* ================= TARGETED INPUT ================= */
+
+document.addEventListener('keydown', e => {
+    // Only block defaults for the actual game keys
+    if([32, 37, 38, 39, 40].includes(e.keyCode)) {
+        e.preventDefault();
+        
+        if (gameOver) return;
+        if (e.keyCode === 37) actLeft();
+        else if (e.keyCode === 39) actRight();
+        else if (e.keyCode === 40) playerDrop();
+        else if (e.keyCode === 38) actRotate();
+        else if (e.keyCode === 32) actHardDrop();
+    }
+    
+    // Allow Enter key to work for restart without blocking other global keys
+    if (gameOver && e.keyCode === 13) {
+        restartGame();
+    }
+});
+
+/* ================= INIT ================= */
+
+const arena = Array.from({length: 20}, () => Array(12).fill(0));
+const player = { pos: {x:0,y:0}, matrix: null, next: null, score: 0, rotation: 0, lockActions: 0 };
+
+playerReset();
+update();
+</script>
+</body>
+</html>
