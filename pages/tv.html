@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty TV — Trusty da Horse</title>
+    <meta name="description" content="Trusty TV is always on. Tune in and watch the same show as everyone else, right now.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty TV">
+    <meta property="og:description" content="Always on. Tune in and watch with everyone else.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.youtube-nocookie.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/tv.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container tv-head">
+            <p class="eyebrow">Channel 21</p>
+            <h1>Trusty TV</h1>
+            <p class="lead">Always on. Tune in and you're watching the same thing as everyone else, right now.</p>
+        </header>
+
+        <section class="section-tight container tv-layout" aria-label="Trusty TV">
+            <div class="tv-main">
+                <div class="tv">
+                    <div class="tv-antenna" aria-hidden="true"><span></span><span></span></div>
+                    <div class="tv-body">
+                        <div class="tv-bezel">
+                            <div class="tv-screen is-static" id="screen">
+                                <div id="player"></div>
+                                <canvas class="tv-static" id="static" width="160" height="90" aria-hidden="true"></canvas>
+                                <div class="tv-glass" aria-hidden="true"></div>
+                                <p class="tv-bug" aria-hidden="true">Trusty TV <span>21</span></p>
+                                <p class="tv-live" aria-hidden="true"><span class="live-dot"></span>Live</p>
+                                <p class="tv-message" id="message" role="status">Tuning in&hellip;</p>
+                                <button class="tv-hit" type="button" id="screen-btn" aria-label="Turn the sound on">
+                                    <span class="tv-cue">&#128263; Tap for sound</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="tv-panel">
+                            <span class="tv-brand">Trusty</span>
+                            <div class="tv-knobs">
+                                <div class="tv-knob-wrap">
+                                    <button class="tv-knob" type="button" id="channel-knob" aria-label="Change the channel"></button>
+                                    <span class="tv-knob-label" aria-hidden="true">Channel</span>
+                                </div>
+                                <div class="tv-knob-wrap">
+                                    <button class="tv-knob" type="button" id="volume-knob" aria-label="Sound" aria-pressed="false"></button>
+                                    <span class="tv-knob-label" aria-hidden="true">Volume</span>
+                                </div>
+                            </div>
+                            <div class="tv-speaker" aria-hidden="true"></div>
+                            <span class="tv-led" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="tv-legs" aria-hidden="true"><span></span><span></span></div>
+                </div>
+
+                <div class="tv-controls">
+                    <button class="btn btn-outline btn-sm" type="button" id="sound-btn" aria-pressed="false">Sound on</button>
+                    <button class="btn btn-outline btn-sm" type="button" id="full-btn">Full screen</button>
+                </div>
+            </div>
+
+            <aside class="tv-side">
+                <div class="panel tv-now">
+                    <p class="tv-onair"><span class="live-dot"></span> On now</p>
+                    <h2 class="tv-now-title" id="now-title">&hellip;</h2>
+                    <div class="tv-progress" aria-hidden="true"><span id="now-bar"></span></div>
+                    <p class="tv-now-meta" id="now-meta"></p>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">Coming up</h2>
+                    <ol class="tv-guide" id="guide"></ol>
+                </div>
+                <p class="tv-note">Shows play back to back, all day, every day. Everyone watching sees the same moment, so tell your friends to tune in.</p>
+            </aside>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h } from '/scripts/site.js';
+        import { LINEUP } from '/scripts/tv-lineup.js';
+        import { buildSchedule, onAir, upNext } from '/scripts/tv-schedule.js';
+
+        const $ = (id) => document.getElementById(id);
+        const screen = $('screen');
+        const schedule = buildSchedule(LINEUP);
+        const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+        const STATE = { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED: 5 };
+        const DRIFT_LIMIT = 2.5; // seconds out of step with the schedule before jumping back to live
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        let skew = 0;       // the server's clock minus this device's clock (ms)
+        let player = null;
+        let current = -1;   // the show loaded in the player
+        let broken = -1;    // a show that won't play (deleted, or embedding turned off)
+        let soundOn = false;
+        let guideFor = -1;
+        let knobTurns = 0;
+        let flipTimer = 0;
+        const warned = new Set();
+
+        const now = () => Date.now() + skew;
+
+        function length(seconds) {
+            const s = Math.max(0, Math.round(seconds));
+            const hours = Math.floor(s / 3600);
+            const mins = Math.floor((s % 3600) / 60);
+            const secs = String(s % 60).padStart(2, '0');
+            return hours ? `${hours}:${String(mins).padStart(2, '0')}:${secs}` : `${mins}:${secs}`;
+        }
+
+        /* ---------- Static ---------- */
+
+        const noise = $('static').getContext('2d');
+        let noiseRunning = false;
+
+        function paintNoise() {
+            const image = noise.createImageData(160, 90);
+            const px = image.data;
+            for (let i = 0; i < px.length; i += 4) {
+                const v = (Math.random() * 255) | 0;
+                px[i] = v;
+                px[i + 1] = v;
+                px[i + 2] = v;
+                px[i + 3] = 255;
+            }
+            noise.putImageData(image, 0, 0);
+        }
+
+        function noiseLoop() {
+            if (!screen.classList.contains('is-static') || document.hidden) {
+                noiseRunning = false;
+                return;
+            }
+            paintNoise();
+            requestAnimationFrame(noiseLoop);
+        }
+
+        function showStatic(message = '') {
+            screen.classList.add('is-static');
+            $('message').textContent = message;
+            $('message').hidden = !message;
+            if (reduceMotion) paintNoise();
+            else if (!noiseRunning) {
+                noiseRunning = true;
+                requestAnimationFrame(noiseLoop);
+            }
+        }
+
+        function hideStatic() {
+            screen.classList.remove('is-static');
+            $('message').hidden = true;
+        }
+
+        /* ---------- Clock ---------- */
+
+        // A phone with the wrong time would be out of step with everyone, so use the server's clock instead
+        // (every response from the site says what time it is).
+        async function syncClock() {
+            try {
+                const sent = Date.now();
+                const res = await fetch(location.pathname, { method: 'HEAD', cache: 'no-store' });
+                const received = Date.now();
+                const server = Date.parse(res.headers.get('Date') || '');
+                if (!Number.isFinite(server)) return;
+                // The header is rounded down to the second, so on average the server is half a second later.
+                const offset = server + 500 - (sent + received) / 2;
+                skew = Math.abs(offset) > 1500 ? offset : 0;
+            } catch { /* keep this device's clock */ }
+        }
+
+        /* ---------- Schedule ---------- */
+
+        function renderInfo(air) {
+            if (guideFor !== air.index) {
+                guideFor = air.index;
+                $('now-title').textContent = air.show.title || 'Mystery show';
+                $('guide').replaceChildren(...upNext(schedule, air, 5).map(({ show, startsAt }) => h('li', null,
+                    h('time', { datetime: new Date(startsAt).toISOString() }, clock.format(startsAt)),
+                    h('span', null, show.title || 'Mystery show'))));
+            }
+            const next = upNext(schedule, air, 1)[0].show;
+            $('now-bar').style.transform = `scaleX(${Math.min(1, air.offset / air.show.seconds)})`;
+            $('now-meta').textContent = `${length(air.show.seconds - air.offset)} left · then ${next.title || 'more TV'}`;
+        }
+
+        // Keeps the player on whatever the schedule says is airing, at the right second.
+        function tune(checkDrift = false) {
+            const air = onAir(schedule, now());
+            if (!air) return;
+            renderInfo(air);
+            if (!player || typeof player.loadVideoById !== 'function') return;
+            if (air.index !== current) {
+                current = air.index;
+                broken = -1;
+                showStatic();
+                player.loadVideoById({ videoId: air.show.id, startSeconds: air.offset });
+                return;
+            }
+            if (broken === current) return;
+            const state = player.getPlayerState();
+            // It's TV, so there's no pausing: if anything stops the picture, carry on from what's airing now.
+            if (state === STATE.PAUSED || state === STATE.CUED) player.playVideo();
+            if (checkDrift && state === STATE.PLAYING && Math.abs(player.getCurrentTime() - air.offset) > DRIFT_LIMIT) {
+                player.seekTo(air.offset, true);
+            }
+        }
+
+        // Tells whoever edits the lineup when a length is wrong, since the schedule is built from them.
+        function checkLength() {
+            const show = schedule.shows[current];
+            const real = player.getDuration();
+            if (!show || !(real > 0) || warned.has(show.id)) return;
+            if (Math.abs(real - show.seconds) > 2) {
+                warned.add(show.id);
+                console.warn(`Trusty TV: "${show.title || show.id}" is ${length(real)} long, but the lineup says ${length(show.seconds)}. Fix it in scripts/tv-lineup.js to keep the schedule right.`);
+            }
+        }
+
+        /* ---------- Player ---------- */
+
+        function loadYouTube() {
+            return new Promise((resolve, reject) => {
+                if (window.YT && window.YT.Player) {
+                    resolve(window.YT);
+                    return;
+                }
+                window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+                const script = document.createElement('script');
+                script.src = 'https://www.youtube.com/iframe_api';
+                script.onerror = () => reject(new Error('YouTube did not load'));
+                document.head.append(script);
+            });
+        }
+
+        function startPlayer(YT) {
+            const air = onAir(schedule, now());
+            current = air.index;
+            player = new YT.Player('player', {
+                host: 'https://www.youtube-nocookie.com',
+                width: '100%',
+                height: '100%',
+                videoId: air.show.id,
+                playerVars: {
+                    autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3,
+                    start: Math.floor(air.offset), origin: location.origin,
+                },
+                events: {
+                    onReady: () => {
+                        const frame = player.getIframe();
+                        frame.title = 'Trusty TV';
+                        frame.tabIndex = -1;
+                        player.mute();
+                        tune(true);
+                        player.playVideo();
+                    },
+                    onStateChange: (e) => {
+                        if (e.data === STATE.PLAYING) {
+                            if (!flipTimer) hideStatic();
+                            screen.classList.add('is-on');
+                            checkLength();
+                            tune(true);
+                        } else if (e.data === STATE.ENDED) {
+                            showStatic('Stay tuned!');
+                        } else if (e.data === STATE.PAUSED && soundOn && !document.hidden) {
+                            // Browsers can refuse sound without a real tap. Rather than stop, carry on muted.
+                            player.playVideo();
+                            setTimeout(() => {
+                                if (player.getPlayerState() !== STATE.PAUSED) return;
+                                setSound(false);
+                                player.playVideo();
+                            }, 700);
+                        }
+                    },
+                    onError: () => {
+                        broken = current;
+                        showStatic('Technical difficulties. Please stand by.');
+                    },
+                },
+            });
+        }
+
+        /* ---------- Controls ---------- */
+
+        function setSound(on) {
+            soundOn = on;
+            if (player && typeof player.unMute === 'function') {
+                if (on) {
+                    player.unMute();
+                    player.setVolume(100);
+                } else {
+                    player.mute();
+                }
+            }
+            screen.classList.toggle('sound-on', on);
+            $('sound-btn').textContent = on ? 'Sound off' : 'Sound on';
+            $('sound-btn').setAttribute('aria-pressed', String(on));
+            $('volume-knob').setAttribute('aria-pressed', String(on));
+            $('screen-btn').setAttribute('aria-label', on ? 'Trusty TV' : 'Turn the sound on');
+        }
+
+        $('screen-btn').addEventListener('click', () => { if (!soundOn) setSound(true); });
+        $('sound-btn').addEventListener('click', () => setSound(!soundOn));
+        $('volume-knob').addEventListener('click', () => setSound(!soundOn));
+
+        // There's only one channel, but the knob still turns.
+        $('channel-knob').addEventListener('click', () => {
+            knobTurns += 1;
+            $('channel-knob').style.setProperty('--turn', `${knobTurns * 60}deg`);
+            showStatic('Only one channel… for now!');
+            clearTimeout(flipTimer);
+            flipTimer = setTimeout(() => {
+                flipTimer = 0;
+                const playing = player && typeof player.getPlayerState === 'function' && player.getPlayerState() === STATE.PLAYING;
+                if (playing && broken !== current) hideStatic();
+                tune(true);
+            }, 1100);
+        });
+
+        const fullBtn = $('full-btn');
+        fullBtn.hidden = !document.fullscreenEnabled;
+        fullBtn.addEventListener('click', async () => {
+            try { await screen.requestFullscreen(); } catch { /* not allowed here */ }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            tune(true);
+            if (screen.classList.contains('is-static')) showStatic($('message').hidden ? '' : $('message').textContent);
+        });
+
+        /* ---------- Go ---------- */
+
+        showStatic('Tuning in…');
+        if (!schedule.shows.length) {
+            showStatic('Off the air');
+        } else {
+            await syncClock();
+            tune();
+            let ticks = 0;
+            setInterval(() => tune(++ticks % 5 === 0), 1000);
+            try {
+                startPlayer(await loadYouTube());
+            } catch {
+                showStatic('Trusty TV can’t reach YouTube right now.');
+            }
+        }
+    </script>
+</body>
+</html>

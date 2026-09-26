@@ -755,7 +755,7 @@ trusty-footer { display: block; }
 .site-nav a {
   position: relative;
   display: block;
-  padding: 10px 11px;
+  padding: 10px 9px;
   border-radius: 8px;
   color: var(--ink-soft);
   font-weight: 650;
@@ -766,8 +766,8 @@ trusty-footer { display: block; }
 .site-nav a::after {
   content: "";
   position: absolute;
-  left: 11px;
-  right: 11px;
+  left: 9px;
+  right: 9px;
   bottom: 3px;
   height: 7px;
   background: var(--squiggle) repeat-x left center / 16px 7px;
@@ -784,7 +784,7 @@ trusty-footer { display: block; }
 .header-actions { display: flex; align-items: center; gap: 10px; margin-left: 12px; }
 .account { display: flex; align-items: center; gap: 8px; }
 .account-name {
-  max-width: 14ch;
+  max-width: 11ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -882,10 +882,20 @@ trusty-footer { display: block; }
 .mobile-account { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
 .mobile-account .account-name { flex: 1 0 100%; font-size: 1.5rem; }
 
-@media (max-width: 1023.98px) {
+/* The full nav needs about 1,100px, more with the logged-in clicker and name, so below that it moves into the menu. */
+@media (max-width: 1119.98px) {
   .site-nav, .header-actions .account { display: none; }
   .menu-toggle { display: inline-flex; }
   .header-actions { margin-left: auto; }
+}
+@media (max-width: 1239.98px) {
+  [data-auth="in"] .site-nav, [data-auth="in"] .header-actions .account { display: none; }
+  [data-auth="in"] .menu-toggle { display: inline-flex; }
+  [data-auth="in"] .header-actions { margin-left: auto; }
+}
+@media (min-width: 1240px) {
+  .clicker { padding-right: 10px; }
+  .clicker-label { display: none; }
 }
 @media (max-width: 420px) {
   .brand-name { font-size: 1.15rem; }
