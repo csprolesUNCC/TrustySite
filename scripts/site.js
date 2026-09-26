@@ -207,6 +207,8 @@ function setupClicker(button) {
   const load = async () => {
     if (!session.loggedIn || loaded) return;
     loaded = true;
+    const { loggedIn } = await sessionReady;
+    if (!loggedIn) { loaded = false; return; }
     try {
       const res = await fetch('/api/clicks');
       if (res.ok) accept(await res.json());

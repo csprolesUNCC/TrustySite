@@ -1157,6 +1157,9 @@ trusty-footer { display: block; }
 .missing-poster h2 { margin: .3em 0 .4em; }
 .missing-poster .polaroid { width: min(260px, 80%); margin: 20px auto 22px; transform: rotate(2deg); }
 .missing-tip { margin-inline: auto; }
+@media (max-width: 560px) {
+  .missing-poster .reward-stamp { position: static; display: inline-block; margin-bottom: 12px; font-size: 1.05rem; transform: rotate(-5deg); }
+}
 .reward-stamp {
   position: absolute;
   top: 22px;
@@ -1290,6 +1293,8 @@ dialog.reader::backdrop { background: #1e1f23; }
 }
 .podium-thumb img { width: 100%; height: 100%; object-fit: contain; }
 .podium-empty { padding: 32px 12px; text-align: center; color: var(--pencil); }
+.podium-spot.is-me .podium-name { padding: 0 6px; background: linear-gradient(transparent 12%, rgba(255, 228, 92, .7) 12%, rgba(255, 228, 92, .7) 88%, transparent 88%); }
+.podium-spot.is-me .podium-name::after { content: " (you)"; font-weight: 500; color: var(--pencil); }
 
 @media (max-width: 860px) {
   .lb-panel { grid-template-columns: 1fr; }
