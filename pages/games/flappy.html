@@ -258,7 +258,8 @@
             ]);
             const size = { width: HORSE_W * scale, height: HORSE_H * scale };
             sprites = {
-                classic: inkSprite(classic, { ...size, clearLeft: 4 }),
+                // trusty.png faces left; in the game he faces the way he flies, like the detailed horse.
+                classic: inkSprite(classic, { ...size, clearEdges: 4, flip: true }),
                 detailed: photoCard(detailed),
                 seahorse: inkSprite(seahorse, { ...size, color: '#ffffff' }),
                 topPencil: pencil(true),

@@ -375,7 +375,8 @@ p:last-child { margin-bottom: 0; }
 
 /* Line art drawn "on" the paper: its off-white (#fafafa) background is lifted to pure white, then multiplied away */
 .ink { mix-blend-mode: multiply; filter: brightness(1.03); }
-img[src$="/trusty.png"] { clip-path: inset(0 0 0 2%); }
+/* trusty.png has a thin grey line down one edge; trimming both edges hides it whichever way he faces */
+img[src$="/trusty.png"] { clip-path: inset(0 2%); }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -976,12 +977,13 @@ trusty-footer { display: block; }
 .hero-copy .lead { margin-bottom: 28px; }
 .hero-art { position: relative; margin: 0; }
 .hero-art img { width: 100%; max-width: 520px; margin-inline: auto; }
+/* Up in the empty corner above Trusty's back, pointing down at his head */
 .hero-art figcaption {
   position: absolute;
-  left: 2%;
+  right: 2%;
   top: 6%;
   color: var(--blue);
-  transform: rotate(-6deg);
+  transform: rotate(5deg);
   font-size: 1.6rem;
 }
 .hero-note {
@@ -996,10 +998,11 @@ trusty-footer { display: block; }
 }
 .hero-note p { font-size: .98rem; }
 
-.trusty-bob { animation: bob 3.2s ease-in-out infinite; transform-origin: 60% 90%; }
+/* A gentle bob that tips his head (on the left) up */
+.trusty-bob { animation: bob 3.2s ease-in-out infinite; transform-origin: 40% 90%; }
 @keyframes bob {
   0%, 100% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-6px) rotate(-1.2deg); }
+  50% { transform: translateY(-6px) rotate(1.2deg); }
 }
 
 .feature {
@@ -1065,7 +1068,7 @@ trusty-footer { display: block; }
 @media (max-width: 900px) {
   .hero-sheet { grid-template-columns: 1fr; min-height: 0; }
   .hero-art { order: -1; max-width: 380px; margin-inline: auto; width: 100%; }
-  .hero-art figcaption { font-size: 1.35rem; left: -2%; top: 2%; }
+  .hero-art figcaption { font-size: 1.35rem; right: -2%; top: 2%; }
   .hero-note { position: relative; right: auto; top: auto; bottom: auto; width: auto; max-width: 440px; margin: 28px auto 0; }
   .feature { grid-template-columns: 1fr; }
   .teasers { grid-template-columns: 1fr; }

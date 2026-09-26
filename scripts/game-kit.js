@@ -43,24 +43,28 @@ function downscale(source, width, height) {
   return src;
 }
 
-// Converts a black-on-white drawing into a transparent sprite so it sits on any background.
-// `clearLeft` blanks that many source pixels on the left edge (trusty.png has a stray border line there).
-export function inkSprite(img, { width = img.naturalWidth, height = img.naturalHeight, color = '#1b1b1f', clearLeft = 0, threshold = 232 } = {}) {
+// Converts a black-on-white drawing into a transparent sprite so it sits on any background: the lighter a
+// pixel, the more see-through it becomes, and anything at or above `threshold` brightness vanishes.
+// `clearEdges` blanks that many source pixels at the left and right edges (trusty.png has a stray grey line
+// down one side), and `flip` mirrors the drawing.
+export function inkSprite(img, { width = img.naturalWidth, height = img.naturalHeight, color = '#1b1b1f', clearEdges = 0, flip = false, threshold = 232 } = {}) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(width));
   canvas.height = Math.max(1, Math.round(height));
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.imageSmoothingQuality = 'high';
+  if (flip) ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
   ctx.drawImage(downscale(img, canvas.width, canvas.height), 0, 0, canvas.width, canvas.height);
 
   const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const px = image.data;
   const [r, g, b] = hexToRgb(color);
-  const cut = Math.ceil(clearLeft * canvas.width / img.naturalWidth);
+  const cut = Math.ceil(clearEdges * canvas.width / img.naturalWidth);
   for (let i = 0; i < px.length; i += 4) {
     const x = (i >> 2) % canvas.width;
     const lum = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
-    const alpha = (lum >= threshold || x < cut) ? 0 : Math.min(1, (threshold - lum) / (threshold * 0.42));
+    const edge = x < cut || x >= canvas.width - cut;
+    const alpha = (lum >= threshold || edge) ? 0 : Math.min(1, (threshold - lum) / (threshold * 0.42));
     px[i] = r;
     px[i + 1] = g;
     px[i + 2] = b;
