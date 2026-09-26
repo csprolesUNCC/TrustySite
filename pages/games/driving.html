@@ -2,78 +2,91 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTCS - Trusty da Horse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty's Traffic Crime Simulator — Trusty da Horse</title>
     <meta name="description" content="Race through the busy streets and try to survive as long as you can. Upgrade your car to get even further each time.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty's Traffic Crime Simulator">
+    <meta property="og:description" content="Race through the busy streets and try to survive as long as you can. Upgrade your car to get even further each time.">
+    <meta property="og:image" content="https://trustydahorse.com/images/driving_thumbnail.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <style>
-        /* Styles to center the game viewer in the content box and apply comic style */
-        #game-viewer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
-            text-align: center;
-        }
-
-        /* Style the iframe to look integrated with your site's comic aesthetic */
-        .embedded-game {
-            width: 100%; 
-            height: 60vh; /* Responsive height, adjust as needed */
-            min-height: 450px;
-            border: 3px solid #111;
-            box-shadow: 6px 6px 0px 0px #111;
-            border-radius: 0;
-        }
-
-        /* Mobile adjustment for smaller screens */
-        @media (max-width: 600px) {
-            .embedded-game {
-                height: 40vh;
-                min-height: 300px;
-            }
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Trusty's Traffic Crime Simulator</h1>
-        <div id="auth-component-placeholder">
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/games.html">All games</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">Can Trusty Drive? (Probably Not)</p>
+                    <h1>Trusty's Traffic Crime Simulator</h1>
+                </div>
+                <div class="game-actions">
+                    <button class="btn btn-outline btn-sm" type="button" id="focus-btn" aria-pressed="false">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                        Full screen
+                    </button>
+                </div>
             </div>
-    </header>
-
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <h2>Can Trusty Drive? (Probably Not)</h2>
-        
-        <div id="game-viewer">
-            <p>Race through heavy traffic! Use WASD or Arrow Keys to control your vehicle.</p>
-
-            <iframe 
-                class="embedded-game" 
-                src="https://www.onlinegames.io/games/2022/unity/highway-traffic/index.html" 
-                frameborder="0" 
-                scrolling="no"
-                allowfullscreen
-                title="Highway Traffic Game">
-            </iframe>
-            
-            <p style="margin-top: 15px;">Note: Game is hosted externally by onlinegames.io.</p>
         </div>
-    </div>
 
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="/scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
+        <div class="container">
+            <div class="stage arcade-stage" id="stage">
+                <iframe id="frame" title="Traffic Crime Simulator" data-src="https://www.onlinegames.io/games/2022/unity/highway-traffic/index.html" allow="fullscreen; autoplay; gamepad" allowfullscreen></iframe>
+                <div class="arcade-facade" id="facade">
+                    <img src="/images/driving_thumbnail.png" alt="" decoding="async">
+                    <div class="arcade-facade-inner">
+                        <p>Race through heavy traffic! Use WASD or Arrow Keys to control your vehicle.</p>
+                        <button class="btn btn-lg btn-highlight" type="button" id="load-btn">Load game</button>
+                        <p class="touch-only">Heads up: this one needs a keyboard, so it plays best on a computer.</p>
+                    </div>
+                </div>
+                <button class="btn btn-outline btn-sm focus-close" type="button" data-focus-close hidden>&#10005; Exit</button>
+            </div>
+            <div class="arcade-notes">
+                <span>Game is hosted externally by onlinegames.io.</span>
+                <a class="text-link" href="/pages/games.html">More games</a>
+            </div>
+        </div>
+    </main>
 
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { bindFocusMode } from '/scripts/game-kit.js';
+
+        const stage = document.getElementById('stage');
+        const frame = document.getElementById('frame');
+        const facade = document.getElementById('facade');
+        const setFocus = bindFocusMode(stage, null);
+
+        function load() {
+            if (!frame.src) frame.src = frame.dataset.src;
+            facade.hidden = true;
+            frame.focus();
+        }
+
+        document.getElementById('load-btn').addEventListener('click', load);
+        document.getElementById('focus-btn').addEventListener('click', async () => {
+            load();
+            if (document.fullscreenEnabled && stage.requestFullscreen) {
+                try { await stage.requestFullscreen(); return; } catch { /* fall back to the in-page version */ }
+            }
+            setFocus(true);
+        });
+    </script>
 </body>
 </html>

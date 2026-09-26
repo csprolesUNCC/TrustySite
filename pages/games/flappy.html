@@ -1,484 +1,581 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Trusty - Trusty da Horse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Flappy Trusty — Trusty da Horse</title>
     <meta name="description" content="Flappy Trusty: Test your patience with this retro arcade physics game! How far can Trusty the Horse fly through the deadly pipes?">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Flappy Trusty">
+    <meta property="og:description" content="How far can Trusty the Horse fly through the deadly pipes?">
+    <meta property="og:image" content="https://trustydahorse.com/images/flappy_thumbnail.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <style>
-        body {
-            background: #f0f0f0; 
-            display: block;
-            height: auto;
-            min-height: 100vh; 
-        }
-
-        .content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
-        canvas {
-            border: 3px solid #111;
-            background: #70c5ce;
-            box-shadow: 6px 6px 0px 0px #111;
-            margin-top: 20px;
-        }
-
-        #leaderboard-container {
-            width: 800px;
-            margin-top: 30px;
-            padding: 15px;
-            border: 3px solid #111;
-            background-color: #ffe08d; 
-            box-shadow: 6px 6px 0px 0px #111;
-            text-align: left;
-        }
-        
-        #leaderboard-container h3 {
-            margin-top: 0;
-            border-bottom: 2px solid #111;
-            padding-bottom: 5px;
-            text-align: center;
-        }
-
-        #leaderboard-container ol {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        #leaderboard-container li {
-            font-size: 1.1em;
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 10px;
-            background-color: #fff9e6;
-            border: 1px solid #111;
-            border-radius: 4px;
-        }
-
-        #daily-leaderboard-container {
-            width: 800px; 
-            margin-top: 15px; 
-            padding: 15px;
-            border: 3px solid #111;
-            background-color: #ffd9d9;
-            box-shadow: 6px 6px 0px 0px #111;
-            text-align: left;
-        }
-        
-        #daily-leaderboard-container h3 {
-            margin-top: 0;
-            border-bottom: 2px solid #111;
-            padding-bottom: 5px;
-            text-align: center;
-        }
-
-        #daily-leaderboard-container ol {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        #daily-leaderboard-container li {
-            font-size: 1.1em;
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 10px;
-            background-color: #ffffff;
-            border: 1px solid #111;
-            border-radius: 4px;
-        }
-
-        @media (max-width: 850px) {
-        canvas {
-            max-width: 100%;
-            height: auto;
-        }
-
-        #leaderboard-container,
-        #daily-leaderboard-container {
-            max-width: 100%;
-            width: 800px;
-            box-sizing: border-box;
-        }
-        }
-    </style>
 </head>
-
 <body>
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Flappy Trusty</h1>
-        <div id="auth-component-placeholder">
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/games.html">All games</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">Yo that horse flying!</p>
+                    <h1>Flappy Trusty</h1>
+                </div>
+                <div class="game-actions">
+                    <button class="btn btn-outline btn-sm mute-btn" type="button" id="mute-btn" aria-pressed="false">
+                        <svg class="icon icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9c1.2 1.6 1.2 4.4 0 6M18.5 6.5c2.5 3 2.5 8 0 11"/></svg>
+                        <svg class="icon icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+                        Mute
+                    </button>
+                    <button class="btn btn-outline btn-sm" type="button" id="focus-btn" aria-pressed="false">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                        Full screen
+                    </button>
+                </div>
             </div>
-    </header>
-
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <h2>Yo that horse flying!</h2>
-        <p>Click or press any key to start flappin!</p>
-
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-    
-        <div id="leaderboard-container">
-            <h3>Leaderboard Loading...</h3>
         </div>
-    </div>
 
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="/scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
+        <div class="container game-layout">
+            <section class="game-main" aria-label="Game">
+                <div class="stage flappy-stage" id="stage" tabindex="0" aria-label="Flappy Trusty. Press Space or tap to flap.">
+                    <canvas id="game" aria-hidden="true"></canvas>
+                    <button class="btn btn-outline btn-sm focus-close" type="button" data-focus-close hidden>&#10005; Exit</button>
+                    <p class="focus-hint">Turn your phone sideways for a bigger view.</p>
 
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const leaderboardContainer = document.getElementById("leaderboard-container");
+                    <div class="stage-overlay" id="overlay-start">
+                        <p class="overlay-kicker">Get ready</p>
+                        <h2 class="overlay-title" id="start-title">Loading&hellip;</h2>
+                        <p class="overlay-sub">Click, tap or press <kbd>Space</kbd> to flap. Guide Trusty through the gaps.</p>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="start-btn" disabled>Start flapping</button>
+                        </div>
+                        <p class="overlay-hint desktop-only">Press <kbd>P</kbd> to pause.</p>
+                    </div>
 
-        // Horse image
-        const originalImg = new Image();
-        originalImg.src = "/images/trusty.png";
+                    <div class="stage-overlay" id="overlay-pause" hidden>
+                        <h2 class="overlay-title">Paused</h2>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="resume-btn">Resume</button>
+                        </div>
+                    </div>
 
-        const horseImg = new Image();
-        horseImg.src = "/images/detailed_horse.jpg";
+                    <div class="stage-overlay" id="overlay-over" hidden>
+                        <p class="overlay-kicker">Game over</p>
+                        <div class="overlay-score" id="over-score">0</div>
+                        <span class="overlay-badge" id="over-badge" hidden>New personal best!</span>
+                        <p class="overlay-sub" id="over-sub"></p>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="again-btn">Play again</button>
+                            <a class="btn btn-lg btn-outline" href="/pages/leaderboard.html#flappy">Leaderboard</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        const seahorseImg = new Image();
-        seahorseImg.src = "/images/seahorse.jpg";
+            <aside class="game-side">
+                <div class="panel">
+                    <h2 class="panel-title">Your scores</h2>
+                    <div class="stat-grid">
+                        <div class="stat"><span class="stat-label">Last flight</span><span class="stat-value" id="stat-last">0</span></div>
+                        <div class="stat"><span class="stat-label" id="stat-best-label">Best</span><span class="stat-value" id="stat-best">0</span></div>
+                    </div>
+                    <p class="side-note" data-auth-show="out">Playing as a guest, so your best only saves on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboard.</p>
+                </div>
 
-        trustyImg = originalImg;
+                <div class="panel">
+                    <h2 class="panel-title">How to play</h2>
+                    <ul class="how-to">
+                        <li><span class="keys"><kbd>Space</kbd><kbd>&uarr;</kbd></span> Flap (or click / tap the game)</li>
+                        <li class="desktop-only"><span class="keys"><kbd>P</kbd></span> Pause</li>
+                        <li><span class="keys">&#127942;</span> Every pencil you clear is a point. Something happens at 10&hellip; and at 20.</li>
+                    </ul>
+                </div>
 
-        // sound effect
-        const jumpSound = new Audio("/sound/vineboom.m4a"); 
-        const horseSound = new Audio("/sound/horse.m4a");
-        const bubbleSound = new Audio("/sound/bubble.mp3"); 
-        const seahorseSound = new Audio("/sound/SeahorseTrusty.m4a");
-        //jumpSound.volume = 0.4; 
+                <div class="panel">
+                    <h2 class="panel-title">Trusty's Top Flaps</h2>
+                    <ol class="board" id="board" aria-label="Flappy Trusty top 10"></ol>
+                    <div class="panel-foot"><a class="text-link" href="/pages/leaderboard.html#flappy">Full leaderboard</a></div>
+                </div>
+            </aside>
+        </div>
+    </main>
 
-        // Player
-        let horse = {
-            x: 80,
-            y: 250,
-            width: null, // placeholder, updated when image loads
-            height: null,
-            velocity: -3
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
+        import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
+        import {
+            loadImage, inkSprite, setupCanvas, offscreen, drawRuledPaper, sound, bindMuteButton,
+            bindFocusMode, isForeignKey, isActivationKey, localBest, saveLocalBest, fontsReady,
+        } from '/scripts/game-kit.js';
+
+        // Physics, timing and hitbox are identical to the original game so leaderboard scores stay comparable.
+        const W = 800, H = 600;
+        const GRAVITY = 0.4, JUMP = -8, START_VELOCITY = -3;
+        const PIPE_GAP = 250, PIPE_W = 65, PIPE_SPEED = 4, SPAWN_EVERY = 60;
+        const HORSE_X = 80, HORSE_W = 1536 / 16, HORSE_H = 1173 / 16, START_Y = 250;
+        const INK = '#1b1b1f';
+
+        const $ = (id) => document.getElementById(id);
+        const stage = $('stage');
+        const { ctx, scale } = setupCanvas($('game'), W, H);
+        const overlays = { start: $('overlay-start'), pause: $('overlay-pause'), over: $('overlay-over') };
+
+        const sounds = {
+            flap: sound('/sound/vineboom.m4a'),
+            horse: sound('/sound/horse.m4a'),
+            bubble: sound('/sound/bubble.mp3'),
+            seahorse: sound('/sound/SeahorseTrusty.m4a'),
         };
 
-        let imageLoaded = false;
-
-        trustyImg.onload = () => {
-            horse.width = trustyImg.width / 16;
-            horse.height = trustyImg.height / 16;
-            imageLoaded = true;
-        };
-
-        const gravity = 0.4;
-        const jumpStrength = -8;
-
-        let gameOver = false;
-
-        // Pipes
+        let state = 'loading'; // loading | intro | ready | playing | paused | over
+        let horse = { y: START_Y, v: START_VELOCITY };
         let pipes = [];
-        const pipeGap = 250;
-        const pipeWidth = 65;
-        let frame = 0;
         let pipeTimer = 0;
-        let lastTime = 0;
-        let leaderboard = [];
-        let dailyLeaderboard = [];
-        // Jump event
-        let justTapped = false;
         let score = 0;
-        let highScore = 0;
-        let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
-        let previousScore = 0;
+        let form = 'classic';
+        let lastFrame = 0;
+        let overAt = 0;
+        let loggedIn = null;
+        let best = 0;
+        let sprites;
+        let backgrounds;
 
-        canvas.addEventListener("touchstart", e => {
+        const clouds = Array.from({ length: 4 }, (_, i) => ({ x: 120 + i * 210 + Math.random() * 60, y: 70 + Math.random() * 200, s: 0.7 + Math.random() * 0.6 }));
+        const bubbles = Array.from({ length: 16 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: 3 + Math.random() * 7 }));
+
+        /* ---------- Art ---------- */
+
+        function pencil(eraserAtEnd) {
+            const { canvas, ctx: g } = offscreen(PIPE_W, H, scale);
+            const ER = 22, FE = 16, w = PIPE_W;
+            const bodyTop = eraserAtEnd ? 0 : ER + FE;
+            const bodyBottom = eraserAtEnd ? H - ER - FE : H;
+            g.fillStyle = '#f5c542'; g.fillRect(0, bodyTop, w, bodyBottom - bodyTop);
+            g.fillStyle = '#fbd977'; g.fillRect(0, bodyTop, w * 0.34, bodyBottom - bodyTop);
+            g.fillStyle = '#e1a92f'; g.fillRect(w * 0.72, bodyTop, w * 0.28, bodyBottom - bodyTop);
+            g.strokeStyle = 'rgba(27,27,31,.3)'; g.lineWidth = 1.4;
+            g.beginPath();
+            g.moveTo(w * 0.34, bodyTop); g.lineTo(w * 0.34, bodyBottom);
+            g.moveTo(w * 0.72, bodyTop); g.lineTo(w * 0.72, bodyBottom);
+            g.stroke();
+
+            g.save();
+            g.fillStyle = 'rgba(27,27,31,.55)';
+            g.font = '700 12px system-ui, sans-serif';
+            g.textAlign = 'center';
+            g.translate(w * 0.53, eraserAtEnd ? bodyBottom - 64 : bodyTop + 64);
+            g.rotate(-Math.PI / 2);
+            g.fillText('TRUSTY No.2', 0, 4);
+            g.restore();
+
+            const fy = eraserAtEnd ? H - ER - FE : ER;
+            g.fillStyle = '#c4c9d0'; g.fillRect(0, fy, w, FE);
+            g.strokeStyle = '#8a929b'; g.lineWidth = 1.5;
+            g.beginPath();
+            g.moveTo(0, fy + 5.5); g.lineTo(w, fy + 5.5);
+            g.moveTo(0, fy + 10.5); g.lineTo(w, fy + 10.5);
+            g.stroke();
+
+            const r = 9;
+            const outline = new Path2D();
+            if (eraserAtEnd) {
+                outline.moveTo(1.5, 0); outline.lineTo(1.5, H - 1.5 - r); outline.quadraticCurveTo(1.5, H - 1.5, 1.5 + r, H - 1.5);
+                outline.lineTo(w - 1.5 - r, H - 1.5); outline.quadraticCurveTo(w - 1.5, H - 1.5, w - 1.5, H - 1.5 - r); outline.lineTo(w - 1.5, 0);
+            } else {
+                outline.moveTo(1.5, H); outline.lineTo(1.5, 1.5 + r); outline.quadraticCurveTo(1.5, 1.5, 1.5 + r, 1.5);
+                outline.lineTo(w - 1.5 - r, 1.5); outline.quadraticCurveTo(w - 1.5, 1.5, w - 1.5, 1.5 + r); outline.lineTo(w - 1.5, H);
+            }
+            g.save();
+            g.clip(new Path2D(outline), 'nonzero');
+            g.fillStyle = '#f29aa8';
+            g.fillRect(0, eraserAtEnd ? H - ER : 0, w, ER);
+            g.restore();
+            g.save();
+            g.globalCompositeOperation = 'destination-in';
+            const mask = new Path2D(outline); mask.closePath();
+            g.fill(mask);
+            g.restore();
+            g.strokeStyle = INK; g.lineWidth = 3; g.lineJoin = 'round';
+            g.stroke(outline);
+            g.beginPath();
+            g.lineWidth = 2;
+            g.moveTo(0, fy); g.lineTo(w, fy); g.moveTo(0, fy + FE); g.lineTo(w, fy + FE);
+            g.stroke();
+            return canvas;
+        }
+
+        function photoCard(img) {
+            const { canvas, ctx: g } = offscreen(HORSE_W, HORSE_H, scale);
+            g.fillStyle = '#fff';
+            g.fillRect(0, 0, HORSE_W, HORSE_H);
+            g.drawImage(img, 3, 3, HORSE_W - 6, HORSE_H - 6);
+            g.strokeStyle = INK; g.lineWidth = 2;
+            g.strokeRect(1, 1, HORSE_W - 2, HORSE_H - 2);
+            return canvas;
+        }
+
+        function buildBackgrounds() {
+            const paper = offscreen(W, H, scale);
+            drawRuledPaper(paper.ctx, W, H, { line: 30, top: 0, margin: 56 });
+
+            const water = offscreen(W, H, scale);
+            const grad = water.ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#3a73c4');
+            grad.addColorStop(1, '#1b3f7d');
+            water.ctx.fillStyle = grad;
+            water.ctx.fillRect(0, 0, W, H);
+            water.ctx.strokeStyle = 'rgba(255,255,255,.1)';
+            water.ctx.lineWidth = 1.2;
+            water.ctx.beginPath();
+            for (let y = 30; y < H; y += 30) { water.ctx.moveTo(0, y + 0.5); water.ctx.lineTo(W, y + 0.5); }
+            water.ctx.stroke();
+            return { paper: paper.canvas, water: water.canvas };
+        }
+
+        async function loadArt() {
+            const [classic, detailed, seahorse] = await Promise.all([
+                loadImage('/images/trusty.png'), loadImage('/images/detailed_horse.jpg'), loadImage('/images/seahorse.jpg'),
+            ]);
+            const size = { width: HORSE_W * scale, height: HORSE_H * scale };
+            sprites = {
+                classic: inkSprite(classic, { ...size, clearLeft: 4 }),
+                detailed: photoCard(detailed),
+                seahorse: inkSprite(seahorse, { ...size, color: '#ffffff' }),
+                topPencil: pencil(true),
+                bottomPencil: pencil(false),
+            };
+            backgrounds = buildBackgrounds();
+        }
+
+        /* ---------- Drawing ---------- */
+
+        function drawCloud(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            ctx.scale(c.s, c.s);
+            ctx.strokeStyle = 'rgba(90,93,99,.45)';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(0, 20);
+            ctx.bezierCurveTo(-18, 20, -18, -4, 4, -2);
+            ctx.bezierCurveTo(8, -22, 38, -24, 44, -6);
+            ctx.bezierCurveTo(60, -16, 82, -2, 72, 14);
+            ctx.bezierCurveTo(84, 26, 64, 34, 56, 24);
+            ctx.lineTo(4, 24);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawScene(now) {
+            const underwater = form === 'seahorse';
+            ctx.drawImage(underwater ? backgrounds.water : backgrounds.paper, 0, 0, W, H);
+
+            if (underwater) {
+                ctx.strokeStyle = 'rgba(255,255,255,.55)';
+                ctx.lineWidth = 1.6;
+                for (const b of bubbles) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke(); }
+            } else {
+                clouds.forEach(drawCloud);
+            }
+
+            for (const p of pipes) {
+                const top = p.top;
+                ctx.drawImage(sprites.topPencil, 0, (H - top) * scale, PIPE_W * scale, top * scale, p.x, 0, PIPE_W, top);
+                const by = top + PIPE_GAP;
+                const bh = H - by;
+                ctx.drawImage(sprites.bottomPencil, 0, 0, PIPE_W * scale, bh * scale, p.x, by, PIPE_W, bh);
+            }
+
+            const y = (state === 'intro' || state === 'ready') ? START_Y + Math.sin(now / 280) * 7 : horse.y;
+            const tilt = state === 'playing' ? Math.max(-0.25, Math.min(0.35, horse.v * 0.03)) : 0;
+            ctx.save();
+            ctx.translate(HORSE_X + HORSE_W / 2, y + HORSE_H / 2);
+            ctx.rotate(tilt);
+            const sprite = sprites[form];
+            ctx.drawImage(sprite, -HORSE_W / 2, -HORSE_H / 2, HORSE_W, HORSE_H);
+            if (form === 'seahorse') {
+                // The seahorse drawing is thin at this size; a couple of offset passes thicken the chalk line.
+                ctx.drawImage(sprite, -HORSE_W / 2 + 0.8, -HORSE_H / 2, HORSE_W, HORSE_H);
+                ctx.drawImage(sprite, -HORSE_W / 2, -HORSE_H / 2 + 0.8, HORSE_W, HORSE_H);
+            }
+            ctx.restore();
+
+            if (state !== 'intro') {
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.lineJoin = 'round';
+                ctx.font = '64px "Permanent Marker", "Comic Sans MS", cursive';
+                ctx.lineWidth = 10;
+                ctx.strokeStyle = underwater ? '#1b3f7d' : '#fdfbf4';
+                ctx.strokeText(String(score), W / 2, 84);
+                ctx.fillStyle = underwater ? '#fff' : INK;
+                ctx.fillText(String(score), W / 2, 84);
+                ctx.textAlign = 'left';
+                ctx.font = '700 30px Caveat, "Segoe Print", cursive';
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = underwater ? '#1b3f7d' : '#fdfbf4';
+                ctx.strokeText(`best: ${fmt(best)}`, 72, 44);
+                ctx.fillStyle = underwater ? 'rgba(255,255,255,.9)' : '#d6334b';
+                ctx.fillText(`best: ${fmt(best)}`, 72, 44);
+                if (state === 'ready') {
+                    ctx.textAlign = 'center';
+                    ctx.font = '700 44px Caveat, "Segoe Print", cursive';
+                    ctx.fillStyle = underwater ? '#fff' : '#1f4fbf';
+                    ctx.fillText('tap to flap!', W / 2, H / 2 + 20);
+                }
+                ctx.restore();
+            }
+        }
+
+        /* ---------- Game logic ---------- */
+
+        function reset() {
+            horse = { y: START_Y, v: START_VELOCITY };
+            pipes = [];
+            pipeTimer = 0;
+            score = 0;
+            form = 'classic';
+        }
+
+        function showOverlay(name) {
+            for (const [key, el] of Object.entries(overlays)) el.hidden = key !== name;
+        }
+
+        function flap() {
+            horse.v = JUMP;
+            sounds.flap.play();
+        }
+
+        function begin() {
+            state = 'playing';
+            showOverlay(null);
+            flap();
+        }
+
+        function milestone() {
+            if (score === 10) { form = 'detailed'; sounds.horse.play(); }
+            else if (score === 20) { form = 'seahorse'; sounds.bubble.play(); }
+            else if (score === 21) { sounds.seahorse.play(); }
+        }
+
+        function hitsPipe() {
+            for (const p of pipes) {
+                const withinX = HORSE_X + HORSE_W > p.x && HORSE_X < p.x + PIPE_W;
+                if (withinX && (horse.y < p.top || horse.y + HORSE_H > p.top + PIPE_GAP)) return true;
+            }
+            return false;
+        }
+
+        function step(dt) {
+            horse.v += GRAVITY * dt;
+            horse.y += horse.v * dt;
+            const floor = H - HORSE_H;
+            if (horse.y > floor) { horse.y = floor; horse.v = 0; }
+
+            pipeTimer += dt;
+            if (pipeTimer > SPAWN_EVERY) {
+                pipes.push({ x: W, top: Math.floor(Math.random() * 250) + 50 });
+                pipeTimer = 0;
+            }
+            for (const p of pipes) p.x -= PIPE_SPEED * dt;
+            if (pipes.length && pipes[0].x < -PIPE_W) {
+                pipes.shift();
+                score += 1;
+                milestone();
+            }
+            if (hitsPipe()) gameOver();
+        }
+
+        function animateDecor(dt) {
+            const drift = state === 'playing' ? 1 : 0.35;
+            for (const c of clouds) {
+                c.x -= 0.6 * drift * dt;
+                if (c.x < -120) { c.x = W + 40 + Math.random() * 120; c.y = 60 + Math.random() * 220; }
+            }
+            for (const b of bubbles) {
+                b.y -= (0.5 + b.r * 0.09) * dt;
+                if (b.y < -b.r) { b.y = H + b.r; b.x = Math.random() * W; }
+            }
+        }
+
+        function frame(now) {
+            const dt = lastFrame ? Math.min((now - lastFrame) / 16.666, 3) : 0;
+            lastFrame = now;
+            if (state === 'playing') step(dt);
+            if (state !== 'paused' && state !== 'over') animateDecor(dt);
+            if (sprites) drawScene(now);
+            requestAnimationFrame(frame);
+        }
+
+        async function gameOver() {
+            state = 'over';
+            overAt = performance.now();
+            const final = score;
+            $('stat-last').textContent = fmt(final);
+            $('over-score').textContent = fmt(final);
+
+            let isBest = false;
+            if (loggedIn) {
+                isBest = final > best && final > 0;
+            } else {
+                isBest = saveLocalBest('flappy', final) && final > 0;
+            }
+            if (isBest) best = final;
+            renderBest();
+            $('over-badge').hidden = !isBest;
+            $('over-sub').textContent = loggedIn
+                ? (isBest ? 'Saving your new high score…' : `Your best is ${fmt(best)}.`)
+                : `Your best on this device is ${fmt(best)}. Log in to save scores to the leaderboard.`;
+            showOverlay('over');
+            $('again-btn').focus({ preventScroll: true });
+
+            if (loggedIn && isBest) await submitScore(final);
+        }
+
+        async function submitScore(final) {
+            try {
+                const res = await fetch('/api/flappy-api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ score: final }),
+                });
+                if (res.status === 401) {
+                    $('over-sub').textContent = 'Your session expired, so this score wasn’t saved. Log in again to save scores.';
+                    return;
+                }
+                if (!res.ok) throw new Error(String(res.status));
+                $('over-sub').textContent = 'High score saved to the leaderboard!';
+                toast('High score saved!', 'success');
+                await Promise.all([loadPersonalBest(), loadBoard()]);
+            } catch {
+                $('over-sub').textContent = 'Couldn’t save your score. Check your connection.';
+            }
+        }
+
+        function restart() {
+            reset();
+            state = 'ready';
+            showOverlay(null);
+            stage.focus({ preventScroll: true });
+        }
+
+        function pause() {
+            if (state !== 'playing') return;
+            state = 'paused';
+            showOverlay('pause');
+            $('resume-btn').focus({ preventScroll: true });
+        }
+
+        function resume() {
+            if (state !== 'paused') return;
+            state = 'playing';
+            lastFrame = 0;
+            showOverlay(null);
+            stage.focus({ preventScroll: true });
+        }
+
+        // One input for everything: flap, start, resume or restart depending on state.
+        function act() {
+            if (state === 'playing') flap();
+            else if (state === 'intro' || state === 'ready') begin();
+            else if (state === 'paused') resume();
+            else if (state === 'over' && performance.now() - overAt > 450) restart();
+        }
+
+        /* ---------- Scores ---------- */
+
+        function renderBest() {
+            $('stat-best').textContent = fmt(best);
+            $('stat-best-label').textContent = loggedIn ? 'Best' : 'Best (this device)';
+        }
+
+        async function loadPersonalBest() {
+            if (!loggedIn) return;
+            try {
+                const res = await fetch('/api/flappy-api?action=personal');
+                if (!res.ok) return;
+                const data = await res.json();
+                best = Math.max(best, Number(data.highScore) || 0);
+                renderBest();
+            } catch { /* keep the last known best */ }
+        }
+
+        async function loadBoard() {
+            const list = $('board');
+            if (!list.children.length) renderSkeleton(list, 5);
+            try {
+                const entries = await fetchBoard('flappy');
+                if (entries.length) renderList(list, entries.slice(0, 10), { key: 'flappy' });
+                else renderStatus(list, 'No scores yet! Be the first.');
+            } catch {
+                renderStatus(list, 'Couldn’t load the leaderboard.', 'error');
+            }
+        }
+
+        /* ---------- Wiring ---------- */
+
+        stage.addEventListener('pointerdown', (e) => {
+            if (e.button > 0 || e.target.closest('button, a')) return;
             e.preventDefault();
-            justTapped = true;
-            jump();
-        }, { passive: false });
-
-        document.addEventListener("mousedown", () => {
-            if (justTapped) return;
-            jump();
+            act();
         });
 
-        document.addEventListener("keydown", jump);
-
-        // --- Leaderboard Functions ---
-
-        // 1. Fetch scores from the API
-        async function fetchLeaderboard() {
-            try {
-                const response = await fetch('/api/flappy-api'); 
-                if (!response.ok) throw new Error('Failed to fetch leaderboard');
-                leaderboard = await response.json();
-            } catch (error) {
-                console.error("Error fetching leaderboard:", error);
-                leaderboard = [];
+        document.addEventListener('keydown', (e) => {
+            if (isForeignKey(e) || isActivationKey(e)) return;
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                e.preventDefault();
+                if (!e.repeat) act();
+            } else if (e.key === 'p' || e.key === 'P') {
+                if (state === 'playing') pause();
+                else if (state === 'paused') resume();
             }
-            drawLeaderboard();
-        }
+        });
 
-        // 2. Submit score to the API
-        async function submitScore(finalScore) {
-            if (!isUserLoggedIn) {
-                console.log("Not logged in. Score not submitted.");
-                return;
+        document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+        $('start-btn').addEventListener('click', begin);
+        $('resume-btn').addEventListener('click', resume);
+        $('again-btn').addEventListener('click', () => { if (performance.now() - overAt > 450) restart(); });
+        $('login-link').href = loginHref();
+        bindMuteButton($('mute-btn'));
+        bindFocusMode(stage, $('focus-btn'), () => stage.focus({ preventScroll: true }));
+
+        onSession(({ loggedIn: now }) => {
+            const changed = now !== loggedIn;
+            loggedIn = now;
+            if (changed) {
+                best = loggedIn ? 0 : localBest('flappy');
+                loadPersonalBest();
             }
+            renderBest();
+        });
 
-            try {
-                const response = await fetch('/api/flappy-api', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                body: JSON.stringify({ score: finalScore })
-            });
+        loadBoard();
+        sessionReady.then(loadPersonalBest);
 
-            if (response.ok) {
-                console.log('Score submitted successfully! Refreshing high score...');
-            
-                await fetchPersonalHighScore();
-                await fetchLeaderboard();
-                console.log(`Updated Personal High Score is now: ${highScore}`); 
-            } else {
-                console.error('Score submission failed. Server said:', await response.json());
-            }
-        } catch (error) {
-            console.error("Error submitting score:", error);
-        }
-    }
-
-        // 3. Fetch user's personal high score
-        async function fetchPersonalHighScore() {
-        if (!isUserLoggedIn) {
-            highScore = 0;
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/flappy-api?action=personal'); 
-            if (!response.ok) throw new Error('Failed to fetch user high score');
-            const data = await response.json();
-            highScore = data.highScore; 
-            console.log('Personal High Score fetched:', highScore);
-        } catch (error) {
-            console.error("Error fetching personal high score:", error);
-            highScore = 0;
-        }
-    }
-
-        // 3. Draw leaderboard
-        function drawLeaderboard() {
-            let html = '<h3>🏆 Trusty\'s Top Flaps 🏆</h3><ol>';
-            
-            if (leaderboard.length === 0) {
-                html += '<p style="text-align:center;">No scores yet! Be the first.</p>';
-            } else {
-                leaderboard.slice(0, 10).forEach((entry, index) => {
-                    html += `
-                        <li>
-                            <span>**#${index + 1}** ${entry.name.substring(0, 15)}</span>
-                            <span>**${entry.score}**</span>
-                        </li>
-                    `;
-                });
-            }
-            
-            html += '</ol>';
-            leaderboardContainer.innerHTML = html;
-        }
-
-        // --- Game Logic ---
-
-        function jump() {
-            if (!gameOver) {
-                horse.velocity = jumpStrength;
-                jumpSound.currentTime = 0;
-                jumpSound.play();
-            } else {
-                resetGame();
-            }
-        }
-
-
-        function checkLeaderboard() {
-    if (gameOver && score > 0) {
-        if (!isUserLoggedIn) {
-            console.log("Game Over. User not logged in, score not saved.");
-            return;
-        }
-
-        if (score > highScore) {
-            console.log(`New personal high score! Submitting ${score}. (Previous high: ${highScore})`);
-            submitScore(score);
-        } else {
-            console.log(`Score ${score} did not beat personal high score ${highScore}.`);
-        }
-    }
-}
-
-
-
-
-
-        function resetGame() {
-            trustyImg.src = "/images/trusty.png";
-            canvas.style.background = "#70c5ce";
-
-            horse.y = 250;
-            horse.velocity = -3;
-            pipes = [];
-            score = 0;
-            frame = 0;
-            gameOver = false;
-        }
-
-        function createPipe() {
-            let topHeight = Math.floor(Math.random() * 250) + 50;
-            let bottomY = topHeight + pipeGap;
-
-            pipes.push({
-                x: canvas.width,
-                topHeight: topHeight,
-                bottomY: bottomY
-            });
-        }
-
-        function drawHorse() {
-            if (imageLoaded) {
-                ctx.drawImage(trustyImg, horse.x, horse.y, horse.width, horse.height);
-            } else {
-                ctx.fillStyle = "red";
-                ctx.fillRect(horse.x, horse.y, horse.width, horse.height);
-            }
-        }
-
-        function drawPipes() {
-            ctx.fillStyle = "green";
-            pipes.forEach(pipe => {
-                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
-                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY);
-            });
-        }
-
-
-        function checkCollision() {
-            pipes.forEach(pipe => {
-                let withinPipeX = horse.x + horse.width > pipe.x && horse.x < pipe.x + pipeWidth;
-                let hitsTop = horse.y < pipe.topHeight;
-                let hitsBottom = horse.y + horse.height > pipe.bottomY;
-
-                if (withinPipeX && (hitsTop || hitsBottom)) {
-                    gameOver = true;
-                }
-            });
-        }
-
-        function loop(timestamp){
-            justTapped = false;
-            if (!lastTime) lastTime = timestamp;
-            const delta = (timestamp - lastTime) / 16.666;
-            lastTime = timestamp;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (!gameOver) {
-                frame++;
-                horse.velocity += gravity * delta;
-                horse.y += horse.velocity * delta;
-                const floorY = canvas.height - horse.height;
-                if (horse.y > floorY) {
-                    horse.y = floorY;
-                    horse.velocity = 0;
-                }
-                
-                pipeTimer += delta;
-                if (pipeTimer > 60) {
-                    createPipe();
-                    pipeTimer = 0;
-                }
-
-                pipes.forEach(pipe => pipe.x -= 4 * delta);
-
-                if (pipes.length && pipes[0].x < -pipeWidth) {
-                    pipes.shift();
-                    score++;
-                    if (score == 10){
-                        trustyImg = horseImg;
-                        horseSound.play();
-                    }
-                    else if (score == 20){
-                        trustyImg = seahorseImg;
-                        bubbleSound.play();
-                        canvas.style.background = "#00008B";
-                    }
-                    else if (score == 21){
-                        seahorseSound.play();
-                    }
-                }
-                previousScore = score; 
-            } else if (gameOver && previousScore > 0) {
-                checkLeaderboard(); 
-                previousScore = 0;
-            }
-
-
-            drawHorse();
-            drawPipes();
-            checkCollision();
-            
-            // --- Score Display (High Score remains on canvas) ---
-
-            ctx.fillStyle = "white";
-            ctx.font = "30px Arial";
-            ctx.fillText(score, 20, 40);
-
-            ctx.fillStyle = "yellow";
-            ctx.font = "25px Arial";
-            if (isUserLoggedIn) {
-                ctx.fillText("High: " + highScore, 20, 70);
-            } else {
-                ctx.fillText("Log in to save score!", 20, 70);
-            }
-
-            if (gameOver) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = "white";
-                ctx.font = "40px Arial Black";
-                ctx.fillText("Game Over", 300, 300);
-                ctx.font = "20px Arial Black";
-                ctx.fillText("Press any key or click to restart", 263, 340);
-            }
-
-            requestAnimationFrame(loop);
-        }
-
-        fetchLeaderboard(); 
-        fetchPersonalHighScore();
-        requestAnimationFrame(loop);
-
+        Promise.all([loadArt(), fontsReady]).then(() => {
+            state = 'intro';
+            $('start-title').textContent = 'Tap to flap';
+            $('start-btn').disabled = false;
+            requestAnimationFrame(frame);
+        }).catch(() => {
+            $('start-title').textContent = 'Couldn’t load the game';
+        });
     </script>
-
 </body>
 </html>

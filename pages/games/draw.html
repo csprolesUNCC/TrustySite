@@ -1,693 +1,395 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Draw Trusty! - Trusty da Horse</title>
-<link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-<link rel="stylesheet" href="/styles/stylesheet.css">
-<script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
-<script defer src="/_vercel/insights/script.js"></script>
-<style>
-    .content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    
-    canvas {
-        background:white;
-        border: 3px solid #111; 
-        box-shadow: 6px 6px 0px 0px #111;
-        touch-action:none;
-    }
-    button {
-        margin-top:15px;
-        padding:10px 20px;
-        font-size:18px;
-        cursor:pointer;
-        border: 2px solid #111;
-        background-color: #ffe08d;
-        font-weight: bold;
-        box-shadow: 3px 3px 0px 0px #555;
-        border-radius: 0;
-        transition: all 0.1s;
-    }
-    button:active {
-        box-shadow: 1px 1px 0px 0px #555;
-        transform: translate(2px, 2px);
-    }
-    #scoreBox {
-        margin-top:15px;
-        font-size:26px;
-        font-weight:bold;
-    }
-    #buttonContainer {
-        display: flex;
-        justify-content: center; 
-        gap: 10px;            
-        margin-top: 15px;
-    }
-    #gameCanvas + div {
-        font-size: 22px;
-        font-weight: bold;
-        margin-top: 10px;
-    }
-
-    #leaderboard-container {
-        width: 500px;
-        margin-top: 30px;
-        padding: 15px;
-        border: 3px solid #111;
-        background-color: #ffe08d;
-        box-shadow: 6px 6px 0px 0px #111;
-        text-align: left;
-    }
-    
-    #leaderboard-container h3 {
-        margin-top: 0;
-        border-bottom: 2px solid #111;
-        padding-bottom: 5px;
-        text-align: center;
-    }
-
-    #leaderboard-container ol {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    #leaderboard-container li {
-        font-size: 1.1em;
-        display: flex;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background-color: #fff9e6;
-        border: 1px solid #111;
-        border-radius: 4px;
-    }
-
-    .leaderboard-entry {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-    }
-
-    .leaderboard-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .user-drawing-thumb {
-        width: 50px;
-        height: 50px;
-        border: 1px solid #111;
-        background: white;
-        object-fit: contain;
-    }
-
-    /* trying to fix mobile view here! */
-    @media (max-width: 850px) {
-    canvas {
-        max-width: 100%;
-        height: auto;
-    }
-
-    #leaderboard-container,
-    #daily-leaderboard-container {
-        max-width: 100%;
-        width: 800px;
-        box-sizing: border-box;
-    }
-    }
-    /* trying to fix mobile view here! */
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Draw Trusty — Trusty da Horse</title>
+    <meta name="description" content="Memorize Trusty, then draw him from memory. Your drawing is graded on accuracy and the best artists make the leaderboard.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Draw Trusty!">
+    <meta property="og:description" content="Memorize and draw! How close can you get to the real Trusty?">
+    <meta property="og:image" content="https://trustydahorse.com/images/draw_thumbnail.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Draw Trusty!</h1>
-        <div id="auth-component-placeholder">
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/games.html">All games</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">Memorize and draw!</p>
+                    <h1>Draw Trusty</h1>
+                </div>
             </div>
-    </header>
-
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <h2>Memorize and Draw!</h2>
-        
-        <canvas id="gameCanvas" width="500" height="500"></canvas>
-        <div id="scoreBox"></div>
-        <div id="buttonContainer">
-            <button id="finishBtn">DONE</button>
-            <button id="restartBtn">RESTART</button>
         </div>
 
-        <div id="leaderboard-container">
-            <h3>🎨 Master Artists Loading...</h3>
+        <div class="container game-layout">
+            <section class="game-main" aria-label="Game">
+                <div class="draw-hud" aria-live="polite">
+                    <span class="draw-phase" id="phase">Ready?</span>
+                    <div class="timer-bar" aria-hidden="true"><div class="timer-fill" id="timer-fill"></div></div>
+                    <span class="draw-time" id="time">25s</span>
+                </div>
+
+                <div class="stage draw-stage" id="stage">
+                    <canvas id="draw" width="500" height="500" aria-label="Drawing area"></canvas>
+
+                    <div class="stage-overlay" id="overlay-start">
+                        <p class="overlay-kicker">How well do you know him?</p>
+                        <h2 class="overlay-title">Draw Trusty</h2>
+                        <p class="overlay-sub">You get 2 seconds to memorize Trusty, then 25 seconds to draw him from memory. Stay on his lines!</p>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="start-btn">Start</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="draw-controls">
+                    <button class="btn btn-lg" type="button" id="done-btn" disabled>Done</button>
+                    <button class="btn btn-lg btn-outline" type="button" id="restart-btn">New round</button>
+                </div>
+            </section>
+
+            <aside class="game-side">
+                <div class="panel" id="result-panel">
+                    <h2 class="panel-title">Your scores</h2>
+                    <div class="stat-grid">
+                        <div class="stat"><span class="stat-label">Last round</span><span class="stat-value" id="stat-last">&ndash;</span></div>
+                        <div class="stat"><span class="stat-label" id="stat-best-label">Best</span><span class="stat-value" id="stat-best">0%</span></div>
+                    </div>
+                    <p class="side-note" id="result-message" hidden></p>
+                    <dl class="score-breakdown" id="breakdown" hidden>
+                        <dt>On the lines</dt><dd id="bd-precision"></dd>
+                        <dt>How much of Trusty</dt><dd id="bd-completeness"></dd>
+                        <dt>Too much ink</dt><dd id="bd-penalty"></dd>
+                    </dl>
+                    <p class="side-note" data-auth-show="out">Playing as a guest. <a id="login-link" href="/pages/auth/login.html">Log in</a> to put your drawing on the leaderboard.</p>
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title">Master Artists</h2>
+                    <ol class="board" id="board" aria-label="Draw Trusty top 10"></ol>
+                    <div class="panel-foot"><a class="text-link" href="/pages/leaderboard.html#draw">Full leaderboard</a></div>
+                </div>
+            </aside>
         </div>
-    </div>
+    </main>
 
+    <trusty-footer></trusty-footer>
 
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="/scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
+    <script type="module">
+        import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
+        import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
+        import { DRAW_SIZE, strokeTrusty, referenceCanvas } from '/scripts/draw-reference.js';
+        import { isForeignKey, isActivationKey, localBest, saveLocalBest } from '/scripts/game-kit.js';
 
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const finishButton = document.getElementById("finishBtn");
-const restartButton = document.getElementById("restartBtn");
-const scoreBox = document.getElementById("scoreBox");
-const leaderboardContainer = document.getElementById("leaderboard-container");
+        const MEMORIZE_MS = 2000;
+        const DRAW_MS = 25000;
+        const $ = (id) => document.getElementById(id);
+        const canvas = $('draw');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-let drawing = false;
-let gameFinished = false;
-let lastX = 0, lastY = 0;
-let drawingEnabled = false;
-let timerInterval = null;
-let startTimeout = null;
-const timerDisplay = document.createElement("div");
-timerDisplay.style.fontSize = "22px";
-timerDisplay.style.fontWeight = "bold";
-timerDisplay.style.marginTop = "10px";
-canvas.parentNode.insertBefore(timerDisplay, canvas.nextSibling);
+        let phase = 'idle'; // idle | memorize | draw | done
+        let phaseEndsAt = 0;
+        let ticker = null;
+        let drawingPointer = null;
+        let lastX = 0;
+        let lastY = 0;
+        let best = 0;
+        let loggedIn = null;
+        let ghosts = null;
 
-let highScore = 0;
-let leaderboard = [];
-let isUserLoggedIn = localStorage.getItem('isUserLoggedIn') === 'true';
+        /* ---------- HUD ---------- */
 
-// ---- Draw stick figure reference ----
-function drawReference(ctxToDraw) {
-    const ctxUse = ctxToDraw;
-    ctxUse.strokeStyle = "black";
+        function setHud(label, fraction, seconds, mode) {
+            $('phase').textContent = label;
+            const fill = $('timer-fill');
+            fill.style.transform = `scaleX(${Math.max(0, Math.min(1, fraction))})`;
+            fill.classList.toggle('is-memorize', mode === 'memorize');
+            fill.classList.toggle('is-low', mode === 'draw' && seconds <= 5);
+            $('time').textContent = seconds == null ? '' : `${seconds}s`;
+        }
 
-    ctxUse.beginPath();
-    ctxUse.ellipse(100, 180, 75, 75 * 1.25, 0, 0, Math.PI * 2);
-    ctxUse.stroke();
+        function tick() {
+            const remaining = phaseEndsAt - performance.now();
+            if (phase === 'memorize') {
+                setHud('Memorize!', remaining / MEMORIZE_MS, Math.max(0, Math.ceil(remaining / 1000)), 'memorize');
+                if (remaining <= 0) beginDrawing();
+            } else if (phase === 'draw') {
+                const seconds = Math.max(0, Math.ceil(remaining / 1000));
+                setHud('Draw!', remaining / DRAW_MS, seconds, 'draw');
+                if (remaining <= 0) grade();
+            }
+        }
 
-    ctxUse.beginPath();
-    ctxUse.ellipse(100, 220, 28, 25 * 1.25, 0, -Math.PI/20, Math.PI + Math.PI/20);
-    ctxUse.stroke();
+        function stopTicker() {
+            clearInterval(ticker);
+            ticker = null;
+        }
 
-    ctxUse.beginPath();
-    ctxUse.moveTo(80, 130); ctxUse.lineTo(80, 180); ctxUse.stroke();
-    ctxUse.beginPath();
-    ctxUse.moveTo(120, 130); ctxUse.lineTo(120, 180); ctxUse.stroke();
+        /* ---------- Rounds ---------- */
 
-    ctxUse.beginPath();
-    ctxUse.moveTo(100, 275); ctxUse.lineTo(150, 340); ctxUse.stroke();
-    ctxUse.beginPath();
-    ctxUse.moveTo(150, 340); ctxUse.lineTo(425, 340); ctxUse.stroke();
+        function startRound() {
+            stopTicker();
+            drawingPointer = null;
+            $('overlay-start').hidden = true;
+            ctx.clearRect(0, 0, DRAW_SIZE, DRAW_SIZE);
+            strokeTrusty(ctx, { lineWidth: 6, color: '#000000', lineJoin: 'miter' });
+            phase = 'memorize';
+            phaseEndsAt = performance.now() + MEMORIZE_MS;
+            $('done-btn').disabled = true;
+            ticker = setInterval(tick, 100);
+            tick();
+        }
 
-    ctxUse.beginPath();
-    ctxUse.moveTo(200, 345); ctxUse.lineTo(150, 445); ctxUse.stroke();
-    ctxUse.beginPath();
-    ctxUse.moveTo(200, 345); ctxUse.lineTo(250, 445); ctxUse.stroke();
+        function beginDrawing() {
+            ctx.clearRect(0, 0, DRAW_SIZE, DRAW_SIZE);
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = 'black';
+            ctx.lineCap = 'round';
+            phase = 'draw';
+            phaseEndsAt = performance.now() + DRAW_MS;
+            $('done-btn').disabled = false;
+            tick();
+        }
 
-    ctxUse.beginPath();
-    ctxUse.moveTo(350, 345); ctxUse.lineTo(300, 445); ctxUse.stroke();
-    ctxUse.beginPath();
-    ctxUse.moveTo(350, 345); ctxUse.lineTo(400, 445); ctxUse.stroke();
-}
+        /* ---------- Drawing input (Pointer Events, scaled to the 500x500 canvas) ---------- */
 
-// ---- Player drawing ----
-ctx.lineWidth = 5;
-ctx.strokeStyle = "black";
-ctx.lineCap = "round";
+        function toCanvas(e) {
+            const rect = canvas.getBoundingClientRect();
+            return [(e.clientX - rect.left) * (DRAW_SIZE / rect.width), (e.clientY - rect.top) * (DRAW_SIZE / rect.height)];
+        }
 
-function startDraw(x, y) { if(!drawingEnabled) return; drawing = true; lastX = x; lastY = y; }
-function draw(x, y) { if(!drawing || !drawingEnabled) return; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y;}
-function stopDraw() { drawing=false; }
-function getTouchPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+        canvas.addEventListener('pointerdown', (e) => {
+            if (phase !== 'draw' || !e.isPrimary || e.button > 0) return;
+            e.preventDefault();
+            try { canvas.setPointerCapture(e.pointerId); } catch { /* pointer already released */ }
+            drawingPointer = e.pointerId;
+            [lastX, lastY] = toCanvas(e);
+        });
 
-    return {
-        x: (touch.clientX - rect.left) * scaleX,
-        y: (touch.clientY - rect.top) * scaleY
-    };
-}
+        canvas.addEventListener('pointermove', (e) => {
+            if (e.pointerId !== drawingPointer || phase !== 'draw') return;
+            const samples = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+            for (const sample of (samples.length ? samples : [e])) {
+                const [x, y] = toCanvas(sample);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                lastX = x;
+                lastY = y;
+            }
+        });
 
-canvas.addEventListener("mousedown", e => startDraw(e.offsetX, e.offsetY));
-canvas.addEventListener("mousemove", e => draw(e.offsetX, e.offsetY));
-canvas.addEventListener("mouseup", stopDraw);
-canvas.addEventListener("mouseenter", e => { lastX = e.offsetX; lastY = e.offsetY; });
+        const endStroke = (e) => { if (e.pointerId === drawingPointer) drawingPointer = null; };
+        canvas.addEventListener('pointerup', endStroke);
+        canvas.addEventListener('pointercancel', endStroke);
 
-canvas.addEventListener("touchstart", e => { 
-    e.preventDefault(); // Prevents scrolling while drawing
-    const pos = getTouchPos(e);
-    startDraw(pos.x, pos.y); 
-});
-canvas.addEventListener("touchmove", e => { 
-    e.preventDefault(); 
-    const pos = getTouchPos(e);
-    draw(pos.x, pos.y); 
-});
-canvas.addEventListener("touchend", stopDraw);
+        /* ---------- Grading (identical to the original algorithm) ---------- */
 
-let hitData, expectData, closeData, zoneData;
+        function ghostData() {
+            ghosts ||= [6, 25, 50, 70, 140].map((w) =>
+                referenceCanvas(w).getContext('2d').getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data);
+            return ghosts;
+        }
 
-function gradeDrawing() {
-    if (!drawingEnabled && !gameFinished) return;
-    if (gameFinished) return;
+        function score(user) {
+            const [perfect, ghost1, ghost2, ghost3, ghost4] = ghostData();
+            const width = DRAW_SIZE;
+            const height = DRAW_SIZE;
+            const radius = 5;
+            let overlapCount = 0;
+            let totalUserPixels = 0;
+            let perfectUserPixels = 0;
+            let totalRefPixels = 0;
 
-    resetGameState();
-    gameFinished = true;
+            for (let i = 0; i < user.length; i += 4) {
+                const userAlpha = user[i + 3];
+                const perfectAlpha = perfect[i + 3];
 
-    drawingEnabled = false;
-    timerDisplay.style.display = "none";
-    clearInterval(timerInterval);
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    const userImgData = ctx.getImageData(0, 0, width, height).data;
-
-    const perfectCanvas = getGhostCanvas(6);
-    const perfectCtx = perfectCanvas.getContext('2d');
-    const perfectImgData = perfectCtx.getImageData(0, 0, width, height).data;
-    
-    const ghostCanvas = getGhostCanvas(25);
-    const ghostCtx = ghostCanvas.getContext('2d');
-    const ghostImgData = ghostCtx.getImageData(0, 0, width, height).data;
-
-    const ghostCanvas2 = getGhostCanvas(50);
-    const ghostCtx2 = ghostCanvas2.getContext('2d');
-    const ghostImgData2 = ghostCtx2.getImageData(0, 0, width, height).data;
-
-    const ghostCanvas3 = getGhostCanvas(70);
-    const ghostCtx3 = ghostCanvas3.getContext('2d');
-    const ghostImgData3 = ghostCtx3.getImageData(0, 0, width, height).data;
-
-    const ghostCanvas4 = getGhostCanvas(140);
-    const ghostCtx4 = ghostCanvas4.getContext('2d');
-    const ghostImgData4 = ghostCtx4.getImageData(0, 0, width, height).data;
-
-
-
-    let overlapCount = 0;
-    let totalUserPixels = 0;
-
-    let perfectUserPixels = 0;
-    let totalRefPixels = 0
-
-    const radius = 5;
-
-    for (let i = 0; i < userImgData.length; i += 4) {
-        
-        const userAlpha = userImgData[i + 3];
-        const perfectAlpha = perfectImgData[i + 3];
-        const ghostAlpha = ghostImgData[i + 3];
-        const ghostAlpha2 = ghostImgData2[i + 3];
-        const ghostAlpha3 = ghostImgData3[i + 3];
-        const ghostAlpha4 = ghostImgData4[i + 3];
-
-        // completeness logic
-        if (perfectAlpha > 50) {
-            totalRefPixels++;
-            let matched = false;
-
-            const pixelIndex = i / 4;
-            const x = pixelIndex % width;
-            const y = Math.floor(pixelIndex / width);
-
-            for (let dx = -radius; dx <= radius && !matched; dx++) {
-                for (let dy = -radius; dy <= radius; dy++) {
-
-                    const nx = x + dx;
-                    const ny = y + dy;
-
-                    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-
-                    const ni = (ny * width + nx) * 4;
-                    if (userImgData[ni + 3] > 50) {
-                        perfectUserPixels++;
-                        matched = true;
-                        break;
+                if (perfectAlpha > 50) {
+                    totalRefPixels++;
+                    const pixelIndex = i / 4;
+                    const x = pixelIndex % width;
+                    const y = Math.floor(pixelIndex / width);
+                    let matched = false;
+                    for (let dx = -radius; dx <= radius && !matched; dx++) {
+                        for (let dy = -radius; dy <= radius; dy++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                            if (user[(ny * width + nx) * 4 + 3] > 50) {
+                                perfectUserPixels++;
+                                matched = true;
+                                break;
+                            }
+                        }
                     }
+                }
+
+                if (userAlpha > 100) {
+                    totalUserPixels++;
+                    if (perfectAlpha > 50) overlapCount += 1.05;
+                    else if (ghost1[i + 3] > 50) overlapCount += 0.9;
+                    else if (ghost2[i + 3] > 50) overlapCount += 0.8;
+                    else if (ghost3[i + 3] > 50) overlapCount += 0.7;
+                    else if (ghost4[i + 3] > 50) overlapCount += 0.5;
+                    else overlapCount -= 1.5;
                 }
             }
 
+            let precision = totalUserPixels > 0 ? overlapCount / totalUserPixels : 0;
+            if (precision > 1) precision = 1;
+            let completeness = totalRefPixels > 0 ? perfectUserPixels / totalRefPixels : 0;
+            if (completeness > 1) completeness = 1;
+
+            const inkRatio = totalRefPixels > 0 ? totalUserPixels / totalRefPixels : 0;
+            const maxAllowedRatio = 1.3;
+            const thicknessPenalty = inkRatio > maxAllowedRatio ? maxAllowedRatio / inkRatio : 1;
+
+            let final = Math.floor(((precision * 0.5) + (completeness * 0.5)) * thicknessPenalty * 100);
+            if (final < 0) final = 0;
+            return { final, precision, completeness, thicknessPenalty };
         }
 
-        // precision logic
-        if (userAlpha > 100) {
-            totalUserPixels++;
-            if (perfectAlpha > 50) {
-                overlapCount=overlapCount+1.05;
+        function pct(n) { return `${Math.round(Math.max(0, n) * 100)}%`; }
+
+        function grade() {
+            if (phase !== 'draw') return;
+            stopTicker();
+            phase = 'done';
+            drawingPointer = null;
+            $('done-btn').disabled = true;
+
+            const result = score(ctx.getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data);
+            const image = canvas.toDataURL('image/png');
+
+            // Reveal the real Trusty underneath the player's drawing.
+            ctx.globalCompositeOperation = 'destination-over';
+            strokeTrusty(ctx, { lineWidth: 6, color: '#90EE90', lineJoin: 'miter' });
+            ctx.globalCompositeOperation = 'source-over';
+
+            let newBest = false;
+            if (loggedIn) {
+                if (result.final > best) {
+                    newBest = true;
+                    best = result.final;
+                    submitScore(result.final, image);
+                }
+            } else if (saveLocalBest('draw', result.final)) {
+                newBest = true;
+                best = result.final;
             }
-            else if (ghostAlpha > 50) {
-                overlapCount=overlapCount+0.9; 
-            }
-            else if (ghostAlpha2 > 50) {
-                overlapCount=overlapCount+0.8; 
-            }
-            else if (ghostAlpha3 > 50) {
-                overlapCount=overlapCount+0.7;
-            }
-            else if (ghostAlpha4 > 50) {
-                overlapCount=overlapCount+0.5;
-            }
-            else{
-                overlapCount=overlapCount-1.5;
+
+            setHud(result.final === 100 ? 'Perfect!' : 'Done!', 0, null, 'done');
+            $('stat-last').textContent = `${result.final}%`;
+            renderBest();
+            const message = $('result-message');
+            message.hidden = false;
+            message.textContent = [
+                result.final === 100 ? '\u{1F389} PERFECT!' : `You scored ${result.final}%.`,
+                newBest ? 'New personal best!' : (loggedIn ? `Your best is ${best}%.` : ''),
+                'The real Trusty is shown in green.',
+            ].filter(Boolean).join(' ');
+            $('breakdown').hidden = false;
+            $('bd-precision').textContent = pct(result.precision);
+            $('bd-completeness').textContent = pct(result.completeness);
+            $('bd-penalty').textContent = result.thicknessPenalty < 1 ? `−${Math.round((1 - result.thicknessPenalty) * 100)}%` : 'None';
+            $('restart-btn').focus({ preventScroll: true });
+        }
+
+        async function submitScore(final, image) {
+            try {
+                const res = await fetch('/api/draw-api?action=submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ score: final, image }),
+                });
+                if (res.status === 401) {
+                    toast('Your session expired. Log in again to save drawings.', 'error');
+                    return;
+                }
+                if (!res.ok) throw new Error(String(res.status));
+                toast('Drawing saved to the leaderboard!', 'success');
+                await Promise.all([loadPersonalBest(), loadBoard()]);
+            } catch {
+                toast('Couldn’t save your drawing. Check your connection.', 'error');
             }
         }
-    }
 
+        /* ---------- Scores ---------- */
 
-
-
-
-    // --- CALCULATE SCORE ---
-    let precision = 0;
-    if (totalUserPixels > 0) {
-        precision = (overlapCount / totalUserPixels);
-    }
-    if (precision > 1) precision = 1;
-
-    let completeness = 0;
-    if (totalRefPixels > 0) {
-        completeness = (perfectUserPixels / totalRefPixels);
-    }
-    if (completeness > 1) completeness = 1;
-
-    let finalScoreRaw = (precision * 0.5) + (completeness * 0.5);
-
-    let inkRatio = 0;
-    if (totalRefPixels > 0) {
-        inkRatio = totalUserPixels / totalRefPixels;
-    }
-
-    const maxAllowedRatio = 1.3; 
-    let thicknessPenalty = 1.0; 
-
-    if (inkRatio > maxAllowedRatio) {
-        thicknessPenalty = maxAllowedRatio / inkRatio;
-    }
-
-    finalScoreRaw = finalScoreRaw * thicknessPenalty;
-    let finalScore = Math.floor(finalScoreRaw * 100);
-
-    if (finalScore < 0) finalScore = 0;
-    const msg = finalScore === 100 ? "🎉 PERFECT!" : "";
-
-    let highScoreMsg = "";
-    if (isUserLoggedIn) {
-        if (finalScore > highScore) {
-            submitScore(finalScore);
-            highScore = finalScore;
-            highScoreMsg = ` (New Personal Best!)`;
-        } else {
-            highScoreMsg = ` (High: ${highScore}%)`;
+        function renderBest() {
+            $('stat-best').textContent = `${best}%`;
+            $('stat-best-label').textContent = loggedIn ? 'Best' : 'Best (this device)';
         }
-    } else {
-        highScoreMsg = " (Log in to save!)";
-    }
 
-    scoreBox.textContent = `Score: ${finalScore}%${msg}${highScoreMsg}`;
+        async function loadPersonalBest() {
+            if (!loggedIn) return;
+            try {
+                const res = await fetch('/api/draw-api?action=get_personal');
+                if (!res.ok) return;
+                const data = await res.json();
+                best = Math.max(best, Number(data.highScore) || 0);
+                renderBest();
+            } catch { /* keep the last known best */ }
+        }
 
-    // --- SHOW FINAL REFERENCE LINE ---
-    ctx.globalCompositeOperation = 'destination-over';
-    ctx.strokeStyle = '#90EE90';
-    ctx.lineWidth = 6;
-    drawReference(ctx);
-    ctx.globalCompositeOperation = 'source-over';
-}
-
-function resetGameState() {
-    gameFinished = false;
-    if (timerInterval) clearInterval(timerInterval);
-    if (startTimeout) clearTimeout(startTimeout);
-    timerInterval = null;
-    startTimeout = null;
-    drawingEnabled = false;
-}
-
-function startGame() {
-    resetGameState();
-    timerDisplay.style.display = "block"; 
-    timerDisplay.textContent = "Memorize Trusty!";
-    scoreBox.textContent = "";
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.lineWidth = 6; 
-    ctx.strokeStyle = '#000000';
-    drawReference(ctx);
-
-    startTimeout = setTimeout(() => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = "black";
-        ctx.lineCap = "round";
-
-        drawingEnabled = true;
-        timerDisplay.style.display = "block"; 
-        let timeLeft = 25;
-        timerDisplay.textContent = `Time left: ${timeLeft}s`;
-
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            timerDisplay.textContent = `Time left: ${timeLeft}s`;
-            if (timeLeft <= 0) {
-                gradeDrawing();
+        async function loadBoard() {
+            const list = $('board');
+            if (!list.children.length) renderSkeleton(list, 5);
+            try {
+                const entries = await fetchBoard('draw');
+                if (entries.length) renderList(list, entries.slice(0, 10), { key: 'draw' });
+                else renderStatus(list, 'No drawings ranked yet!');
+            } catch {
+                renderStatus(list, 'Couldn’t load the leaderboard.', 'error');
             }
-        }, 1000);
+        }
 
-    }, 2000);
-}
+        /* ---------- Wiring ---------- */
 
+        $('start-btn').addEventListener('click', startRound);
+        $('restart-btn').addEventListener('click', startRound);
+        $('done-btn').addEventListener('click', grade);
+        $('login-link').href = loginHref();
 
-finishButton.addEventListener("click", gradeDrawing);
-restartButton.addEventListener("click", startGame);
-
-
-// making grading layers
-function getGhostCanvas(lineWidth) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 500;
-    canvas.height = 500;
-    const ctx = canvas.getContext('2d');
-
-    ctx.lineWidth = lineWidth;
-    ctx.strokeStyle = "black";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    // -- Head --
-    ctx.beginPath();
-    ctx.ellipse(100, 180, 75, 75 * 1.25, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // -- Mouth --
-    ctx.beginPath();
-    ctx.ellipse(100, 220, 28, 25 * 1.25, 0, -Math.PI/20, Math.PI + Math.PI/20);
-    ctx.stroke();
-
-    // -- Eyes --
-    ctx.beginPath();
-    ctx.moveTo(80, 130); ctx.lineTo(80, 180);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(120, 130); ctx.lineTo(120, 180);
-    ctx.stroke();
-
-    // -- Neck/Body connector --
-    ctx.beginPath();
-    ctx.moveTo(100, 275); ctx.lineTo(150, 340);
-    ctx.stroke();
-
-    // -- Long Back --
-    ctx.beginPath();
-    ctx.moveTo(150, 340); ctx.lineTo(425, 340);
-    ctx.stroke();
-
-    // -- Front Legs --
-    ctx.beginPath();
-    ctx.moveTo(200, 345); ctx.lineTo(150, 445);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(200, 345); ctx.lineTo(250, 445);
-    ctx.stroke();
-
-    // -- Back Legs --
-    ctx.beginPath();
-    ctx.moveTo(350, 345); ctx.lineTo(300, 445);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(350, 345); ctx.lineTo(400, 445);
-    ctx.stroke();
-
-    return canvas;
-}
-
-//nLeaderboard & API Functions
-async function fetchLeaderboard() {
-    try {
-        const response = await fetch('/api/draw-api?action=get_leaderboard'); 
-        if (!response.ok) throw new Error('Failed to fetch leaderboard');
-        leaderboard = await response.json();
-    } catch (error) {
-        console.error("Error fetching leaderboard:", error);
-        leaderboard = []; 
-    }
-    drawLeaderboard(); 
-}
-
-async function submitScore(finalScore) {
-    if (!isUserLoggedIn) return;
-
-    const imageData = canvas.toDataURL("image/png");
-
-    try {
-        const response = await fetch('/api/draw-api?action=submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                score: finalScore,
-                image: imageData // This sends the drawing data
-            })
+        document.addEventListener('keydown', (e) => {
+            if (isForeignKey(e) || isActivationKey(e)) return;
+            if (e.key === 'Enter' && phase === 'draw') { e.preventDefault(); grade(); }
+            else if ((e.key === 'Enter' || e.key === ' ') && (phase === 'idle' || phase === 'done')) { e.preventDefault(); startRound(); }
         });
 
-        if (response.ok) {
-            console.log('Score submitted successfully! Refreshing...');
-            await fetchPersonalHighScore();
-            await fetchLeaderboard();
-        } else {
-            console.error('Score submission failed.');
-        }
-    } catch (error) {
-        console.error("Error submitting score:", error);
-    }
-}
-
-async function fetchPersonalHighScore() {
-    if (!isUserLoggedIn) {
-        highScore = 0;
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/draw-api?action=get_personal'); 
-        if (!response.ok) throw new Error('Failed to fetch user high score');
-        const data = await response.json();
-        highScore = data.highScore || 0; 
-    } catch (error) {
-        console.error("Error fetching personal high score:", error);
-        highScore = 0; 
-    }
-}
-
-const referenceImageData = getGhostCanvas(6).toDataURL("image/png");
-
-function openDrawingModal(imgSrc, name, score) {
-    const modal = document.getElementById("imageModal");
-    const modalImg = document.getElementById("modalImage");
-    const overlayImg = document.getElementById("overlayImage");
-    const modalCap = document.getElementById("modalCaption");
-    const downloadLink = document.getElementById("downloadLink");
-    const toggleBtn = document.getElementById("toggleOverlay");
-
-    overlayImg.src = referenceImageData;
-    overlayImg.style.display = "none";
-    toggleBtn.textContent = "SHOW OVERLAY";
-
-    modalImg.src = imgSrc;
-    modalCap.textContent = `${name}'s Masterpiece (${score}%)`;
-    downloadLink.href = imgSrc;
-    downloadLink.download = `${name}_Trusty_${score}pct.png`;
-
-    modal.style.display = "flex";
-
-    toggleBtn.onclick = () => {
-        if (overlayImg.style.display === "none") {
-            overlayImg.style.display = "block";
-            toggleBtn.textContent = "HIDE OVERLAY";
-        } else {
-            overlayImg.style.display = "none";
-            toggleBtn.textContent = "SHOW OVERLAY";
-        }
-    };
-
-    modal.onclick = (e) => {
-        if (e.target === modal) modal.style.display = "none";
-    };
-}
-
-function drawLeaderboard() {
-    let html = '<h3>🎨 Master Artists 🎨</h3><ol>';
-    
-    if (leaderboard.length === 0) {
-        html += '<p style="text-align:center;">No drawings ranked yet!</p>';
-    } else {
-        leaderboard.slice(0, 10).forEach((entry, index) => { 
-            const drawingImg = entry.drawing 
-                ? `<img src="${entry.drawing}" 
-                        class="user-drawing-thumb" 
-                        style="cursor:zoom-in;" 
-                        onclick="openDrawingModal('${entry.drawing}', '${entry.name}', ${entry.score})" 
-                        alt="${entry.name}'s drawing">` 
-                : `<div class="user-drawing-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;">N/A</div>`;
-
-            html += `
-                <li>
-                    <div class="leaderboard-entry">
-                        <div class="leaderboard-info">
-                            <span>**#${index + 1}**</span>
-                            ${drawingImg}
-                            <span>${entry.name.substring(0, 15)}</span>
-                        </div>
-                        <span>**${entry.score}%**</span>
-                    </div>
-                </li>
-            `;
+        onSession(({ loggedIn: now }) => {
+            const changed = now !== loggedIn;
+            loggedIn = now;
+            if (changed) {
+                best = loggedIn ? 0 : localBest('draw');
+                loadPersonalBest();
+            }
+            renderBest();
         });
-    }
-    
-    html += '</ol>';
-    leaderboardContainer.innerHTML = html;
-}
 
-fetchLeaderboard();
-fetchPersonalHighScore();
-startGame();
-</script>
-
-<div id="imageModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
-    <div style="background:#ffe08d; padding:20px; border:3px solid #111; box-shadow: 10px 10px 0px #111; max-width:90%; position: relative;">
-        <span onclick="document.getElementById('imageModal').style.display='none'" style="position:absolute; top:5px; right:10px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
-        
-        <div style="position: relative; width: 400px; height: 400px; margin: 0 auto; border: 2px solid #111; background: white;">
-            <img id="modalImage" src="" style="position: absolute; top:0; left:0; width:100%; height:100%; display:block;">
-            <img id="overlayImage" src="" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.4; pointer-events: none; display: none;">
-        </div>
-
-        <p id="modalCaption" style="text-align:center; font-weight:bold; margin-top:10px;"></p>
-        
-        <div style="text-align:center; margin-top:10px;">
-            <button id="toggleOverlay" style="padding: 5px 10px; margin-bottom: 10px; cursor: pointer; font-weight: bold; border: 2px solid #111; background: #fff;">SHOW OVERLAY</button>
-            <br>
-            <a id="downloadLink" href="#" download="trusty-drawing.png" style="display:inline-block; padding:8px 16px; background:#fff; border:2px solid #111; text-decoration:none; color:#111; font-weight:bold;">DOWNLOAD PNG</a>
-        </div>
-    </div>
-</div>
+        // Show Trusty faintly behind the start screen so the page isn't blank.
+        strokeTrusty(ctx, { lineWidth: 6, color: '#000000', lineJoin: 'miter' });
+        setHud('Ready?', 1, 25, 'idle');
+        loadBoard();
+        sessionReady.then(loadPersonalBest);
+    </script>
 </body>
 </html>
