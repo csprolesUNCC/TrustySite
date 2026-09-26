@@ -308,48 +308,152 @@ kbd {
 /* =========================================================================
    Trustis
    ========================================================================= */
-.trustis-layout {
-  --board-w: min(440px, calc((100dvh - 24px) * .6));
+.tetris {
+  --side: 124px;
+  --gap: 14px;
+  --pad-room: 0px;
+  --top-room: 0px;
+  --board-w: min(420px, calc((100dvh - 36px - var(--pad-room) - var(--top-room)) * .4545), calc(100% - 2 * var(--side) - 2 * var(--gap)));
   display: grid;
-  grid-template-columns: var(--board-w) minmax(0, 170px);
+  grid-template-columns: var(--side) var(--board-w) var(--side);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "hold  board next"
+    "stats board next";
   justify-content: center;
   align-items: start;
-  gap: 16px;
+  gap: var(--gap);
 }
-.trustis-stage {
-  --ar: .6;
+.tetris-stage {
+  --ar: .4545;
+  grid-area: board;
   width: 100%;
   min-width: 0;
   max-width: none;
   margin: 0;
 }
-.trustis-stats { display: flex; flex-direction: column; gap: 10px; }
-.trustis-stats .stat { background: #fff; border-style: solid; border-color: var(--ink); border-width: 2px; box-shadow: 2px 2px 0 var(--ink); }
-.next-canvas { width: 100%; aspect-ratio: 1; margin-top: 6px; }
+.tetris-hold { grid-area: hold; }
+.tetris-next { grid-area: next; }
+.tetris-stats { grid-area: stats; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tetris-box, .tetris-stats .stat {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.tetris-stats .stat-value { font-size: 1.3rem; }
+.tetris-stats .stat-value.is-long { font-size: 1rem; }
+.tetris-box canvas { display: block; width: 100%; margin-top: 6px; }
+.hold-canvas { aspect-ratio: 100 / 60; }
+.next-canvas { aspect-ratio: 100 / 280; }
+
+/* Line clear call-outs ("Tetris!", "T-Spin Double", "+1,200") */
+.action-text {
+  position: absolute;
+  inset: 24% 6px auto;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+.action-text span { display: block; animation: action-pop 1.8s var(--ease-out) forwards; }
+.action-text .big {
+  font-family: var(--font-marker);
+  font-size: clamp(1.1rem, 9cqi, 2.1rem);
+  line-height: 1.1;
+  color: var(--ink);
+  text-shadow: 0 0 3px #fff, 0 0 8px #fff, 0 0 14px #fff;
+}
+.action-text .small {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: clamp(1rem, 7cqi, 1.6rem);
+  line-height: 1;
+  color: var(--red);
+  text-shadow: 0 0 3px #fff, 0 0 8px #fff;
+}
+@keyframes action-pop {
+  0% { opacity: 0; transform: scale(.7); }
+  10% { opacity: 1; transform: scale(1.08); }
+  18% { transform: scale(1); }
+  70% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+@keyframes action-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .action-text span { animation-name: action-fade; }
+}
+
+.level-pick { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: clamp(.85rem, 3cqi, 1rem); }
+.level-pick select {
+  min-height: 36px;
+  padding: 2px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  font-weight: 700;
+}
+.level-pick select:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.scoring-table { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; margin: 0; }
+.scoring-table dt { font-weight: 600; }
+.scoring-table dd { margin: 0; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Touch controls: move/drop on the left thumb, rotate/hold on the right */
+.tetris-pad { justify-content: space-between; align-items: flex-end; gap: 12px; max-width: 460px; margin: 12px auto 0; }
+.pad-cluster { display: grid; gap: 8px; }
+.pad-move { grid-template-columns: repeat(3, 54px); grid-template-areas: ". drop ." "left soft right"; }
+.pad-turn { grid-template-columns: repeat(2, 54px); grid-template-areas: "pause hold" "ccw cw"; }
+.tetris-pad .pad-btn { width: 54px; height: 54px; font-size: 1.3rem; }
+.tetris-pad .pad-word { font-size: .8rem; }
+.tetris-pad [data-act="drop"] { grid-area: drop; }
+.tetris-pad [data-act="left"] { grid-area: left; }
+.tetris-pad [data-act="soft"] { grid-area: soft; }
+.tetris-pad [data-act="right"] { grid-area: right; }
+.tetris-pad [data-act="pause"] { grid-area: pause; }
+.tetris-pad [data-act="hold"] { grid-area: hold; }
+.tetris-pad [data-act="ccw"] { grid-area: ccw; }
+.tetris-pad [data-act="cw"] { grid-area: cw; }
+
 @media (pointer: coarse) {
-  .trustis-layout { --board-w: min(440px, calc((100dvh - 24px - 96px) * .6)); }
+  .tetris { --pad-room: 136px; }
 }
 @media (max-width: 560px) {
-  .trustis-layout {
-    --board-w: min(100%, calc((100dvh - 24px - 96px - 66px) * .6));
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    gap: 10px;
+  .tetris {
+    --side: 52px;
+    --gap: 8px;
+    --top-room: 58px;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "stats stats stats"
+      "hold  board next";
   }
-  .trustis-stage { width: var(--board-w); }
-  .trustis-stats {
-    order: -1;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 6px;
-    width: 100%;
-  }
-  .trustis-stats .stat { padding: 4px 6px; text-align: center; box-shadow: 1px 1px 0 var(--ink); }
-  .trustis-stats .stat-label { font-size: .58rem; letter-spacing: .04em; }
-  .trustis-stats .stat-value { font-size: 1.15rem; }
-  .next-canvas { width: 34px; margin: 1px auto 0; }
+  .tetris-stats { display: grid; grid-template-columns: 1.5fr .8fr 1fr 1.5fr; gap: 6px; }
+  .tetris-box, .tetris-stats .stat { padding: 4px 5px; border-radius: 8px; box-shadow: 1px 1px 0 var(--ink); text-align: center; }
+  .tetris-box .stat-label, .tetris-stats .stat-label { font-size: .58rem; letter-spacing: .04em; }
+  .tetris-stats .stat-value { font-size: 1.1rem; }
+  .tetris-stats .stat-value.is-long { font-size: .9rem; }
+  .tetris-box canvas { margin-top: 3px; }
 }
-.trustis-pad .pad-btn { width: 58px; height: 58px; }
+/* Phones held sideways: the pad goes either side of the board */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
+  .tetris-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+  .tetris-main > .tetris { grid-column: 2; grid-row: 1; --side: 96px; --gap: 8px; --board-w: calc((100dvh - 36px) * .4545); }
+  .tetris-stats { gap: 6px; }
+  .tetris-box, .tetris-stats .stat { padding: 4px 8px; box-shadow: 1px 1px 0 var(--ink); }
+  .tetris-box .stat-label, .tetris-stats .stat-label { font-size: .6rem; }
+  .tetris-stats .stat-value { font-size: 1.05rem; }
+  .tetris-stats .stat-value.is-long { font-size: .85rem; }
+  .tetris-box canvas { margin-top: 3px; }
+  .tetris-pad { display: contents; }
+  .pad-move { grid-column: 1; grid-row: 1; justify-self: center; }
+  .pad-turn { grid-column: 3; grid-row: 1; justify-self: center; }
+}
 
 /* =========================================================================
    Blackjack

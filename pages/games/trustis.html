@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Trustis — Trusty da Horse</title>
-    <meta name="description" content="Trustis: fit the Trustys together! A falling-block puzzle game made of Trusty da Horse drawings.">
+    <meta name="description" content="Trustis: fit the Trustys together! Classic falling-block puzzle rules, with hold, a next queue, T-Spins and combos, built from Trusty da Horse drawings.">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Trusty da Horse">
@@ -38,21 +38,36 @@
         </div>
 
         <div class="container game-layout">
-            <section class="game-main" aria-label="Game">
-                <div class="trustis-layout">
-                    <div class="stage trustis-stage" id="stage" tabindex="0" aria-label="Trustis board. Arrow keys move and rotate, Space drops.">
+            <section class="game-main tetris-main" aria-label="Game">
+                <div class="tetris">
+                    <div class="tetris-box tetris-hold">
+                        <span class="stat-label">Hold</span>
+                        <canvas class="hold-canvas" id="hold" aria-hidden="true"></canvas>
+                    </div>
+
+                    <div class="tetris-stats">
+                        <div class="stat"><span class="stat-label">Score</span><span class="stat-value" id="score">0</span></div>
+                        <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="level">1</span></div>
+                        <div class="stat"><span class="stat-label">Lines</span><span class="stat-value" id="lines">0</span></div>
+                        <div class="stat"><span class="stat-label">Best</span><span class="stat-value" id="best">0</span></div>
+                    </div>
+
+                    <div class="stage tetris-stage" id="stage" tabindex="0" aria-label="Trustis board. Arrow keys move, Up rotates, Space drops, C holds.">
                         <canvas id="board" aria-hidden="true"></canvas>
+                        <div class="action-text" id="action" aria-live="polite"></div>
 
                         <div class="stage-overlay" id="overlay-start">
-                            <p class="overlay-kicker">Work in progress!</p>
+                            <p class="overlay-kicker">Fit the Trustys together!</p>
                             <h2 class="overlay-title">Trustis</h2>
-                            <p class="overlay-sub"><span class="desktop-only">Arrows move, <kbd>&uarr;</kbd> rotates, <kbd>Space</kbd> drops.</span><span class="touch-only">Tap to rotate, swipe to move, swipe up to drop.</span> Clear lines of Trustys.</p>
+                            <p class="overlay-sub"><span class="desktop-only">Arrows move, <kbd>&uarr;</kbd> rotates, <kbd>Space</kbd> drops, <kbd>C</kbd> holds.</span><span class="touch-only">Drag to move, tap to rotate, flick down to drop, flick up to hold.</span></p>
+                            <label class="level-pick">Start at level <select id="start-level"></select></label>
                             <div class="overlay-actions"><button class="btn btn-lg" type="button" id="start-btn">Start</button></div>
                         </div>
 
                         <div class="stage-overlay" id="overlay-pause" hidden>
                             <h2 class="overlay-title">Paused</h2>
                             <div class="overlay-actions"><button class="btn btn-lg" type="button" id="resume-btn">Resume</button></div>
+                            <p class="overlay-hint desktop-only">Press <kbd>Esc</kbd> or <kbd>P</kbd> to keep playing.</p>
                         </div>
 
                         <div class="stage-overlay" id="overlay-over" hidden>
@@ -60,43 +75,64 @@
                             <div class="overlay-score" id="over-score">0</div>
                             <span class="overlay-badge" id="over-badge" hidden>New best!</span>
                             <p class="overlay-sub" id="over-sub"></p>
-                            <div class="overlay-actions"><button class="btn btn-lg" type="button" id="again-btn">Play again</button></div>
+                            <div class="overlay-actions">
+                                <button class="btn btn-lg" type="button" id="again-btn">Play again</button>
+                                <button class="btn btn-outline" type="button" id="menu-btn">Change level</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="trustis-stats">
-                        <div class="stat"><span class="stat-label">Next</span><canvas class="next-canvas" id="next" aria-hidden="true"></canvas></div>
-                        <div class="stat"><span class="stat-label">Score</span><span class="stat-value" id="score">0</span></div>
-                        <div class="stat"><span class="stat-label">Lines</span><span class="stat-value" id="lines">0</span></div>
-                        <div class="stat"><span class="stat-label">Speed</span><span class="stat-value" id="speed">1</span></div>
-                        <div class="stat"><span class="stat-label">Best</span><span class="stat-value" id="best">0</span></div>
+                    <div class="tetris-box tetris-next">
+                        <span class="stat-label">Next</span>
+                        <canvas class="next-canvas" id="next" aria-hidden="true"></canvas>
                     </div>
                 </div>
 
-                <div class="touch-pad trustis-pad" id="pad">
-                    <button class="pad-btn" type="button" data-act="left" data-repeat aria-label="Move left">&#9664;</button>
-                    <button class="pad-btn" type="button" data-act="rotate" aria-label="Rotate">&#10227;</button>
-                    <button class="pad-btn" type="button" data-act="right" data-repeat aria-label="Move right">&#9654;</button>
-                    <button class="pad-btn" type="button" data-act="down" data-repeat aria-label="Soft drop">&#9660;</button>
-                    <button class="pad-btn" type="button" data-act="drop" aria-label="Hard drop">&#10515;</button>
+                <div class="touch-pad tetris-pad" id="pad">
+                    <div class="pad-cluster pad-move">
+                        <button class="pad-btn" type="button" data-act="drop" aria-label="Hard drop">&#10515;</button>
+                        <button class="pad-btn" type="button" data-act="left" aria-label="Move left">&#9664;</button>
+                        <button class="pad-btn" type="button" data-act="soft" aria-label="Soft drop">&#9660;</button>
+                        <button class="pad-btn" type="button" data-act="right" aria-label="Move right">&#9654;</button>
+                    </div>
+                    <div class="pad-cluster pad-turn">
+                        <button class="pad-btn pad-word" type="button" data-act="pause" aria-label="Pause">Pause</button>
+                        <button class="pad-btn pad-word" type="button" data-act="hold" aria-label="Hold">Hold</button>
+                        <button class="pad-btn" type="button" data-act="ccw" aria-label="Rotate left">&#10226;</button>
+                        <button class="pad-btn" type="button" data-act="cw" aria-label="Rotate right">&#10227;</button>
+                    </div>
                 </div>
             </section>
 
             <aside class="game-side desktop-only">
                 <div class="panel">
-                    <h2 class="panel-title">How to play</h2>
+                    <h2 class="panel-title">Controls</h2>
                     <ul class="how-to">
-                        <li><span class="keys"><kbd>&larr;</kbd><kbd>&rarr;</kbd></span> Move</li>
-                        <li><span class="keys"><kbd>&uarr;</kbd></span> Rotate</li>
+                        <li><span class="keys"><kbd>&larr;</kbd><kbd>&rarr;</kbd></span> Move (hold to slide)</li>
                         <li><span class="keys"><kbd>&darr;</kbd></span> Soft drop</li>
                         <li><span class="keys"><kbd>Space</kbd></span> Hard drop</li>
-                        <li><span class="keys"><kbd>P</kbd></span> Pause</li>
+                        <li><span class="keys"><kbd>&uarr;</kbd><kbd>X</kbd></span> Rotate right</li>
+                        <li><span class="keys"><kbd>Z</kbd><kbd>Ctrl</kbd></span> Rotate left</li>
+                        <li><span class="keys"><kbd>C</kbd><kbd>Shift</kbd></span> Hold</li>
+                        <li><span class="keys"><kbd>Esc</kbd><kbd>P</kbd></span> Pause</li>
                     </ul>
-                    <p class="side-note">Clearing several lines at once is worth a lot more: 10, 30, 70 or 150 points. It speeds up the longer you survive.</p>
                 </div>
-                <div class="sticky-note blue">
-                    <h2>Still in the oven</h2>
-                    <p>Trustis is a work in progress, so glitches may be encountered.</p>
+                <div class="panel">
+                    <h2 class="panel-title">Scoring</h2>
+                    <dl class="scoring-table">
+                        <dt>Single</dt><dd>100</dd>
+                        <dt>Double</dt><dd>300</dd>
+                        <dt>Triple</dt><dd>500</dd>
+                        <dt>Tetris</dt><dd>800</dd>
+                        <dt>T-Spin</dt><dd>400</dd>
+                        <dt>T-Spin Single</dt><dd>800</dd>
+                        <dt>T-Spin Double</dt><dd>1,200</dd>
+                        <dt>T-Spin Triple</dt><dd>1,600</dd>
+                        <dt>Mini T-Spin</dt><dd>100 / 200</dd>
+                        <dt>Combo</dt><dd>50 &times; combo</dd>
+                        <dt>Perfect Clear</dt><dd>800&ndash;3,200</dd>
+                    </dl>
+                    <p class="side-note">All of these are multiplied by your level. Back-to-back Tetrises and T-Spins score &times;1.5. Soft drops earn 1 point per row and hard drops earn 2. You level up every 10 lines, and each level falls faster.</p>
                 </div>
             </aside>
         </div>
@@ -106,384 +142,747 @@
 
     <script type="module">
         import { fmt } from '/scripts/site.js';
-        import { loadImage, setupCanvas, drawGraphPaper, onSwipe, isForeignKey, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
+        import { loadImage, setupCanvas, drawGraphPaper, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
 
-        const COLS = 12, ROWS = 20, CELL = 32;
-        const W = COLS * CELL, H = ROWS * CELL;
-        const LOCK_DELAY = 1000;
+        /* ---------- Rules (standard "Guideline" Tetris) ---------- */
+        const COLS = 10;
+        const ROWS = 20;                    // visible rows
+        const BUFFER = 20;                  // hidden rows above the field
+        const TOTAL = ROWS + BUFFER;
+        const PEEK = 2;                     // buffer rows drawn above the field, where new pieces appear
+        const LOCK_DELAY = 500;             // ms a piece can rest on the stack before it locks
+        const MAX_LOCK_RESETS = 15;         // moves/rotations on the stack that restart the lock delay
+        const DAS = 167;                    // ms before a held left/right starts sliding
+        const ARR = 33;                     // ms between slides
+        const SOFT_DROP_FACTOR = 20;        // soft drop falls 20x faster than gravity
+        const LINE_CLEAR_DELAY = 300;
+        const NEXT_COUNT = 5;
+        const MAX_START_LEVEL = 15;
+        const BEST_KEY = 'trustis-guideline';
+        const LEVEL_KEY = 'trusty:trustis:level';
+
+        // Seconds per row: (0.8 - (level - 1) * 0.007) ^ (level - 1). From level 20 pieces drop instantly.
+        const gravityMs = (lv) => (lv >= 20 ? 0 : 1000 * Math.pow(0.8 - (lv - 1) * 0.007, lv - 1));
+
+        // Super Rotation System wall kicks: offsets to try, in order (x right, y up), keyed "from>to".
+        const KICKS = {
+            '0>1': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]], '1>0': [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+            '1>2': [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]], '2>1': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+            '2>3': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]], '3>2': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+            '3>0': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]], '0>3': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+        };
+        const KICKS_I = {
+            '0>1': [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]], '1>0': [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+            '1>2': [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]], '2>1': [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+            '2>3': [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]], '3>2': [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+            '3>0': [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]], '0>3': [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+        };
+
+        /* ---------- The Trusty blocks ---------- */
+        // Each piece in the orientation its drawing on the sprite sheet was made for (v = sprite column,
+        // p = quarter of the drawing) and the rotation state that orientation is (0 spawn, 1 right, 2 flipped, 3 left).
+        const ART = {
+            S: { state: 0, cells: [[0, { v: 1, p: 1 }, { v: 1, p: 0 }], [{ v: 1, p: 2 }, { v: 1, p: 3 }, 0], [0, 0, 0]] },
+            L: { state: 1, cells: [[0, { v: 2, p: 1 }, 0], [0, { v: 2, p: 0 }, 0], [0, { v: 2, p: 2 }, { v: 2, p: 3 }]] },
+            J: { state: 3, cells: [[0, { v: 3, p: 0 }, 0], [0, { v: 3, p: 1 }, 0], [{ v: 3, p: 2 }, { v: 3, p: 3 }, 0]] },
+            Z: { state: 0, cells: [[{ v: 4, p: 1 }, { v: 4, p: 0 }, 0], [0, { v: 4, p: 2 }, { v: 4, p: 3 }], [0, 0, 0]] },
+            I: { state: 0, cells: [[0, 0, 0, 0], [{ v: 5, p: 0 }, { v: 5, p: 2 }, { v: 5, p: 3 }, { v: 5, p: 1 }], [0, 0, 0, 0], [0, 0, 0, 0]] },
+            T: { state: 0, cells: [[0, { v: 6, p: 0 }, 0], [{ v: 6, p: 1 }, { v: 6, p: 2 }, { v: 6, p: 3 }], [0, 0, 0]] },
+            O: { state: 0, cells: [[{ v: 7, p: 0 }, { v: 7, p: 1 }], [{ v: 7, p: 2 }, { v: 7, p: 3 }]] },
+        };
+        const TYPES = Object.keys(ART);
         const COLORS = { 1: '#cdeebd', 2: '#ffd6a0', 3: '#cfe2ff', 4: '#ffcfda', 5: '#c6eef3', 6: '#e2d6ff', 7: '#fff0a0' };
 
-        const $ = (id) => document.getElementById(id);
-        const stage = $('stage');
-        const { ctx } = setupCanvas($('board'), W, H);
-        const NEXT_CELL = 24;
-        const { ctx: nextCtx } = setupCanvas($('next'), NEXT_CELL * 4, NEXT_CELL * 4);
-        const overlays = { start: $('overlay-start'), pause: $('overlay-pause'), over: $('overlay-over') };
+        const rotateCW = (m) => m.map((_, r) => m.map((row) => row[r]).reverse());
 
-        let sprites = null;
-        let paper = null;
-        let state = 'loading'; // loading | intro | playing | paused | over
-        let overAt = 0;
-        let lines = 0;
-
-        /* ---------- Pieces (original definitions) ---------- */
-
-        function createPiece(type) {
-            if (type === 'S') return [[0, { v: 1, p: 1 }, { v: 1, p: 0 }], [{ v: 1, p: 2 }, { v: 1, p: 3 }, 0], [0, 0, 0]];
-            if (type === 'L') return [[0, { v: 2, p: 1 }, 0], [0, { v: 2, p: 0 }, 0], [0, { v: 2, p: 2 }, { v: 2, p: 3 }]];
-            if (type === 'J') return [[0, { v: 3, p: 0 }, 0], [0, { v: 3, p: 1 }, 0], [{ v: 3, p: 2 }, { v: 3, p: 3 }, 0]];
-            if (type === 'Z') return [[{ v: 4, p: 1 }, { v: 4, p: 0 }, 0], [0, { v: 4, p: 2 }, { v: 4, p: 3 }], [0, 0, 0]];
-            if (type === 'I') return [[0, 0, 0, 0], [{ v: 5, p: 0 }, { v: 5, p: 2 }, { v: 5, p: 3 }, { v: 5, p: 1 }], [0, 0, 0, 0], [0, 0, 0, 0]];
-            if (type === 'T') return [[0, { v: 6, p: 0 }, 0], [{ v: 6, p: 1 }, { v: 6, p: 2 }, { v: 6, p: 3 }], [0, 0, 0]];
-            if (type === 'O') return [[{ v: 7, p: 0 }, { v: 7, p: 1 }], [{ v: 7, p: 2 }, { v: 7, p: 3 }]];
-            return null;
+        // STATES[type][rotation] is the piece's grid in that rotation. Each cell's `r` is how many quarter
+        // turns its sprite is drawn with, so the drawing turns with the piece and stays in one piece.
+        const STATES = {};
+        const EXTENT = {};
+        for (const type of TYPES) {
+            const art = ART[type];
+            STATES[type] = [0, 1, 2, 3].map((s) => {
+                const turns = type === 'O' ? 0 : (s - art.state + 4) % 4;
+                let m = art.cells;
+                for (let i = 0; i < turns; i++) m = rotateCW(m);
+                return m.map((row) => row.map((c) => (c ? { v: c.v, p: c.p, r: turns } : 0)));
+            });
+            const filled = [];
+            STATES[type][0].forEach((row, y) => row.forEach((c, x) => { if (c) filled.push([x, y]); }));
+            EXTENT[type] = {
+                x0: Math.min(...filled.map((c) => c[0])), x1: Math.max(...filled.map((c) => c[0])),
+                y0: Math.min(...filled.map((c) => c[1])), y1: Math.max(...filled.map((c) => c[1])),
+            };
         }
 
-        /* ---------- Engine (original logic) ---------- */
+        /* ---------- Page ---------- */
+        const $ = (id) => document.getElementById(id);
+        const stage = $('stage');
+        const CELL = 32;
+        const W = COLS * CELL;
+        const H = (ROWS + PEEK) * CELL;
+        const { ctx, scale } = setupCanvas($('board'), W, H);
+        const { ctx: holdCtx } = setupCanvas($('hold'), 100, 60);
+        const { ctx: nextCtx } = setupCanvas($('next'), 100, 280);
+        const overlays = { start: $('overlay-start'), pause: $('overlay-pause'), over: $('overlay-over') };
 
-        const arena = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-        const player = { pos: { x: 0, y: 0 }, matrix: null, next: null, score: 0, rotation: 0, lockActions: 0 };
-        let dropCounter = 0;
-        let lockCounter = 0;
-        let dropInterval = 1000;
-        let lastTime = 0;
+        const levelSelect = $('start-level');
+        for (let lv = 1; lv <= MAX_START_LEVEL; lv++) levelSelect.append(new Option(String(lv), String(lv)));
+        try { levelSelect.value = String(Math.min(MAX_START_LEVEL, Math.max(1, Number(localStorage.getItem(LEVEL_KEY)) || 1))); } catch { /* storage blocked */ }
 
-        function collide(board, p) {
-            const m = p.matrix;
-            const o = p.pos;
-            for (let y = 0; y < m.length; y++) {
-                for (let x = 0; x < m[y].length; x++) {
-                    if (m[y][x] && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) return true;
+        /* ---------- Game state ---------- */
+        const emptyRow = () => Array(COLS).fill(0);
+        let sprites = null;
+        let paper = null;
+        let state = 'loading';  // loading | intro | playing | clearing | paused | paused-clearing | over
+        let board = Array.from({ length: TOTAL }, emptyRow);
+        let piece = null;       // { type, rot, x, y } with x/y the top-left of its grid on the board
+        let bag = [];
+        let queue = [];
+        let heldType = null;
+        let holdUsed = false;
+        let score = 0;
+        let lines = 0;
+        let level = 1;
+        let startLevel = 1;
+        let combo = -1;
+        let backToBack = false;
+        let lastMove = '';      // what the piece did last: spawn | move | fall | rotate | rotate-kick5
+        let fall = 0;           // progress towards the next gravity step, in rows
+        let lockTimer = 0;
+        let lockResets = 0;
+        let landed = false;     // touched the stack since reaching its lowest row
+        let lowestY = 0;
+        let softDrop = false;
+        let clearing = null;    // { rows, left } while cleared lines flash
+        let played = false;
+        let overAt = 0;
+        const keys = { held: [], dir: 0, t: 0, next: 0 };
+
+        /* ---------- Pieces ---------- */
+        // 7-bag: every run of seven pieces has one of each, in random order.
+        function nextFromBag() {
+            if (!bag.length) {
+                bag = [...TYPES];
+                for (let i = bag.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [bag[i], bag[j]] = [bag[j], bag[i]];
+                }
+            }
+            return bag.pop();
+        }
+
+        function newQueue() {
+            bag = [];
+            queue = Array.from({ length: NEXT_COUNT }, nextFromBag);
+        }
+
+        function collides(type, rot, x, y) {
+            const m = STATES[type][rot];
+            for (let r = 0; r < m.length; r++) {
+                for (let c = 0; c < m[r].length; c++) {
+                    if (!m[r][c]) continue;
+                    const bx = x + c;
+                    const by = y + r;
+                    if (bx < 0 || bx >= COLS || by < 0 || by >= TOTAL || board[by][bx]) return true;
                 }
             }
             return false;
         }
 
-        function rotate(matrix, dir) {
-            for (let y = 0; y < matrix.length; y++) {
-                for (let x = 0; x < y; x++) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-            }
-            if (dir > 0) matrix.forEach((row) => row.reverse());
-            else matrix.reverse();
+        const grounded = () => collides(piece.type, piece.rot, piece.x, piece.y + 1);
+
+        function tryMove(dx, dy) {
+            if (collides(piece.type, piece.rot, piece.x + dx, piece.y + dy)) return false;
+            piece.x += dx;
+            piece.y += dy;
+            return true;
         }
 
-        function merge() {
-            player.matrix.forEach((row, y) => {
-                row.forEach((cell, x) => {
-                    if (cell) arena[y + player.pos.y][x + player.pos.x] = { v: cell.v, p: cell.p, r: player.rotation };
-                });
-            });
+        // Pieces appear just above the field (the O and I centered, the rest one column left of center)
+        // and drop one row straight away if they can. No room to appear means game over.
+        function spawn(type) {
+            piece = { type, rot: 0, x: type === 'O' ? 4 : 3, y: BUFFER - 2 };
+            lastMove = 'spawn';
+            fall = 0;
+            lockTimer = 0;
+            lockResets = 0;
+            landed = false;
+            if (collides(type, 0, piece.x, piece.y)) {
+                gameOver();
+                return;
+            }
+            tryMove(0, 1);
+            lowestY = piece.y;
         }
 
-        function arenaSweep() {
-            let rowCount = 1;
-            for (let y = arena.length - 1; y >= 0; y--) {
-                let full = true;
-                for (let x = 0; x < arena[y].length; x++) {
-                    if (arena[y][x] === 0) { full = false; break; }
-                }
-                if (full) {
-                    const row = arena.splice(y, 1)[0].fill(0);
-                    arena.unshift(row);
-                    y++;
-                    player.score += rowCount * 10;
-                    rowCount *= 2;
-                    lines += 1;
-                }
+        function spawnNext() {
+            const type = queue.shift();
+            queue.push(nextFromBag());
+            spawn(type);
+        }
+
+        // Lock down: once a piece has touched the stack, each move or rotation restarts the lock delay,
+        // up to 15 times. Falling to a new lowest row gives the 15 back.
+        function maneuvered(kind) {
+            lastMove = kind;
+            if (landed && lockResets < MAX_LOCK_RESETS) {
+                lockResets++;
+                lockTimer = 0;
             }
+        }
+
+        function fell() {
+            lastMove = 'fall';
+            lockTimer = 0;
+            if (piece.y > lowestY) {
+                lowestY = piece.y;
+                lockResets = 0;
+                landed = false;
+            }
+        }
+
+        function shift(dir) {
+            if (state !== 'playing' || !tryMove(dir, 0)) return false;
+            maneuvered('move');
+            return true;
+        }
+
+        function rotate(dir) {
+            if (state !== 'playing' || piece.type === 'O') return false;
+            const to = (piece.rot + dir + 4) % 4;
+            const tests = (piece.type === 'I' ? KICKS_I : KICKS)[`${piece.rot}>${to}`];
+            for (let i = 0; i < tests.length; i++) {
+                const x = piece.x + tests[i][0];
+                const y = piece.y - tests[i][1];
+                if (collides(piece.type, to, x, y)) continue;
+                const lower = y > piece.y;
+                piece.x = x;
+                piece.y = y;
+                piece.rot = to;
+                if (lower) fell();
+                maneuvered(i === 4 ? 'rotate-kick5' : 'rotate');
+                return true;
+            }
+            return false;
+        }
+
+        function softStep() {
+            if (state !== 'playing' || !tryMove(0, 1)) return false;
+            score += 1;
+            fell();
+            return true;
+        }
+
+        function hardDrop() {
+            if (state !== 'playing') return;
+            let rows = 0;
+            while (tryMove(0, 1)) rows++;
+            if (rows) lastMove = 'fall';
+            score += 2 * rows;
+            lock();
+        }
+
+        function hold() {
+            if (state !== 'playing' || holdUsed) return;
+            const current = piece.type;
+            if (heldType) spawn(heldType);
+            else spawnNext();
+            heldType = current;
+            holdUsed = true;
+        }
+
+        /* ---------- Locking, line clears and scoring ---------- */
+
+        // T-Spin: the T's last move was a rotation and 3 of the 4 corners around its center are blocked.
+        // It's a Mini unless both corners on the T's pointy side are blocked (or it took the last kick).
+        function tSpin() {
+            if (piece.type !== 'T' || !lastMove.startsWith('rotate')) return null;
+            const cx = piece.x + 1;
+            const cy = piece.y + 1;
+            const blocked = (x, y) => x < 0 || x >= COLS || y >= TOTAL || (y >= 0 && board[y][x] !== 0);
+            const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([dx, dy]) => blocked(cx + dx, cy + dy));
+            if (corners.filter(Boolean).length < 3) return null;
+            const [a, b] = [[0, 1], [1, 2], [2, 3], [3, 0]][piece.rot];
+            return (corners[a] && corners[b]) || lastMove === 'rotate-kick5' ? 'full' : 'mini';
+        }
+
+        function lock() {
+            let aboveField = true;
+            STATES[piece.type][piece.rot].forEach((row, r) => row.forEach((cell, c) => {
+                if (!cell) return;
+                board[piece.y + r][piece.x + c] = cell;
+                if (piece.y + r >= BUFFER) aboveField = false;
+            }));
+            const spin = tSpin();
+            piece = null;
+            if (aboveField) {
+                gameOver();
+                return;
+            }
+            const full = [];
+            for (let y = 0; y < TOTAL; y++) if (board[y].every(Boolean)) full.push(y);
+            const perfect = full.length > 0 && board.every((row, y) => full.includes(y) || row.every((c) => !c));
+            award(full.length, spin, perfect);
+            holdUsed = false;
+            if (full.length) {
+                state = 'clearing';
+                clearing = { rows: full, left: LINE_CLEAR_DELAY };
+            } else {
+                spawnNext();
+            }
+        }
+
+        const CLEAR_NAMES = ['', 'Single', 'Double', 'Triple', 'Tetris!'];
+
+        function award(cleared, spin, perfect) {
+            let base;
+            let name;
+            if (spin === 'full') {
+                base = [400, 800, 1200, 1600][cleared];
+                name = ['T-Spin', 'T-Spin Single', 'T-Spin Double', 'T-Spin Triple'][cleared];
+            } else if (spin === 'mini') {
+                base = [100, 200, 400, 400][cleared];
+                name = ['Mini T-Spin', 'Mini T-Spin Single', 'Mini T-Spin Double', 'Mini T-Spin Double'][cleared];
+            } else {
+                base = [0, 100, 300, 500, 800][cleared];
+                name = CLEAR_NAMES[cleared];
+            }
+
+            let points = base * level;
+            let b2b = false;
+            if (cleared > 0) {
+                // Tetrises and T-Spin line clears are "difficult"; doing them back to back pays 1.5x.
+                const difficult = cleared === 4 || spin !== null;
+                if (difficult && backToBack) {
+                    points *= 1.5;
+                    b2b = true;
+                }
+                backToBack = difficult;
+                combo += 1;
+                points += 50 * combo * level;
+                if (perfect) points += (cleared === 4 && b2b ? 3200 : [0, 800, 1200, 1800, 2000][cleared]) * level;
+            } else {
+                combo = -1;
+            }
+            points = Math.floor(points);
+            score += points;
+
+            const before = level;
+            lines += cleared;
+            level = startLevel + Math.floor(lines / 10);
+
+            const messages = [];
+            if (b2b) messages.push({ text: 'Back-to-Back', small: true });
+            if (name) messages.push({ text: name });
+            if (combo > 0) messages.push({ text: `${combo} Combo`, small: true });
+            if (perfect) messages.push({ text: 'Perfect Clear!' });
+            if (points > 0) messages.push({ text: `+${fmt(points)}`, small: true });
+            if (level > before) messages.push({ text: `Level ${level}!` });
+            if (messages.length) showAction(messages);
             renderStats();
         }
 
-        function getGhostPos() {
-            const ghost = { matrix: player.matrix, pos: { x: player.pos.x, y: player.pos.y } };
-            while (!collide(arena, ghost)) ghost.pos.y++;
-            ghost.pos.y--;
-            return ghost.pos;
+        function finishClear() {
+            const kept = board.filter((_, y) => !clearing.rows.includes(y));
+            board = [...Array.from({ length: clearing.rows.length }, emptyRow), ...kept];
+            clearing = null;
+            state = 'playing';
+            spawnNext();
         }
 
-        function resetLockAfterMove() {
-            if (lockCounter > 0 && player.lockActions < 15) {
-                lockCounter = 0;
-                player.lockActions++;
-            }
-        }
-
-        function actLeft() {
-            player.pos.x--;
-            if (collide(arena, player)) player.pos.x++;
-            else resetLockAfterMove();
-        }
-
-        function actRight() {
-            player.pos.x++;
-            if (collide(arena, player)) player.pos.x--;
-            else resetLockAfterMove();
-        }
-
-        function actRotate() {
-            const pos = player.pos.x;
-            let offset = 1;
-            rotate(player.matrix, 1);
-            player.rotation = (player.rotation + 1 + 4) % 4;
-            while (collide(arena, player)) {
-                player.pos.x += offset;
-                offset = -(offset + (offset > 0 ? 1 : -1));
-                if (offset > player.matrix[0].length) {
-                    rotate(player.matrix, -1);
-                    player.rotation = (player.rotation - 1 + 4) % 4;
-                    player.pos.x = pos;
-                    return;
-                }
-            }
-            resetLockAfterMove();
-        }
-
-        function actHardDrop() {
-            while (!collide(arena, player)) player.pos.y++;
-            player.pos.y--;
-            merge();
-            arenaSweep();
-            playerReset();
-            lockCounter = 0;
-        }
-
-        function playerReset() {
-            const pieces = 'SLJZITO';
-            player.matrix = player.next || createPiece(pieces[Math.random() * 7 | 0]);
-            player.next = createPiece(pieces[Math.random() * 7 | 0]);
-            player.pos.y = 0;
-            player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
-            player.rotation = 0;
-            player.lockActions = 0;
-            if (collide(arena, player)) gameOver();
-        }
-
-        function playerDrop() {
-            player.pos.y++;
-            if (collide(arena, player)) {
-                player.pos.y--;
-                return true;
-            }
-            dropCounter = 0;
-            return false;
-        }
-
-        function update(delta) {
-            dropInterval = Math.max(100, dropInterval - (delta * 0.005));
-            player.pos.y++;
-            const touching = collide(arena, player);
-            player.pos.y--;
-
-            if (touching) {
-                lockCounter += delta;
-                if (lockCounter >= LOCK_DELAY || player.lockActions >= 15) {
-                    merge();
-                    arenaSweep();
-                    playerReset();
-                    lockCounter = 0;
-                }
-            } else {
-                lockCounter = 0;
-                dropCounter += delta;
-                if (dropCounter > dropInterval) {
-                    playerDrop();
-                    dropCounter = 0;
-                }
-            }
-        }
-
-        /* ---------- Drawing ---------- */
-
-        function drawMatrix(target, matrix, offset, size, rotation = 0, alpha = 1) {
-            target.globalAlpha = alpha;
-            matrix.forEach((row, y) => {
-                row.forEach((cell, x) => {
-                    if (!cell) return;
-                    const px = (x + offset.x) * size;
-                    const py = (y + offset.y) * size;
-                    target.fillStyle = COLORS[cell.v];
-                    target.fillRect(px, py, size, size);
-                    const sx = (cell.v - 1) * 128 + (cell.p % 2) * 64;
-                    const sy = Math.floor(cell.p / 2) * 64;
-                    target.save();
-                    target.translate(px + size / 2, py + size / 2);
-                    target.rotate((cell.r !== undefined ? cell.r : rotation) * Math.PI / 2);
-                    target.globalCompositeOperation = 'multiply';
-                    target.drawImage(sprites, sx, sy, 64, 64, -size / 2, -size / 2, size, size);
-                    target.restore();
-                });
-            });
-            target.globalAlpha = 1;
-        }
-
-        function draw() {
-            ctx.drawImage(paper, 0, 0, W, H);
-            if (state === 'playing' || state === 'paused') {
-                drawMatrix(ctx, player.matrix, getGhostPos(), CELL, player.rotation, 0.28);
-            }
-            drawMatrix(ctx, arena, { x: 0, y: 0 }, CELL);
-            if (state === 'playing' || state === 'paused') {
-                drawMatrix(ctx, player.matrix, player.pos, CELL, player.rotation);
-            }
-            nextCtx.clearRect(0, 0, NEXT_CELL * 4, NEXT_CELL * 4);
-            if (player.next) {
-                const n = player.next.length;
-                drawMatrix(nextCtx, player.next, { x: (4 - n) / 2, y: (4 - n) / 2 }, NEXT_CELL);
-            }
-        }
-
-        let shownSpeed = 0;
-        function renderStats() {
-            $('score').textContent = fmt(player.score);
-            $('lines').textContent = fmt(lines);
-            renderSpeed();
-        }
-
-        function renderSpeed() {
-            const speed = Math.floor((1000 - dropInterval) / 100) + 1;
-            if (speed !== shownSpeed) {
-                shownSpeed = speed;
-                $('speed').textContent = String(speed);
-            }
-        }
-
-        /* ---------- State ---------- */
-
+        /* ---------- Game flow ---------- */
         function showOverlay(name) {
             for (const [key, el] of Object.entries(overlays)) el.hidden = key !== name;
         }
 
-        function frame(time) {
-            const delta = lastTime ? Math.min(time - lastTime, 100) : 0;
-            lastTime = time;
-            if (state === 'playing') {
-                update(delta);
-                renderSpeed();
-            }
-            if (sprites) draw();
-            requestAnimationFrame(frame);
-        }
-
         function start() {
-            arena.forEach((row) => row.fill(0));
-            player.score = 0;
+            startLevel = Number(levelSelect.value) || 1;
+            try { localStorage.setItem(LEVEL_KEY, String(startLevel)); } catch { /* storage blocked */ }
+            if (played) newQueue();
+            played = true;
+            board = Array.from({ length: TOTAL }, emptyRow);
+            heldType = null;
+            holdUsed = false;
+            score = 0;
             lines = 0;
-            dropInterval = 1000;
-            dropCounter = 0;
-            lockCounter = 0;
-            lastTime = 0;
+            level = startLevel;
+            combo = -1;
+            backToBack = false;
+            softDrop = false;
+            clearing = null;
+            $('action').replaceChildren();
             state = 'playing';
-            playerReset();
+            spawnNext();
             renderStats();
             showOverlay(null);
             stage.focus({ preventScroll: true });
             bringIntoView();
         }
 
+        function toMenu() {
+            state = 'intro';
+            board = Array.from({ length: TOTAL }, emptyRow);
+            heldType = null;
+            newQueue();
+            played = false;
+            score = 0;
+            lines = 0;
+            level = Number(levelSelect.value) || 1;
+            renderStats();
+            $('action').replaceChildren();
+            showOverlay('start');
+            $('start-btn').focus({ preventScroll: true });
+        }
+
         function gameOver() {
             state = 'over';
             overAt = performance.now();
-            const isBest = saveLocalBest('trustis', player.score) && player.score > 0;
-            $('best').textContent = fmt(localBest('trustis'));
-            $('over-score').textContent = fmt(player.score);
+            softDrop = false;
+            $('action').replaceChildren();
+            const isBest = saveLocalBest(BEST_KEY, score) && score > 0;
+            const best = localBest(BEST_KEY);
+            setStat('best', best);
+            $('over-score').textContent = fmt(score);
             $('over-badge').hidden = !isBest;
-            $('over-sub').textContent = `${fmt(lines)} ${lines === 1 ? 'line' : 'lines'} cleared. Your best is ${fmt(localBest('trustis'))}.`;
+            $('over-sub').textContent = `Level ${level} · ${fmt(lines)} ${lines === 1 ? 'line' : 'lines'}. Your best is ${fmt(best)}.`;
             showOverlay('over');
             $('again-btn').focus({ preventScroll: true });
         }
 
         function pause() {
-            if (state !== 'playing') return;
-            state = 'paused';
+            if (state !== 'playing' && state !== 'clearing') return;
+            state = state === 'clearing' ? 'paused-clearing' : 'paused';
+            releaseAll();
             showOverlay('pause');
             $('resume-btn').focus({ preventScroll: true });
         }
 
         function resume() {
-            if (state !== 'paused') return;
-            state = 'playing';
+            if (state !== 'paused' && state !== 'paused-clearing') return;
+            state = state === 'paused-clearing' ? 'clearing' : 'playing';
             lastTime = 0;
             showOverlay(null);
             stage.focus({ preventScroll: true });
         }
 
-        const ACTIONS = { left: actLeft, right: actRight, rotate: actRotate, down: playerDrop, drop: actHardDrop };
-        function act(name) {
-            if (state === 'playing') ACTIONS[name]?.();
-            else if (state === 'paused') resume();
+        const togglePause = () => (state.startsWith('paused') ? resume() : pause());
+
+        function update(dt) {
+            if (state === 'clearing') {
+                // Keep charging a held left/right so the next piece can slide straight away.
+                if (keys.dir) {
+                    keys.t += dt;
+                    keys.next = Math.max(keys.next, keys.t);
+                }
+                clearing.left -= dt;
+                if (clearing.left <= 0) finishClear();
+                return;
+            }
+            if (state !== 'playing') return;
+
+            // Held left/right: one step on press, then after DAS a step every ARR.
+            if (keys.dir) {
+                keys.t += dt;
+                while (keys.t >= keys.next) {
+                    if (!shift(keys.dir)) {
+                        keys.next = keys.t + ARR;
+                        break;
+                    }
+                    keys.next += ARR;
+                }
+            }
+
+            // Gravity. Soft drop falls 20x faster and scores 1 point a row.
+            if (grounded()) {
+                fall = 0;
+            } else {
+                const interval = gravityMs(level) / (softDrop ? SOFT_DROP_FACTOR : 1);
+                fall += interval > 0 ? dt / interval : TOTAL;
+                while (fall >= 1) {
+                    fall -= 1;
+                    if (!tryMove(0, 1)) {
+                        fall = 0;
+                        break;
+                    }
+                    if (softDrop) score += 1;
+                    fell();
+                }
+            }
+
+            if (grounded()) {
+                landed = true;
+                lockTimer += dt;
+                if (lockTimer >= LOCK_DELAY || lockResets >= MAX_LOCK_RESETS) lock();
+            } else {
+                lockTimer = 0;
+            }
         }
 
-        /* ---------- Input ---------- */
+        /* ---------- Drawing ---------- */
+        const TOP = BUFFER - PEEK; // first board row drawn on the canvas
+
+        function drawCell(target, cell, x, y, size, alpha = 1) {
+            target.globalAlpha = alpha;
+            target.fillStyle = COLORS[cell.v];
+            target.fillRect(x, y, size, size);
+            target.save();
+            target.translate(x + size / 2, y + size / 2);
+            target.rotate(cell.r * Math.PI / 2);
+            target.globalCompositeOperation = 'multiply';
+            const sx = (cell.v - 1) * 128 + (cell.p % 2) * 64;
+            const sy = Math.floor(cell.p / 2) * 64;
+            target.drawImage(sprites, sx, sy, 64, 64, -size / 2, -size / 2, size, size);
+            target.restore();
+            target.globalAlpha = 1;
+        }
+
+        function drawPiece(type, rot, bx, by, alpha) {
+            STATES[type][rot].forEach((row, r) => row.forEach((cell, c) => {
+                if (cell && by + r >= TOP) drawCell(ctx, cell, (bx + c) * CELL, (by + r - TOP) * CELL, CELL, alpha);
+            }));
+        }
+
+        function drawPreview(target, type, cx, cy, size, alpha = 1) {
+            const e = EXTENT[type];
+            const ox = cx - ((e.x1 - e.x0 + 1) * size) / 2 - e.x0 * size;
+            const oy = cy - ((e.y1 - e.y0 + 1) * size) / 2 - e.y0 * size;
+            STATES[type][0].forEach((row, r) => row.forEach((cell, c) => {
+                if (cell) drawCell(target, cell, ox + c * size, oy + r * size, size, alpha);
+            }));
+        }
+
+        function paintPaper() {
+            const sheet = document.createElement('canvas');
+            sheet.width = Math.round(W * scale);
+            sheet.height = Math.round(H * scale);
+            const p = sheet.getContext('2d');
+            p.setTransform(scale, 0, 0, scale, 0, 0);
+            p.fillStyle = '#f7f2e4';
+            p.fillRect(0, 0, W, PEEK * CELL);
+            p.translate(0, PEEK * CELL);
+            drawGraphPaper(p, W, ROWS * CELL, { cell: CELL, line: '#d3e0f0', minor: '#eef3fa' });
+            p.translate(0, -PEEK * CELL);
+            // The top of the field, drawn like a notebook's red margin line.
+            p.strokeStyle = '#ee9aa4';
+            p.lineWidth = 2;
+            p.setLineDash([8, 6]);
+            p.beginPath();
+            p.moveTo(0, PEEK * CELL);
+            p.lineTo(W, PEEK * CELL);
+            p.stroke();
+            return sheet;
+        }
+
+        function render(now) {
+            ctx.drawImage(paper, 0, 0, W, H);
+            for (let y = TOP; y < TOTAL; y++) {
+                for (let x = 0; x < COLS; x++) if (board[y][x]) drawCell(ctx, board[y][x], x * CELL, (y - TOP) * CELL, CELL);
+            }
+            if (clearing) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + 0.35 * Math.sin(now / 35)})`;
+                for (const y of clearing.rows) if (y >= TOP) ctx.fillRect(0, (y - TOP) * CELL, W, CELL);
+            }
+            if (piece && (state === 'playing' || state === 'paused')) {
+                let ghostY = piece.y;
+                while (!collides(piece.type, piece.rot, piece.x, ghostY + 1)) ghostY++;
+                drawPiece(piece.type, piece.rot, piece.x, ghostY, 0.28);
+                drawPiece(piece.type, piece.rot, piece.x, piece.y, 1);
+            }
+
+            holdCtx.clearRect(0, 0, 100, 60);
+            if (heldType) drawPreview(holdCtx, heldType, 50, 30, 20, holdUsed ? 0.35 : 1);
+            nextCtx.clearRect(0, 0, 100, 280);
+            queue.forEach((type, i) => {
+                if (i === 0) drawPreview(nextCtx, type, 50, 32, 20);
+                else drawPreview(nextCtx, type, 50, 64 + (i - 1) * 54 + 27, 16);
+            });
+        }
+
+        function setStat(id, value) {
+            const el = $(id);
+            const text = fmt(value);
+            el.textContent = text;
+            el.classList.toggle('is-long', text.length > 7);
+        }
+
+        function renderStats() {
+            setStat('score', score);
+            setStat('level', level);
+            setStat('lines', lines);
+        }
+
+        function showAction(messages) {
+            $('action').replaceChildren(...messages.map((m) => {
+                const span = document.createElement('span');
+                span.className = m.small ? 'small' : 'big';
+                span.textContent = m.text;
+                return span;
+            }));
+        }
+
+        let lastTime = 0;
+        let shownScore = -1;
+        function frame(now) {
+            const dt = lastTime ? Math.min(now - lastTime, 100) : 0;
+            lastTime = now;
+            update(dt);
+            if (score !== shownScore) {
+                shownScore = score;
+                setStat('score', score);
+            }
+            render(now);
+            requestAnimationFrame(frame);
+        }
+
+        /* ---------- Controls ---------- */
+        function pressDir(dir) {
+            keys.held = keys.held.filter((d) => d !== dir).concat(dir);
+            keys.dir = dir;
+            keys.t = 0;
+            keys.next = DAS;
+            shift(dir);
+        }
+
+        function releaseDir(dir) {
+            keys.held = keys.held.filter((d) => d !== dir);
+            if (keys.dir !== dir) return;
+            keys.dir = keys.held[keys.held.length - 1] || 0;
+            keys.t = 0;
+            keys.next = DAS;
+        }
+
+        function releaseAll() {
+            keys.held = [];
+            keys.dir = 0;
+            softDrop = false;
+        }
+
+        function press(action) {
+            if (action === 'pause') {
+                togglePause();
+                return;
+            }
+            if (state !== 'playing' && state !== 'clearing') return;
+            if (action === 'left') pressDir(-1);
+            else if (action === 'right') pressDir(1);
+            else if (action === 'soft') softDrop = true;
+            else if (action === 'drop') hardDrop();
+            else if (action === 'cw') rotate(1);
+            else if (action === 'ccw') rotate(-1);
+            else if (action === 'hold') hold();
+        }
+
+        function release(action) {
+            if (action === 'left') releaseDir(-1);
+            else if (action === 'right') releaseDir(1);
+            else if (action === 'soft') softDrop = false;
+        }
+
+        // Standard PC controls, plus the number pad layout.
+        const NUMPAD = { Numpad4: 'left', Numpad6: 'right', Numpad2: 'soft', Numpad8: 'drop', Numpad1: 'cw', Numpad5: 'cw', Numpad9: 'cw', Numpad3: 'ccw', Numpad7: 'ccw', Numpad0: 'hold' };
+        const KEYS = {
+            ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'soft', ' ': 'drop',
+            ArrowUp: 'cw', x: 'cw', z: 'ccw', Control: 'ccw', c: 'hold', Shift: 'hold', Escape: 'pause', p: 'pause',
+        };
+        const actionFor = (e) => NUMPAD[e.code] || KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key] || null;
+        const typing = (t) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
 
         document.addEventListener('keydown', (e) => {
-            if (isForeignKey(e) || isActivationKey(e)) return;
-            const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'rotate', x: 'rotate', X: 'rotate', ' ': 'drop' };
-            const name = map[e.key];
-            if (name) {
-                e.preventDefault();
-                if (state === 'intro') { start(); return; }
-                if ((name === 'rotate' || name === 'drop') && e.repeat) return;
-                act(name);
-            } else if (e.key === 'Enter' && (state === 'over' || state === 'intro')) {
-                e.preventDefault();
-                start();
-            } else if (e.key === 'p' || e.key === 'P') {
-                if (state === 'playing') pause();
-                else if (state === 'paused') resume();
+            if (e.metaKey || e.altKey || typing(e.target) || isActivationKey(e)) return;
+            if (state === 'intro' || state === 'over') {
+                if ((e.key === 'Enter' || e.key === ' ') && !e.ctrlKey && (state === 'intro' || performance.now() - overAt > 400)) {
+                    e.preventDefault();
+                    start();
+                }
+                return;
             }
+            const action = actionFor(e);
+            if (!action) return;
+            e.preventDefault();
+            if (!e.repeat) press(action);
         });
 
-        onSwipe(stage, (gesture, e) => {
-            if (e.target.closest('button, a')) return;
-            if (state === 'intro') { start(); return; }
-            if (state !== 'playing') return;
-            if (gesture === 'tap') actRotate();
-            else if (gesture === 'left') actLeft();
-            else if (gesture === 'right') actRight();
-            else if (gesture === 'down') playerDrop();
-            else if (gesture === 'up') actHardDrop();
+        document.addEventListener('keyup', (e) => {
+            const action = actionFor(e);
+            if (action) release(action);
         });
+
+        window.addEventListener('blur', releaseAll);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+        // Touch: drag to move and soft drop, tap to rotate, flick down to hard drop, flick up to hold.
+        let touch = null;
+        stage.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' || e.target.closest('button, a, select, label')) return;
+            touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, t0: performance.now(), moved: false };
+            try { stage.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+        });
+        stage.addEventListener('pointermove', (e) => {
+            if (!touch || e.pointerId !== touch.id) return;
+            if (Math.hypot(e.clientX - touch.x0, e.clientY - touch.y0) > 10) touch.moved = true;
+            if (state !== 'playing') return;
+            const cell = stage.clientWidth / COLS;
+            while (Math.abs(e.clientX - touch.x) >= cell) {
+                const dir = Math.sign(e.clientX - touch.x);
+                shift(dir);
+                touch.x += dir * cell;
+            }
+            while (e.clientY - touch.y >= cell) {
+                softStep();
+                touch.y += cell;
+            }
+            if (e.clientY < touch.y) touch.y = e.clientY;
+        });
+        stage.addEventListener('pointerup', (e) => {
+            if (!touch || e.pointerId !== touch.id) return;
+            const dt = performance.now() - touch.t0;
+            const dx = e.clientX - touch.x0;
+            const dy = e.clientY - touch.y0;
+            const flick = dt < 300 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5;
+            if (state === 'playing') {
+                if (!touch.moved && dt < 300) rotate(1);
+                else if (flick && dy > 0) hardDrop();
+                else if (flick && dy < 0) hold();
+            }
+            touch = null;
+        });
+        stage.addEventListener('pointercancel', () => { touch = null; });
 
         for (const btn of document.querySelectorAll('#pad [data-act]')) {
-            let repeatTimer = null;
-            const stopRepeat = () => {
-                clearTimeout(repeatTimer);
-                clearInterval(repeatTimer);
-                repeatTimer = null;
-                btn.classList.remove('is-pressed');
-            };
+            const act = btn.dataset.act;
+            let down = false;
             btn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
+                down = true;
                 btn.classList.add('is-pressed');
-                act(btn.dataset.act);
-                if ('repeat' in btn.dataset) {
-                    repeatTimer = setTimeout(() => { repeatTimer = setInterval(() => act(btn.dataset.act), 60); }, 170);
-                }
+                press(act);
             });
-            btn.addEventListener('pointerup', stopRepeat);
-            btn.addEventListener('pointerleave', stopRepeat);
-            btn.addEventListener('pointercancel', stopRepeat);
-            btn.addEventListener('click', (e) => { if (e.detail === 0) act(btn.dataset.act); });
+            const up = () => {
+                if (!down) return;
+                down = false;
+                btn.classList.remove('is-pressed');
+                release(act);
+            };
+            btn.addEventListener('pointerup', up);
+            btn.addEventListener('pointerleave', up);
+            btn.addEventListener('pointercancel', up);
+            btn.addEventListener('contextmenu', (e) => e.preventDefault());
         }
 
-        document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
         $('start-btn').addEventListener('click', start);
         $('resume-btn').addEventListener('click', resume);
         $('again-btn').addEventListener('click', () => { if (performance.now() - overAt > 400) start(); });
-        $('best').textContent = fmt(localBest('trustis'));
+        $('menu-btn').addEventListener('click', toMenu);
+        levelSelect.addEventListener('change', () => { if (state === 'intro') setStat('level', Number(levelSelect.value)); });
+        setStat('level', Number(levelSelect.value));
+        setStat('best', localBest(BEST_KEY));
 
         /* ---------- Load ---------- */
-
         (async () => {
             sprites = await loadImage('/images/sprites.png');
-            const scale = $('board').width / W;
-            paper = document.createElement('canvas');
-            paper.width = W * scale;
-            paper.height = H * scale;
-            const pctx = paper.getContext('2d');
-            pctx.setTransform(scale, 0, 0, scale, 0, 0);
-            drawGraphPaper(pctx, W, H, { cell: CELL, line: '#d3e0f0', minor: '#eef3fa' });
-            player.next = createPiece('SLJZITO'[Math.random() * 7 | 0]);
+            paper = paintPaper();
+            newQueue();
             state = 'intro';
             requestAnimationFrame(frame);
         })();
