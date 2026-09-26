@@ -129,6 +129,9 @@
         const PIPE_GAP = 250, PIPE_W = 65, PIPE_SPEED = 4, SPAWN_EVERY = 60;
         const HORSE_X = 80, HORSE_W = 1536 / 16, HORSE_H = 1173 / 16, START_Y = 250;
         const INK = '#1b1b1f';
+        // Those numbers are per 60 Hz frame, so the game runs exactly 60 steps a second on every screen
+        // (a 144 Hz monitor used to change the flap height and pencil spacing) and drawing blends between steps.
+        const STEP_MS = 1000 / 60;
 
         const $ = (id) => document.getElementById(id);
         const stage = $('stage');
@@ -143,12 +146,14 @@
         };
 
         let state = 'loading'; // loading | intro | ready | playing | paused | over
-        let horse = { y: START_Y, v: START_VELOCITY };
+        let horse = { y: START_Y, prevY: START_Y, v: START_VELOCITY };
         let pipes = [];
         let pipeTimer = 0;
         let score = 0;
         let form = 'classic';
         let lastFrame = 0;
+        let stepClock = 0;
+        let blend = 1;
         let overAt = 0;
         let loggedIn = null;
         let best = 0;
@@ -296,13 +301,14 @@
 
             for (const p of pipes) {
                 const top = p.top;
-                ctx.drawImage(sprites.topPencil, 0, (H - top) * scale, PIPE_W * scale, top * scale, p.x, 0, PIPE_W, top);
+                const x = p.prevX + (p.x - p.prevX) * blend;
+                ctx.drawImage(sprites.topPencil, 0, (H - top) * scale, PIPE_W * scale, top * scale, x, 0, PIPE_W, top);
                 const by = top + PIPE_GAP;
                 const bh = H - by;
-                ctx.drawImage(sprites.bottomPencil, 0, 0, PIPE_W * scale, bh * scale, p.x, by, PIPE_W, bh);
+                ctx.drawImage(sprites.bottomPencil, 0, 0, PIPE_W * scale, bh * scale, x, by, PIPE_W, bh);
             }
 
-            const y = (state === 'intro' || state === 'ready') ? START_Y + Math.sin(now / 280) * 7 : horse.y;
+            const y = (state === 'intro' || state === 'ready') ? START_Y + Math.sin(now / 280) * 7 : horse.prevY + (horse.y - horse.prevY) * blend;
             const tilt = state === 'playing' ? Math.max(-0.25, Math.min(0.35, horse.v * 0.03)) : 0;
             ctx.save();
             ctx.translate(HORSE_X + HORSE_W / 2, y + HORSE_H / 2);
@@ -346,7 +352,7 @@
         /* ---------- Game logic ---------- */
 
         function reset() {
-            horse = { y: START_Y, v: START_VELOCITY };
+            horse = { y: START_Y, prevY: START_Y, v: START_VELOCITY };
             pipes = [];
             pipeTimer = 0;
             score = 0;
@@ -384,6 +390,8 @@
         }
 
         function step(dt) {
+            horse.prevY = horse.y;
+            for (const p of pipes) p.prevX = p.x;
             horse.v += GRAVITY * dt;
             horse.y += horse.v * dt;
             const floor = H - HORSE_H;
@@ -391,7 +399,7 @@
 
             pipeTimer += dt;
             if (pipeTimer > SPAWN_EVERY) {
-                pipes.push({ x: W, top: Math.floor(Math.random() * 250) + 50 });
+                pipes.push({ x: W, prevX: W, top: Math.floor(Math.random() * 250) + 50 });
                 pipeTimer = 0;
             }
             for (const p of pipes) p.x -= PIPE_SPEED * dt;
@@ -416,10 +424,20 @@
         }
 
         function frame(now) {
-            const dt = lastFrame ? Math.min((now - lastFrame) / 16.666, 3) : 0;
+            const elapsed = lastFrame ? Math.min(now - lastFrame, 3 * STEP_MS) : 0;
             lastFrame = now;
-            if (state === 'playing') step(dt);
-            if (state !== 'paused' && state !== 'over') animateDecor(dt);
+            if (state === 'playing') {
+                stepClock += elapsed;
+                while (stepClock >= STEP_MS && state === 'playing') {
+                    step(1);
+                    stepClock -= STEP_MS;
+                }
+                blend = state === 'playing' ? stepClock / STEP_MS : 1;
+            } else {
+                stepClock = 0;
+                blend = 1;
+            }
+            if (state !== 'paused' && state !== 'over') animateDecor(elapsed / STEP_MS);
             if (sprites) drawScene(now);
             requestAnimationFrame(frame);
         }

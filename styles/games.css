@@ -569,6 +569,28 @@ kbd {
 .chip-btn[data-amount="all"] { --chip: #b58900; font-size: .72rem; }
 .bet-input { width: 7.5em; }
 .action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.action-row #deal-btn { grid-column: 1 / -1; }
+
+/* Player hands: one normally, up to four after splitting */
+.hands { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 18px; }
+.hand { display: grid; justify-items: center; gap: 8px; padding: 8px; border: 2px dashed transparent; border-radius: 14px; }
+.hand.is-active { border-color: var(--highlight); background: rgba(255, 255, 255, .08); }
+.hand-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; min-height: 1.6em; }
+.hand-meta .hand-value:empty { display: none; }
+.hand-bet { font-weight: 800; font-size: .88rem; color: rgba(255, 255, 255, .85); }
+.hand-result { padding: 1px 10px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 800; font-size: .85rem; }
+.hand-result.win, .hand-result.blackjack { background: var(--highlight); }
+.hand-result.lose, .hand-result.bust { background: var(--red); color: #fff; }
+.hands.is-split .cards { flex-wrap: nowrap; gap: 0; }
+.hands.is-split .card-face + .card-face { margin-left: -46px; }
+@media (max-width: 560px) {
+  .hands.is-split .card-face + .card-face { margin-left: -38px; }
+}
+
+.insurance { display: grid; gap: 10px; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 12px; background: var(--note-yellow); box-shadow: 3px 3px 0 var(--ink); }
+.insurance[hidden] { display: none; }
+.insurance p { margin: 0; font-weight: 700; }
+.insurance .btn-row { gap: 8px; }
 @media (max-width: 560px) {
   .card-face { width: 64px; height: 92px; padding: 4px 6px; }
   .card-pip { font-size: 1.8rem; }

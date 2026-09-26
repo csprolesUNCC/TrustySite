@@ -184,6 +184,11 @@
             try { canvas.setPointerCapture(e.pointerId); } catch { /* pointer already released */ }
             drawingPointer = e.pointerId;
             [lastX, lastY] = toCanvas(e);
+            // A tap leaves a dot, like a pen touching the paper.
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(lastX + 0.01, lastY);
+            ctx.stroke();
         });
 
         canvas.addEventListener('pointermove', (e) => {
