@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="game-page">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -120,7 +120,7 @@
         import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
         import {
             loadImage, inkSprite, setupCanvas, offscreen, drawRuledPaper, sound, bindMuteButton,
-            bindFocusMode, isForeignKey, isActivationKey, localBest, saveLocalBest, fontsReady,
+            bindFocusMode, isForeignKey, isActivationKey, localBest, saveLocalBest, fontsReady, bringIntoView,
         } from '/scripts/game-kit.js';
 
         // Physics, timing and hitbox are identical to the original game so leaderboard scores stay comparable.
@@ -365,6 +365,7 @@
         function begin() {
             state = 'playing';
             showOverlay(null);
+            bringIntoView();
             flap();
         }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="game-page">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -117,7 +117,7 @@
         import { fmt } from '/scripts/site.js';
         import {
             loadImage, inkSprite, setupCanvas, drawGraphPaper, sound, bindMuteButton, onSwipe,
-            isForeignKey, isActivationKey, localBest, saveLocalBest, fontsReady,
+            isForeignKey, isActivationKey, localBest, saveLocalBest, fontsReady, bringIntoView,
         } from '/scripts/game-kit.js';
 
         // Board size, speed and rules match the original game.
@@ -278,6 +278,7 @@
             state = 'playing';
             showOverlay(null);
             stage.focus({ preventScroll: true });
+            bringIntoView();
             draw();
             startLoop();
         }

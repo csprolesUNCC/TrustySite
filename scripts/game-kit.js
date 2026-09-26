@@ -156,6 +156,15 @@ export function bindMuteButton(button) {
   render();
 }
 
+/* ---------- Layout ---------- */
+
+// Scroll the play area (stage plus any on-screen controls) fully into view when a game starts.
+export function bringIntoView(el = document.querySelector('.game-main')) {
+  if (!el) return;
+  const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ block: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
+}
+
 /* ---------- Focus mode ---------- */
 
 // `button` may be null when the page drives focus mode itself via the returned setter.

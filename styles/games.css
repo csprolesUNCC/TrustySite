@@ -2,7 +2,18 @@
    Game pages — shared shell (loaded after stylesheet.css)
    ========================================================================= */
 
+/* On game pages the site header scrolls away, so the play area can use the full window height. */
+html.game-page { scroll-padding-top: 12px; }
+html.game-page trusty-header { position: relative; }
+.game-main { scroll-margin-block: 12px; }
+
 .game-head { padding-block: clamp(18px, 3.5vw, 36px) clamp(12px, 2vw, 20px); }
+@media (max-height: 760px) and (min-width: 561px) {
+  .game-head { padding-block: 12px 12px; }
+  .game-head .eyebrow { display: none; }
+  .game-head .back-link { margin-bottom: 6px; }
+  .game-title-row h1 { font-size: clamp(1.8rem, 3.6vw, 2.4rem); }
+}
 .game-title-row {
   display: flex;
   flex-wrap: wrap;
@@ -29,11 +40,11 @@
 /* ---------- Stage: a fixed-aspect play area that always fits the screen ---------- */
 .stage {
   --ar: 1.3333;
-  --stage-room: 250px;
+  --stage-room: 24px;
   position: relative;
   width: 100%;
-  width: min(100%, calc((100dvh - var(--header-h) - var(--stage-room)) * var(--ar)));
-  min-width: min(100%, 280px);
+  width: min(100%, calc((100dvh - var(--stage-room)) * var(--ar)));
+  min-width: min(100%, 300px);
   aspect-ratio: var(--ar);
   margin-inline: auto;
   border: 2px solid var(--ink);
@@ -221,7 +232,7 @@ kbd {
    ========================================================================= */
 .draw-stage {
   --ar: 1;
-  --stage-room: 290px;
+  --stage-room: 160px;
   max-width: 540px;
   background:
     linear-gradient(var(--card), var(--card));
@@ -268,7 +279,10 @@ kbd {
 /* =========================================================================
    Trusty Snake
    ========================================================================= */
-.snake-stage { --ar: 1; --stage-room: 250px; max-width: 600px; }
+.snake-stage { --ar: 1; --stage-room: 24px; max-width: 680px; }
+@media (pointer: coarse) {
+  .snake-stage { --stage-room: 190px; }
+}
 .segmented {
   display: inline-flex;
   padding: 3px;
@@ -295,7 +309,7 @@ kbd {
    Trustis
    ========================================================================= */
 .trustis-layout {
-  --board-w: min(420px, calc((100dvh - var(--header-h) - 250px) * .6));
+  --board-w: min(440px, calc((100dvh - 24px) * .6));
   display: grid;
   grid-template-columns: var(--board-w) minmax(0, 170px);
   justify-content: center;
@@ -312,14 +326,28 @@ kbd {
 .trustis-stats { display: flex; flex-direction: column; gap: 10px; }
 .trustis-stats .stat { background: #fff; border-style: solid; border-color: var(--ink); border-width: 2px; box-shadow: 2px 2px 0 var(--ink); }
 .next-canvas { width: 100%; aspect-ratio: 1; margin-top: 6px; }
+@media (pointer: coarse) {
+  .trustis-layout { --board-w: min(440px, calc((100dvh - 24px - 96px) * .6)); }
+}
 @media (max-width: 560px) {
   .trustis-layout {
-    --board-w: min(calc(100vw - 2 * var(--gutter) - 102px), calc((100dvh - var(--header-h) - 260px) * .6));
-    grid-template-columns: var(--board-w) 92px;
+    --board-w: min(100%, calc((100dvh - 24px - 96px - 66px) * .6));
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
     gap: 10px;
   }
-  .trustis-stats .stat { padding: 6px 8px; }
-  .trustis-stats .stat-value { font-size: 1.25rem; }
+  .trustis-stage { width: var(--board-w); }
+  .trustis-stats {
+    order: -1;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+  .trustis-stats .stat { padding: 4px 6px; text-align: center; box-shadow: 1px 1px 0 var(--ink); }
+  .trustis-stats .stat-label { font-size: .58rem; letter-spacing: .04em; }
+  .trustis-stats .stat-value { font-size: 1.15rem; }
+  .next-canvas { width: 34px; margin: 1px auto 0; }
 }
 .trustis-pad .pad-btn { width: 58px; height: 58px; }
 
@@ -448,7 +476,7 @@ kbd {
 /* =========================================================================
    Arcade (externally hosted games)
    ========================================================================= */
-.arcade-stage { --ar: 1.6; --stage-room: 250px; touch-action: auto; background: #111; }
+.arcade-stage { --ar: 1.6; --stage-room: 24px; touch-action: auto; background: #111; }
 .arcade-stage.ar-4-3 { --ar: 1.3333; }
 .arcade-stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .arcade-facade {

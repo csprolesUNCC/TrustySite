@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="game-page">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -106,7 +106,7 @@
 
     <script type="module">
         import { fmt } from '/scripts/site.js';
-        import { loadImage, setupCanvas, drawGraphPaper, onSwipe, isForeignKey, isActivationKey, localBest, saveLocalBest } from '/scripts/game-kit.js';
+        import { loadImage, setupCanvas, drawGraphPaper, onSwipe, isForeignKey, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
 
         const COLS = 12, ROWS = 20, CELL = 32;
         const W = COLS * CELL, H = ROWS * CELL;
@@ -377,6 +377,7 @@
             renderStats();
             showOverlay(null);
             stage.focus({ preventScroll: true });
+            bringIntoView();
         }
 
         function gameOver() {

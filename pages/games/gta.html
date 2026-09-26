@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="game-page">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -66,7 +66,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { bindFocusMode } from '/scripts/game-kit.js';
+        import { bindFocusMode, bringIntoView } from '/scripts/game-kit.js';
 
         const stage = document.getElementById('stage');
         const frame = document.getElementById('frame');
@@ -76,6 +76,7 @@
         function load() {
             if (!frame.src) frame.src = frame.dataset.src;
             facade.hidden = true;
+            bringIntoView();
             frame.focus();
         }
 

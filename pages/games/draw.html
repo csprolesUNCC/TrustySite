@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="game-page">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -95,7 +95,7 @@
         import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
         import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
         import { DRAW_SIZE, strokeTrusty, referenceCanvas } from '/scripts/draw-reference.js';
-        import { isForeignKey, isActivationKey, localBest, saveLocalBest } from '/scripts/game-kit.js';
+        import { isForeignKey, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
 
         const MEMORIZE_MS = 2000;
         const DRAW_MS = 25000;
@@ -147,6 +147,7 @@
             stopTicker();
             drawingPointer = null;
             $('overlay-start').hidden = true;
+            bringIntoView();
             ctx.clearRect(0, 0, DRAW_SIZE, DRAW_SIZE);
             strokeTrusty(ctx, { lineWidth: 6, color: '#000000', lineJoin: 'miter' });
             phase = 'memorize';
@@ -296,7 +297,7 @@
                 best = result.final;
             }
 
-            setHud(result.final === 100 ? 'Perfect!' : 'Done!', 0, null, 'done');
+            setHud(result.final === 100 ? 'Perfect!' : `${result.final}%!`, 0, null, 'done');
             $('stat-last').textContent = `${result.final}%`;
             renderBest();
             const message = $('result-message');
