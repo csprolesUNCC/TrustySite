@@ -2,125 +2,134 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Games - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
-    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Games — Trusty da Horse</title>
+    <meta name="description" content="Play Flappy Trusty, Trustis, Draw Trusty, Trusty Snake, Blackjack and more. Log in to get your name on the leaderboards.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty's Game Corner">
+    <meta property="og:description" content="Try your luck and skill with Trusty Da Horse in a variety of fun (and probably rigged) games!">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <style>
-        .game-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .game-item {
-            padding: 15px;
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 4px 4px 0px 0px #111;
-        }
-        .game-item img {
-            width: 100%;
-            height: auto;
-            min-height: 150px; 
-            border: 1px solid #111;
-            margin-bottom: 10px;
-            object-fit: cover;
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Trusty's Game Corner</h1>
-        <div id="auth-component-placeholder">
-            </div>
-    </header>
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Trusty's Game Corner</p>
+            <h1>Play with Trusty!</h1>
+            <p class="lead">Try your luck and skill with Trusty Da Horse in a variety of fun (and probably rigged) games!</p>
+        </header>
 
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <h2>Play with Trusty!</h2>
-        <p>Try your luck and skill with Trusty Da Horse in a variety of fun (and probably rigged) games!</p>
-
-        <div class="game-grid">
-
-            <div class="game-item">
-                <img src="../images/flappy_thumbnail.png" alt="Flappy Trusty Screenshot">
-                <h3>Flappy Trusty</h3>
-                <p>A true test of skill. Can you guide Trusty through the pipes?</p>
-                <a href="games/flappy.html">Play Now</a>
+        <section class="section-tight container" aria-labelledby="originals-title">
+            <div class="section-head">
+                <div>
+                    <h2 id="originals-title">Trusty Originals</h2>
+                    <p>Made right here. <a href="/pages/auth/register.html" data-auth-show="out">Make an account</a><span data-auth-show="out"> to put your name on the leaderboards.</span><span data-auth-show="in">Your high scores save automatically.</span></p>
+                </div>
+                <a class="text-link" href="/pages/leaderboard.html">Leaderboards</a>
             </div>
 
-            <div class="game-item">
-                <img src="../images/snake_thumbnail.png" alt="Draw Thumbnail">
-                <h3>Trusty Snake</h3>
-                <p>How long can you make him????</p>
-                <a href="games/snake.html">Play Now</a>
+            <div class="grid" style="--grid-min: 200px">
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/flappy_thumbnail.png" alt="" width="1495" height="1221" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-gold">Leaderboard</li><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/flappy.html">Flappy Trusty</a></h3>
+                        <p>A true test of skill. Can you guide Trusty through the pipes?</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/trustis.png" alt="" width="1299" height="1091" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-new">New</li><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/trustis.html">Trustis</a></h3>
+                        <p>Fit the Trustys Together!</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/draw_thumbnail.png" alt="" width="942" height="765" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-gold">Leaderboard</li><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/draw.html">Draw Trusty</a></h3>
+                        <p>Try your best to draw Trusty!</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/snake_thumbnail.png" alt="" width="947" height="793" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/snake.html">Trusty Snake</a></h3>
+                        <p>How long can you make him????</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/blackjack_thumbnail.png" alt="" width="946" height="793" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/casino.html">Trusty Blackjack</a></h3>
+                        <p>Beat the dealer! Test your luck at the horse casino.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="section container" aria-labelledby="arcade-title">
+            <div class="section-head">
+                <div>
+                    <h2 id="arcade-title">The Arcade</h2>
+                    <p>Classics with a Trusty twist, hosted by other sites. Best on a computer with a keyboard.</p>
+                </div>
             </div>
 
-            <div class="game-item">
-                <img src="../images/draw_thumbnail.png" alt="Draw Thumbnail">
-                <h3>Draw Trusty</h3>
-                <p>Try your best to draw Trusty!</p>
-                <a href="games/draw.html">Play Now</a>
+            <div class="grid" style="--grid-min: 250px">
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/driving_thumbnail.png" alt="" width="620" height="426" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-quiet">Hosted externally</li><li class="tag tag-quiet">Keyboard</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/driving.html">Trusty's Traffic Crime Simulator</a></h3>
+                        <p>Trusty hits the road! Drive your car and dodge the traffic.</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/crazycattle.png" alt="" width="904" height="654" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-quiet">Hosted externally</li><li class="tag tag-quiet">Keyboard</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/crazycattle.html">Trusty's Crazy Cattle 3D!</a></h3>
+                        <p>Fight to the death in Trusty's cattle arena.</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/gta.jpg" alt="" width="280" height="180" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-quiet">Hosted externally</li><li class="tag tag-quiet">Keyboard</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/gta.html">Grand Theft Trusty</a></h3>
+                        <p>Do whatever you want and ignore the law!</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/football_thumbnail.png" alt="" width="2155" height="1517" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-quiet">Hosted externally</li><li class="tag tag-quiet">Keyboard</li></ul>
+                        <h3 class="card-title"><a href="/pages/games/football.html">Trusty NFL '94</a></h3>
+                        <p>Toss around the ol' pigskin!</p>
+                    </div>
+                </article>
             </div>
+        </section>
+    </main>
 
-            <div class="game-item">
-                <img src="../images/trustis.png" alt="Trustis Thumbnail">
-                <h3>Trustis</h3>
-                <p>Fit the Trustys Together!</p>
-                <a href="games/trustis.html">Play Now</a>
-            </div>
-            
-            <div class="game-item">
-                <img src="../images/blackjack_thumbnail.png" alt="Blackjack Table Thumbnail">
-                <h3>Trusty Blackjack</h3>
-                <p>Beat the dealer! Test your luck at the horse casino.</p>
-                <a href="games/casino.html">Play Now</a>
-            </div>
-            
-            <div class="game-item">
-                <img src="../images/driving_thumbnail.png" alt="Trusty Driving Screenshot">
-                <h3>Trusty's Traffic Crime Simulator</h3>
-                <p>Trusty hits the road! Drive your car and dodge the traffic.</p>
-                <a href="games/driving.html">Play Now</a>
-            </div>
-
-            <div class="game-item">
-                <img src="../images/crazycattle.png" alt="Crazy Cattle Thumbnail">
-                <h3>Trusty's Crazy Cattle 3D!</h3>
-                <p>Fight to the death in Trusty's cattle arena.</p>
-                <a href="games/crazycattle.html">Play Now</a>
-            </div>
-
-            <div class="game-item">
-                <img src="../images/gta.jpg" alt="GTA Thumbnail">
-                <h3>Grand Theft Trusty</h3>
-                <p>Do whatever you want and ignore the law!</p>
-                <a href="games/gta.html">Play Now</a>
-            </div>
-
-            <div class="game-item">
-                <img src="../images/football_thumbnail.png" alt="Football Thumbnail">
-                <h3>Trusty NFL '94</h3>
-                <p>Toss around the 'ol pigskin!</p>
-                <a href="games/football.html">Play Now</a>
-            </div>
-
-        </div>
-    </div>
-
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="../scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-
+    <trusty-footer></trusty-footer>
 </body>
 </html>

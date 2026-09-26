@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Reset your password — Trusty da Horse</title>
-    <meta name="description" content="Get a link to reset your Trusty da Horse password.">
+    <title>Page not found — Trusty da Horse</title>
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#fbf8f0">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
@@ -15,30 +14,24 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
-    <script type="module" src="/scripts/auth.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
     <trusty-header></trusty-header>
 
-    <main id="main" class="container auth-wrap">
-        <div class="sheet auth-card">
-            <img class="auth-face ink" src="/images/mobile-icon.png" alt="" width="56" height="56">
-            <p class="eyebrow">Forgot your password?</p>
-            <h1>Reset password</h1>
-            <p class="lead">Enter your email address and we'll send you a link to set a new one.</p>
-
-            <form id="forgot-form">
-                <div class="field">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" autocomplete="email" required>
+    <main id="main" class="container notfound">
+        <div class="sheet notfound-sheet">
+            <img class="ink" src="/images/seahorse.jpg" alt="Seahorse Trusty, looking lost" width="1536" height="1173">
+            <div>
+                <p class="eyebrow">Error 404</p>
+                <h1>This page got erased.</h1>
+                <p class="lead">Trusty looked everywhere for it. Even underwater. It's just not here.</p>
+                <div class="btn-row btn-row-stack">
+                    <a class="btn btn-lg" href="/index.html">Back to the homepage</a>
+                    <a class="btn btn-lg btn-outline" href="/pages/games.html">Play a game instead</a>
                 </div>
-                <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-                <button class="btn btn-lg btn-block" type="submit">Send reset link</button>
-            </form>
-
-            <p class="auth-alt"><a href="/pages/auth/login.html">Back to login</a></p>
+            </div>
         </div>
     </main>
 

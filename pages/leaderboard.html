@@ -2,68 +2,165 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
-    <title>Leaderboard - Trusty da Horse</title>
-    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Leaderboards — Trusty da Horse</title>
+    <meta name="description" content="Are you the ultimate Trusty fan? See the top clickers and the best Flappy Trusty and Draw Trusty players.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty da Horse Leaderboards">
+    <meta property="og:description" content="Are you the ultimate Trusty fan? Check the rankings!">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Global Leaderboard</h1>
-        <div id="auth-component-placeholder"></div>
-    </header>
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Hall of Fame</p>
+            <h1>Global Leaderboards</h1>
+            <p class="lead">Are you the ultimate Trusty fan? Check the rankings below!</p>
+        </header>
 
-    <nav id="navbar-placeholder"></nav>
+        <section class="section-tight container" aria-label="Leaderboards">
+            <div class="tabs" role="tablist" aria-label="Choose a leaderboard">
+                <button class="tab" role="tab" type="button" id="tab-clicks" aria-controls="panel-clicks" aria-selected="true" data-board="clicks">Top Clickers</button>
+                <button class="tab" role="tab" type="button" id="tab-flappy" aria-controls="panel-flappy" aria-selected="false" tabindex="-1" data-board="flappy">Flappy Trusty</button>
+                <button class="tab" role="tab" type="button" id="tab-draw" aria-controls="panel-draw" aria-selected="false" tabindex="-1" data-board="draw">Draw Trusty</button>
+            </div>
 
-    <div class="content">
-        <h2>Top Clickers</h2>
-        <p>Are you the ultimate Trusty fan? Check the rankings below!</p>
-        
-        <table id="leaderboard-table" style="width:100%; border-collapse: collapse; margin-top: 20px;">
-            <thead>
-                <tr style="border-bottom: 3px solid #111; text-align: left;">
-                    <th style="padding: 10px;">Rank</th>
-                    <th style="padding: 10px;">User</th>
-                    <th style="padding: 10px;">Total Clicks</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-                </tbody>
-        </table>
-    </div>
+            <div class="lb-panel" role="tabpanel" id="panel-clicks" aria-labelledby="tab-clicks" data-board="clicks">
+                <div class="lb-side">
+                    <div data-podium></div>
+                    <div class="sticky-note lb-note">
+                        <h3>How to climb</h3>
+                        <p data-me-note>Every click on Trusty in the header counts. Log in and start clicking!</p>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">The rest of the herd</h2>
+                    <ol class="board" data-list aria-label="Top Clickers, rank 4 and below"></ol>
+                </div>
+            </div>
 
-    <footer><p id="footer-placeholder"></p></footer>
+            <div class="lb-panel" role="tabpanel" id="panel-flappy" aria-labelledby="tab-flappy" data-board="flappy" hidden>
+                <div class="lb-side">
+                    <div data-podium></div>
+                    <div class="sticky-note blue lb-note">
+                        <h3>Trusty's Top Flaps</h3>
+                        <p data-me-note>Only the top 10 make the board.</p>
+                        <a class="btn btn-sm" href="/pages/games/flappy.html">Play Flappy Trusty</a>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">Top 10</h2>
+                    <ol class="board" data-list aria-label="Flappy Trusty, rank 4 to 10"></ol>
+                </div>
+            </div>
 
-    <script src="/scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchLeaderboard();
-        });
+            <div class="lb-panel" role="tabpanel" id="panel-draw" aria-labelledby="tab-draw" data-board="draw" hidden>
+                <div class="lb-side">
+                    <div data-podium></div>
+                    <div class="sticky-note pink lb-note">
+                        <h3>Master Artists</h3>
+                        <p data-me-note>Tap a drawing to see it up close next to the real Trusty.</p>
+                        <a class="btn btn-sm" href="/pages/games/draw.html">Play Draw Trusty</a>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">Top 10</h2>
+                    <ol class="board" data-list aria-label="Draw Trusty, rank 4 to 10"></ol>
+                </div>
+            </div>
+        </section>
+    </main>
 
-        async function fetchLeaderboard() {
-            const tbody = document.getElementById('leaderboard-body');
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, session, sessionReady } from '/scripts/site.js';
+        import { BOARDS, fetchBoard, renderList, renderPodium, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
+
+        const MAX_ROWS = 50;
+        const tabs = [...document.querySelectorAll('[role="tab"]')];
+        const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.board, p]));
+        const loaded = new Set();
+
+        function meNote(key, entries) {
+            const board = BOARDS[key];
+            if (!session.loggedIn) return null;
+            const index = entries.findIndex((e) => e.name === session.username);
+            if (index === -1) {
+                return key === 'clicks'
+                    ? 'You haven’t clicked Trusty yet. He’s up in the header, waiting.'
+                    : 'You’re not on this board yet. Go set a high score!';
+            }
+            return `You’re #${index + 1} with ${board.format(entries[index].score)}${key === 'clicks' ? ' clicks' : ''}.`;
+        }
+
+        async function load(key) {
+            const panel = panels[key];
+            const list = panel.querySelector('[data-list]');
+            const podium = panel.querySelector('[data-podium]');
+            loaded.add(key);
+            renderSkeleton(list);
             try {
-                const response = await fetch('/api/leaderboard');
-                const data = await response.json();
-
-                tbody.innerHTML = data.map((entry, index) => `
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 10px; font-weight: bold;">#${index + 1}</td>
-                        <td style="padding: 10px;">${entry.username || 'Anonymous'}</td>
-                        <td style="padding: 10px;">${entry.clicks.toLocaleString()}</td>
-                    </tr>
-                `).join('');
+                const entries = await fetchBoard(key);
+                renderPodium(podium, entries, { key });
+                const rest = entries.slice(3, MAX_ROWS);
+                if (rest.length) renderList(list, rest, { key, startRank: 4 });
+                else renderStatus(list, entries.length ? 'That’s everyone so far.' : 'No scores yet. Be the first!');
+                await sessionReady;
+                const note = meNote(key, entries);
+                if (note) panel.querySelector('[data-me-note]').textContent = note;
             } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="3">Failed to load leaderboard.</td></tr>';
+                loaded.delete(key);
+                podium.replaceChildren();
+                list.replaceChildren(h('li', { class: 'board-error' },
+                    'Couldn’t load this leaderboard. ',
+                    h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => load(key) }, 'Try again')));
             }
         }
+
+        function select(key, { focus = false, updateHash = true } = {}) {
+            if (!panels[key]) key = 'clicks';
+            for (const tab of tabs) {
+                const on = tab.dataset.board === key;
+                tab.setAttribute('aria-selected', String(on));
+                tab.tabIndex = on ? 0 : -1;
+                if (on && focus) tab.focus();
+            }
+            for (const [k, panel] of Object.entries(panels)) panel.hidden = k !== key;
+            if (updateHash) history.replaceState(null, '', key === 'clicks' ? location.pathname : `#${key}`);
+            if (!loaded.has(key)) load(key);
+        }
+
+        tabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => select(tab.dataset.board));
+            tab.addEventListener('keydown', (e) => {
+                const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                if (e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    select(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.board, { focus: true });
+                } else if (dir) {
+                    e.preventDefault();
+                    select(tabs[(i + dir + tabs.length) % tabs.length].dataset.board, { focus: true });
+                }
+            });
+        });
+
+        select(location.hash.slice(1) || 'clicks', { updateHash: false });
+        window.addEventListener('hashchange', () => select(location.hash.slice(1) || 'clicks', { updateHash: false }));
     </script>
 </body>
 </html>

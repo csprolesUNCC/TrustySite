@@ -2,63 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Season 2 - Trusty da Horse</title>
-    
-    <link rel="apple-touch-icon" sizes="180x180" href="../../../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../../../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../../../images/icon-16x16.png">
-    <link rel="stylesheet" href="../../../styles/stylesheet.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Da Tractor Crew: Season 2 — Trusty da Horse</title>
+    <meta name="description" content="Season 2 of Da Tractor Crew is lost! Send any tips to trustytips@trustydahorse.com.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Da Tractor Crew: Season 2">
+    <meta property="og:description" content="Season 2 of Da Tractor Crew is lost! Send any tips to trustytips@trustydahorse.com.">
+    <meta property="og:image" content="https://trustydahorse.com/images/comics/datractorcrew/s1/e1/p1.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <style>
-        .comic-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .comic-item {
-            padding: 15px;
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 4px 4px 0px 0px #111;
-        }
-        .comic-item img {
-            width: 100%;
-            height: auto;
-            border: 1px solid #111;
-            margin-bottom: 10px;
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Season 2</h1>
-        <div id="auth-component-placeholder"></div>
-    </header>
+    <main id="main">
+        <header class="page-head container">
+            <a class="back-link" href="/pages/comics/datractorcrew/datractorcrew.html">Season select</a>
+            <p class="eyebrow">Da Tractor Crew</p>
+            <h1>Season 2</h1>
+        </header>
 
-    <nav id="navbar-placeholder"></nav>
+        <section class="section-tight container" aria-labelledby="missing-title">
+            <div class="missing-poster">
+                <span class="reward-stamp" aria-hidden="true">Cash reward</span>
+                <p class="missing-kicker" aria-hidden="true">MISSING</p>
+                <h2 id="missing-title">Season 2 Is Lost!</h2>
+                <figure class="polaroid">
+                    <img src="/images/horsePlaceholder.jpg" alt="A photo of a white horse" width="252" height="200">
+                    <figcaption>Have you seen this season?</figcaption>
+                </figure>
+                <p class="lead missing-tip">Where did it go!? Send any tips to <a href="mailto:trustytips@trustydahorse.com">trustytips@trustydahorse.com</a>. There is a cash reward!</p>
+            </div>
 
-    <div class="content">
-        <p><a href="datractorcrew.html" style="text-decoration:none; font-weight:bold;">← Back to Season Select</a></p>
-        
-        <div class="big-text-container">
-            <h2 class="big-header">Season 2 Is Lost!</h2>
-            <p class="big-body">
-                Where did it go!? Send any tips to trustytips@trustydahorse.com. There is a cash reward!
-            </p>
-        </div>
-    </div>
+            <nav class="season-nav" aria-label="Seasons">
+                <a class="btn btn-outline" href="/pages/comics/datractorcrew/season1.html">&larr; Season 1</a>
+                <a class="btn" href="/pages/comics/datractorcrew/season3.html">Season 3 &rarr;</a>
+            </nav>
+        </section>
+    </main>
 
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="../../../scripts/componentLoader.js"></script>
-    <script src="../../../scripts/loginHandler.js"></script>
-
+    <trusty-footer></trusty-footer>
 </body>
 </html>

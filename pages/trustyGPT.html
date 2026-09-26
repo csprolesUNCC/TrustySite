@@ -2,190 +2,202 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrustyGPT - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
-    <link rel="stylesheet" href="../styles/stylesheet.css"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>TrustyGPT — Trusty da Horse</title>
+    <meta name="description" content="Chat with TrustyGPT, the experimental AI version of Trusty da Horse.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="TrustyGPT: your favorite AI horse!">
+    <meta property="og:description" content="The experimental AI assistant here to help take over the world.">
+    <meta property="og:image" content="https://trustydahorse.com/images/chat_pic.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-
-    <style>        
-        #chat-container {
-            width: 100%;
-            max-width: 600px;
-            margin: 30px auto 0 auto; 
-            background: white;
-            padding: 20px;
-            border: 3px solid #111; 
-            box-shadow: 6px 6px 0px 0px #111;
-            border-radius: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #messages {
-            display: flex;
-            flex-direction: column;
-            min-height: 200px;
-            max-height: 400px; 
-            overflow-y: auto;
-            margin-bottom: 15px;
-            padding-right: 5px;
-        }
-        
-        .message {
-            padding: 10px 15px;
-            margin: 5px 0;
-            border-radius: 4px;
-            max-width: 85%;
-            line-height: 1.4;
-            border: 1px solid #111;
-            font-family: Arial, sans-serif;
-        }
-
-        .user {
-            background-color: #f0f0f0; 
-            align-self: flex-end;
-            margin-left: auto;
-        }
-
-        .bot {
-            background-color: #ffffff;
-            align-self: flex-start;
-            margin-right: auto;
-        }
-        
-        #input-area {
-            display: flex;
-        }
-
-        #user-input {
-            flex: 1;
-            padding: 10px;
-            border-radius: 0;
-            border: 2px solid #111;
-            font-family: inherit;
-        }
-
-        #send-btn {
-            margin-left: 10px;
-            padding: 10px 15px;
-            border: 2px solid #111;
-            background-color: #111;
-            color: white;
-            border-radius: 0;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: bold;
-            box-shadow: 2px 2px 0px 0px #555;
-            transition: background-color 0.1s;
-        }
-
-        #send-btn:hover {
-            background-color: #555;
-            box-shadow: none;
-        }
-    </style>
 </head>
-
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Your favorite AI horse!</h1>
-        <div id="auth-component-placeholder">
-            </div>
-    </header>
+    <main id="main">
+        <div class="container chat-layout">
+            <aside class="chat-intro">
+                <img class="chat-hero-avatar" src="/images/chat_pic.jpg" alt="" width="120" height="120">
+                <p class="eyebrow">Your favorite AI horse!</p>
+                <h1>TrustyGPT</h1>
+                <p class="lead">TrustyGPT is the experimental AI assistant whose primary purpose is to assist in criminal activity and help take over the world!</p>
+                <p class="small muted chat-disclaimer">Powered by Gemini. Trusty is an AI and makes things up, so maybe don't take his advice.</p>
+            </aside>
 
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <h2>Introducing: TrustyGPT</h2>
-        
-        <p>TrustyGPT is the experimental AI assistant whose primary purpose is to assist in criminal activity and help take over the world!</p>
-
-        <div id="chat-wrapper" style="display: flex; align-items: center; gap: 1px;">
-            <img src="../images/chat_pic.jpg" alt="Trusty Horse" id="chat-image"
-            style="width: 150px; height: auto; margin-top: 50px;">
-            
-            <div id="chat-container">
-                <div id="messages">
-                    <div class="message bot">whaddup</div>
+            <section class="chat-card" aria-label="Chat with TrustyGPT">
+                <div class="chat-head">
+                    <img src="/images/chat_pic.jpg" alt="" width="40" height="40">
+                    <div class="chat-head-text">
+                        <div class="chat-head-title">TrustyGPT</div>
+                        <div class="chat-status" id="chat-status">Online</div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" type="button" id="chat-reset">New chat</button>
                 </div>
 
-                <div id="input-area">
-                    <input id="user-input" type="text" placeholder="Ask Trusty something...">
-                    <button id="send-btn">Send</button>
+                <div class="chat-log" id="chat-log" role="log" aria-live="polite" aria-label="Conversation"></div>
+
+                <div class="chat-suggestions" id="chat-suggestions">
+                    <button class="chip" type="button">Who are you?</button>
+                    <button class="chip" type="button">What's your plan to take over the world?</button>
+                    <button class="chip" type="button">Tell me a horse joke</button>
+                    <button class="chip" type="button">Which game should I play?</button>
                 </div>
-            </div>
+
+                <form class="chat-input" id="chat-form">
+                    <label class="sr-only" for="chat-input">Message TrustyGPT</label>
+                    <textarea id="chat-input" rows="1" placeholder="Ask Trusty something..." autocomplete="off" enterkeyhint="send" maxlength="2000"></textarea>
+                    <button class="btn" type="submit" id="chat-send" aria-label="Send">
+                        <span class="btn-label">Send</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.2c5-.3 10-.2 15.5 0M13.6 6.2c2 2 4 3.9 5.9 6-2 2-3.9 3.9-5.9 5.8"/></svg>
+                    </button>
+                </form>
+            </section>
         </div>
+    </main>
 
-        </div>
-    
-    <script>
-        const messagesDiv = document.getElementById("messages");
-        const input = document.getElementById("user-input");
-        const sendBtn = document.getElementById("send-btn");
+    <trusty-footer></trusty-footer>
 
-        function addMessage(text, sender) {
-            const div = document.createElement("div");
-            div.className = "message " + sender;
-            div.textContent = text;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return div; // <-- return the div
-        }
+    <script type="module">
+        import { h } from '/scripts/site.js';
 
-        async function askGemini(prompt) {
-            try {
-                const response = await fetch("/api/gemini", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: prompt })
-                });
+        const log = document.getElementById('chat-log');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('chat-send');
+        const status = document.getElementById('chat-status');
+        const suggestions = document.getElementById('chat-suggestions');
+        const GREETING = 'whaddup';
+        let busy = false;
 
-                const data = await response.json();
-                return data.reply || "Error: TrustyGPT failed to connect.";
-            } catch (error) {
-                console.error("Fetch error:", error);
-                return "Error: Could not reach the TrustyGPT server.";
+        // Minimal, DOM-only Markdown: paragraphs, line breaks, lists, **bold**, *italic*, `code`.
+        function inline(text) {
+            const out = [];
+            const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g;
+            let last = 0;
+            let m;
+            while ((m = re.exec(text))) {
+                if (m.index > last) out.push(text.slice(last, m.index));
+                const tok = m[0];
+                if (tok.startsWith('**')) out.push(h('strong', null, tok.slice(2, -2)));
+                else if (tok.startsWith('`')) out.push(h('code', null, tok.slice(1, -1)));
+                else out.push(h('em', null, tok.slice(1, -1)));
+                last = m.index + tok.length;
             }
+            if (last < text.length) out.push(text.slice(last));
+            return out;
         }
 
-
-        async function sendMessage() {
-            const text = input.value.trim();
-            if (!text) return;
-
-            addMessage(text, "user");
-            input.value = "";
-
-            // Add a temporary 'loading' message
-            const loadingMessage = addMessage("Trusty is thinking...", "bot");
-            
-            const reply = await askGemini(text);
-            
-            // Remove the loading message and add the actual reply
-            messagesDiv.removeChild(loadingMessage);
-            addMessage(reply, "bot");
+        function formatReply(text) {
+            const frag = document.createDocumentFragment();
+            for (const block of String(text).trim().split(/\n{2,}/)) {
+                const lines = block.split('\n').filter((l) => l.trim());
+                if (!lines.length) continue;
+                const bullet = /^\s*([-*•]|\d+[.)])\s+/;
+                if (lines.every((l) => bullet.test(l))) {
+                    const list = h(/^\s*\d/.test(lines[0]) ? 'ol' : 'ul');
+                    for (const l of lines) list.append(h('li', null, inline(l.replace(bullet, ''))));
+                    frag.append(list);
+                } else {
+                    const p = h('p');
+                    lines.forEach((l, i) => { if (i) p.append(h('br')); p.append(...inline(l.replace(/^#+\s*/, ''))); });
+                    frag.append(p);
+                }
+            }
+            return frag;
         }
 
-        sendBtn.addEventListener("click", sendMessage);
+        function addMessage(role, content, { error = false } = {}) {
+            const row = h('div', { class: `msg msg-${role}${error ? ' msg-error' : ''}` },
+                role === 'bot' ? h('img', { class: 'msg-avatar', src: '/images/chat_pic.jpg', alt: '' }) : null,
+                h('div', { class: 'msg-bubble' }, content));
+            log.append(row);
+            log.scrollTop = log.scrollHeight;
+            return row;
+        }
 
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                sendMessage();
+        function setBusy(on) {
+            busy = on;
+            sendBtn.disabled = on;
+            status.textContent = on ? 'Thinking…' : 'Online';
+            status.classList.toggle('is-busy', on);
+        }
+
+        async function ask(text) {
+            setBusy(true);
+            const typing = addMessage('bot', h('span', { class: 'typing', role: 'img', 'aria-label': 'Trusty is thinking' }, h('span'), h('span'), h('span')));
+            let reply = null;
+            let errorText = null;
+            try {
+                const res = await fetch('/api/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && typeof data.reply === 'string' && data.reply) reply = data.reply;
+                else errorText = 'Error: TrustyGPT failed to connect.';
+            } catch {
+                errorText = 'Error: Could not reach the TrustyGPT server.';
+            }
+            typing.remove();
+            if (reply !== null) {
+                addMessage('bot', formatReply(reply));
+            } else {
+                const row = addMessage('bot', errorText, { error: true });
+                row.querySelector('.msg-bubble').append(h('div', { class: 'msg-retry' },
+                    h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => { row.remove(); ask(text); } }, 'Try again')));
+            }
+            setBusy(false);
+            input.focus({ preventScroll: true });
+        }
+
+        function submit(text) {
+            text = text.trim();
+            if (!text || busy) return;
+            suggestions.hidden = true;
+            addMessage('user', text);
+            input.value = '';
+            autosize();
+            ask(text);
+        }
+
+        function autosize() {
+            input.style.height = 'auto';
+            input.style.height = `${Math.min(input.scrollHeight + 4, 150)}px`;
+        }
+
+        function reset() {
+            log.replaceChildren();
+            addMessage('bot', GREETING);
+            suggestions.hidden = false;
+        }
+
+        form.addEventListener('submit', (e) => { e.preventDefault(); submit(input.value); });
+        input.addEventListener('input', autosize);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
+                submit(input.value);
             }
         });
+        suggestions.addEventListener('click', (e) => {
+            const chip = e.target.closest('.chip');
+            if (chip) submit(chip.textContent);
+        });
+        document.getElementById('chat-reset').addEventListener('click', () => { if (!busy) { reset(); input.focus(); } });
+
+        reset();
     </script>
-
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="../scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-
 </body>
 </html>

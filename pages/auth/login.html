@@ -2,50 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="images/icon-16x16.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Log in — Trusty da Horse</title>
+    <meta name="description" content="Log in to Trusty da Horse to save your high scores and climb the leaderboards.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#fbf8f0">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script type="module" src="/scripts/auth.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <h1>Trusty Da Horse!</h1>
-        <div id="auth-component-placeholder"></div>
-    </header>
+    <main id="main" class="container auth-wrap">
+        <div class="sheet auth-card">
+            <img class="auth-face ink" src="/images/mobile-icon.png" alt="" width="56" height="56">
+            <p class="eyebrow">Member login</p>
+            <h1>Welcome back</h1>
+            <p class="lead">Log in to save your high scores and rack up Trusty clicks.</p>
 
-    <nav id="navbar-placeholder"></nav>
+            <form id="login-form">
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" autocomplete="email" required>
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="password-wrap">
+                        <input type="password" id="password" name="password" autocomplete="current-password" required>
+                        <button type="button" class="password-toggle" aria-pressed="false" aria-controls="password">Show</button>
+                    </div>
+                </div>
+                <div class="auth-row"><a href="/pages/auth/forgot-password.html">Forgot password?</a></div>
+                <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+                <button class="btn btn-lg btn-block" type="submit">Log in</button>
+            </form>
 
-    <div class="content">
-        <h2>Member Login</h2>
-        
-        <form id="login-form">
-            <p>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </p>
-            <p>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </p>
-            <p>
-                <button type="submit">Login</button>
-            </p>
-            <p style="text-align: left; margin-top: 10px;">
-                <a href="/pages/auth/forgot-password.html" style="text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
-            </p>
-            <p id="error-message" style="color: red; font-weight: bold;"></p>
-        </form>
+            <p class="auth-alt">Don't have an account? <a href="/pages/auth/register.html" data-keep-next>Register here!</a></p>
+        </div>
+    </main>
 
-        <p>Don't have an account? <a href="/pages/auth/register.html">Register here!</a></p>
-    </div>
-
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="/scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-
+    <trusty-footer></trusty-footer>
 </body>
 </html>

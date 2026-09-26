@@ -2,83 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Viewer - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>3D Trusty — Trusty da Horse</title>
+    <meta name="description" content="Spin, zoom and inspect a 3D model of Trusty da Horse, or place him in your room with AR.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty in 3 Dimensions!">
+    <meta property="og:description" content="A 3D model of Trusty Da Horse for your viewing pleasure.">
+    <meta property="og:image" content="https://trustydahorse.com/images/3dSample.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <link rel="stylesheet" href="../styles/stylesheet.css">
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
-
-    <style>
-        #model-viewer-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px 0;
-            background-color: #f8f8f8;
-            box-shadow: 4px 4px 0px 0px #333;
-        }
-
-        model-viewer {
-            width: 90%; 
-            height: 60vh; 
-            box-shadow: 8px 8px 0px 0px #111;
-            margin-top: 15px;
-        }
-
-        @media (max-width: 600px) {
-            model-viewer {
-                width: 95%;
-                height: 50vh;
-                box-shadow: 4px 4px 0px 0px #111;
-            }
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Trusty in 3 Dimensions!</h1>
-        <div id="auth-component-placeholder">
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">3D Viewer</p>
+            <h1>Trusty in 3 Dimensions!</h1>
+            <p class="lead">This is a 3D model of Trusty Da Horse for your viewing pleasure.</p>
+        </header>
+
+        <section class="section-tight container" aria-label="3D model">
+            <div class="viewer-stage">
+                <model-viewer
+                    id="viewer"
+                    src="/models/horse_glb.glb"
+                    alt="Trusty's 3D Model of World Domination"
+                    poster="/images/3dSample.jpg"
+                    shadow-intensity="1.5"
+                    exposure="1.2"
+                    camera-controls
+                    touch-action="pan-y"
+                    auto-rotate
+                    ar
+                    loading="eager">
+                    <button slot="ar-button" class="btn btn-highlight btn-sm viewer-ar" type="button">View in your room</button>
+                </model-viewer>
+                <p class="viewer-hint hand" aria-hidden="true">drag me around!</p>
+                <div class="viewer-toolbar">
+                    <button class="btn btn-outline btn-sm" type="button" id="toggle-spin" aria-pressed="true">Pause spin</button>
+                    <button class="btn btn-outline btn-sm" type="button" id="reset-view">Reset view</button>
+                </div>
             </div>
-    </header>
+            <p class="viewer-credit">Drag to rotate, scroll or pinch to zoom. Model: &ldquo;Stylized lowpoly HORSE&rdquo; by LucySail.</p>
+        </section>
+    </main>
 
-    <nav id="navbar-placeholder"></nav>
+    <trusty-footer></trusty-footer>
 
-    <div class="content">
-        <h2>View Trusty!</h2>
-        
-        <p>This is a 3D model of Trusty Da Horse for your viewing pleasure.</p>
+    <script type="module">
+        const viewer = document.getElementById('viewer');
+        const spin = document.getElementById('toggle-spin');
 
-        <div id="model-viewer-container">
-            <model-viewer 
-                src="../models/horse_glb.glb" 
-                alt="Trusty's 3D Model of World Domination" 
-                shadow-intensity="1.5"
-                camera-controls 
-                auto-rotate 
-                ar 
-                loading="eager"
-                exposure="1.2"
-                poster="../images/3dSample.jpg">
-            </model-viewer>
-            
-            <p style="text-align: center; margin-top: 20px; font-style: italic; font-size: 0.9em;">
-                Click and drag to rotate. Scroll to zoom.
-            </p>
+        spin.addEventListener('click', () => {
+            const on = !viewer.autoRotate;
+            viewer.autoRotate = on;
+            spin.setAttribute('aria-pressed', String(on));
+            spin.textContent = on ? 'Pause spin' : 'Resume spin';
+        });
 
-        </div>
-    </div>
-
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="../scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-
+        document.getElementById('reset-view').addEventListener('click', () => {
+            viewer.cameraOrbit = 'auto auto auto';
+            viewer.cameraTarget = 'auto auto auto';
+            viewer.fieldOfView = 'auto';
+            viewer.resetTurntableRotation?.();
+        });
+    </script>
 </body>
 </html>

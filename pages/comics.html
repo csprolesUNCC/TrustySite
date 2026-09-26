@@ -2,79 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comics - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
-    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Comics — Trusty da Horse</title>
+    <meta name="description" content="Read Trusty da Horse comics, scanned straight off the notebook paper they were drawn on. Start with Da Tractor Crew.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Comics">
+    <meta property="og:description" content="Hand-drawn Trusty da Horse comics, straight off the notebook paper.">
+    <meta property="og:image" content="https://trustydahorse.com/images/comics/datractorcrew/s1/e1/p1.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <style>
-        .comic-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .comic-item {
-            padding: 15px;
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 4px 4px 0px 0px #111;
-        }
-        .comic-item img {
-            width: 100%;
-            height: auto;
-            border: 1px solid #111;
-            margin-bottom: 10px;
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Our Latest Comics</h1>
-        <div id="auth-component-placeholder">
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Trusty Comics!</p>
+            <h1>Our Latest Comics</h1>
+            <p class="lead">This is where we post comics. Every one is scanned straight off the notebook paper it was drawn on.</p>
+        </header>
+
+        <section class="section-tight container" aria-label="Comic series">
+            <article class="card card-link series">
+                <div class="card-media"><img src="/images/comics/datractorcrew/s1/e1/p1.jpg" alt="" width="1022" height="1330" decoding="async" style="object-position: top center"></div>
+                <div class="card-body">
+                    <p class="eyebrow">Where it all started!</p>
+                    <h2 class="card-title"><a href="/pages/comics/datractorcrew/datractorcrew.html">Da Tractor Crew</a></h2>
+                    <p class="lead">Straight from Mrs. Cabasa's 8th Grade Math Class. Flint Nogood, Jim Smith, Lin Horsegun, Big Boy and, of course, Trusty.</p>
+                    <ul class="tags series-meta"><li class="tag">3 seasons</li><li class="tag">10 episodes</li><li class="tag tag-pink">1 missing season</li></ul>
+                    <div class="btn-row btn-row-stack">
+                        <a class="btn" href="/pages/comics/datractorcrew/season1.html#ep-1">Start reading</a>
+                        <a class="btn btn-outline" href="/pages/comics/datractorcrew/datractorcrew.html">Browse seasons</a>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="section-tight container" aria-label="Coming soon">
+            <div class="grid" style="--grid-min: 260px">
+                <div class="sticky-note coming-soon">
+                    <h2>More comics coming soon!</h2>
+                    <p>Trusty is still drawing them. Check back later, or go <a href="/pages/games.html">play some games</a> while you wait.</p>
+                </div>
+                <div class="sticky-note blue tilt-left coming-soon">
+                    <h2>Can't get enough?</h2>
+                    <p>Meet the star of the show on the <a href="/pages/about.html">About Trusty</a> page, or see him <a href="/pages/viewer.html">in 3D</a>.</p>
+                </div>
             </div>
-    </header>
+        </section>
+    </main>
 
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <h2>Trusty Comics!</h2>
-        <p>This is where we will post comics</p>
-
-        <div class="comic-grid">
-            <div class="comic-item">
-                <img src="../images/horsePlaceholder.jpg" alt="da tractor crew Cover">
-                <h3>da tractor crew</h3>
-                <p>Where it all started! Straight from Mrs. Cabasa's 8th Grade Math Class</p>
-                <a href="comics/datractorcrew/datractorcrew.html">View Comic</a>
-            </div>
-
-            <div class="comic-item">
-                <img src="../images/horsePlaceholder.jpg" alt="Comic 2 Cover">
-                <h3>Comic 2</h3>
-                <p>Something something trusty da horse</p>
-                <a href="#">View Comic</a>
-            </div>
-
-            <div class="comic-item">
-                <img src="../images/horsePlaceholder.jpg" alt="Comic 3 Cover">
-                <h3>Comic 3</h3>
-                <p>Something something trusty da horse</p>
-                <a href="#">View Comic</a>
-            </div>
-        </div>
-    </div>
-
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="../scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-
+    <trusty-footer></trusty-footer>
 </body>
 </html>

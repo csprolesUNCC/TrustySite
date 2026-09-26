@@ -2,83 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Credits - Trusty da Horse</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../images/icon-16x16.png">
-    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Credits — Trusty da Horse</title>
+    <meta name="description" content="Meet the Trusty Team, the people behind Trusty da Horse, plus credits for the assets used on the site.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="The Trusty Team">
+    <meta property="og:description" content="The people behind Trusty da Horse.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <style>
-        .credit-list {
-            list-style: none;
-            padding: 0;
-            text-align: center;
-        }
-
-        .credit-list li {
-            margin: 25px 0;
-            padding: 15px;
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 4px 4px 0px 0px #111;
-            display: inline-block;
-            width: 80%;
-            max-width: 400px;
-        }
-
-        .credit-list h3 {
-            margin-top: 0;
-            border-bottom: 2px dashed #111;
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>The Trusty Team</h1>
-        <div id="auth-component-placeholder">
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Credits</p>
+            <h1>The Trusty Team</h1>
+            <p class="lead">The people who keep Trusty running (and out of trouble, mostly).</p>
+        </header>
+
+        <section class="section-tight container" aria-label="Team">
+            <div class="grid team-grid">
+                <article class="index-card team-card">
+                    <h3><a href="https://csproles.com/blog/index.html" target="_blank" rel="noopener">Carson Sproles</a></h3>
+                    <span class="tag tag-blue">Frontend/Backend Developer</span>
+                    <p>Pushed enough random buttons to get this site up and running for the world to see.</p>
+                </article>
+                <article class="index-card team-card">
+                    <h3>Luke Horne</h3>
+                    <span class="tag tag-green">Game Developer/TrustyGPT AI Integrator</span>
+                    <p>Responsible for connecting TrustyGPT to the world and beyond.</p>
+                </article>
+                <article class="index-card team-card">
+                    <h3>Matthew Jewell</h3>
+                    <span class="tag tag-pink">Marketing &amp; Creative Director</span>
+                    <p>The mind behind the current creative operations of Trusty Da Horse.</p>
+                </article>
+                <article class="index-card team-card">
+                    <h3>Will Ferguson</h3>
+                    <span class="tag tag-gold">Strategic Director</span>
+                    <p>Works with the team to brainstorm effective strategies to spread the word of Trusty.</p>
+                </article>
             </div>
-    </header>
+        </section>
 
-    <nav id="navbar-placeholder"></nav>
+        <section class="section container" aria-labelledby="assets-title">
+            <div class="panel">
+                <h2 class="panel-title" id="assets-title">Assets &amp; thanks</h2>
+                <ul class="credit-list">
+                    <li><span class="credit-what">Stylized lowpoly HORSE</span><span class="credit-who"><a href="https://fab.com/s/ad45f0f604bb" target="_blank" rel="noopener">LucySail</a></span></li>
+                    <li><span class="credit-what">TrustyGPT</span><span class="credit-who">Powered by Gemini</span></li>
+                    <li><span class="credit-what">Isolated horse on white background stock photo</span><span class="credit-who">rusm (iStock)</span></li>
+                    <li><span class="credit-what">Permanent Marker &amp; Caveat typefaces</span><span class="credit-who">Google Fonts</span></li>
+                </ul>
+            </div>
+        </section>
+    </main>
 
-    <div class="content">
-        <h2>Credits</h2>
-        <p>Stylized lowpoly HORSE - LucySail (https://fab.com/s/ad45f0f604bb)</p>
-        <p>TrustyGPT - Powered by Gemini</p>
-        <p>Isolated horse on white background stock photo - rusm (iStock)</p>
-
-        <ul class="credit-list">
-            <li>
-                <h3><a href="https://csproles.com/blog/index.html" target="_blank">Carson Sproles</a></h3>
-                <p>Frontend/Backend Developer</p>
-                <p>Pushed enough random buttons to get this site up and running for the world to see.</p>
-            </li>
-            <li>
-                <h3>Luke Horne</h3>
-                <p>Game Developer/TrustyGPT AI Integrator</p>
-                <p>Responsible for connecting TrustyGPT to the world and beyond.</p>
-            </li>
-            <li>
-                <h3>Matthew Jewell</h3>
-                <p>Marketing & Creative Director</p>
-                <p>The mind behind the current creative operations of Trusty Da Horse.</p>
-            </li>
-            <li>
-                <h3>Will Ferguson</h3>
-                <p>Strategic Director</p>
-                <p>Works with the team to brainstorm effective strategies to spread the word of Trusty.</p>
-            </li>
-        </ul>
-    </div>
-
-    <footer><p id="footer-placeholder"></p></footer>
-    
-    <script src="../scripts/componentLoader.js"></script>
-    <script src="/scripts/loginHandler.js"></script>
-
+    <trusty-footer></trusty-footer>
 </body>
 </html>

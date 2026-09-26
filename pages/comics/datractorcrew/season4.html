@@ -2,171 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Season 4 - Trusty da Horse</title>
-    
-    <link rel="apple-touch-icon" sizes="180x180" href="../../../images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../../../images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../../../images/icon-16x16.png">
-    <link rel="stylesheet" href="../../../styles/stylesheet.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Da Tractor Crew: Season 4 — Trusty da Horse</title>
+    <meta name="description" content="Read Season 4 of Da Tractor Crew, the hand-drawn Trusty da Horse comic. 2 episodes.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Da Tractor Crew: Season 4">
+    <meta property="og:description" content="Read Season 4 of Da Tractor Crew, the hand-drawn Trusty da Horse comic. 2 episodes.">
+    <meta property="og:image" content="https://trustydahorse.com/images/comics/datractorcrew/s1/e1/p1.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    
-    <style>
-        /* Comic Grid Layout */
-        .comic-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .comic-item {
-            padding: 15px;
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 4px 4px 0px 0px #111;
-        }
-        .comic-item img {
-            width: 100%;
-            height: auto;
-            border: 1px solid #111;
-            margin-bottom: 10px;
-        }
-
-        /* The Overlay Reader */
-        #comic-reader {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.95);
-            z-index: 9999;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .reader-content {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #fff;
-            padding: 10px;
-            border: 4px solid #111;
-            box-shadow: 10px 10px 0px #000;
-        }
-        .reader-content img {
-            width: 100%;
-            display: block;
-            margin-bottom: 2px; /* Seamless scroll look */
-            border-bottom: 1px solid #eee;
-        }
-        
-        /* Brutalist Style Close Button */
-        .close-btn {
-            position: sticky;
-            top: 20px;
-            float: right;
-            background: #eee;
-            color: #111;
-            border: 3px solid #111;
-            padding: 12px 24px;
-            cursor: pointer;
-            font-weight: 900;
-            box-shadow: 6px 6px 0px #000;
-            text-transform: uppercase;
-            z-index: 10001;
-        }
-        .close-btn:hover {
-            background: #ff4444;
-            color: white;
-            transform: translate(-2px, -2px);
-            box-shadow: 8px 8px 0px #000;
-        }
-        .close-btn:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px #000;
-        }
-    </style>
 </head>
 <body>
+    <trusty-header></trusty-header>
 
-    <div id="comic-reader">
-        <button class="close-btn" onclick="closeReader()">Close Reader X</button>
-        <div class="reader-content" id="reader-images">
-            </div>
-    </div>
+    <main id="main">
+        <header class="page-head container">
+            <a class="back-link" href="/pages/comics/datractorcrew/datractorcrew.html">Season select</a>
+            <p class="eyebrow">Da Tractor Crew</p>
+            <h1>Season 4</h1>
+            <p class="lead">2 episodes, straight off the notebook paper. Pick one to start reading.</p>
+        </header>
 
-    <header>
-        <div id="click-game-placeholder"></div>
-        <h1>Season 4</h1>
-        <div id="auth-component-placeholder"></div>
-    </header>
-
-    <nav id="navbar-placeholder"></nav>
-
-    <div class="content">
-        <p><a href="datractorcrew.html" style="text-decoration:none; font-weight:bold;">← Back to Season Select</a></p>
-
-        <div class="comic-grid">
-            
-            <div class="comic-item">
-                <img src="../../../images/horsePlaceholder.jpg" alt="Episode 1 Cover">
-                <h3>Episode 1</h3>
-                <a href="javascript:void(0)" class="view-btn" onclick="openReader(1, 5)">View Comic</a>
-            </div>
-
-            <div class="comic-item">
-                <img src="../../../images/horsePlaceholder.jpg" alt="Episode 2 Cover">
-                <h3>Episode 2</h3>
-                <a href="javascript:void(0)" class="view-btn" onclick="openReader(2, 5)">View Comic</a>
+        <section class="section-tight container" aria-label="Episodes">
+            <div class="grid" style="--grid-min: 200px" data-comic="datractorcrew" data-season="s4" data-season-label="Season 4">
+                <article class="card card-link" data-episode="1" data-pages="2">
+                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s4/e1/p1.jpg" alt="" width="1008" height="1330" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <h3 class="card-title"><a href="#ep-1">Episode 1</a></h3>
+                        <p class="episode-meta">2 pages</p>
+                    </div>
+                </article>
+                <article class="card card-link" data-episode="2" data-pages="2">
+                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s4/e2/p1.jpg" alt="" width="1020" height="1330" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <h3 class="card-title"><a href="#ep-2">Episode 2</a></h3>
+                        <p class="episode-meta">2 pages</p>
+                    </div>
+                </article>
             </div>
 
-        </div>
-    </div>
+            <nav class="season-nav" aria-label="Seasons">
+                <a class="btn btn-outline" href="/pages/comics/datractorcrew/season3.html">&larr; Season 3</a>
+                <a class="btn" href="/pages/comics/datractorcrew/datractorcrew.html">All seasons &rarr;</a>
+            </nav>
+        </section>
+    </main>
 
-    <footer><p id="footer-placeholder"></p></footer>
+    <trusty-footer></trusty-footer>
 
-    <script>
-        function openReader(episodeNum, pageCount) {
-            const reader = document.getElementById('comic-reader');
-            const container = document.getElementById('reader-images');
-            
-            // 1. Clear previous content
-            container.innerHTML = '';
-
-            // 2. Loop and add images based on your path:
-            // images/comics/datractorcrew/s1/e[NUM]/p[PAGE].jpg
-            for (let i = 1; i <= pageCount; i++) {
-                const img = document.createElement('img');
-                img.src = `../../../images/comics/datractorcrew/s4/e${episodeNum}/p${i}.jpg`;
-                img.alt = `Episode ${episodeNum} Page ${i}`;
-                
-                // If an image is missing, don't show a broken icon
-                img.onerror = function() { this.style.display = 'none'; };
-                
-                container.appendChild(img);
-            }
-
-            // 3. Show reader and lock scroll
-            reader.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            // Scroll reader to top in case it was open before
-            reader.scrollTop = 0;
-        }
-
-        function closeReader() {
-            document.getElementById('comic-reader').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Close reader if user hits 'Escape' key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === "Escape") closeReader();
-        });
+    <script type="module">
+        import { mountSeason } from '/scripts/comics.js';
+        mountSeason();
     </script>
-    
-    <script src="../../../scripts/componentLoader.js"></script>
-    <script src="../../../scripts/loginHandler.js"></script>
-
 </body>
 </html>
