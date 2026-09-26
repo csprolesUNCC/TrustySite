@@ -36,20 +36,22 @@
 
         <section class="section-tight container tv-layout" aria-label="Trusty TV">
             <div class="tv-main">
-                <div class="tv">
+                <div class="tv" id="tv">
                     <div class="tv-antenna" aria-hidden="true"><span></span><span></span></div>
                     <div class="tv-body">
-                        <div class="tv-bezel">
-                            <div class="tv-screen is-static" id="screen">
-                                <div id="player"></div>
-                                <canvas class="tv-static" id="static" width="160" height="90" aria-hidden="true"></canvas>
-                                <div class="tv-glass" aria-hidden="true"></div>
-                                <p class="tv-bug" aria-hidden="true">Trusty TV <span>21</span></p>
-                                <p class="tv-live" aria-hidden="true"><span class="live-dot"></span>Live</p>
-                                <p class="tv-message" id="message" role="status">Tuning in&hellip;</p>
-                                <button class="tv-hit" type="button" id="screen-btn" aria-label="Turn the sound on">
-                                    <span class="tv-cue">&#128263; Tap for sound</span>
-                                </button>
+                        <div class="tv-front">
+                            <div class="tv-bezel">
+                                <!-- YouTube's rules: nothing may cover the player, so the static only shows while it's hidden. -->
+                                <div class="tv-screen is-static" id="screen">
+                                    <div id="player"></div>
+                                    <canvas class="tv-static" id="static" width="160" height="90" aria-hidden="true"></canvas>
+                                    <p class="tv-message" id="message" role="status">Tuning in&hellip;</p>
+                                </div>
+                            </div>
+                            <div class="tv-plate">
+                                <p class="tv-plate-name" aria-hidden="true">Trusty TV <span>21</span></p>
+                                <p class="tv-plate-live" aria-hidden="true"><span class="live-dot"></span>Live</p>
+                                <button class="tv-cue" type="button" id="cue">&#128263; Tap for sound</button>
                             </div>
                         </div>
                         <div class="tv-panel">
@@ -63,6 +65,7 @@
                                     <button class="tv-knob" type="button" id="volume-knob" aria-label="Sound" aria-pressed="false"></button>
                                     <span class="tv-knob-label" aria-hidden="true">Volume</span>
                                 </div>
+                                <p class="tv-knob-note" id="knob-note" role="status" hidden></p>
                             </div>
                             <div class="tv-speaker" aria-hidden="true"></div>
                             <span class="tv-led" aria-hidden="true"></span>
@@ -101,6 +104,7 @@
         import { buildSchedule, onAir, upNext } from '/scripts/tv-schedule.js';
 
         const $ = (id) => document.getElementById(id);
+        const tv = $('tv');
         const screen = $('screen');
         const schedule = buildSchedule(LINEUP);
         const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -113,9 +117,10 @@
         let current = -1;   // the show loaded in the player
         let broken = -1;    // a show that won't play (deleted, or embedding turned off)
         let soundOn = false;
+        let soundAskedAt = 0;
         let guideFor = -1;
         let knobTurns = 0;
-        let flipTimer = 0;
+        let noteTimer = 0;
         const warned = new Set();
 
         const now = () => Date.now() + skew;
@@ -128,7 +133,7 @@
             return hours ? `${hours}:${String(mins).padStart(2, '0')}:${secs}` : `${mins}:${secs}`;
         }
 
-        /* ---------- Static ---------- */
+        /* ---------- Static (only while there's no picture: tuning in, dead air, or a broken show) ---------- */
 
         const noise = $('static').getContext('2d');
         let noiseRunning = false;
@@ -212,14 +217,14 @@
             if (air.index !== current) {
                 current = air.index;
                 broken = -1;
-                showStatic();
+                hideStatic();
                 player.loadVideoById({ videoId: air.show.id, startSeconds: air.offset });
                 return;
             }
             if (broken === current) return;
             const state = player.getPlayerState();
-            // It's TV, so there's no pausing: if anything stops the picture, carry on from what's airing now.
-            if (state === STATE.PAUSED || state === STATE.CUED) player.playVideo();
+            if (state === STATE.CUED) player.playVideo();
+            // Pausing is allowed; pressing play again jumps back to what's airing now.
             if (checkDrift && state === STATE.PLAYING && Math.abs(player.getCurrentTime() - air.offset) > DRIFT_LIMIT) {
                 player.seekTo(air.offset, true);
             }
@@ -252,9 +257,23 @@
             });
         }
 
+        // YouTube's rules: autoplay only once at least half of the player is on screen.
+        function halfVisible(el) {
+            return new Promise((resolve) => {
+                const watcher = new IntersectionObserver((entries) => {
+                    if (entries.some((entry) => entry.intersectionRatio >= 0.5)) {
+                        watcher.disconnect();
+                        resolve();
+                    }
+                }, { threshold: [0.5] });
+                watcher.observe(el);
+            });
+        }
+
         function startPlayer(YT) {
             const air = onAir(schedule, now());
             current = air.index;
+            hideStatic();
             player = new YT.Player('player', {
                 host: 'https://www.youtube-nocookie.com',
                 width: '100%',
@@ -266,29 +285,22 @@
                 },
                 events: {
                     onReady: () => {
-                        const frame = player.getIframe();
-                        frame.title = 'Trusty TV';
-                        frame.tabIndex = -1;
+                        player.getIframe().title = 'Trusty TV';
                         player.mute();
                         tune(true);
                         player.playVideo();
                     },
                     onStateChange: (e) => {
                         if (e.data === STATE.PLAYING) {
-                            if (!flipTimer) hideStatic();
-                            screen.classList.add('is-on');
+                            hideStatic();
                             checkLength();
                             tune(true);
                         } else if (e.data === STATE.ENDED) {
                             showStatic('Stay tuned!');
-                        } else if (e.data === STATE.PAUSED && soundOn && !document.hidden) {
+                        } else if (e.data === STATE.PAUSED && soundOn && performance.now() - soundAskedAt < 1500) {
                             // Browsers can refuse sound without a real tap. Rather than stop, carry on muted.
+                            setSound(false);
                             player.playVideo();
-                            setTimeout(() => {
-                                if (player.getPlayerState() !== STATE.PAUSED) return;
-                                setSound(false);
-                                player.playVideo();
-                            }, 700);
                         }
                     },
                     onError: () => {
@@ -303,6 +315,7 @@
 
         function setSound(on) {
             soundOn = on;
+            soundAskedAt = performance.now();
             if (player && typeof player.unMute === 'function') {
                 if (on) {
                     player.unMute();
@@ -311,14 +324,13 @@
                     player.mute();
                 }
             }
-            screen.classList.toggle('sound-on', on);
+            tv.classList.toggle('sound-on', on);
             $('sound-btn').textContent = on ? 'Sound off' : 'Sound on';
             $('sound-btn').setAttribute('aria-pressed', String(on));
             $('volume-knob').setAttribute('aria-pressed', String(on));
-            $('screen-btn').setAttribute('aria-label', on ? 'Trusty TV' : 'Turn the sound on');
         }
 
-        $('screen-btn').addEventListener('click', () => { if (!soundOn) setSound(true); });
+        $('cue').addEventListener('click', () => setSound(true));
         $('sound-btn').addEventListener('click', () => setSound(!soundOn));
         $('volume-knob').addEventListener('click', () => setSound(!soundOn));
 
@@ -326,14 +338,11 @@
         $('channel-knob').addEventListener('click', () => {
             knobTurns += 1;
             $('channel-knob').style.setProperty('--turn', `${knobTurns * 60}deg`);
-            showStatic('Only one channel… for now!');
-            clearTimeout(flipTimer);
-            flipTimer = setTimeout(() => {
-                flipTimer = 0;
-                const playing = player && typeof player.getPlayerState === 'function' && player.getPlayerState() === STATE.PLAYING;
-                if (playing && broken !== current) hideStatic();
-                tune(true);
-            }, 1100);
+            const note = $('knob-note');
+            note.textContent = 'Only one channel… for now!';
+            note.hidden = false;
+            clearTimeout(noteTimer);
+            noteTimer = setTimeout(() => { note.hidden = true; }, 1800);
         });
 
         const fullBtn = $('full-btn');
@@ -359,7 +368,9 @@
             let ticks = 0;
             setInterval(() => tune(++ticks % 5 === 0), 1000);
             try {
-                startPlayer(await loadYouTube());
+                const YT = await loadYouTube();
+                await halfVisible(screen);
+                startPlayer(YT);
             } catch {
                 showStatic('Trusty TV can’t reach YouTube right now.');
             }
