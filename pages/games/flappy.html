@@ -100,7 +100,7 @@
                     <ul class="how-to">
                         <li><span class="keys"><kbd>Space</kbd><kbd>&uarr;</kbd></span> Flap (or click / tap the game)</li>
                         <li class="desktop-only"><span class="keys"><kbd>P</kbd></span> Pause</li>
-                        <li><span class="keys">&#127942;</span> Every pencil you clear is a point. Something happens at 10&hellip; and at 20.</li>
+                        <li><span class="keys">&#127942;</span> Fly through a gap to score a point. Something happens at 10&hellip; and at 20.</li>
                     </ul>
                 </div>
 
@@ -403,12 +403,19 @@
                 pipeTimer = 0;
             }
             for (const p of pipes) p.x -= PIPE_SPEED * dt;
-            if (pipes.length && pipes[0].x < -PIPE_W) {
-                pipes.shift();
-                score += 1;
-                milestone();
+            if (pipes.length && pipes[0].x < -PIPE_W) pipes.shift();
+            if (hitsPipe()) {
+                gameOver();
+                return;
             }
-            if (hitsPipe()) gameOver();
+            // Like Flappy Bird, a pencil scores as Trusty's middle passes its middle.
+            for (const p of pipes) {
+                if (!p.scored && p.x + PIPE_W / 2 < HORSE_X + HORSE_W / 2) {
+                    p.scored = true;
+                    score += 1;
+                    milestone();
+                }
+            }
         }
 
         function animateDecor(dt) {
