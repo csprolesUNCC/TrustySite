@@ -72,10 +72,12 @@
                         <div class="stat"><span class="stat-label" id="stat-best-label">Best</span><span class="stat-value" id="stat-best">0%</span></div>
                     </div>
                     <p class="side-note" id="result-message" hidden></p>
+                    <p class="side-note" id="result-tip" hidden></p>
                     <dl class="score-breakdown" id="breakdown" hidden>
-                        <dt>On the lines</dt><dd id="bd-precision"></dd>
-                        <dt>How much of Trusty</dt><dd id="bd-completeness"></dd>
-                        <dt>Too much ink</dt><dd id="bd-penalty"></dd>
+                        <dt>How much of Trusty</dt><dd id="bd-coverage"></dd>
+                        <dt>Clean lines</dt><dd id="bd-precision"></dd>
+                        <dt>Extra ink</dt><dd id="bd-ink"></dd>
+                        <dt>Placement</dt><dd id="bd-placement"></dd>
                     </dl>
                     <p class="side-note" data-auth-show="out">Playing as a guest. <a id="login-link" href="/pages/auth/login.html">Log in</a> to put your drawing on the leaderboard.</p>
                 </div>
@@ -94,7 +96,8 @@
     <script type="module">
         import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
         import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
-        import { DRAW_SIZE, strokeTrusty, referenceCanvas } from '/scripts/draw-reference.js';
+        import { DRAW_SIZE, strokeTrusty } from '/scripts/draw-reference.js';
+        import { gradeDrawing, warmUpGrader } from '/scripts/draw-grader.js';
         import { isForeignKey, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
 
         const MEMORIZE_MS = 2000;
@@ -111,7 +114,6 @@
         let lastY = 0;
         let best = 0;
         let loggedIn = null;
-        let ghosts = null;
 
         /* ---------- HUD ---------- */
 
@@ -152,6 +154,7 @@
             strokeTrusty(ctx, { lineWidth: 6, color: '#000000', lineJoin: 'miter' });
             phase = 'memorize';
             phaseEndsAt = performance.now() + MEMORIZE_MS;
+            setTimeout(warmUpGrader, 0);
             $('done-btn').disabled = true;
             ticker = setInterval(tick, 100);
             tick();
@@ -201,71 +204,24 @@
         canvas.addEventListener('pointerup', endStroke);
         canvas.addEventListener('pointercancel', endStroke);
 
-        /* ---------- Grading (identical to the original algorithm) ---------- */
+        /* ---------- Grading (scripts/draw-grader.js; the server re-grades the same pixels) ---------- */
 
-        function ghostData() {
-            ghosts ||= [6, 25, 50, 70, 140].map((w) =>
-                referenceCanvas(w).getContext('2d').getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data);
-            return ghosts;
-        }
+        const PART_TIPS = {
+            head: 'Don\u2019t forget his big round head.',
+            eyes: 'Trusty has two eyes. Draw them!',
+            mouth: 'Don\u2019t forget his smile.',
+            neck: 'Connect his head to his back with a neck.',
+            back: 'He has one long, straight back.',
+            legs: 'He has four legs, in two pairs.',
+        };
 
-        function score(user) {
-            const [perfect, ghost1, ghost2, ghost3, ghost4] = ghostData();
-            const width = DRAW_SIZE;
-            const height = DRAW_SIZE;
-            const radius = 5;
-            let overlapCount = 0;
-            let totalUserPixels = 0;
-            let perfectUserPixels = 0;
-            let totalRefPixels = 0;
-
-            for (let i = 0; i < user.length; i += 4) {
-                const userAlpha = user[i + 3];
-                const perfectAlpha = perfect[i + 3];
-
-                if (perfectAlpha > 50) {
-                    totalRefPixels++;
-                    const pixelIndex = i / 4;
-                    const x = pixelIndex % width;
-                    const y = Math.floor(pixelIndex / width);
-                    let matched = false;
-                    for (let dx = -radius; dx <= radius && !matched; dx++) {
-                        for (let dy = -radius; dy <= radius; dy++) {
-                            const nx = x + dx;
-                            const ny = y + dy;
-                            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-                            if (user[(ny * width + nx) * 4 + 3] > 50) {
-                                perfectUserPixels++;
-                                matched = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (userAlpha > 100) {
-                    totalUserPixels++;
-                    if (perfectAlpha > 50) overlapCount += 1.05;
-                    else if (ghost1[i + 3] > 50) overlapCount += 0.9;
-                    else if (ghost2[i + 3] > 50) overlapCount += 0.8;
-                    else if (ghost3[i + 3] > 50) overlapCount += 0.7;
-                    else if (ghost4[i + 3] > 50) overlapCount += 0.5;
-                    else overlapCount -= 1.5;
-                }
-            }
-
-            let precision = totalUserPixels > 0 ? overlapCount / totalUserPixels : 0;
-            if (precision > 1) precision = 1;
-            let completeness = totalRefPixels > 0 ? perfectUserPixels / totalRefPixels : 0;
-            if (completeness > 1) completeness = 1;
-
-            const inkRatio = totalRefPixels > 0 ? totalUserPixels / totalRefPixels : 0;
-            const maxAllowedRatio = 1.3;
-            const thicknessPenalty = inkRatio > maxAllowedRatio ? maxAllowedRatio / inkRatio : 1;
-
-            let final = Math.floor(((precision * 0.5) + (completeness * 0.5)) * thicknessPenalty * 100);
-            if (final < 0) final = 0;
-            return { final, precision, completeness, thicknessPenalty };
+        function tipFor(result) {
+            if (result.empty) return 'Draw Trusty before the timer runs out!';
+            if (result.inkFactor < 0.8) return 'Too much ink! Draw each line once instead of scribbling.';
+            if (result.weakestPart) return PART_TIPS[result.weakestPart];
+            if (result.precision < 0.75) return 'Try to keep your lines closer to his shape.';
+            if (result.placement < 0.95) return 'Try to draw him in the same spot and at the same size.';
+            return '';
         }
 
         function pct(n) { return `${Math.round(Math.max(0, n) * 100)}%`; }
@@ -277,7 +233,8 @@
             drawingPointer = null;
             $('done-btn').disabled = true;
 
-            const result = score(ctx.getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data);
+            const result = gradeDrawing(ctx.getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data);
+            result.final = result.score;
             const image = canvas.toDataURL('image/png');
 
             // Reveal the real Trusty underneath the player's drawing.
@@ -308,9 +265,13 @@
                 'The real Trusty is shown in green.',
             ].filter(Boolean).join(' ');
             $('breakdown').hidden = false;
+            $('bd-coverage').textContent = pct(result.coverage);
             $('bd-precision').textContent = pct(result.precision);
-            $('bd-completeness').textContent = pct(result.completeness);
-            $('bd-penalty').textContent = result.thicknessPenalty < 1 ? `−${Math.round((1 - result.thicknessPenalty) * 100)}%` : 'None';
+            $('bd-ink').textContent = result.inkFactor < 1 ? `\u2212${Math.round((1 - result.inkFactor) * 100)}%` : 'None';
+            $('bd-placement').textContent = result.placement < 1 ? `\u2212${Math.round((1 - result.placement) * 100)}%` : 'Spot on';
+            const tip = tipFor(result);
+            $('result-tip').hidden = !tip;
+            $('result-tip').textContent = tip ? `Tip: ${tip}` : '';
             $('restart-btn').focus({ preventScroll: true });
         }
 
@@ -326,7 +287,12 @@
                     return;
                 }
                 if (!res.ok) throw new Error(String(res.status));
-                toast('Drawing saved to the leaderboard!', 'success');
+                const data = await res.json().catch(() => ({}));
+                if (typeof data.score === 'number' && data.score !== final) {
+                    $('stat-last').textContent = `${data.score}%`;
+                    setHud(`${data.score}%!`, 0, null, 'done');
+                }
+                toast(res.status === 201 ? 'Drawing saved to the leaderboard!' : 'Nice drawing! Not a new high score.', res.status === 201 ? 'success' : 'info');
                 await Promise.all([loadPersonalBest(), loadBoard()]);
             } catch {
                 toast('Couldn’t save your drawing. Check your connection.', 'error');

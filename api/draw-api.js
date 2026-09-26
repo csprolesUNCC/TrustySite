@@ -1,9 +1,14 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from '../utils/auth.js';
+import { decodePngDataUrl } from '../utils/png.js';
+import { gradeDrawing, GRADER_VERSION } from '../scripts/draw-grader.js';
 
 // Drawings are shown to every visitor, so only accept a real PNG data URL of sane size.
 const PNG_DATA_URL = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
 const MAX_IMAGE_LENGTH = 1_000_000;
+
+// Scores from older graders aren't comparable, so boards and personal bests only count the current one.
+const CURRENT = { grader: GRADER_VERSION };
 
 export default async (req, res) => {
     const { action } = req.query;
@@ -14,7 +19,7 @@ export default async (req, res) => {
         // --- HANDLER 1: GET LEADERBOARD ---
         if (req.method === 'GET' && action === 'get_leaderboard') {
             const scores = await collection
-                .find({})
+                .find(CURRENT)
                 .project({ name: 1, score: 1, drawing: 1, _id: 0 })
                 .sort({ score: -1, timestamp: 1 })
                 .limit(10)
@@ -28,7 +33,7 @@ export default async (req, res) => {
             if (!user) return res.status(200).json({ highScore: 0 });
 
             const personalHighScore = await collection.findOne(
-                { userId: user.userId },
+                { userId: user.userId, ...CURRENT },
                 { sort: { score: -1 } }
             );
             return res.status(200).json({ highScore: personalHighScore ? personalHighScore.score : 0 });
@@ -39,7 +44,7 @@ export default async (req, res) => {
             const user = authenticateUser(req);
             if (!user) return res.status(401).json({ error: 'Auth required' });
 
-            const { score, image } = req.body; 
+            const { score, image } = req.body;
             if (typeof score !== 'number' || score < 0) {
                 return res.status(400).json({ error: 'Invalid score' });
             }
@@ -47,29 +52,38 @@ export default async (req, res) => {
                 return res.status(400).json({ error: 'Invalid image' });
             }
 
+            // Grade the drawing here rather than trusting the score the browser sent.
+            let graded;
+            try {
+                graded = gradeDrawing(decodePngDataUrl(image, { width: 500, height: 500 }).data).score;
+            } catch {
+                return res.status(400).json({ error: 'Invalid image' });
+            }
+
             const existingScore = await collection.findOne(
-                { userId: user.userId },
+                { userId: user.userId, ...CURRENT },
                 { sort: { score: -1 } }
             );
 
-            if (existingScore && score <= existingScore.score) {
-                return res.status(200).json({ message: 'Not a new high score' });
+            if (existingScore && graded <= existingScore.score) {
+                return res.status(200).json({ message: 'Not a new high score', score: graded });
             }
 
             await collection.updateOne(
                 { userId: user.userId },
-                { 
-                    $set: { 
-                        userId: user.userId, 
-                        name: user.username, 
-                        score: score, 
+                {
+                    $set: {
+                        userId: user.userId,
+                        name: user.username,
+                        score: graded,
                         drawing: image,
-                        timestamp: new Date() 
-                    } 
+                        grader: GRADER_VERSION,
+                        timestamp: new Date()
+                    }
                 },
                 { upsert: true }
             );
-            return res.status(201).json({ message: 'Score saved!' });
+            return res.status(201).json({ message: 'Score saved!', score: graded });
         }
 
         return res.status(400).json({ error: 'Invalid action or method' });

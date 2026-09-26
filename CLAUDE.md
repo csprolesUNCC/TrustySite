@@ -24,7 +24,8 @@ Fan site for "Trusty da Horse", a stick-figure horse drawn on notebook paper: st
 
 ## Games
 
-- Flappy, Draw, Snake, Trustis and Blackjack are self-contained in `pages/games/*.html` (inline module scripts). Physics/scoring constants that affect leaderboards (Flappy's 800×600 world, gravity, pipe gap/speed/spawn, hitbox; Draw's grader and 2s/25s timings) are intentionally identical to the originals so scores stay comparable — don't tweak them casually.
+- Flappy, Draw, Snake, Trustis and Blackjack are self-contained in `pages/games/*.html` (inline module scripts). Flappy's physics (800×600 world, gravity, pipe gap/speed/spawn, hitbox) is intentionally identical to the original so leaderboard scores stay comparable — don't tweak it casually.
+- **Draw Trusty grading** lives in `scripts/draw-grader.js` (pure JS, no DOM) and grades against the shapes in `scripts/draw-reference.js`. The browser grades for instant feedback, and `api/draw-api.js` re-grades the submitted PNG (decoded by `utils/png.js`) with the same module and stores its own score, so client-sent scores are ignored. Scores are tagged with `GRADER_VERSION`; leaderboard and personal-best queries only count the current version. If you change grading behavior, bump `GRADER_VERSION` so old and new scores don't mix.
 - Arcade games (`driving`, `crazycattle`, `gta`, `football`) wrap iframes behind a click-to-load cover. `pages/games/embed/*` are third-party embed files and are left untouched.
 
 ## Backend: `api/` serverless functions (ES modules)
