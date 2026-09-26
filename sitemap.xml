@@ -3,89 +3,138 @@
 
     <url>
         <loc>https://trustydahorse.com/index.html</loc>
-        <lastmod>2025-11-22</lastmod>
+        <lastmod>2026-09-26</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
 
     <url>
         <loc>https://trustydahorse.com/pages/comics.html</loc>
-        <lastmod>2025-11-22</lastmod>
+        <lastmod>2026-09-26</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://trustydahorse.com/pages/about.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>weekly</changefreq>
+        <loc>https://trustydahorse.com/pages/comics/datractorcrew/datractorcrew.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
+        <loc>https://trustydahorse.com/pages/comics/datractorcrew/season1.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/comics/datractorcrew/season2.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.4</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/comics/datractorcrew/season3.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/comics/datractorcrew/season4.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <url>
+        <loc>https://trustydahorse.com/pages/games.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/flappy.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/trustis.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/draw.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/snake.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/casino.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/driving.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/crazycattle.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/gta.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/football.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+
+    <url>
         <loc>https://trustydahorse.com/pages/trustyGPT.html</loc>
-        <lastmod>2025-11-22</lastmod>
+        <lastmod>2026-09-26</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/viewer.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>weekly</changefreq>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
-        <loc>https://trustydahorse.com/pages/games.html</loc>
-        <lastmod>2025-11-23</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <loc>https://trustydahorse.com/pages/leaderboard.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/about.html</loc>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/credits.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>weekly</changefreq>
+        <lastmod>2026-09-26</lastmod>
+        <changefreq>monthly</changefreq>
         <priority>0.5</priority>
     </url>
 
-    <url>
-        <loc>https://trustydahorse.com/games/casino.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    <url>
-        <loc>https://trustydahorse.com/games/flappy.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    <url>
-        <loc>https://trustydahorse.com/games/driving.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    <url>
-        <loc>https://trustydahorse.com/games/crazycattle.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    <url>
-        <loc>https://trustydahorse.com/games/gta.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    <url>
-        <loc>https://trustydahorse.com/games/football.html</loc>
-        <lastmod>2025-11-22</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    <url>
-        <loc>https://trustydahorse.com/games/draw.html</loc>
-        <lastmod>2025-11-23</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-    
 </urlset>

@@ -1,6 +1,10 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from '../utils/auth.js';
 
+// Drawings are shown to every visitor, so only accept a real PNG data URL of sane size.
+const PNG_DATA_URL = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
+const MAX_IMAGE_LENGTH = 1_000_000;
+
 export default async (req, res) => {
     const { action } = req.query;
     try {
@@ -38,6 +42,9 @@ export default async (req, res) => {
             const { score, image } = req.body; 
             if (typeof score !== 'number' || score < 0) {
                 return res.status(400).json({ error: 'Invalid score' });
+            }
+            if (typeof image !== 'string' || image.length > MAX_IMAGE_LENGTH || !PNG_DATA_URL.test(image)) {
+                return res.status(400).json({ error: 'Invalid image' });
             }
 
             const existingScore = await collection.findOne(
