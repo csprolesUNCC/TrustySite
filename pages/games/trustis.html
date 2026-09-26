@@ -202,7 +202,7 @@
         for (const type of TYPES) {
             const art = ART[type];
             STATES[type] = [0, 1, 2, 3].map((s) => {
-                const turns = type === 'O' ? 0 : (s - art.state + 4) % 4;
+                const turns = (s - art.state + 4) % 4;
                 let m = art.cells;
                 for (let i = 0; i < turns; i++) m = rotateCW(m);
                 return m.map((row) => row.map((c) => (c ? { v: c.v, p: c.p, r: turns } : 0)));
@@ -349,8 +349,14 @@
         }
 
         function rotate(dir) {
-            if (state !== 'playing' || piece.type === 'O') return false;
+            if (state !== 'playing') return false;
             const to = (piece.rot + dir + 4) % 4;
+            // The O's shape never changes, so turning it just turns its drawing. As in standard Tetris it
+            // doesn't move or count as a move for the lock delay.
+            if (piece.type === 'O') {
+                piece.rot = to;
+                return true;
+            }
             const tests = (piece.type === 'I' ? KICKS_I : KICKS)[`${piece.rot}>${to}`];
             for (let i = 0; i < tests.length; i++) {
                 const x = piece.x + tests[i][0];
