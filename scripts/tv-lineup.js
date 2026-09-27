@@ -4,7 +4,7 @@
 // Videos must allow embedding (it's on by default, but some music videos turn it off).
 
 export const LINEUP = [
-  { title: 'Big Buck Bunny', link: 'https://youtu.be/RVlvK8WCnJs?si=ufDyzMpTzW_O7A7y', length: '3:46' },
+  { title: 'Among Us and Giraffe', link: 'https://youtu.be/RVlvK8WCnJs?si=ufDyzMpTzW_O7A7y', length: '3:46' },
   { title: 'The Bounty Hunter', link: 'https://youtu.be/Wyemnk-20vw?si=8zWIlwBwHBcb0oaA', length: '4:44' },
   { title: 'The Last Bit of Whiskey', link: 'https://youtu.be/fyVfnF81CKA?si=f0gDN1URCjX9PbtC', length: '2:35' },
   { title: 'Battle of Pharsalus', link: 'https://youtu.be/ndPANVl3xQw?si=DMMPCtenCO1-0d3p', length: '10:30' },
