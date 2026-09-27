@@ -59,13 +59,28 @@ function shuffled(count, loop) {
   return order;
 }
 
+// Shows a run opens with can't be any of the ones that closed the run before, so a video never comes back too
+// soon when the lineup starts over: at least this many other shows air in between.
+export const MIN_GAP = 3;
+
 // Each run through the lineup plays every show once, in its own shuffled order. The order comes from the run's
-// number, so everyone gets the same one. A run never opens with the show that closed the run before it.
+// number, so everyone gets the same one. Only the opening shows ever get swapped (with ones from the middle), so a
+// run's closing shows are exactly its plain shuffle and the run before never has to be fixed up first.
 export function orderFor(schedule, loop) {
-  const count = schedule.shows.length;
+  const { shows } = schedule;
+  const count = shows.length;
   const order = shuffled(count, loop);
-  if (count >= 3 && order[0] === shuffled(count, loop - 1)[count - 1]) {
-    [order[0], order[1]] = [order[1], order[0]];
+  const gap = Math.min(MIN_GAP, Math.floor(count / 3));
+  if (!gap) return order;
+  const closedLast = new Set(shuffled(count, loop - 1).slice(count - gap).map((i) => shows[i].id));
+  for (let i = 0; i < gap; i++) {
+    if (!closedLast.has(shows[order[i]].id)) continue;
+    for (let j = gap; j < count - gap; j++) {
+      if (!closedLast.has(shows[order[j]].id)) {
+        [order[i], order[j]] = [order[j], order[i]];
+        break;
+      }
+    }
   }
   return order;
 }
