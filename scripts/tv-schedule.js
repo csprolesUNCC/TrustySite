@@ -1,6 +1,6 @@
-// Trusty TV's "live" schedule. The lineup plays back to back, forever, starting from a fixed moment, so the
-// time alone says what's on and how far into it we are. Everyone does the same math and sees the same
-// frame, with no server involved. Pure functions (no DOM), so they can be tested anywhere.
+// Trusty TV's "live" schedule. The lineup plays back to back, forever, reshuffled each time round, starting
+// from a fixed moment, so the time alone says what's on and how far into it we are. Everyone does the same
+// math and sees the same frame, with no server involved. Pure functions (no DOM), so they can be tested anywhere.
 
 // When the channel went on air. Changing this or the lineup moves the whole schedule for everyone at once.
 export const ON_AIR_SINCE = Date.UTC(2026, 0, 1);
@@ -23,7 +23,7 @@ export function toSeconds(length) {
 
 export function buildSchedule(lineup) {
   const shows = [];
-  let start = 0;
+  let total = 0;
   for (const entry of lineup) {
     const id = videoId(entry.link);
     const seconds = toSeconds(entry.length);
@@ -31,32 +31,75 @@ export function buildSchedule(lineup) {
       console.warn('Trusty TV: skipping a show with a bad link or length', entry);
       continue;
     }
-    shows.push({ id, title: entry.title || '', start, seconds });
-    start += seconds;
+    shows.push({ id, title: entry.title || '', seconds });
+    total += seconds;
   }
-  return { shows, total: start };
+  return { shows, total };
+}
+
+// A small seeded random generator (mulberry32), so every viewer gets the same "random" numbers.
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffled(count, loop) {
+  const order = Array.from({ length: count }, (_, i) => i);
+  const random = seeded(Math.imul(loop, 0x9e3779b1) ^ 0x7e57);
+  for (let i = count - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+// Each run through the lineup plays every show once, in its own shuffled order. The order comes from the run's
+// number, so everyone gets the same one. A run never opens with the show that closed the run before it.
+export function orderFor(schedule, loop) {
+  const count = schedule.shows.length;
+  const order = shuffled(count, loop);
+  if (count >= 3 && order[0] === shuffled(count, loop - 1)[count - 1]) {
+    [order[0], order[1]] = [order[1], order[0]];
+  }
+  return order;
 }
 
 // What's on at `now` (ms): the show, how many seconds into it, and when it started and ends (ms).
+// `index` is the show's place in the lineup; `slot` counts every airing ever, so it changes with each new show.
 export function onAir(schedule, now, since = ON_AIR_SINCE) {
   const { shows, total } = schedule;
   if (!shows.length) return null;
-  const intoLoop = ((((now - since) / 1000) % total) + total) % total;
+  const elapsed = (now - since) / 1000;
+  const loop = Math.floor(elapsed / total);
+  const intoLoop = elapsed - loop * total;
   const loopStart = now - intoLoop * 1000;
-  let index = shows.length - 1;
-  for (let i = 0; i < shows.length; i++) {
-    if (intoLoop < shows[i].start + shows[i].seconds) {
-      index = i;
+  const order = orderFor(schedule, loop);
+  let position = order.length - 1;
+  let start = 0;
+  for (let i = 0; i < order.length; i++) {
+    if (intoLoop < start + shows[order[i]].seconds || i === order.length - 1) {
+      position = i;
       break;
     }
+    start += shows[order[i]].seconds;
   }
+  const index = order[position];
   const show = shows[index];
   return {
     index,
+    slot: loop * order.length + position,
+    loop,
+    position,
     show,
-    offset: intoLoop - show.start,
-    startsAt: loopStart + show.start * 1000,
-    endsAt: loopStart + (show.start + show.seconds) * 1000,
+    offset: intoLoop - start,
+    startsAt: loopStart + start * 1000,
+    endsAt: loopStart + (start + show.seconds) * 1000,
   };
 }
 
@@ -64,9 +107,15 @@ export function onAir(schedule, now, since = ON_AIR_SINCE) {
 export function upNext(schedule, air, count) {
   const { shows } = schedule;
   const list = [];
+  let { loop, position } = air;
+  let order = orderFor(schedule, loop);
   let startsAt = air.endsAt;
   for (let k = 1; k <= count; k++) {
-    const show = shows[(air.index + k) % shows.length];
+    if (++position >= order.length) {
+      position = 0;
+      order = orderFor(schedule, ++loop);
+    }
+    const show = shows[order[position]];
     list.push({ show, startsAt });
     startsAt += show.seconds * 1000;
   }

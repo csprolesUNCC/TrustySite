@@ -114,7 +114,8 @@
 
         let skew = 0;       // the server's clock minus this device's clock (ms)
         let player = null;
-        let current = -1;   // the show loaded in the player
+        let current = -1;   // the airing (slot) loaded in the player
+        let currentShow = null;
         let broken = -1;    // a show that won't play (deleted, or embedding turned off)
         let soundOn = false;
         let soundAskedAt = 0;
@@ -196,8 +197,8 @@
         /* ---------- Schedule ---------- */
 
         function renderInfo(air) {
-            if (guideFor !== air.index) {
-                guideFor = air.index;
+            if (guideFor !== air.slot) {
+                guideFor = air.slot;
                 $('now-title').textContent = air.show.title || 'Mystery show';
                 $('guide').replaceChildren(...upNext(schedule, air, 5).map(({ show, startsAt }) => h('li', null,
                     h('time', { datetime: new Date(startsAt).toISOString() }, clock.format(startsAt)),
@@ -214,8 +215,9 @@
             if (!air) return;
             renderInfo(air);
             if (!player || typeof player.loadVideoById !== 'function') return;
-            if (air.index !== current) {
-                current = air.index;
+            if (air.slot !== current) {
+                current = air.slot;
+                currentShow = air.show;
                 broken = -1;
                 hideStatic();
                 player.loadVideoById({ videoId: air.show.id, startSeconds: air.offset });
@@ -232,7 +234,7 @@
 
         // Tells whoever edits the lineup when a length is wrong, since the schedule is built from them.
         function checkLength() {
-            const show = schedule.shows[current];
+            const show = currentShow;
             const real = player.getDuration();
             if (!show || !(real > 0) || warned.has(show.id)) return;
             if (Math.abs(real - show.seconds) > 2) {
@@ -272,7 +274,8 @@
 
         function startPlayer(YT) {
             const air = onAir(schedule, now());
-            current = air.index;
+            current = air.slot;
+            currentShow = air.show;
             hideStatic();
             player = new YT.Player('player', {
                 host: 'https://www.youtube-nocookie.com',
@@ -281,6 +284,7 @@
                 videoId: air.show.id,
                 playerVars: {
                     autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3,
+                    cc_load_policy: 0,
                     start: Math.floor(air.offset), origin: location.origin,
                 },
                 events: {
@@ -292,6 +296,10 @@
                     },
                     onStateChange: (e) => {
                         if (e.data === STATE.PLAYING) {
+                            // YouTube turns captions on for muted autoplay (and for viewers who always want them),
+                            // ignoring cc_load_policy, so switch them off each time a show starts.
+                            player.unloadModule('captions');
+                            player.unloadModule('cc');
                             hideStatic();
                             checkLength();
                             tune(true);

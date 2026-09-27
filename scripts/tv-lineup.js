@@ -3,13 +3,16 @@
 // ("10:35", or "1:02:03" for long ones). The length matters: the schedule is built from it.
 // Videos must allow embedding (it's on by default, but some music videos turn it off).
 
-// Placeholder lineup: Blender Foundation open movies, which are free to share.
 export const LINEUP = [
-  { title: 'Big Buck Bunny', link: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', length: '10:35' },
-  { title: 'Caminandes 2: Gran Dillama', link: 'https://www.youtube.com/watch?v=Z4C82eyhwgU', length: '2:26' },
-  { title: 'Spring', link: 'https://www.youtube.com/watch?v=WhWc3b3KhnY', length: '7:44' },
-  { title: 'Coffee Run', link: 'https://www.youtube.com/watch?v=PVGeM40dABA', length: '3:05' },
-  { title: 'Caminandes 3: Llamigos', link: 'https://www.youtube.com/watch?v=SkVqJ1SGeL0', length: '2:30' },
-  { title: 'Agent 327: Operation Barbershop', link: 'https://www.youtube.com/watch?v=mN0zPOpADL4', length: '3:52' },
-  { title: 'Hero', link: 'https://www.youtube.com/watch?v=pKmSdY56VtY', length: '3:57' },
+  { title: 'Big Buck Bunny', link: 'https://youtu.be/RVlvK8WCnJs?si=ufDyzMpTzW_O7A7y', length: '3:46' },
+  { title: 'The Bounty Hunter', link: 'https://youtu.be/Wyemnk-20vw?si=8zWIlwBwHBcb0oaA', length: '4:44' },
+  { title: 'The Last Bit of Whiskey', link: 'https://youtu.be/fyVfnF81CKA?si=f0gDN1URCjX9PbtC', length: '2:35' },
+  { title: 'Battle of Pharsalus', link: 'https://youtu.be/ndPANVl3xQw?si=DMMPCtenCO1-0d3p', length: '10:30' },
+  { title: 'Joe Mama Campaign Ad', link: 'https://youtu.be/AZkeNyEm8AU?si=YJPy_0ApPd9ZM6Pf', length: '1:30' },
+  { title: 'P • A • L • S', link: 'https://youtu.be/VzLsAnyTN1A?si=VjaL88JU2tPldMnc', length: '11:53' },
+  { title: 'Jason and the Golden Belt', link: 'https://youtu.be/XYCBW8dHmns?si=X3FbD8QgH_dQvvul', length: '2:30' },
+  { title: 'iVial', link: 'https://youtu.be/rfA04CM2TPI?si=pDtDiuRjctR2GDET', length: '2:01' },
+  { title: 'Romeo and Juliet', link: 'https://youtu.be/6Y1W_3-QEh4?si=9uLCY3h7u2J6WP43', length: '6:55' },
+  { title: 'The F.O.I.L. Way', link: 'https://youtu.be/jpYaEyM5d4g?si=KS5gxg78y4W9nubi', length: '3:06' },
+  { title: '30,000 Bits Trailer', link: 'https://youtu.be/MlrfqSZlcjA?si=xzNplaGi1q5T_ZK8', length: '1:07' },
 ];
