@@ -118,6 +118,10 @@
         let currentShow = null;
         let broken = -1;    // a show that won't play (deleted, or embedding turned off)
         let soundOn = false;
+        let soundTried = false; // tried turning sound on by itself yet
+        const SOUND_KEY = 'trusty:tv:sound';
+        // Sound is on unless this viewer turned it off last time.
+        let wantSound = (() => { try { return localStorage.getItem(SOUND_KEY) !== '0'; } catch { return true; } })();
         let soundAskedAt = 0;
         let guideFor = -1;
         let knobTurns = 0;
@@ -303,6 +307,14 @@
                             hideStatic();
                             checkLength();
                             tune(true);
+                            // Browsers only allow sound after a tap on the page, so try once it's playing;
+                            // if it's refused, the PAUSED case below carries on muted and the cue shows.
+                            if (wantSound && !soundTried) {
+                                soundTried = true;
+                                setSound(true);
+                                // Some browsers keep it muted without pausing; show the cue then too.
+                                setTimeout(() => { if (soundOn && player.isMuted()) setSound(false); }, 1000);
+                            }
                         } else if (e.data === STATE.ENDED) {
                             showStatic('Stay tuned!');
                         } else if (e.data === STATE.PAUSED && soundOn && performance.now() - soundAskedAt < 1500) {
@@ -321,7 +333,11 @@
 
         /* ---------- Controls ---------- */
 
-        function setSound(on) {
+        function setSound(on, remember = false) {
+            if (remember) {
+                wantSound = on;
+                try { localStorage.setItem(SOUND_KEY, on ? '1' : '0'); } catch { /* storage blocked */ }
+            }
             soundOn = on;
             soundAskedAt = performance.now();
             if (player && typeof player.unMute === 'function') {
@@ -338,9 +354,21 @@
             $('volume-knob').setAttribute('aria-pressed', String(on));
         }
 
-        $('cue').addEventListener('click', () => setSound(true));
-        $('sound-btn').addEventListener('click', () => setSound(!soundOn));
-        $('volume-knob').addEventListener('click', () => setSound(!soundOn));
+        $('cue').addEventListener('click', () => setSound(true, true));
+        $('sound-btn').addEventListener('click', () => setSound(!soundOn, true));
+        $('volume-knob').addEventListener('click', () => setSound(!soundOn, true));
+
+        // If the browser held the sound back, the viewer's first tap or key press anywhere turns it on.
+        function soundOnFirstTouch(e) {
+            if (e.target.closest && e.target.closest('#cue, #sound-btn, #volume-knob')) return;
+            document.removeEventListener('pointerdown', soundOnFirstTouch, true);
+            document.removeEventListener('keydown', soundOnFirstTouch, true);
+            if (wantSound && !soundOn) setSound(true);
+        }
+        if (wantSound) {
+            document.addEventListener('pointerdown', soundOnFirstTouch, true);
+            document.addEventListener('keydown', soundOnFirstTouch, true);
+        }
 
         // There's only one channel, but the knob still turns.
         $('channel-knob').addEventListener('click', () => {
