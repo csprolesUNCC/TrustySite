@@ -18,7 +18,7 @@ export const LINEUP = [
 ];
 
 // Stallion News Network: QGHS news and announcements from the Digital Media and Marketing class
-// (youtube.com/@stallionnewsnetwork676). Plays in episode order.
+// (youtube.com/@stallionnewsnetwork676).
 export const SNN_LINEUP = [
   { title: 'SNN S1 Ep1', link: 'https://youtu.be/sr__Os-QZBI', length: '4:27' },
   { title: 'SNN S1 Ep2', link: 'https://youtu.be/N8T6g0z8hg8', length: '4:02' },
@@ -38,8 +38,7 @@ export const SNN_LINEUP = [
 ];
 
 // The channel knob flips through these in order. `key` is the page's #hash for that channel (e.g. /pages/tv#snn).
-// `shuffle: false` plays the lineup in the order listed instead of reshuffling it each time round.
 export const CHANNELS = [
   { key: 'trusty', number: 21, name: 'Trusty TV', lineup: LINEUP },
-  { key: 'snn', number: 22, name: 'SNN', fullName: 'Stallion News Network', lineup: SNN_LINEUP, shuffle: false },
+  { key: 'snn', number: 22, name: 'SNN', fullName: 'Stallion News Network', lineup: SNN_LINEUP },
 ];

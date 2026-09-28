@@ -106,7 +106,7 @@
         const $ = (id) => document.getElementById(id);
         const tv = $('tv');
         const screen = $('screen');
-        const schedules = CHANNELS.map((c) => buildSchedule(c.lineup, { shuffle: c.shuffle !== false }));
+        const schedules = CHANNELS.map((c) => buildSchedule(c.lineup));
         // Open on the channel in the link (#snn), otherwise the first one.
         let channel = Math.max(0, CHANNELS.findIndex((c) => `#${c.key}` === location.hash));
         let schedule = schedules[channel];
