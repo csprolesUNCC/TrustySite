@@ -194,8 +194,8 @@
   background: var(--ink);
 }
 .tv-knob:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
-#volume-knob { --turn: -120deg; }
-#volume-knob[aria-pressed="true"] { --turn: 100deg; }
+#volume-knob { --turn: -135deg; touch-action: none; cursor: grab; }
+#volume-knob.is-turning { transition: none; }
 .tv-knob-label { font: 800 .6rem/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
 /* Pops up over the speaker grille, so it never covers the screen. */
 .tv-knob-note {

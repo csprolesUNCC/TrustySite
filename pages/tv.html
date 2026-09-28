@@ -62,7 +62,7 @@
                                     <span class="tv-knob-label" aria-hidden="true">Channel</span>
                                 </div>
                                 <div class="tv-knob-wrap">
-                                    <button class="tv-knob" type="button" id="volume-knob" aria-label="Sound" aria-pressed="false"></button>
+                                    <div class="tv-knob" id="volume-knob" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Muted"></div>
                                     <span class="tv-knob-label" aria-hidden="true">Volume</span>
                                 </div>
                                 <p class="tv-knob-note" id="knob-note" role="status" hidden></p>
@@ -120,8 +120,16 @@
         let soundOn = false;
         let soundTried = false; // tried turning sound on by itself yet
         const SOUND_KEY = 'trusty:tv:sound';
+        const VOLUME_KEY = 'trusty:tv:volume';
         // Sound is on unless this viewer turned it off last time.
         let wantSound = (() => { try { return localStorage.getItem(SOUND_KEY) !== '0'; } catch { return true; } })();
+        // The level sound comes back at (1-100); muting leaves it alone.
+        let volume = (() => {
+            try {
+                const saved = Number(localStorage.getItem(VOLUME_KEY));
+                return saved >= 1 && saved <= 100 ? saved : 100;
+            } catch { return 100; }
+        })();
         let soundAskedAt = 0;
         let guideFor = -1;
         let knobTurns = 0;
@@ -343,7 +351,7 @@
             if (player && typeof player.unMute === 'function') {
                 if (on) {
                     player.unMute();
-                    player.setVolume(100);
+                    player.setVolume(volume);
                 } else {
                     player.mute();
                 }
@@ -351,12 +359,82 @@
             tv.classList.toggle('sound-on', on);
             $('sound-btn').textContent = on ? 'Sound off' : 'Sound on';
             $('sound-btn').setAttribute('aria-pressed', String(on));
-            $('volume-knob').setAttribute('aria-pressed', String(on));
+            showVolume();
+        }
+
+        // Turning the dial all the way down mutes; turning it up from there turns the sound on.
+        function setVolume(level) {
+            level = Math.round(Math.max(0, Math.min(100, level)));
+            if (level === 0) {
+                if (soundOn) setSound(false, true);
+                return;
+            }
+            volume = level;
+            try { localStorage.setItem(VOLUME_KEY, String(level)); } catch { /* storage blocked */ }
+            if (!soundOn) setSound(true, true);
+            else if (player && typeof player.setVolume === 'function') player.setVolume(level);
+            showVolume();
+        }
+
+        // The dial turns from -135deg (muted) to 135deg (full).
+        function showVolume() {
+            const level = soundOn ? volume : 0;
+            const knob = $('volume-knob');
+            knob.style.setProperty('--turn', `${-135 + level * 2.7}deg`);
+            knob.setAttribute('aria-valuenow', String(level));
+            knob.setAttribute('aria-valuetext', level ? `${level}%` : 'Muted');
         }
 
         $('cue').addEventListener('click', () => setSound(true, true));
         $('sound-btn').addEventListener('click', () => setSound(!soundOn, true));
-        $('volume-knob').addEventListener('click', () => setSound(!soundOn, true));
+
+        // The volume dial: drag up or right to turn it up, scroll on it, or use the arrow keys.
+        // A click without dragging mutes or unmutes, like the Sound button.
+        const knob = $('volume-knob');
+        const DRAG_FULL = 150; // px of dragging from silent to full
+        let drag = null;
+
+        knob.addEventListener('pointerdown', (e) => {
+            if (!e.isPrimary || e.button > 0) return;
+            e.preventDefault();
+            knob.focus({ preventScroll: true });
+            try { knob.setPointerCapture(e.pointerId); } catch { /* pointer already released */ }
+            drag = { id: e.pointerId, x: e.clientX, y: e.clientY, from: soundOn ? volume : 0, moved: false };
+        });
+        knob.addEventListener('pointermove', (e) => {
+            if (!drag || e.pointerId !== drag.id) return;
+            const dx = e.clientX - drag.x;
+            const dy = e.clientY - drag.y;
+            if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+            drag.moved = true;
+            knob.classList.add('is-turning');
+            setVolume(drag.from + (dx - dy) * (100 / DRAG_FULL));
+        });
+        const endDrag = (e) => {
+            if (!drag || e.pointerId !== drag.id) return;
+            if (!drag.moved && e.type === 'pointerup') setSound(!soundOn, true);
+            drag = null;
+            knob.classList.remove('is-turning');
+        };
+        knob.addEventListener('pointerup', endDrag);
+        knob.addEventListener('pointercancel', endDrag);
+
+        knob.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            setVolume((soundOn ? volume : 0) - Math.sign(e.deltaY) * 5);
+        }, { passive: false });
+
+        knob.addEventListener('keydown', (e) => {
+            const level = soundOn ? volume : 0;
+            const keys = {
+                ArrowUp: level + 5, ArrowRight: level + 5, ArrowDown: level - 5, ArrowLeft: level - 5,
+                PageUp: level + 20, PageDown: level - 20, Home: 0, End: 100,
+            };
+            if (e.key in keys) setVolume(keys[e.key]);
+            else if (e.key === 'Enter' || e.key === ' ') setSound(!soundOn, true);
+            else return;
+            e.preventDefault();
+        });
 
         // If the browser held the sound back, the viewer's first tap or key press anywhere turns it on.
         function soundOnFirstTouch(e) {
