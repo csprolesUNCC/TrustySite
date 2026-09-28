@@ -37,8 +37,14 @@ export const SNN_LINEUP = [
   { title: 'A Day in Digital Media Class', link: 'https://youtu.be/41UovMNTJ9M?si=zJHQR_LkS5GGqXBe', length: '17:53' },
 ];
 
+// SpongeBob SquarePants Official's Season 2 marathon. One video, so it just loops.
+export const SPONGEBOB_LINEUP = [
+  { title: 'SpongeBob: Every Episode from Season 2', link: 'https://youtu.be/CdrhLFYV2xo', length: '3:29:41' },
+];
+
 // The channel knob flips through these in order. `key` is the page's #hash for that channel (e.g. /pages/tv#snn).
 export const CHANNELS = [
   { key: 'trusty', number: 21, name: 'Trusty TV', lineup: LINEUP },
   { key: 'snn', number: 22, name: 'SNN', fullName: 'Stallion News Network', lineup: SNN_LINEUP },
+  { key: 'spongebob', number: 23, name: 'SpongeBob', lineup: SPONGEBOB_LINEUP },
 ];

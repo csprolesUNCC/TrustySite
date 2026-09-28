@@ -216,7 +216,7 @@
             if (guideFor !== air.slot) {
                 guideFor = air.slot;
                 $('now-title').textContent = air.show.title || 'Mystery show';
-                $('guide').replaceChildren(...upNext(schedule, air, 5).map(({ show, startsAt }) => h('li', null,
+                $('guide').replaceChildren(...upNext(schedule, air, schedule.shows.length > 1 ? 5 : 1).map(({ show, startsAt }) => h('li', null,
                     h('time', { datetime: new Date(startsAt).toISOString() }, clock.format(startsAt)),
                     h('span', null, show.title || 'Mystery show'))));
             }
