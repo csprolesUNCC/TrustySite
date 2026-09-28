@@ -96,7 +96,7 @@
     <script type="module">
         import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
         import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
-        import { DRAW_SIZE, strokeTrusty } from '/scripts/draw-reference.js';
+        import { DRAW_SIZE, TRUSTY, strokeTrusty } from '/scripts/draw-reference.js';
         import { gradeDrawing, warmUpGrader } from '/scripts/draw-grader.js';
         import { isForeignKey, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
 
@@ -220,10 +220,35 @@
             legs: 'He has four legs, in two pairs.',
         };
 
-        function tipFor(result) {
+        // Trusty has no ears: spot ink above his head, after lining the drawing up the way the grader did.
+        const HEAD = TRUSTY.find((shape) => shape.part === 'head');
+        const [MID_X, MID_Y] = (() => {
+            const xs = TRUSTY.flatMap((s) => (s.type === 'line' ? [s.x1, s.x2] : [s.cx - s.rx, s.cx + s.rx]));
+            const ys = TRUSTY.flatMap((s) => (s.type === 'line' ? [s.y1, s.y2] : [s.cy - s.ry, s.cy + s.ry]));
+            return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+        })();
+
+        function drewEars(pixels, { dx, dy, scale }) {
+            const top = HEAD.cy - HEAD.ry - 12;
+            const left = HEAD.cx - HEAD.rx - 25;
+            const right = HEAD.cx + HEAD.rx + 25;
+            let ink = 0;
+            for (let y = 0; y < DRAW_SIZE; y++) {
+                const ry = MID_Y + (y - dy - MID_Y) / scale;
+                if (ry >= top) break;
+                for (let x = 0; x < DRAW_SIZE; x++) {
+                    const rx = MID_X + (x - dx - MID_X) / scale;
+                    if (rx > left && rx < right && pixels[(y * DRAW_SIZE + x) * 4 + 3] > 64) ink++;
+                }
+            }
+            return ink >= 80;
+        }
+
+        function tipFor(result, pixels) {
             if (result.empty) return 'Draw Trusty before the timer runs out!';
             if (result.inkFactor < 0.8) return 'Too much ink! Draw each line once instead of scribbling.';
             if (result.weakestPart) return PART_TIPS[result.weakestPart];
+            if (drewEars(pixels, result.offset)) return 'If you’ve drawn an ear, you’ve gone too far.';
             if (result.precision < 0.75) return 'Try to keep your lines closer to his shape.';
             if (result.placement < 0.95) return 'Try to draw him in the same spot and at the same size.';
             return '';
@@ -238,7 +263,8 @@
             drawingPointer = null;
             $('done-btn').disabled = true;
 
-            const result = gradeDrawing(ctx.getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data);
+            const pixels = ctx.getImageData(0, 0, DRAW_SIZE, DRAW_SIZE).data;
+            const result = gradeDrawing(pixels);
             result.final = result.score;
             const image = canvas.toDataURL('image/png');
 
@@ -274,7 +300,7 @@
             $('bd-precision').textContent = pct(result.precision);
             $('bd-ink').textContent = result.inkFactor < 1 ? `\u2212${Math.round((1 - result.inkFactor) * 100)}%` : 'None';
             $('bd-placement').textContent = result.placement < 1 ? `\u2212${Math.round((1 - result.placement) * 100)}%` : 'Spot on';
-            const tip = tipFor(result);
+            const tip = tipFor(result, pixels);
             $('result-tip').hidden = !tip;
             $('result-tip').textContent = tip ? `Tip: ${tip}` : '';
             $('restart-btn').focus({ preventScroll: true });
