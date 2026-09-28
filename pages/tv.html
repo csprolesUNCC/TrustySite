@@ -29,7 +29,7 @@
 
     <main id="main">
         <header class="page-head container tv-head">
-            <p class="eyebrow">Channel 21</p>
+            <p class="eyebrow" id="channel-number">Channel 21</p>
             <h1>Trusty TV</h1>
             <p class="lead">Always on. Tune in and you're watching the same thing as everyone else, right now.</p>
         </header>
@@ -49,7 +49,7 @@
                                 </div>
                             </div>
                             <div class="tv-plate">
-                                <p class="tv-plate-name" aria-hidden="true">Trusty TV <span>21</span></p>
+                                <p class="tv-plate-name" id="plate-name" aria-hidden="true">Trusty TV <span>21</span></p>
                                 <p class="tv-plate-live" aria-hidden="true"><span class="live-dot"></span>Live</p>
                                 <button class="tv-cue" type="button" id="cue">&#128263; Tap for sound</button>
                             </div>
@@ -100,13 +100,17 @@
 
     <script type="module">
         import { h } from '/scripts/site.js';
-        import { LINEUP } from '/scripts/tv-lineup.js';
+        import { CHANNELS } from '/scripts/tv-lineup.js';
         import { buildSchedule, onAir, upNext } from '/scripts/tv-schedule.js';
 
         const $ = (id) => document.getElementById(id);
         const tv = $('tv');
         const screen = $('screen');
-        const schedule = buildSchedule(LINEUP);
+        const schedules = CHANNELS.map((c) => buildSchedule(c.lineup, { shuffle: c.shuffle !== false }));
+        // Open on the channel in the link (#snn), otherwise the first one.
+        let channel = Math.max(0, CHANNELS.findIndex((c) => `#${c.key}` === location.hash));
+        let schedule = schedules[channel];
+        let holdUntil = 0; // a moment of static between channels
         const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
         const STATE = { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED: 5 };
         const DRIFT_LIMIT = 2.5; // seconds out of step with the schedule before jumping back to live
@@ -226,7 +230,7 @@
             const air = onAir(schedule, now());
             if (!air) return;
             renderInfo(air);
-            if (!player || typeof player.loadVideoById !== 'function') return;
+            if (!player || typeof player.loadVideoById !== 'function' || performance.now() < holdUntil) return;
             if (air.slot !== current) {
                 current = air.slot;
                 currentShow = air.show;
@@ -448,15 +452,37 @@
             document.addEventListener('keydown', soundOnFirstTouch, true);
         }
 
-        // There's only one channel, but the knob still turns.
+        function showChannel() {
+            const c = CHANNELS[channel];
+            $('channel-number').textContent = `Channel ${c.number}`;
+            $('plate-name').replaceChildren(`${c.name} `, h('span', null, String(c.number)));
+        }
+
+        // The channel knob flips to the next channel, with a moment of static in between.
         $('channel-knob').addEventListener('click', () => {
             knobTurns += 1;
             $('channel-knob').style.setProperty('--turn', `${knobTurns * 60}deg`);
+            channel = (channel + 1) % CHANNELS.length;
+            schedule = schedules[channel];
+            current = -1;
+            guideFor = -1;
+            broken = -1;
+            const c = CHANNELS[channel];
+            showChannel();
+            history.replaceState(null, '', `#${c.key}`);
             const note = $('knob-note');
-            note.textContent = 'Only one channel… for now!';
+            note.textContent = `${c.number}: ${c.fullName || c.name}`;
             note.hidden = false;
             clearTimeout(noteTimer);
             noteTimer = setTimeout(() => { note.hidden = true; }, 1800);
+            if (!schedule.shows.length) {
+                showStatic('Off the air');
+                return;
+            }
+            showStatic();
+            holdUntil = performance.now() + 400;
+            tune(); // the guide updates now; the picture after the static
+            setTimeout(() => tune(), 400);
         });
 
         const fullBtn = $('full-btn');
@@ -473,6 +499,7 @@
 
         /* ---------- Go ---------- */
 
+        showChannel();
         showStatic('Tuning in…');
         if (!schedule.shows.length) {
             showStatic('Off the air');

@@ -21,7 +21,8 @@ export function toSeconds(length) {
   return parts.reduce((total, p) => total * 60 + Number(p), 0);
 }
 
-export function buildSchedule(lineup) {
+// `shuffle: false` keeps the lineup's own order every time round.
+export function buildSchedule(lineup, { shuffle = true } = {}) {
   const shows = [];
   let total = 0;
   for (const entry of lineup) {
@@ -34,7 +35,7 @@ export function buildSchedule(lineup) {
     shows.push({ id, title: entry.title || '', seconds });
     total += seconds;
   }
-  return { shows, total };
+  return { shows, total, shuffle };
 }
 
 // A small seeded random generator (mulberry32), so every viewer gets the same "random" numbers.
@@ -71,6 +72,7 @@ export const MIN_GAP = 5;
 export function orderFor(schedule, loop) {
   const { shows } = schedule;
   const count = shows.length;
+  if (schedule.shuffle === false) return Array.from({ length: count }, (_, i) => i);
   const order = shuffled(count, loop);
   const gap = Math.min(MIN_GAP, Math.floor((count - 1) / 2));
   if (!gap) return order;

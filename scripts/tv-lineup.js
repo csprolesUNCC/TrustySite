@@ -1,5 +1,5 @@
-// Trusty TV's lineup. Shows play in this order, back to back, forever, and everyone watching sees the same
-// moment, like real TV. For each show give its YouTube link and its exact length as shown on YouTube
+// Trusty TV's channels and their lineups. Shows play back to back, forever, and everyone watching sees the
+// same moment, like real TV. For each show give its YouTube link and its exact length as shown on YouTube
 // ("10:35", or "1:02:03" for long ones). The length matters: the schedule is built from it.
 // Videos must allow embedding (it's on by default, but some music videos turn it off).
 
@@ -15,4 +15,31 @@ export const LINEUP = [
   { title: 'Romeo and Juliet', link: 'https://youtu.be/6Y1W_3-QEh4?si=9uLCY3h7u2J6WP43', length: '6:55' },
   { title: 'The F.O.I.L. Way', link: 'https://youtu.be/jpYaEyM5d4g?si=KS5gxg78y4W9nubi', length: '3:06' },
   { title: '30,000 Bits Trailer', link: 'https://youtu.be/MlrfqSZlcjA?si=xzNplaGi1q5T_ZK8', length: '1:07' },
+];
+
+// Stallion News Network: QGHS news and announcements from the Digital Media and Marketing class
+// (youtube.com/@stallionnewsnetwork676). Plays in episode order.
+export const SNN_LINEUP = [
+  { title: 'SNN S1 Ep1', link: 'https://youtu.be/sr__Os-QZBI', length: '4:27' },
+  { title: 'SNN S1 Ep2', link: 'https://youtu.be/N8T6g0z8hg8', length: '4:02' },
+  { title: 'SNN S1 Ep3', link: 'https://youtu.be/ZCIF-koma34', length: '4:41' },
+  { title: 'SNN S1 Ep4', link: 'https://youtu.be/3vvc0kIYSo8', length: '4:09' },
+  { title: 'SNN S1 Ep5', link: 'https://youtu.be/oxwiAQ1y7aQ', length: '2:56' },
+  { title: 'SNN S1 Ep6', link: 'https://youtu.be/YEK5QgOEnvg', length: '3:15' },
+  { title: 'SNN S1 Ep7: Halloween Special', link: 'https://youtu.be/-pA6fR4WBbU', length: '5:51' },
+  { title: 'SNN S2 Ep1', link: 'https://youtu.be/Fs1_WoJIWPs', length: '5:43' },
+  { title: 'SNN S2 Ep2: Thanksgiving Special', link: 'https://youtu.be/13aNS7lGMFc', length: '7:23' },
+  { title: 'SNN S2 Ep3: Christmas Special', link: 'https://youtu.be/XJW0RdRjCiY', length: '14:58' },
+  { title: 'SNN S3 Ep1', link: 'https://youtu.be/ZiJOI5ihEgI', length: '5:49' },
+  { title: 'SNN S3 Ep2', link: 'https://youtu.be/Q6Butuk7_nE', length: '2:46' },
+  { title: 'SNN S3 Ep3', link: 'https://youtu.be/7dQsVk2fc6w', length: '3:05' },
+  { title: 'SNN S3 Ep4', link: 'https://youtu.be/1SOjl9ZLTo0', length: '4:00' },
+  { title: 'A Day in Digital Media Class', link: 'https://youtu.be/41UovMNTJ9M?si=zJHQR_LkS5GGqXBe', length: '17:53' },
+];
+
+// The channel knob flips through these in order. `key` is the page's #hash for that channel (e.g. /pages/tv#snn).
+// `shuffle: false` plays the lineup in the order listed instead of reshuffling it each time round.
+export const CHANNELS = [
+  { key: 'trusty', number: 21, name: 'Trusty TV', lineup: LINEUP },
+  { key: 'snn', number: 22, name: 'SNN', fullName: 'Stallion News Network', lineup: SNN_LINEUP, shuffle: false },
 ];
