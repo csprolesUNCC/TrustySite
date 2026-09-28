@@ -59,25 +59,30 @@ function shuffled(count, loop) {
   return order;
 }
 
-// Shows a run opens with can't be any of the ones that closed the run before, so a video never comes back too
-// soon when the lineup starts over: at least this many other shows air in between.
-export const MIN_GAP = 3;
+// A video never comes back too soon when the lineup starts over: at least this many other shows air in between.
+// It can be at most half the lineup (rounded down, not counting one show), so with 11 shows it tops out at 5.
+export const MIN_GAP = 5;
 
 // Each run through the lineup plays every show once, in its own shuffled order. The order comes from the run's
-// number, so everyone gets the same one. Only the opening shows ever get swapped (with ones from the middle), so a
-// run's closing shows are exactly its plain shuffle and the run before never has to be fixed up first.
+// number, so everyone gets the same one. A show that aired k from the end of the run before (0 for the last one)
+// can't come back before position gap - k. Only the opening shows ever get swapped (with later ones, never the
+// closing shows), so a run's closing shows are exactly its plain shuffle and the run before never has to be fixed
+// up first. There's always a show that fits as long as the lineup has more than twice `gap` shows.
 export function orderFor(schedule, loop) {
   const { shows } = schedule;
   const count = shows.length;
   const order = shuffled(count, loop);
-  const gap = Math.min(MIN_GAP, Math.floor(count / 3));
+  const gap = Math.min(MIN_GAP, Math.floor((count - 1) / 2));
   if (!gap) return order;
-  const closedLast = new Set(shuffled(count, loop - 1).slice(count - gap).map((i) => shows[i].id));
-  for (let i = 0; i < gap; i++) {
-    if (!closedLast.has(shows[order[i]].id)) continue;
-    for (let j = gap; j < count - gap; j++) {
-      if (!closedLast.has(shows[order[j]].id)) {
-        [order[i], order[j]] = [order[j], order[i]];
+  const before = shuffled(count, loop - 1);
+  const fromEnd = new Map();
+  for (let k = gap - 1; k >= 0; k--) fromEnd.set(shows[before[count - 1 - k]].id, k);
+  const earliest = (i) => (fromEnd.has(shows[i].id) ? gap - fromEnd.get(shows[i].id) : 0);
+  for (let p = 0; p < gap; p++) {
+    if (earliest(order[p]) <= p) continue;
+    for (let j = p + 1; j < count - gap; j++) {
+      if (earliest(order[j]) <= p) {
+        [order[p], order[j]] = [order[j], order[p]];
         break;
       }
     }
