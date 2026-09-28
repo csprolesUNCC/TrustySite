@@ -15,6 +15,9 @@ export const LINEUP = [
   { title: 'Romeo and Juliet', link: 'https://youtu.be/6Y1W_3-QEh4?si=9uLCY3h7u2J6WP43', length: '6:55' },
   { title: 'The F.O.I.L. Way', link: 'https://youtu.be/jpYaEyM5d4g?si=KS5gxg78y4W9nubi', length: '3:06' },
   { title: '30,000 Bits Trailer', link: 'https://youtu.be/MlrfqSZlcjA?si=xzNplaGi1q5T_ZK8', length: '1:07' },
+  { title: 'Trusty Finds His Knife', link: 'https://youtu.be/acWwr3mZf6Y?si=1752VqCP99G9A2Vm', length: '2:38' },
+  { title: 'How to Make Yourself Tasty', link: 'https://youtu.be/D_rinbKA44Q?si=hXh8_ueUWLynKNOB', length: '1:45' },
+  { title: 'Trusty Plays Fortnite', link: 'https://youtu.be/Cv_ADrofdBk?si=8rXKmHtphrGrbItb', length: '9:13' },
 ];
 
 // Stallion News Network: QGHS news and announcements from the Digital Media and Marketing class
