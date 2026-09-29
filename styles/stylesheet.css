@@ -998,6 +998,22 @@ trusty-footer { display: block; }
 
 /* A gentle bob that tips his head (on the left) up */
 .trusty-bob { animation: bob 3.2s ease-in-out infinite; transform-origin: 40% 90%; }
+/* Home page Trusty: click him and he neighs */
+.hero-neigh {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* The wiggle runs on the drawing itself (not the button), so it keeps blending into the paper */
+.hero-neigh.is-neighing img { animation: bob 3.2s ease-in-out infinite, neigh .5s var(--ease-out); }
+@keyframes neigh {
+  25% { rotate: -4deg; scale: 1.04; }
+  55% { rotate: 3deg; }
+}
 @keyframes bob {
   0%, 100% { transform: translateY(0) rotate(0); }
   50% { transform: translateY(-6px) rotate(1.2deg); }

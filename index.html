@@ -38,7 +38,7 @@
                     </div>
                 </div>
                 <figure class="hero-art">
-                    <img class="ink trusty-bob" src="/images/trusty.png" alt="Trusty da Horse: a smiling stick-figure horse with a round head and a very long back" width="1536" height="1173" fetchpriority="high">
+                    <button type="button" class="hero-neigh" id="hero-neigh" aria-label="Trusty da Horse: a smiling stick-figure horse with a round head and a very long back. Click him to hear him neigh."><img class="ink trusty-bob" src="/images/trusty.png" alt="" width="1536" height="1173" fetchpriority="high"></button>
                     <figcaption class="hand" aria-hidden="true">&#8601; this is Trusty. say hi</figcaption>
                 </figure>
             </div>
@@ -171,6 +171,17 @@
 
     <script type="module">
         import { h } from '/scripts/site.js';
+        import { sound } from '/scripts/game-kit.js';
+
+        // Click Trusty and he neighs (quiet if sound is muted in the games).
+        const neigh = sound('/sound/horse.m4a');
+        const heroTrusty = document.getElementById('hero-neigh');
+        heroTrusty.addEventListener('click', () => {
+            neigh.play();
+            heroTrusty.classList.remove('is-neighing');
+            void heroTrusty.offsetWidth;
+            heroTrusty.classList.add('is-neighing');
+        });
         import { loadWeather, doodle, trustySays, labelOf, nowPhrase } from '/scripts/weather.js';
 
         // Trusty Weather card: shows the forecast once the viewer has shared their location; the button
