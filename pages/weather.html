@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Weather — Trusty da Horse</title>
+    <meta name="description" content="Your local forecast, delivered by Trusty da Horse, the most trusted horse in weather.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Weather">
+    <meta property="og:description" content="Your local forecast, delivered by the most trusted horse in weather.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/weather.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Trusty Weather</p>
+            <h1>Weatherman Trusty</h1>
+            <p class="lead">Your local forecast, delivered by the most trusted horse in weather.</p>
+        </header>
+
+        <section class="section-tight container" aria-label="Forecast">
+            <div class="wx" id="wx" data-state="idle">
+                <div class="wx-main">
+                    <figure class="wx-anchor">
+                        <div class="wx-bubble" id="wx-say" aria-live="polite"><p>Let me take a look outside…</p></div>
+                        <img class="ink trusty-bob wx-trusty" src="/images/trusty.png" alt="Trusty da Horse, your weatherman" width="1536" height="1173">
+                    </figure>
+                    <div class="card wx-board" id="wx-board"></div>
+                </div>
+                <div id="wx-more"></div>
+            </div>
+            <p class="wx-credit muted small">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>. Your location stays on your device; it's only used to look up your weather.</p>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h } from '/scripts/site.js';
+        import { loadWeather, doodle, trustySays, labelOf } from '/scripts/weather.js';
+
+        const wx = document.getElementById('wx');
+        const say = document.getElementById('wx-say');
+        const board = document.getElementById('wx-board');
+        const more = document.getElementById('wx-more');
+
+        const STATES = {
+            ask: {
+                say: "Want to know what it's like out there? I'll need to see where you are.",
+                title: "What's it like out there?",
+                text: 'Trusty checks the sky wherever you are. Your browser will ask to share your location first.',
+                button: 'Show my weather',
+                art: 'partly',
+            },
+            loading: {
+                say: 'Hold on, checking the sky…',
+                title: 'Checking the sky…',
+                text: 'Finding your spot and grabbing the forecast.',
+                art: 'partly',
+            },
+            denied: {
+                say: "I can't see where you are, so I can't see your sky.",
+                title: 'Location is off',
+                text: "Turn on location for this site in your browser's settings, then refresh the page.",
+                art: 'fog',
+            },
+            unsupported: {
+                say: "I can't see where you are, so I can't see your sky.",
+                title: 'No location here',
+                text: "This browser can't share its location, so Trusty can't find your weather.",
+                art: 'fog',
+            },
+            error: {
+                say: 'My weather radar is on the fritz.',
+                title: "Couldn't get the forecast",
+                text: 'Something went wrong reaching the weather service. Give it another shot.',
+                button: 'Try again',
+                art: 'storm',
+            },
+        };
+
+        const stat = (name, value) => h('div', null, h('dt', null, name), h('dd', null, value));
+        const uvWord = (uv) => (uv < 3 ? 'low' : uv < 6 ? 'moderate' : uv < 8 ? 'high' : 'very high');
+
+        function showReport(r) {
+            const day = r.evening ? r.tomorrow : r.today;
+            const label = labelOf(r.now.kind, r.now.night);
+            say.replaceChildren(h('p', null, trustySays(r).long));
+            board.replaceChildren(
+                h('p', { class: 'wx-place' }, r.place || 'Your area'),
+                h('div', { class: 'wx-now' },
+                    h('div', { class: 'wx-now-art' }, doodle(r.now.kind, r.now.night, label)),
+                    h('div', null,
+                        h('p', { class: 'wx-now-temp' }, r.now.temp),
+                        h('p', { class: 'wx-now-label' }, label),
+                        h('p', { class: 'wx-now-feels' }, `Feels like ${r.now.feels}`))),
+                h('h2', { class: 'wx-stats-title' }, r.evening ? 'Tomorrow' : 'Today'),
+                h('dl', { class: 'wx-stats' },
+                    stat('High', day.high),
+                    stat('Low', day.low),
+                    stat('Rain', `${day.rain}%`),
+                    stat('Wind', day.wind),
+                    stat('UV', `${day.uv} (${uvWord(day.uv)})`),
+                    stat(r.sun.label, r.sun.time)));
+            more.replaceChildren(h('section', { class: 'panel wx-hours-panel', 'aria-labelledby': 'wx-hours-title' },
+                h('h2', { class: 'panel-title', id: 'wx-hours-title' }, 'Next 12 hours'),
+                h('ol', { class: 'wx-hours' }, r.hours.map((hour) => h('li', null,
+                    h('span', { class: 'wx-hour-time' }, hour.label),
+                    h('span', { class: 'wx-hour-art' }, doodle(hour.kind, hour.night, labelOf(hour.kind, hour.night))),
+                    h('span', { class: 'wx-hour-temp' }, hour.temp),
+                    hour.rain >= 20
+                        ? h('span', { class: 'wx-hour-rain', 'aria-label': `${hour.rain}% chance of rain` }, `${hour.rain}%`)
+                        : h('span', { class: 'wx-hour-rain' }))))));
+        }
+
+        function show(status, report) {
+            wx.dataset.state = status;
+            if (status === 'ready') {
+                showReport(report);
+                return;
+            }
+            const s = STATES[status];
+            say.replaceChildren(h('p', null, s.say));
+            board.replaceChildren(
+                h('div', { class: 'wx-board-art' }, doodle(s.art)),
+                h('h2', { class: 'wx-board-title' }, s.title),
+                h('p', { class: 'wx-board-text' }, s.text),
+                s.button && h('button', { type: 'button', class: 'btn btn-lg btn-highlight', onclick: () => run(true) }, s.button));
+            more.replaceChildren();
+        }
+
+        let busy = false;
+        async function run(ask) {
+            if (busy) return;
+            busy = true;
+            // Only show "checking" if it takes a moment, so viewers who haven't shared don't see a flash.
+            const slow = setTimeout(() => show('loading'), ask ? 0 : 300);
+            const { status, report } = await loadWeather({ ask });
+            clearTimeout(slow);
+            busy = false;
+            show(status, report);
+        }
+
+        run(false);
+    </script>
+</body>
+</html>

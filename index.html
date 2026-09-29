@@ -116,6 +116,15 @@
 
         <section class="section container" aria-label="More Trusty">
             <div class="teasers">
+                <article class="card card-link teaser wx-teaser" id="wx-card">
+                    <div class="wx-teaser-art" id="wx-card-art"><img class="ink" src="/images/mobile-icon.png" alt="" width="180" height="180" loading="lazy" decoding="async"></div>
+                    <div>
+                        <p class="speech" id="wx-card-speech">Want the forecast?</p>
+                        <h3 class="card-title"><a href="/pages/weather.html">Trusty Weather</a></h3>
+                        <p id="wx-card-text">Trusty checks the sky wherever you are and tells you what today looks like.</p>
+                        <button type="button" class="btn btn-sm btn-highlight" id="wx-card-btn" hidden>What's the weather?</button>
+                    </div>
+                </article>
                 <article class="card card-link teaser">
                     <img class="teaser-avatar" src="/images/chat_pic.jpg" alt="" width="96" height="96" loading="lazy" decoding="async">
                     <div>
@@ -159,5 +168,58 @@
     </main>
 
     <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h } from '/scripts/site.js';
+        import { loadWeather, doodle, trustySays, labelOf, nowPhrase } from '/scripts/weather.js';
+
+        // Trusty Weather card: shows the forecast once the viewer has shared their location; the button
+        // is the only thing that asks for it.
+        const art = document.getElementById('wx-card-art');
+        const speech = document.getElementById('wx-card-speech');
+        const text = document.getElementById('wx-card-text');
+        const button = document.getElementById('wx-card-btn');
+        const face = art.firstElementChild;
+
+        const STATES = {
+            ask: ['Want the forecast?', 'Trusty checks the sky wherever you are and tells you what today looks like.'],
+            loading: ['Checking the sky…', 'Finding your spot and grabbing the forecast.'],
+            denied: ["I can't see your sky!", "Turn on location for this site in your browser's settings to get Trusty's forecast."],
+            unsupported: ["I can't see your sky!", "This browser can't share its location, so Trusty can't find your weather."],
+            error: ['My radar is on the fritz.', "Couldn't get the forecast right now."],
+        };
+
+        function show(status, r) {
+            button.hidden = status !== 'ask' && status !== 'error';
+            button.textContent = status === 'error' ? 'Try again' : "What's the weather?";
+            if (status === 'ready') {
+                const day = r.evening ? r.tomorrow : r.today;
+                const label = labelOf(r.now.kind, r.now.night);
+                art.replaceChildren(doodle(r.now.kind, r.now.night, label));
+                speech.textContent = trustySays(r).short;
+                text.replaceChildren(
+                    h('strong', null, `${r.now.temp} and ${nowPhrase(r.now.kind, r.now.night)}`),
+                    ` in ${r.place || 'your area'}. ${r.evening ? 'Tomorrow' : 'Today'}: high ${day.high}, low ${day.low}, ${day.rain}% chance of rain.`);
+                return;
+            }
+            art.replaceChildren(face);
+            [speech.textContent, text.textContent] = STATES[status];
+        }
+
+        let busy = false;
+        async function run(ask) {
+            if (busy) return;
+            busy = true;
+            // Only show "checking" if it takes a moment, so viewers who haven't shared don't see a flash.
+            const slow = setTimeout(() => show('loading'), ask ? 0 : 300);
+            const { status, report } = await loadWeather({ ask });
+            clearTimeout(slow);
+            busy = false;
+            show(status, report);
+        }
+
+        button.addEventListener('click', () => run(true));
+        run(false);
+    </script>
 </body>
 </html>

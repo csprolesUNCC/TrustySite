@@ -260,7 +260,7 @@ class TrustyFooter extends HTMLElement {
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('p', null, 'Comics, games, and a state of the art AI horse. Drawn in the margins since 8th grade math.')),
-        col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['Trusty TV', '/pages/tv.html'], ['TrustyGPT', '/pages/trustyGPT.html'], ['3D Trusty', '/pages/viewer.html']]),
+        col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['Trusty TV', '/pages/tv.html'], ['Trusty Weather', '/pages/weather.html'], ['TrustyGPT', '/pages/trustyGPT.html'], ['3D Trusty', '/pages/viewer.html']]),
         col('More', [['Leaderboards', '/pages/leaderboard.html'], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
         h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),
