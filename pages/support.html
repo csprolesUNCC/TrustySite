@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Support — Trusty da Horse</title>
+    <meta name="description" content="Something broken? Trusty Support gets a real person from the Trusty team into a chat with you.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Support">
+    <meta property="og:description" content="Tell Trusty what's wrong and he'll drag someone from the team into a chat with you.">
+    <meta property="og:image" content="https://trustydahorse.com/images/chat_pic.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container chat-layout">
+            <aside class="chat-intro">
+                <img class="chat-hero-avatar" src="/images/chat_pic.jpg" alt="" width="120" height="120">
+                <p class="eyebrow" id="intro-eyebrow">Real humans. Probably.</p>
+                <h1>Trusty Support</h1>
+                <p class="lead" id="intro-lead">Something broken? Tell Trusty. He'll pick someone from the team at random (Luke, Will, Matthew or Carson) and drag them into a chat with you.</p>
+                <p class="small muted chat-disclaimer" id="intro-note">They get an email, so it can take a while. Your chat stays on this device, so you can leave and come back to it.</p>
+            </aside>
+
+            <section class="chat-card" aria-label="Support chat">
+                <div class="chat-head">
+                    <img src="/images/chat_pic.jpg" alt="" width="40" height="40">
+                    <div class="chat-head-text">
+                        <div class="chat-head-title">Trusty Support</div>
+                        <div class="chat-status" id="chat-status">Online</div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" type="button" id="chat-end" hidden>End chat</button>
+                    <button class="btn btn-ghost btn-sm" type="button" id="chat-new" hidden>New chat</button>
+                </div>
+
+                <div class="chat-log support-log" id="chat-log" role="log" aria-live="polite" aria-label="Conversation"></div>
+
+                <form class="chat-input" id="chat-form">
+                    <label class="sr-only" for="chat-input">Message</label>
+                    <textarea id="chat-input" rows="1" placeholder="Type a message..." autocomplete="off" enterkeyhint="send" maxlength="1000"></textarea>
+                    <button class="btn" type="submit" id="chat-send" aria-label="Send">
+                        <span class="btn-label">Send</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.2c5-.3 10-.2 15.5 0M13.6 6.2c2 2 4 3.9 5.9 6-2 2-3.9 3.9-5.9 5.8"/></svg>
+                    </button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, sessionReady } from '/scripts/site.js';
+
+        // A visitor's chat lives in localStorage; a teammate arrives from the email link, whose hash
+        // carries the chat id and their key. The server decides which side a key belongs to.
+        const STORE = 'trusty:support:chat';
+        const POLL_MS = 3000;
+        const POLL_HIDDEN_MS = 10000;
+
+        const log = document.getElementById('chat-log');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('chat-send');
+        const status = document.getElementById('chat-status');
+        const endBtn = document.getElementById('chat-end');
+        const newBtn = document.getElementById('chat-new');
+        const baseTitle = document.title;
+
+        const load = () => { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } };
+        const save = (value) => { try { localStorage.setItem(STORE, JSON.stringify(value)); } catch { /* storage blocked */ } };
+        const forget = () => { try { localStorage.removeItem(STORE); } catch { /* storage blocked */ } };
+
+        const linkParams = new URLSearchParams(location.hash.slice(1));
+        const fromLink = Boolean(linkParams.get('chat') && linkParams.get('key'));
+
+        let chat = null;      // { id, key }
+        let intake = null;    // { step: 'name' | 'problem', name } while Trusty is asking questions
+        let state = null;     // last poll response
+        let role = 'visitor';
+        let count = 0;        // messages already shown
+        let pending = [];     // rows for messages sent but not yet seen in a poll
+        let unread = 0;
+        let pollTimer = 0;
+        let polling = false;
+        let pollAgain = false;
+        let busy = false;
+
+        /* ---------- Rendering ---------- */
+
+        function nameOf(from) {
+            if (from === 'agent') return state?.agent || 'Support';
+            if (from === 'visitor') return state?.visitor || 'Visitor';
+            return 'Trusty';
+        }
+
+        function avatar(from) {
+            if (from === 'trusty') return h('img', { class: 'msg-avatar', src: '/images/chat_pic.jpg', alt: '' });
+            return h('span', { class: 'msg-avatar msg-initial', 'aria-hidden': 'true' }, nameOf(from).charAt(0).toUpperCase());
+        }
+
+        function addMessage(from, content, { error = false } = {}) {
+            let row;
+            if (from === 'system') {
+                row = h('p', { class: 'msg-system' }, content);
+            } else {
+                const mine = from === role;
+                row = h('div', { class: `msg ${mine ? 'msg-user' : 'msg-bot'}${error ? ' msg-error' : ''}` },
+                    mine ? null : avatar(from),
+                    h('div', { class: 'msg-bubble' }, h('span', { class: 'sr-only' }, `${mine ? 'You' : nameOf(from)}: `), content));
+            }
+            log.append(row);
+            log.scrollTop = log.scrollHeight;
+            return row;
+        }
+
+        const trusty = (text, opts) => addMessage('trusty', text, opts);
+
+        function typing() {
+            return trusty(h('span', { class: 'typing', role: 'img', 'aria-label': 'Trusty is typing' }, h('span'), h('span'), h('span')));
+        }
+
+        function setStatus(text, away) {
+            status.textContent = text;
+            status.classList.toggle('is-busy', Boolean(away));
+        }
+
+        function setInput(enabled, placeholder) {
+            input.disabled = !enabled;
+            sendBtn.disabled = !enabled || busy;
+            input.placeholder = placeholder;
+        }
+
+        function autosize() {
+            input.style.height = 'auto';
+            input.style.height = `${Math.min(input.scrollHeight + 4, 150)}px`;
+        }
+
+        function showUnread() {
+            document.title = unread ? `(${unread}) ${baseTitle}` : baseTitle;
+        }
+
+        /* ---------- Intake: Trusty asks who you are and what's wrong ---------- */
+
+        async function startIntake(opening) {
+            chat = null;
+            state = null;
+            role = 'visitor';
+            count = 0;
+            pending = [];
+            clearTimeout(pollTimer);
+            log.replaceChildren();
+            endBtn.hidden = true;
+            newBtn.hidden = true;
+            setStatus('Online');
+
+            const { loggedIn, username } = await sessionReady;
+            if (opening) trusty(opening);
+            if (loggedIn && username) {
+                intake = { step: 'problem', name: username };
+                trusty(`Trusty Support. What's going on, ${username}?`);
+                setInput(true, 'Describe the problem...');
+            } else {
+                intake = { step: 'name' };
+                trusty('Trusty Support. Who am I talking to?');
+                setInput(true, 'Your name...');
+            }
+        }
+
+        async function answerIntake(text) {
+            addMessage('visitor', text);
+            if (intake.step === 'name') {
+                intake = { step: 'problem', name: text.replace(/\s+/g, ' ').slice(0, 40) };
+                trusty(`Alright ${intake.name}. What's the problem?`);
+                setInput(true, 'Describe the problem...');
+                return;
+            }
+
+            busy = true;
+            setInput(false, 'Getting someone...');
+            setStatus('Finding someone...', true);
+            const dots = typing();
+            let data = {};
+            let ok = false;
+            try {
+                const res = await fetch('/api/support?action=start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: intake.name, message: text }),
+                });
+                data = await res.json().catch(() => ({}));
+                ok = res.ok && data.id && data.key;
+            } catch {
+                data = { error: "I can't reach the support desk. Check your connection." };
+            }
+            dots.remove();
+            busy = false;
+
+            if (!ok) {
+                trusty(data.error || 'Something went wrong. Try again.', { error: true });
+                setStatus('Online');
+                setInput(true, 'Describe the problem...');
+                return;
+            }
+
+            state = { agent: data.agent, visitor: intake.name };
+            intake = null;
+            chat = { id: data.id, key: data.key };
+            save(chat);
+            count = 1; // their first message is already on screen
+            trusty(`Hang tight, I'm getting ${data.agent} on the line. They'll show up right here. You can leave and come back; this chat will wait for you.`);
+            poll();
+        }
+
+        /* ---------- Live chat ---------- */
+
+        function apply(data) {
+            const first = !state || !state.role;
+            state = data;
+            role = data.role;
+
+            if (first && role === 'agent') {
+                document.getElementById('intro-eyebrow').textContent = 'Support duty';
+                document.getElementById('intro-lead').textContent = `Trusty picked you to help ${data.visitor}. Reply here and they'll see it within a few seconds.`;
+                document.getElementById('intro-note').textContent = 'Keep this tab open while you chat. If you leave, they get told you stepped away.';
+            }
+
+            // Responses can overlap, so only add messages past what's already shown.
+            const start = data.total - data.messages.length;
+            for (const msg of data.messages.slice(Math.max(0, count - start))) {
+                if (msg.from === role && pending.length) {
+                    pending.shift().classList.remove('msg-pending');
+                    continue;
+                }
+                addMessage(msg.from, msg.text);
+                if (msg.from !== role && document.hidden) unread += 1;
+            }
+            count = Math.max(count, data.total);
+            showUnread();
+
+            const other = role === 'agent' ? data.visitor : data.agent;
+            if (data.status === 'closed') {
+                setStatus('Chat ended', true);
+                setInput(false, 'This chat has ended.');
+                endBtn.hidden = true;
+                newBtn.hidden = role !== 'visitor';
+            } else {
+                if (role === 'visitor' && !data.agentJoined) setStatus(`Waiting for ${other}...`, true);
+                else setStatus(data.otherHere ? `${other} is here` : `${other} stepped away`, !data.otherHere);
+                setInput(true, role === 'agent' ? `Reply to ${data.visitor}...` : `Message ${other}...`);
+                endBtn.hidden = false;
+                newBtn.hidden = true;
+            }
+        }
+
+        function lost() {
+            if (fromLink) {
+                trusty("This chat link doesn't work. Check you copied the whole thing from the email.", { error: true });
+                setStatus('Not found', true);
+                setInput(false, 'Chat not found');
+            } else {
+                forget();
+                startIntake("I lost track of your last chat, so let's start fresh.");
+            }
+        }
+
+        async function poll() {
+            if (!chat) return;
+            if (polling) { pollAgain = true; return; }
+            polling = true;
+            clearTimeout(pollTimer);
+            try {
+                const res = await fetch(`/api/support?id=${encodeURIComponent(chat.id)}&after=${count}`, {
+                    headers: { 'X-Support-Key': chat.key },
+                    cache: 'no-store',
+                });
+                if (res.status === 404) { polling = false; lost(); return; }
+                if (res.ok) apply(await res.json());
+            } catch { /* offline for a moment; try again next tick */ }
+            polling = false;
+            if (pollAgain) { pollAgain = false; poll(); return; }
+            if (state?.status !== 'closed') pollTimer = setTimeout(poll, document.hidden ? POLL_HIDDEN_MS : POLL_MS);
+        }
+
+        async function send(text) {
+            const row = addMessage(role, text);
+            row.classList.add('msg-pending');
+            pending.push(row);
+            try {
+                const res = await fetch('/api/support?action=send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Support-Key': chat.key },
+                    body: JSON.stringify({ id: chat.id, text }),
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || "That message didn't send.");
+                }
+            } catch (err) {
+                pending = pending.filter((r) => r !== row);
+                row.remove();
+                if (!input.value) { input.value = text; autosize(); }
+                trusty(err instanceof TypeError ? "That message didn't send. Check your connection." : err.message, { error: true });
+            }
+            poll();
+        }
+
+        async function endChat() {
+            if (!chat || !confirm('End this chat?')) return;
+            endBtn.disabled = true;
+            try {
+                await fetch('/api/support?action=close', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Support-Key': chat.key },
+                    body: JSON.stringify({ id: chat.id }),
+                });
+            } catch { /* the next poll shows whether it ended */ }
+            endBtn.disabled = false;
+            poll();
+        }
+
+        /* ---------- Wiring ---------- */
+
+        function submit() {
+            const text = input.value.trim();
+            if (!text || busy || input.disabled) return;
+            input.value = '';
+            autosize();
+            if (intake) answerIntake(text);
+            else if (chat) send(text);
+        }
+
+        form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+        input.addEventListener('input', autosize);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                submit();
+            }
+        });
+        endBtn.addEventListener('click', endChat);
+        newBtn.addEventListener('click', () => { forget(); startIntake(); input.focus(); });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            unread = 0;
+            showUnread();
+            poll();
+        });
+
+        const saved = load();
+        if (fromLink) {
+            chat = { id: linkParams.get('chat'), key: linkParams.get('key') };
+            setStatus('Connecting...', true);
+            setInput(false, 'Connecting...');
+            poll();
+        } else if (saved?.id && saved?.key) {
+            chat = saved;
+            setStatus('Connecting...', true);
+            setInput(false, 'Connecting...');
+            trusty("Welcome back. Here's your support chat.");
+            poll();
+        } else {
+            startIntake();
+        }
+    </script>
+</body>
+</html>
