@@ -32,7 +32,10 @@ export default async (req, res) => {
 
     try {
         const { db } = await connectToDatabase();
-        const { email, password } = req.body;
+
+        // Normalize the email so lookups aren't case-sensitive
+        const email = req.body?.email?.trim().toLowerCase();
+        const password = req.body?.password;
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Missing required fields.' });
@@ -40,7 +43,12 @@ export default async (req, res) => {
 
         const usersCollection = db.collection('users');
 
-        const user = await usersCollection.findOne({ email });
+        // Collation matches old accounts stored with mixed-case emails.
+        // Once all emails are migrated to lowercase you can remove the collation option.
+        const user = await usersCollection.findOne(
+            { email },
+            { collation: { locale: 'en', strength: 2 } }
+        );
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials.' });
         }
