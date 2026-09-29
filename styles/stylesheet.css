@@ -986,15 +986,13 @@ trusty-footer { display: block; }
   transform: rotate(5deg);
   font-size: 1.6rem;
 }
+/* Stuck over the bottom edge of the sheet, below Trusty's back. It's in the flow and grows downward,
+   so a long update pushes the page down instead of climbing up over Trusty. */
 .hero-note {
-  position: absolute;
-  right: clamp(12px, 3vw, 44px);
-  bottom: -52px;
-  width: min(290px, 28vw);
+  position: relative;
   z-index: 2;
-}
-@media (min-width: 901px) {
-  .hero { padding-bottom: 36px; }
+  width: min(290px, 28vw);
+  margin: -52px clamp(12px, 3vw, 44px) 0 auto;
 }
 .hero-note p { font-size: .98rem; }
 
@@ -1050,6 +1048,32 @@ trusty-footer { display: block; }
   font-weight: 650;
 }
 
+/* Hand-drawn weather icons from scripts/weather.js (home card and the weather page) */
+.doodle { display: block; width: 100%; height: auto; overflow: visible; fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.doodle .sun { fill: var(--highlight); }
+.doodle .moon { fill: var(--note-yellow); }
+.doodle .cloud { fill: #fff; }
+.doodle .cloud-dark { fill: #d9dce2; }
+.doodle .drop, .doodle .flake { stroke: var(--blue); }
+.doodle .bolt { fill: var(--gold); }
+
+/* Trusty Weather card on the home page: full width above the other teasers */
+.wx-teaser { grid-column: 1 / -1; }
+.wx-teaser-art {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  padding: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--note-blue);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.wx-teaser-art img { width: 100%; height: auto; }
+/* Above the card's stretched link, so tapping it asks for the location instead of opening the page */
+.wx-teaser .btn { position: relative; z-index: 2; }
+
 .cta-band {
   display: flex;
   flex-wrap: wrap;
@@ -1080,6 +1104,7 @@ trusty-footer { display: block; }
   .hero { padding-bottom: 12px; }
   .teaser { gap: 16px; align-items: start; }
   .teaser-avatar { width: 64px; height: 64px; }
+  .wx-teaser-art { width: 64px; height: 64px; padding: 9px; }
   .teaser-thumb { width: 88px; }
 }
 @media (max-width: 520px) {
