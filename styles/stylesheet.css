@@ -832,6 +832,7 @@ trusty-footer { display: block; }
   animation: plus-one .7s var(--ease-out) forwards;
 }
 @keyframes plus-one { to { transform: translateY(-26px) rotate(-8deg); opacity: 0; } }
+.plus-one.slow-down { left: 4px; font-size: .85rem; white-space: nowrap; animation-duration: 1s; }
 
 .menu-toggle {
   display: none;
