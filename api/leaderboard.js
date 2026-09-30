@@ -10,7 +10,7 @@ export default async (req, res) => {
         const collection = db.collection('click_game');
 
         const leaderboard = await collection
-            .find({})
+            .find({}, { projection: { recent: 0 } })
             .sort({ clicks: -1 })
             .toArray();
 

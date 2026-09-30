@@ -3,6 +3,7 @@
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
 const FACE = '/images/mobile-icon.png';
+const CLICK_LIMIT = 3; // header clicker: clicks per second
 
 function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
 function lsSet(key, value) { try { localStorage.setItem(key, value); } catch { /* storage blocked */ } }
@@ -218,7 +219,26 @@ function setupClicker(button) {
     render();
   };
 
+  // At most CLICK_LIMIT clicks per second (api/clicks.js enforces the same limit).
+  const recent = [];
+  let slowNote = null;
+  const tooFast = () => {
+    const now = performance.now();
+    while (recent.length && now - recent[0] >= 1000) recent.shift();
+    if (recent.length >= CLICK_LIMIT) return true;
+    recent.push(now);
+    return false;
+  };
+
   button.addEventListener('click', async () => {
+    if (tooFast()) {
+      if (!slowNote) {
+        slowNote = h('span', { class: 'plus-one slow-down', 'aria-hidden': 'true' }, 'Slow down!');
+        slowNote.addEventListener('animationend', () => { slowNote.remove(); slowNote = null; });
+        button.append(slowNote);
+      }
+      return;
+    }
     inFlight += 1;
     render();
     const plus = h('span', { class: 'plus-one', 'aria-hidden': 'true' }, '+1');
