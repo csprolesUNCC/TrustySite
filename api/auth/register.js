@@ -11,7 +11,7 @@ export default async (req, res) => {
         const { db } = await connectToDatabase();
 
         const username = req.body?.username?.trim();
-        // Always store emails in lowercase
+        // Store emails in lowercase
         const email = req.body?.email?.trim().toLowerCase();
         const password = req.body?.password;
 
