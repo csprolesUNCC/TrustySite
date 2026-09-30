@@ -101,8 +101,11 @@ const NAV = [
   { href: '/pages/comics.html', label: 'Comics', section: '/pages/comics' },
   { href: '/pages/games.html', label: 'Games', section: '/pages/games' },
   { href: '/pages/tv.html', label: 'Trusty TV' },
-  { href: '/pages/trustyGPT.html', label: 'TrustyGPT' },
-  { href: '/pages/viewer.html', label: '3D Trusty' },
+  { href: '/pages/tools.html', label: 'Trusty Tools', items: [
+    { href: '/pages/trustyGPT.html', label: 'TrustyGPT' },
+    { href: '/pages/viewer.html', label: '3D Trusty' },
+    { href: '/pages/weather.html', label: 'Trusty Weather' },
+  ] },
   { href: '/pages/leaderboard.html', label: 'Leaderboards' },
   { href: '/pages/about.html', label: 'About' },
 ];
@@ -113,13 +116,27 @@ function currentState(item) {
   const here = normPath(location.pathname);
   if (here === normPath(item.href)) return 'page';
   if (item.section && here.startsWith(item.section + '/')) return 'true';
+  if (item.items && item.items.some(currentState)) return 'true';
   return null;
 }
 
-function navList() {
-  return h('ul', null, NAV.map((item) =>
-    h('li', null, h('a', { href: item.href, 'aria-current': currentState(item) }, item.label))));
+const navLink = (item) => h('a', { href: item.href, 'aria-current': currentState(item) }, item.label);
+
+// The header nav shows a group as its page link plus a caret that drops down its items;
+// the mobile menu lists the items indented under the group's link.
+function navList({ dropdowns = false } = {}) {
+  return h('ul', null, NAV.map((item) => {
+    if (!item.items) return h('li', null, navLink(item));
+    const items = item.items.map((child) => h('li', null, navLink(child)));
+    if (!dropdowns) return h('li', null, navLink(item), h('ul', { class: 'mobile-sub' }, items));
+    const id = `nav-${item.label.toLowerCase().replace(/\W+/g, '-')}`;
+    const toggle = h('button', { type: 'button', class: 'nav-drop-toggle', 'aria-expanded': 'false', 'aria-controls': id, 'aria-label': `${item.label} menu` });
+    toggle.innerHTML = ICON_CARET;
+    return h('li', { class: 'nav-drop' }, navLink(item), toggle, h('ul', { class: 'nav-drop-menu', id }, items));
+  }));
 }
+
+const ICON_CARET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.4c2.1 1.9 4 3.7 6.1 5.4 1.9-1.9 3.8-3.6 5.9-5.6"/></svg>';
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path class="icon-open" d="M4 7c5-.6 11 .4 16-.2M4 12.2c6 .4 10-.5 16 0M4 17.4c4-.4 10 .3 16-.3"/><path class="icon-close" d="M6.2 6c4 4 7.8 8.2 11.8 12.2M18 5.8C14 10 10 14 6 18.2"/></svg>';
 
@@ -162,7 +179,7 @@ class TrustyHeader extends HTMLElement {
           h('a', { class: 'brand', href: '/index.html', 'aria-label': 'Trusty da Horse — home' },
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
-          h('nav', { class: 'site-nav', 'aria-label': 'Main' }, navList()),
+          h('nav', { class: 'site-nav', 'aria-label': 'Main' }, navList({ dropdowns: true })),
           h('div', { class: 'header-actions' }, clicker, desktopAccount, toggle)),
         menu));
 
@@ -175,8 +192,22 @@ class TrustyHeader extends HTMLElement {
     document.addEventListener('trusty:session', renderAccount);
 
     setupMenu(toggle, menu);
+    this.querySelectorAll('.nav-drop').forEach(setupDropdown);
     setupClicker(clicker);
   }
+}
+
+// Mouse users get the dropdown on hover (in CSS); the caret opens it for touch and keyboard.
+function setupDropdown(group) {
+  const toggle = group.querySelector('.nav-drop-toggle');
+  const setOpen = (open) => toggle.setAttribute('aria-expanded', String(open));
+  const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
+  toggle.addEventListener('click', () => setOpen(!isOpen()));
+  group.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) { setOpen(false); toggle.focus(); }
+  });
+  group.addEventListener('focusout', (e) => { if (!group.contains(e.relatedTarget)) setOpen(false); });
+  document.addEventListener('click', (e) => { if (isOpen() && !group.contains(e.target)) setOpen(false); });
 }
 
 function setupMenu(toggle, menu) {
@@ -280,7 +311,7 @@ class TrustyFooter extends HTMLElement {
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('p', null, 'Comics, games, and a state of the art AI horse. Drawn in the margins since 8th grade math.')),
-        col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['Trusty TV', '/pages/tv.html'], ['Trusty Weather', '/pages/weather.html'], ['TrustyGPT', '/pages/trustyGPT.html'], ['3D Trusty', '/pages/viewer.html']]),
+        col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['Trusty TV', '/pages/tv.html'], ['Trusty Tools', '/pages/tools.html'], ['TrustyGPT', '/pages/trustyGPT.html'], ['3D Trusty', '/pages/viewer.html'], ['Trusty Weather', '/pages/weather.html']]),
         col('More', [['Leaderboards', '/pages/leaderboard.html'], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
         h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),

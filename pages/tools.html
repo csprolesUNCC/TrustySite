@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Tools — Trusty da Horse</title>
+    <meta name="description" content="Chat with TrustyGPT, spin Trusty around in 3D, and get your local forecast from Trusty Weather.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty's Toolbox">
+    <meta property="og:description" content="State of the art horse technology: an AI Trusty, a 3D Trusty, and a weather Trusty.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Trusty's Toolbox</p>
+            <h1>Trusty Tools</h1>
+            <p class="lead">State of the art horse technology. Chat with him, spin him around, or let him tell you the weather!</p>
+        </header>
+
+        <section class="section-tight container" aria-labelledby="tools-title">
+            <div class="section-head">
+                <div>
+                    <h2 id="tools-title">The Toolbox</h2>
+                    <p>Everything Trusty can do for you besides comics and games.</p>
+                </div>
+            </div>
+
+            <div class="grid" style="--grid-min: 290px">
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/chat_pic.jpg" alt="" width="612" height="522" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-gold">AI</li><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/trustyGPT.html">TrustyGPT</a></h3>
+                        <p>Your favorite AI horse. The experimental assistant here to help take over the world!</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img src="/images/3dSample.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag">AR on phones</li><li class="tag">Touch-friendly</li></ul>
+                        <h3 class="card-title"><a href="/pages/viewer.html">3D Trusty</a></h3>
+                        <p>Spin him, zoom in, or put him in your room with AR.</p>
+                    </div>
+                </article>
+                <article class="card card-link">
+                    <div class="card-media"><img class="ink" src="/images/trusty.png" alt="" width="1536" height="1173" loading="lazy" decoding="async"></div>
+                    <div class="card-body">
+                        <ul class="tags"><li class="tag tag-new">New</li><li class="tag tag-quiet">Uses your location</li></ul>
+                        <h3 class="card-title"><a href="/pages/weather.html">Trusty Weather</a></h3>
+                        <p>Trusty checks the sky wherever you are and tells you what today looks like.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+</body>
+</html>
