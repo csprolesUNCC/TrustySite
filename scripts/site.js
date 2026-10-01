@@ -83,6 +83,17 @@ export function onSession(callback) {
   document.addEventListener('trusty:session', (e) => callback(e.detail));
 }
 
+// For when a protected API answers 401: the login cookie expired, so show the page logged out.
+export function sessionExpired() {
+  session.clear();
+  publishSession();
+}
+
+// Pages that hand out clicks (Trusty TV) report the new total so the header clicker keeps up.
+export function announceClicks(clicks, added) {
+  document.dispatchEvent(new CustomEvent('trusty:clicks', { detail: { clicks, added } }));
+}
+
 export async function logout() {
   session.clear();
   try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* cookie expires anyway */ }
@@ -278,8 +289,7 @@ function setupClicker(button) {
     try {
       const res = await fetch('/api/clicks', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       if (res.status === 401) {
-        session.clear();
-        publishSession();
+        sessionExpired();
         return;
       }
       if (res.ok) accept(await res.json());
@@ -288,6 +298,16 @@ function setupClicker(button) {
       inFlight -= 1;
       render();
     }
+  });
+
+  // Clicks earned elsewhere on the page (watching Trusty TV) float up as +N like a click does.
+  document.addEventListener('trusty:clicks', (e) => {
+    accept(e.detail);
+    render();
+    if (button.hidden || !(e.detail.added > 0)) return;
+    const plus = h('span', { class: 'plus-one', 'aria-hidden': 'true' }, `+${e.detail.added}`);
+    button.append(plus);
+    plus.addEventListener('animationend', () => plus.remove());
   });
 
   load();

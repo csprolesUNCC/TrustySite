@@ -92,6 +92,8 @@
                     <ol class="tv-guide" id="guide"></ol>
                 </div>
                 <p class="tv-note">Shows play back to back, all day, every day. Everyone watching sees the same moment, so tell your friends to tune in.</p>
+                <p class="tv-note" data-auth-show="in">Every 5 seconds you watch earns you 5 clicks for your Trusty clicker.<span id="earned"></span></p>
+                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you watch earns you 5 clicks for your Trusty clicker.</p>
             </aside>
         </section>
     </main>
@@ -99,7 +101,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h } from '/scripts/site.js';
+        import { h, fmt, session, sessionExpired, announceClicks, loginHref } from '/scripts/site.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
         import { buildSchedule, onAir, upNext } from '/scripts/tv-schedule.js';
 
@@ -343,6 +345,56 @@
             });
         }
 
+        /* ---------- Watch rewards ---------- */
+
+        // A logged-in viewer earns 5 clicks for every REWARD_EVERY seconds a show is actually
+        // playing on screen (api/clicks.js gives them out and enforces the same pace).
+        const REWARD_EVERY = 5;
+        let watched = 0;   // seconds watched toward the next reward
+        let earned = 0;    // clicks earned this visit
+        let rewarding = false;
+
+        function watching() {
+            return session.loggedIn && !document.hidden && player && typeof player.getPlayerState === 'function'
+                && broken !== current && !screen.classList.contains('is-static')
+                && player.getPlayerState() === STATE.PLAYING;
+        }
+
+        async function reward() {
+            rewarding = true;
+            try {
+                const res = await fetch('/api/clicks?action=tv', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                if (res.status === 401) {
+                    sessionExpired();
+                    return;
+                }
+                if (res.status === 429) {
+                    // A hair too soon for the server (a slow request before this one, or another tab
+                    // watching too), so these seconds still count: try again next second.
+                    watched = Math.max(watched, REWARD_EVERY - 1);
+                    return;
+                }
+                if (!res.ok) return;
+                const data = await res.json();
+                earned += Number(data.added) || 0;
+                $('earned').textContent = ` You've earned ${fmt(earned)} so far.`;
+                announceClicks(data.clicks, data.added);
+            } catch { /* offline: this one doesn't count */ }
+            finally {
+                rewarding = false;
+            }
+        }
+
+        // Runs once a second.
+        function watchTick() {
+            if (!watching()) return;
+            watched += 1;
+            if (watched >= REWARD_EVERY && !rewarding) {
+                watched = 0;
+                reward();
+            }
+        }
+
         /* ---------- Controls ---------- */
 
         function setSound(on, remember = false) {
@@ -499,6 +551,7 @@
 
         /* ---------- Go ---------- */
 
+        $('login-link').href = loginHref();
         showChannel();
         showStatic('Tuning in…');
         if (!schedule.shows.length) {
@@ -507,7 +560,10 @@
             await syncClock();
             tune();
             let ticks = 0;
-            setInterval(() => tune(++ticks % 5 === 0), 1000);
+            setInterval(() => {
+                tune(++ticks % 5 === 0);
+                watchTick();
+            }, 1000);
             try {
                 const YT = await loadYouTube();
                 await halfVisible(screen);
