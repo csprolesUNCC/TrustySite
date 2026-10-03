@@ -78,7 +78,7 @@
         const status = document.getElementById('chat-status');
         const suggestions = document.getElementById('chat-suggestions');
         const GREETING = 'whaddup';
-        // The conversation so far, sent with each message so Trusty remembers it (the server keeps the last few turns).
+        // The whole conversation so far, sent with each message so Trusty remembers it.
         let history = [];
         let busy = false;
 
@@ -155,7 +155,6 @@
             typing.remove();
             if (reply !== null) {
                 history.push({ role: 'user', text }, { role: 'model', text: reply });
-                history = history.slice(-20);
                 addMessage('bot', formatReply(reply));
             } else {
                 const row = addMessage('bot', errorText, { error: true });
