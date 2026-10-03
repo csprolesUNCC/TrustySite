@@ -102,7 +102,111 @@ export function letterStates(guesses, answer) {
   return states;
 }
 
-const SQUARES = { correct: '🟩', present: '🟨', absent: '⬜' };
+/* ---------- Game history (shared by the page and api/trustle-api.js) ---------- */
+
+// A player's history is { [puzzle number]: game }. A game is { guesses: ['HORSE', ...], hint: bool }.
+// Days played before history was kept are { legacy: true, won, tries }, rebuilt from the old stats.
+
+// A safe copy of one game for puzzle `n`, or null if it doesn't make sense.
+export function cleanGame(n, game) {
+  if (!Number.isInteger(n) || n < 1 || !game || typeof game !== 'object') return null;
+  if (game.legacy === true) {
+    const tries = Number(game.tries);
+    if (game.won === true && Number.isInteger(tries) && tries >= 1 && tries <= MAX_GUESSES) return { legacy: true, won: true, tries };
+    if (game.won === false) return { legacy: true, won: false, tries: MAX_GUESSES };
+    return null;
+  }
+  if (!Array.isArray(game.guesses) || game.guesses.length > MAX_GUESSES) return null;
+  const answer = puzzleWord(n).word;
+  const pattern = new RegExp(`^[A-Z]{${answer.length}}$`);
+  if (!game.guesses.every((g) => typeof g === 'string' && pattern.test(g))) return null;
+  const hit = game.guesses.indexOf(answer);
+  if (hit >= 0 && hit < game.guesses.length - 1) return null; // nothing comes after the answer
+  return { guesses: [...game.guesses], hint: game.hint === true };
+}
+
+// { done, won, tries } for a game of puzzle `n`.
+export function outcome(n, game) {
+  if (game.legacy) return { done: true, won: game.won, tries: game.tries };
+  const won = game.guesses[game.guesses.length - 1] === puzzleWord(n).word;
+  return { done: won || game.guesses.length >= MAX_GUESSES, won, tries: game.guesses.length };
+}
+
+// The same puzzle played on two devices: real games beat rebuilt ones, and a game that carries on from
+// the other one wins. If they really differ, the one already kept (`a`) stays.
+export function mergeGame(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  if (a.legacy || b.legacy) return a.legacy && !b.legacy ? b : a;
+  const [short, long] = a.guesses.length <= b.guesses.length ? [a, b] : [b, a];
+  const carriesOn = short.guesses.every((g, i) => g === long.guesses[i]);
+  return { guesses: [...(carriesOn ? long : a).guesses], hint: a.hint || b.hint };
+}
+
+export function mergeHistory(a, b) {
+  const out = { ...a };
+  for (const [key, game] of Object.entries(b)) out[key] = mergeGame(out[key], game);
+  return out;
+}
+
+export const sameGame = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Played, won, guess counts and streaks, worked out from the history. `today` is today's puzzle number:
+// a streak is still alive if the last win was today or yesterday.
+export function statsFrom(history, today) {
+  const stats = { played: 0, won: 0, streak: 0, best: 0, dist: Array(MAX_GUESSES).fill(0) };
+  const wins = new Set();
+  for (const [key, game] of Object.entries(history)) {
+    const n = Number(key);
+    const result = outcome(n, game);
+    if (!result.done) continue;
+    stats.played += 1;
+    if (result.won) {
+      stats.won += 1;
+      stats.dist[result.tries - 1] += 1;
+      wins.add(n);
+    }
+  }
+  for (const n of wins) {
+    if (wins.has(n - 1)) continue;
+    let run = 1;
+    while (wins.has(n + run)) run += 1;
+    stats.best = Math.max(stats.best, run);
+    if (n + run - 1 >= today - 1) stats.streak = run;
+  }
+  return stats;
+}
+
+// Rebuilds a history from the old counter-style stats ({ played, won, streak, lastWon, last, dist }), so
+// nobody loses their numbers. The current streak lands on the right days; other games go on the days
+// before it, as close as the counts allow.
+export function historyFromLegacy(s) {
+  const history = {};
+  if (!s || !(s.played > 0)) return history;
+  const dist = Array.from({ length: MAX_GUESSES }, (_, i) => Math.max(0, Math.floor(Number(s.dist?.[i]) || 0)));
+  const nextTries = () => {
+    const i = dist.findIndex((c) => c > 0);
+    if (i < 0) return 4;
+    dist[i] -= 1;
+    return i + 1;
+  };
+  const streak = Math.max(0, Math.floor(s.streak) || 0);
+  let wins = Math.max(0, Math.floor(s.won) || 0);
+  let losses = Math.max(0, Math.floor(s.played) - wins);
+  for (let n = s.lastWon - streak + 1; streak && n <= s.lastWon; n++) {
+    if (n >= 1) { history[n] = { legacy: true, won: true, tries: nextTries() }; wins -= 1; }
+  }
+  let n = streak ? s.lastWon - streak : s.last;
+  if (!streak && s.last > 0 && losses > 0) { history[s.last] = { legacy: true, won: false, tries: MAX_GUESSES }; losses -= 1; n = s.last - 1; }
+  for (; n >= 1 && (wins > 0 || losses > 0); n--) {
+    if (history[n]) continue;
+    if (losses > 0) { history[n] = { legacy: true, won: false, tries: MAX_GUESSES }; losses -= 1; }
+    else { history[n] = { legacy: true, won: true, tries: nextTries() }; wins -= 1; }
+  }
+  return history;
+}
+
+const SQUARES ={ correct: '🟩', present: '🟨', absent: '⬜' };
 
 export function shareText({ n, guesses, answer, won, hint, url }) {
   const score = won ? guesses.length : 'X';

@@ -97,7 +97,7 @@
                     </div>
                     <h3 class="trustle-dist-title">Guesses it took</h3>
                     <ol class="trustle-dist" id="dist"></ol>
-                    <p class="side-note">Your stats save on this device.</p>
+                    <p class="side-note" id="stats-note">Your stats save on this device.</p>
                 </div>
 
                 <div class="panel">
@@ -118,13 +118,19 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, toast } from '/scripts/site.js';
+        import { h, toast, session, sessionReady } from '/scripts/site.js';
         import { sound, bindMuteButton, isForeignKey, isActivationKey, bringIntoView } from '/scripts/game-kit.js';
         import { WORDS, PLACES } from '/scripts/trustle-words.js';
-        import { MAX_GUESSES, puzzleNumber, puzzleStart, puzzleWord, grade, letterStates, shareText } from '/scripts/trustle.js';
+        import {
+            MAX_GUESSES, puzzleNumber, puzzleStart, puzzleWord, grade, letterStates, shareText,
+            cleanGame, mergeHistory, sameGame, statsFrom, historyFromLegacy,
+        } from '/scripts/trustle.js';
 
-        const GAME_KEY = 'trusty:trustle';
-        const STATS_KEY = 'trusty:trustle:stats';
+        const HISTORY_KEY = 'trusty:trustle:history';
+        const OWNER_KEY = 'trusty:trustle:owner';
+        // Where games and stats were kept before there was a history (moved over on first load).
+        const OLD_GAME_KEY = 'trusty:trustle';
+        const OLD_STATS_KEY = 'trusty:trustle:stats';
         const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
         const ANSWERS = new Set(WORDS.map((w) => w.word));
         const STATE_WORDS = { correct: 'right spot', present: 'wrong spot', absent: 'not in the word' };
@@ -220,64 +226,101 @@
             } catch { /* keep this device's clock */ }
         }
 
-        /* ---------- Saved game and stats (this device) ---------- */
+        /* ---------- Saved games: this device, plus the account when logged in ---------- */
 
         function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
         function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage blocked */ } }
+        function forget(key) { try { localStorage.removeItem(key); } catch { /* storage blocked */ } }
 
-        function loadGame() {
-            const saved = readJSON(GAME_KEY);
-            if (!saved || saved.n !== n || saved.answer !== answer || !Array.isArray(saved.guesses)) return null;
-            const valid = saved.guesses.filter((g) => typeof g === 'string' && /^[A-Z]+$/.test(g) && g.length === len);
-            return { guesses: valid.slice(0, MAX_GUESSES), hint: saved.hint === true };
+        function cleanHistory(raw) {
+            const out = {};
+            if (raw && typeof raw === 'object') {
+                for (const [key, game] of Object.entries(raw)) {
+                    const clean = cleanGame(Number(key), game);
+                    if (clean) out[key] = clean;
+                }
+            }
+            return out;
         }
+
+        // Every game played on this device, by puzzle number. Stats are worked out from it, so the same
+        // game on two devices never counts twice.
+        function loadHistory() {
+            let saved = cleanHistory(readJSON(HISTORY_KEY));
+            const oldStats = readJSON(OLD_STATS_KEY);
+            const oldGame = readJSON(OLD_GAME_KEY);
+            if (oldStats || oldGame) {
+                let moved = historyFromLegacy(oldStats);
+                if (oldGame && Number.isInteger(oldGame.n) && puzzleWord(oldGame.n).word === oldGame.answer) {
+                    moved = mergeHistory(moved, cleanHistory({ [oldGame.n]: oldGame }));
+                }
+                saved = mergeHistory(saved, moved);
+                writeJSON(HISTORY_KEY, saved);
+                forget(OLD_STATS_KEY);
+                forget(OLD_GAME_KEY);
+            }
+            return saved;
+        }
+
+        let history = loadHistory();
 
         function saveGame() {
-            writeJSON(GAME_KEY, { n, answer, guesses, hint: hintUsed });
+            history[n] = { guesses: [...guesses], hint: hintUsed };
+            writeJSON(HISTORY_KEY, history);
+            sync({ [n]: history[n] });
         }
 
-        function loadStats() {
-            const s = readJSON(STATS_KEY) || {};
-            const num = (v) => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
-            return {
-                played: num(s.played), won: num(s.won), streak: num(s.streak), best: num(s.best),
-                lastWon: num(s.lastWon), last: num(s.last),
-                dist: Array.from({ length: MAX_GUESSES }, (_, i) => num(s.dist && s.dist[i])),
-            };
+        // Sends games to the account and takes back its whole history, so the other devices' games show
+        // up here. Does nothing when logged out; if it fails, the next page load sends everything again.
+        async function sync(games) {
+            if (!session.loggedIn) return false;
+            try {
+                const res = await fetch('/api/trustle-api', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ games }),
+                });
+                if (!res.ok) return false;
+                const data = await res.json();
+                history = mergeHistory(cleanHistory(data.games), history);
+                writeJSON(HISTORY_KEY, history);
+                return true;
+            } catch { return false; }
         }
 
-        // Counts each puzzle once, even if it's open in two tabs.
-        function recordResult(won) {
-            const s = loadStats();
-            if (s.last >= n) return;
-            s.played += 1;
-            s.last = n;
-            if (won) {
-                s.won += 1;
-                s.streak = s.lastWon === n - 1 ? s.streak + 1 : 1;
-                s.best = Math.max(s.best, s.streak);
-                s.lastWon = n;
-                s.dist[guesses.length - 1] += 1;
-            } else {
-                s.streak = 0;
-            }
-            writeJSON(STATS_KEY, s);
+        // On first load as a logged-in player: games already on this device (say, played before logging in)
+        // join the account, unless they belong to a different account that used this device.
+        async function syncAccount() {
+            const { loggedIn, username } = await sessionReady;
+            if (!loggedIn) return false;
+            let owner = null;
+            try { owner = localStorage.getItem(OWNER_KEY); } catch { /* storage blocked */ }
+            if (owner && owner !== username) history = {};
+            try { localStorage.setItem(OWNER_KEY, username); } catch { /* storage blocked */ }
+            return sync(history);
+        }
+
+        // Picks up games played on another device since this page was drawn (unless a guess is mid-flight).
+        function refreshFromAccount() {
+            const shown = { guesses: [...guesses], hint: hintUsed };
+            const saved = history[n] && !history[n].legacy ? history[n] : { guesses: [], hint: false };
+            if (!busy && !sameGame(shown, saved)) setup();
+            else renderStats();
         }
 
         function renderStats() {
-            const s = loadStats();
-            const today = puzzleNumber(now());
-            // A streak only counts while it's alive: won today, or yesterday with today still to play.
-            const streak = s.lastWon >= today - 1 ? s.streak : 0;
+            const s = statsFrom(history, puzzleNumber(now()));
             $('stat-played').textContent = s.played;
             $('stat-win').textContent = s.played ? Math.round((s.won / s.played) * 100) : 0;
-            $('stat-streak').textContent = streak;
+            $('stat-streak').textContent = s.streak;
             $('stat-best').textContent = s.best;
             const most = Math.max(1, ...s.dist);
             const wonToday = over && guesses[guesses.length - 1] === answer;
             $('dist').replaceChildren(...s.dist.map((count, i) => h('li', { class: wonToday && guesses.length === i + 1 ? 'is-today' : null },
                 h('span', null, i + 1),
                 h('span', { class: 'trustle-dist-bar', style: `--w: ${Math.round((count / most) * 100)}%` }, count))));
+            $('stats-note').textContent = session.loggedIn ? 'Your stats follow your account to any device.' : 'Your stats save on this device. Log in to keep them on every device.';
         }
 
         /* ---------- Words it accepts ---------- */
@@ -324,18 +367,17 @@
             answer = entry.word;
             len = answer.length;
             dictionary = loadDictionary(len);
-            const saved = loadGame();
-            guesses = saved ? saved.guesses : [];
+            // A game rebuilt from the old stats has no guesses to show, so today starts fresh.
+            const saved = history[n] && !history[n].legacy ? history[n] : null;
+            guesses = saved ? [...saved.guesses] : [];
             hintUsed = saved ? saved.hint : false;
             const hit = guesses.indexOf(answer);
-            if (hit >= 0) guesses = guesses.slice(0, hit + 1);
             over = hit >= 0 || guesses.length >= MAX_GUESSES;
             typed = '';
             busy = false;
             rejections = 0;
             clearInterval(ticker);
             mood(over && hit < 0 ? 'is-sad' : null);
-            if (over) recordResult(hit >= 0);
 
             $('puzzle-tag').textContent = `Trustle #${n}`;
             $('length-tag').textContent = `${len} letters`;
@@ -505,7 +547,6 @@
             const won = guess === answer;
             over = won || guesses.length >= MAX_GUESSES;
             saveGame();
-            if (over) recordResult(won);
 
             await paintRow(r, guess, true);
             paintKeys();
@@ -606,15 +647,21 @@
         });
 
         // A tab left open overnight moves on to the new word, unless a game is half played.
-        document.addEventListener('visibilitychange', () => {
+        document.addEventListener('visibilitychange', async () => {
             if (document.visibilityState !== 'visible' || busy) return;
-            if (puzzleNumber(now()) !== n && (over || !guesses.length)) setup();
+            if (puzzleNumber(now()) !== n && (over || !guesses.length)) return setup();
+            if (await sync({})) refreshFromAccount();
             else renderStats();
         });
 
         bindMuteButton($('mute-btn'));
-        await Promise.race([syncClock(), new Promise((resolve) => setTimeout(resolve, 2000))]);
+        // Waits a moment for the clock check and the account's games, but never long: if the account is
+        // slow, the page starts with this device's games and catches up when it answers.
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+        const accountSynced = syncAccount();
+        await Promise.race([Promise.all([syncClock(), accountSynced]), wait(2500)]);
         setup();
+        accountSynced.then((ok) => { if (ok) refreshFromAccount(); });
     </script>
 </body>
 </html>
