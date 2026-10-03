@@ -682,9 +682,10 @@ kbd {
 
 .trustle-meta { margin: 12px 0; }
 
-/* The board: tiles shrink to fit long words and short screens */
+/* The board: tiles shrink to fit long words and short screens. svh, not dvh: on phones dvh changes every time
+   the browser's toolbar hides or shows, so the board would grow and shrink while you scroll. */
 .trustle-board {
-  --tile: min(62px, (100cqi - (var(--len, 5) - 1) * var(--tile-gap)) / var(--len, 5), max(40px, (100dvh - 380px) / 6.6));
+  --tile: min(62px, (100cqi - (var(--len, 5) - 1) * var(--tile-gap)) / var(--len, 5), max(40px, (100svh - 380px) / 6.6));
   display: grid;
   justify-content: center;
   gap: var(--tile-gap);
