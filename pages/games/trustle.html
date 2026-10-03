@@ -56,13 +56,7 @@
                         <li class="tag" id="puzzle-tag">Trustle</li>
                         <li class="tag tag-blue" id="length-tag" hidden></li>
                     </ul>
-                    <button class="btn btn-outline btn-sm" type="button" id="hint-btn" hidden>
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.2 17.5h5.6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.8.6 1 1.4 1 2.2h5.2c0-.8.2-1.6 1-2.2A6 6 0 0 0 12 3z"/></svg>
-                        Hint
-                    </button>
                 </div>
-
-                <p class="trustle-hint" id="hint" hidden><strong>Trusty’s hint:</strong> <span id="hint-text"></span></p>
 
                 <div class="trustle-board" id="board" role="group" aria-label="Your guesses"></div>
 
@@ -72,7 +66,6 @@
                     <h2 id="result-title"></h2>
                     <p class="trustle-result-label">Today’s word</p>
                     <p class="trustle-answer" id="result-word"></p>
-                    <p class="trustle-why" id="result-why"></p>
                     <p id="result-see" hidden></p>
                     <div class="btn-row trustle-result-actions">
                         <button class="btn btn-lg" type="button" id="share-btn">
@@ -108,7 +101,7 @@
                         <li><span class="trustle-tile" data-state="present">E</span> Yellow: in the word, wrong spot.</li>
                         <li><span class="trustle-tile" data-state="absent">I</span> Gray: not in the word.</li>
                     </ul>
-                    <p class="side-note">Guesses have to be real words (Trusty words count too). <span class="desktop-only">Type on your keyboard, then press <kbd>Enter</kbd>.</span> Stuck? Ask Trusty for a hint, but your share will say you did.</p>
+                    <p class="side-note">Guesses have to be real words (Trusty words count too). <span class="desktop-only">Type on your keyboard, then press <kbd>Enter</kbd>.</span></p>
                     <p class="side-note">A new word drops every day at midnight Eastern, the same one for everyone.</p>
                 </div>
             </aside>
@@ -165,7 +158,6 @@
             answer: ['Good word. Wrong day.', 'That’s a Trustle word, just not today’s.'],
             horse: ['Yes, I’m a horse. Still wrong though.'],
             trusty: ['Flattered. Still wrong.'],
-            hint: ['Fine, here’s a hint. Your share will say you used it, though.'],
             won: [
                 ['First try?! I’m calling the cops.', 'One guess. Did you read my mind? Get out of there.'],
                 ['Two guesses. Suspicious, but I’ll allow it.', 'Two! Somebody’s been reading the comics.'],
@@ -265,7 +257,7 @@
         let history = loadHistory();
 
         function saveGame() {
-            history[n] = { guesses: [...guesses], hint: hintUsed };
+            history[n] = { guesses: [...guesses] };
             writeJSON(HISTORY_KEY, history);
             sync({ [n]: history[n] });
         }
@@ -303,8 +295,8 @@
 
         // Picks up games played on another device since this page was drawn (unless a guess is mid-flight).
         function refreshFromAccount() {
-            const shown = { guesses: [...guesses], hint: hintUsed };
-            const saved = history[n] && !history[n].legacy ? history[n] : { guesses: [], hint: false };
+            const shown = { guesses: [...guesses] };
+            const saved = history[n] && !history[n].legacy ? history[n] : { guesses: [] };
             if (!busy && !sameGame(shown, saved)) setup();
             else renderStats();
         }
@@ -351,7 +343,6 @@
         let len = 5;
         let guesses = [];
         let typed = '';
-        let hintUsed = false;
         let over = false;
         let busy = false;
         let dictionary = Promise.resolve(null);
@@ -370,7 +361,6 @@
             // A game rebuilt from the old stats has no guesses to show, so today starts fresh.
             const saved = history[n] && !history[n].legacy ? history[n] : null;
             guesses = saved ? [...saved.guesses] : [];
-            hintUsed = saved ? saved.hint : false;
             const hit = guesses.indexOf(answer);
             over = hit >= 0 || guesses.length >= MAX_GUESSES;
             typed = '';
@@ -386,7 +376,6 @@
             buildKeys();
             guesses.forEach((guess, r) => paintRow(r, guess, false));
             paintKeys();
-            renderHint();
             renderStats();
 
             if (over) {
@@ -570,38 +559,14 @@
             }
         }
 
-        /* ---------- Hint ---------- */
-
-        function renderHint() {
-            $('hint-text').textContent = entry.hint;
-            $('hint').hidden = !hintUsed || over;
-            $('hint-btn').hidden = hintUsed || over;
-        }
-
-        $('hint-btn').addEventListener('click', () => {
-            if (over || hintUsed) return;
-            hintUsed = true;
-            saveGame();
-            renderHint();
-            $('announce').textContent = `${say(LINES.hint)} ${entry.hint}`;
-        });
-
         /* ---------- Result ---------- */
-
-        // The hint again, with the answer filled into its blank.
-        function hintWithAnswer() {
-            const parts = entry.hint.split('___');
-            return parts.flatMap((part, i) => (i ? [h('span', { class: 'trustle-fill' }, answer), part] : [part]));
-        }
 
         function showResult() {
             const won = guesses[guesses.length - 1] === answer;
             keys.hidden = true;
-            renderHint();
             $('result-title').textContent = won ? `Got it in ${guesses.length}!` : 'Out of guesses';
             $('result-word').replaceChildren(...[...answer].map((letter) => h('span', null, letter)));
             $('result-word').setAttribute('aria-label', answer);
-            $('result-why').replaceChildren('“', ...hintWithAnswer(), '”');
             const place = entry.see && PLACES[entry.see];
             $('result-see').hidden = !place;
             $('result-see').replaceChildren(place ? h('a', { class: 'text-link', href: place.href }, place.label) : '');
@@ -626,7 +591,7 @@
 
         $('share-btn').addEventListener('click', async () => {
             const text = shareText({
-                n, guesses, answer, hint: hintUsed,
+                n, guesses, answer,
                 won: guesses[guesses.length - 1] === answer,
                 url: `${location.origin}/pages/games/trustle.html`,
             });

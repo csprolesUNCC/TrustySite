@@ -680,29 +680,7 @@ kbd {
 @keyframes trustle-no { 20%, 60% { transform: rotate(-10deg); } 40%, 80% { transform: rotate(10deg); } }
 .trustle-speech { margin: 0; line-height: 1.35; }
 
-.trustle-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; min-height: 36px; margin: 12px 0; }
-.trustle-hint {
-  margin: 0 0 14px;
-  padding: 8px 14px 10px;
-  border-radius: 2px 2px 4px 2px;
-  background: var(--note-yellow);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, .06), 0 10px 18px -12px rgba(0, 0, 0, .35);
-  transform: rotate(-.5deg);
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 1.35rem;
-  line-height: 1.15;
-}
-.trustle-hint strong {
-  display: block;
-  margin-bottom: 2px;
-  font-family: var(--font-body);
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--pencil);
-}
+.trustle-meta { margin: 12px 0; }
 
 /* The board: tiles shrink to fit long words and short screens */
 .trustle-board {
@@ -817,8 +795,6 @@ kbd {
   font-size: clamp(1rem, 5cqi, 1.5rem);
   line-height: 1;
 }
-.trustle-why { max-width: 36ch; margin: 0 auto 8px; font-family: var(--font-hand); font-weight: 700; font-size: 1.4rem; line-height: 1.15; }
-.trustle-fill { color: var(--green); }
 .trustle-result-actions { justify-content: center; margin: 16px 0 12px; }
 .trustle-next { margin: 0; font-weight: 650; color: var(--ink-soft); }
 .trustle-next strong { font-family: var(--font-marker); font-weight: 400; font-size: 1.2rem; font-variant-numeric: tabular-nums; }

@@ -63,7 +63,7 @@ function runOrder(run) {
   return order;
 }
 
-// { word, hint, see? } for puzzle `n`.
+// { word, see? } for puzzle `n`.
 export function puzzleWord(n) {
   const i = Math.max(0, n - 1);
   const run = Math.floor(i / WORDS.length);
@@ -104,7 +104,7 @@ export function letterStates(guesses, answer) {
 
 /* ---------- Game history (shared by the page and api/trustle-api.js) ---------- */
 
-// A player's history is { [puzzle number]: game }. A game is { guesses: ['HORSE', ...], hint: bool }.
+// A player's history is { [puzzle number]: game }. A game is { guesses: ['HORSE', ...] }.
 // Days played before history was kept are { legacy: true, won, tries }, rebuilt from the old stats.
 
 // A safe copy of one game for puzzle `n`, or null if it doesn't make sense.
@@ -122,7 +122,7 @@ export function cleanGame(n, game) {
   if (!game.guesses.every((g) => typeof g === 'string' && pattern.test(g))) return null;
   const hit = game.guesses.indexOf(answer);
   if (hit >= 0 && hit < game.guesses.length - 1) return null; // nothing comes after the answer
-  return { guesses: [...game.guesses], hint: game.hint === true };
+  return { guesses: [...game.guesses] };
 }
 
 // { done, won, tries } for a game of puzzle `n`.
@@ -140,7 +140,7 @@ export function mergeGame(a, b) {
   if (a.legacy || b.legacy) return a.legacy && !b.legacy ? b : a;
   const [short, long] = a.guesses.length <= b.guesses.length ? [a, b] : [b, a];
   const carriesOn = short.guesses.every((g, i) => g === long.guesses[i]);
-  return { guesses: [...(carriesOn ? long : a).guesses], hint: a.hint || b.hint };
+  return { guesses: [...(carriesOn ? long : a).guesses] };
 }
 
 export function mergeHistory(a, b) {
@@ -208,8 +208,8 @@ export function historyFromLegacy(s) {
 
 const SQUARES ={ correct: '🟩', present: '🟨', absent: '⬜' };
 
-export function shareText({ n, guesses, answer, won, hint, url }) {
+export function shareText({ n, guesses, answer, won, url }) {
   const score = won ? guesses.length : 'X';
   const rows = guesses.map((guess) => grade(guess, answer).map((s) => SQUARES[s]).join(''));
-  return [`🐴 Trustle #${n} ${score}/${MAX_GUESSES}${hint ? ' (with a hint)' : ''}`, '', ...rows, '', url].join('\n');
+  return [`🐴 Trustle #${n} ${score}/${MAX_GUESSES}`, '', ...rows, '', url].join('\n');
 }
