@@ -1,0 +1,121 @@
+/* Profile pages (pages/profile.html) */
+
+.profile-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 48px);
+  align-items: start;
+}
+
+/* The bio is handwritten on the sheet's lines: the heading fills the blank band at the top,
+   then each line of text sits on a rule. */
+.profile-bio { --sheet-top: 88px; padding-top: 24px; }
+.profile-bio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 64px;
+}
+.profile-bio-head h2 { margin: 0; font-family: var(--font-marker); font-weight: 400; font-size: 1.6rem; }
+.profile-bio-text {
+  min-height: calc(4 * var(--line));
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: var(--line);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.profile-bio-text.is-empty { color: var(--pencil); }
+.profile-bio-form { padding-top: 8px; }
+.profile-bio-form textarea { resize: vertical; min-height: 9em; }
+.profile-bio-form .field { margin-bottom: 12px; }
+.profile-bio-form .hint { text-align: right; }
+.profile-bio-form .form-status { margin-top: 10px; }
+
+/* Favorite channel note */
+.profile-tv { font-size: 1rem; }
+.profile-tv p { margin: 0 0 10px; }
+.profile-tv-pick { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; font-family: var(--font-marker); font-size: 1.9rem; line-height: 1.1; }
+.profile-tv-number { font-size: .6em; color: var(--red); }
+.profile-tv-list { margin: 0 0 12px; padding: 0; list-style: none; }
+.profile-tv-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  border-bottom: 1.5px dashed rgba(27, 27, 31, .2);
+  font-variant-numeric: tabular-nums;
+}
+.profile-tv-list li.is-favorite { font-weight: 800; }
+.profile-tv-list li.is-favorite span:first-child::after { content: " \2605"; color: var(--red); }
+.profile-tv-total { font-size: .92rem; }
+.profile-tv-total a { font-weight: 700; }
+
+/* Stat cards */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2.5vw, 28px);
+  align-items: start;
+}
+.profile-stat { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.profile-stat .panel-title { margin-bottom: 4px; }
+.profile-stat p { margin: 0; }
+.profile-stat .text-link { width: fit-content; margin-top: 8px; font-weight: 700; }
+.profile-stat-value { font-family: var(--font-marker); font-size: clamp(2rem, 4vw, 2.6rem); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.profile-stat-rank { color: var(--pencil); font-weight: 600; }
+.profile-stat-rank a { font-family: var(--font-marker); font-weight: 400; font-size: 1.15rem; }
+.profile-stat-empty { color: var(--pencil); }
+
+.profile-draw { display: flex; align-items: center; gap: 16px; }
+.profile-drawing {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 2px 2px 0 var(--ink);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.profile-drawing img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Trustle takes the whole row: its numbers on one side, the guess bars on the other */
+.profile-stat.is-trustle { grid-column: 1 / -1; }
+.profile-trustle { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px clamp(20px, 4vw, 40px); align-items: start; }
+.profile-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.profile-mini {
+  padding: 10px 12px;
+  border: 1.5px dashed var(--grid-strong);
+  border-radius: 10px;
+  background: var(--paper);
+  min-width: 0;
+}
+.profile-mini-label { display: block; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--pencil); }
+.profile-mini-value { display: block; font-family: var(--font-marker); font-size: 1.6rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.profile-dist-title { margin: 0 0 8px; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--pencil); }
+.profile-dist { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.profile-dist li { display: grid; grid-template-columns: 1em minmax(0, 1fr); align-items: center; gap: 8px; font-weight: 800; font-size: .88rem; }
+.profile-dist-bar {
+  width: max(1.9em, var(--w, 0%));
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--green);
+  color: #fff;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .profile-top { grid-template-columns: 1fr; }
+  .profile-tv { max-width: 420px; }
+  .profile-stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .profile-stats, .profile-trustle { grid-template-columns: 1fr; }
+}

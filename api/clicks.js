@@ -1,5 +1,6 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
+import { CHANNELS } from '../scripts/tv-lineup.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
 // The server allows a little slack so network jitter doesn't reject honest clicks.
@@ -12,6 +13,9 @@ const JITTER_MS = 100;
 const TV_CLICKS = 5;
 const TV_EVERY_MS = 5000;
 const TV_SLACK_MS = 500;
+// Each reward also adds its seconds to the account's watch time for the channel that was on
+// (`tvSeconds.<channel key>`), which the profile page uses to pick a favorite channel.
+const TV_CHANNELS = new Set(CHANNELS.map((c) => c.key));
 
 export default async (req, res) => {
     const user = authenticateUser(req);
@@ -33,10 +37,14 @@ export default async (req, res) => {
         if (req.method === 'POST' && req.query.action === 'tv') {
             const now = new Date();
             const cutoff = new Date(now.getTime() - TV_EVERY_MS + TV_SLACK_MS);
+            const channel = req.body && TV_CHANNELS.has(req.body.channel) ? req.body.channel : null;
+            const seconds = channel ? { [channel]: TV_EVERY_MS / 1000 } : {};
+            const inc = { clicks: TV_CLICKS };
+            if (channel) inc[`tvSeconds.${channel}`] = seconds[channel];
             const result = await collection.findOneAndUpdate(
                 { userId: user.userId, lastTvReward: { $not: { $gt: cutoff } } },
                 {
-                    $inc: { clicks: TV_CLICKS },
+                    $inc: inc,
                     $set: { username: user.username, lastTvReward: now }
                 },
                 { returnDocument: 'after' }
@@ -49,7 +57,7 @@ export default async (req, res) => {
             // No match: either this user has never clicked, or the last reward was too recent.
             const inserted = await collection.updateOne(
                 { userId: user.userId },
-                { $setOnInsert: { clicks: TV_CLICKS, username: user.username, lastTvReward: now, recent: [] } },
+                { $setOnInsert: { clicks: TV_CLICKS, username: user.username, lastTvReward: now, recent: [], tvSeconds: seconds } },
                 { upsert: true }
             );
             if (inserted.upsertedCount) {

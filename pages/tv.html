@@ -363,7 +363,12 @@
         async function reward() {
             rewarding = true;
             try {
-                const res = await fetch('/api/clicks?action=tv', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                // The channel adds these seconds to the viewer's watch time for it (their profile's favorite channel).
+                const res = await fetch('/api/clicks?action=tv', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ channel: CHANNELS[channel].key }),
+                });
                 if (res.status === 401) {
                     sessionExpired();
                     return;

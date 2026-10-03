@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Profile — Trusty da Horse</title>
+    <meta name="description" content="A Trusty fan's profile: their bio, clicks, high scores, Trustle stats and favorite Trusty TV channel.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Fan Profile">
+    <meta property="og:description" content="Clicks, high scores, Trustle streaks and more.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/profile.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container section" id="state-loading">
+            <p class="muted" role="status">Flipping to the right page…</p>
+        </div>
+
+        <!-- No such user, no user picked while logged out, or the request failed -->
+        <div class="container notfound" id="state-message" hidden>
+            <div class="sheet notfound-sheet">
+                <img class="ink" src="/images/seahorse.jpg" alt="" width="1536" height="1173">
+                <div>
+                    <p class="eyebrow" id="message-eyebrow"></p>
+                    <h1 id="message-title"></h1>
+                    <p class="lead" id="message-text"></p>
+                    <div class="btn-row" id="message-actions"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="state-profile" hidden>
+            <header class="page-head container">
+                <p class="eyebrow">Trusty fan profile</p>
+                <h1 id="profile-name"></h1>
+                <p class="lead" id="profile-since"></p>
+            </header>
+
+            <section class="section-tight container profile-top" aria-label="About">
+                <article class="sheet profile-bio" aria-labelledby="bio-title">
+                    <div class="profile-bio-head">
+                        <h2 id="bio-title">About me</h2>
+                        <button class="btn btn-outline btn-sm" type="button" id="bio-edit" hidden>Edit bio</button>
+                    </div>
+                    <p class="profile-bio-text" id="bio-text"></p>
+                    <form class="profile-bio-form" id="bio-form" hidden>
+                        <div class="field">
+                            <label for="bio-input">Your bio</label>
+                            <textarea id="bio-input" rows="5" maxlength="300" placeholder="Who are you, and how did you find Trusty?"></textarea>
+                            <span class="hint" id="bio-count" aria-live="polite"></span>
+                        </div>
+                        <div class="btn-row">
+                            <button class="btn btn-sm" type="submit" id="bio-save">Save</button>
+                            <button class="btn btn-ghost btn-sm" type="button" id="bio-cancel">Cancel</button>
+                        </div>
+                        <p class="form-status" id="bio-status" role="status"></p>
+                    </form>
+                </article>
+
+                <aside class="sticky-note blue profile-tv" aria-labelledby="tv-title">
+                    <h2 id="tv-title">Favorite Trusty TV channel</h2>
+                    <div id="tv-body"></div>
+                </aside>
+            </section>
+
+            <section class="section-tight container" aria-labelledby="stats-title">
+                <div class="section-head">
+                    <div>
+                        <h2 id="stats-title">Stats</h2>
+                        <p>These fill themselves in from playing while logged in.</p>
+                    </div>
+                </div>
+                <div class="profile-stats" id="stats"></div>
+            </section>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, session, sessionReady, sessionExpired, onSession, loginHref, profileHref } from '/scripts/site.js';
+        import { safeDrawing, openDrawing } from '/scripts/leaderboard.js';
+        import { CHANNELS } from '/scripts/tv-lineup.js';
+
+        const BIO_MAX = 300; // utils/profile.js allows the same
+        const $ = (id) => document.getElementById(id);
+        const states = ['loading', 'message', 'profile'];
+        const show = (which) => states.forEach((s) => { $(`state-${s}`).hidden = s !== which; });
+
+        function showMessage({ eyebrow, title, text, actions = [] }) {
+            $('message-eyebrow').textContent = eyebrow;
+            $('message-title').textContent = title;
+            $('message-text').textContent = text;
+            $('message-actions').replaceChildren(...actions);
+            show('message');
+        }
+
+        /* ---------- Formatting ---------- */
+
+        const joinedFormat = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+
+        function watchTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 1) return `${seconds} sec`;
+            const hours = Math.floor(minutes / 60);
+            return hours ? `${fmt(hours)} hr ${minutes % 60} min` : `${minutes} min`;
+        }
+
+        const rankLine = (rank, href) => h('p', { class: 'profile-stat-rank' }, h('a', { href }, `#${fmt(rank)}`), ' on the leaderboard');
+
+        /* ---------- Sections ---------- */
+
+        let profile;
+
+        function renderBio() {
+            const text = $('bio-text');
+            const empty = !profile.bio;
+            text.classList.toggle('is-empty', empty);
+            text.textContent = empty
+                ? (profile.isMe ? 'You haven’t written a bio yet. Tell everyone who you are!' : `${profile.username} hasn’t written anything here yet.`)
+                : profile.bio;
+            $('bio-edit').hidden = !profile.isMe || !session.loggedIn;
+            $('bio-edit').textContent = empty ? 'Write a bio' : 'Edit bio';
+        }
+
+        // The favorite channel is the one they've watched the longest (ties go to the lower channel number).
+        function renderTv() {
+            const watched = CHANNELS.filter((c) => profile.tv[c.key] > 0);
+            if (!watched.length) {
+                $('tv-body').replaceChildren(
+                    h('p', null, profile.isMe ? 'Watch Trusty TV while you’re logged in and your favorite channel shows up here.' : 'Hasn’t tuned in yet.'),
+                    h('a', { class: 'btn btn-sm', href: '/pages/tv.html' }, 'Watch Trusty TV'));
+                return;
+            }
+            const favorite = watched.reduce((a, b) => (profile.tv[b.key] > profile.tv[a.key] ? b : a));
+            const total = watched.reduce((sum, c) => sum + profile.tv[c.key], 0);
+            $('tv-body').replaceChildren(
+                h('p', { class: 'profile-tv-pick' },
+                    h('span', { class: 'profile-tv-number' }, `Ch. ${favorite.number}`),
+                    h('span', { title: favorite.fullName || null }, favorite.name)),
+                h('ul', { class: 'profile-tv-list', 'aria-label': 'Watch time by channel' },
+                    CHANNELS.map((c) => h('li', { class: c === favorite ? 'is-favorite' : null },
+                        h('span', null, `${c.number} ${c.name}`),
+                        h('span', null, profile.tv[c.key] ? watchTime(profile.tv[c.key]) : '–')))),
+                h('p', { class: 'profile-tv-total' }, `${watchTime(total)} of Trusty TV in all. `,
+                    h('a', { href: `/pages/tv.html#${favorite.key}` }, `Tune in to ${favorite.name}`)));
+        }
+
+        function statCard(title, className, ...children) {
+            return h('article', { class: `panel profile-stat ${className}` }, h('h3', { class: 'panel-title' }, title), ...children);
+        }
+
+        const emptyLine = (text) => h('p', { class: 'profile-stat-empty' }, text);
+        const value = (text) => h('p', { class: 'profile-stat-value' }, text);
+
+        function clicksCard() {
+            const c = profile.clicks;
+            return statCard('Trusty clicks', 'is-clicks',
+                c ? [value(fmt(c.total)), rankLine(c.rank, '/pages/leaderboard.html')]
+                  : emptyLine(profile.isMe ? 'No clicks yet. Trusty’s up in the header, waiting.' : 'No clicks yet.'));
+        }
+
+        function flappyCard() {
+            const f = profile.flappy;
+            return statCard('Flappy Trusty best', 'is-flappy',
+                f ? [value(fmt(f.score)), rankLine(f.rank, '/pages/leaderboard.html#flappy')]
+                  : emptyLine('Hasn’t flapped yet.'),
+                profile.isMe ? h('a', { class: 'text-link', href: '/pages/games/flappy.html' }, 'Play Flappy Trusty') : null);
+        }
+
+        function drawCard() {
+            const d = profile.draw;
+            const drawing = d && safeDrawing(d.drawing);
+            const entry = d && { name: profile.username, score: d.score, drawing };
+            return statCard('Best Draw Trusty', 'is-draw',
+                d ? h('div', { class: 'profile-draw' },
+                        drawing
+                            ? h('button', { type: 'button', class: 'profile-drawing', 'aria-label': `View ${profile.username}'s drawing`, onclick: () => openDrawing(entry) },
+                                h('img', { src: drawing, alt: '' }))
+                            : null,
+                        h('div', null, value(`${fmt(d.score)}%`), rankLine(d.rank, '/pages/leaderboard.html#draw')))
+                  : emptyLine('Hasn’t drawn Trusty yet.'),
+                profile.isMe ? h('a', { class: 'text-link', href: '/pages/games/draw.html' }, 'Play Draw Trusty') : null);
+        }
+
+        function trustleCard() {
+            const t = profile.trustle;
+            if (!t) {
+                return statCard('Trustle', 'is-trustle', emptyLine('Hasn’t played Trustle while logged in yet.'),
+                    h('a', { class: 'text-link', href: '/pages/games/trustle.html' }, 'Play today’s Trustle'));
+            }
+            const mini = (label, n) => h('div', { class: 'profile-mini' }, h('span', { class: 'profile-mini-label' }, label), h('span', { class: 'profile-mini-value' }, n));
+            const most = Math.max(1, ...t.dist);
+            return statCard('Trustle', 'is-trustle',
+                h('div', { class: 'profile-trustle' },
+                    h('div', { class: 'profile-mini-grid' },
+                        mini('Played', fmt(t.played)),
+                        mini('Win %', t.played ? Math.round((t.won / t.played) * 100) : 0),
+                        mini('Streak', fmt(t.streak)),
+                        mini('Best streak', fmt(t.best))),
+                    h('div', null,
+                        h('h4', { class: 'profile-dist-title' }, 'Guesses it took'),
+                        h('ol', { class: 'profile-dist' }, t.dist.map((count, i) => h('li', null,
+                            h('span', null, i + 1),
+                            h('span', { class: 'profile-dist-bar', style: `--w: ${Math.round((count / most) * 100)}%` }, count)))))),
+                h('a', { class: 'text-link', href: '/pages/games/trustle.html' }, 'Play today’s Trustle'));
+        }
+
+        function render() {
+            document.title = `${profile.username} — Trusty da Horse`;
+            $('profile-name').textContent = profile.username;
+            const since = new Date(profile.memberSince);
+            $('profile-since').textContent = Number.isNaN(since.getTime()) ? '' : `Trusty fan since ${joinedFormat.format(since)}.`;
+            renderBio();
+            renderTv();
+            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustleCard());
+            show('profile');
+        }
+
+        /* ---------- Editing your bio ---------- */
+
+        function setEditing(on) {
+            $('bio-form').hidden = !on;
+            $('bio-text').hidden = on;
+            $('bio-status').textContent = '';
+            if (on) {
+                $('bio-edit').hidden = true;
+                $('bio-input').value = profile.bio;
+                updateCount();
+                $('bio-input').focus();
+            } else {
+                renderBio();
+                $('bio-edit').focus();
+            }
+        }
+
+        function updateCount() {
+            $('bio-count').textContent = `${$('bio-input').value.length}/${BIO_MAX}`;
+        }
+
+        $('bio-edit').addEventListener('click', () => setEditing(true));
+        $('bio-cancel').addEventListener('click', () => setEditing(false));
+        $('bio-input').addEventListener('input', updateCount);
+        $('bio-form').addEventListener('keydown', (e) => { if (e.key === 'Escape') setEditing(false); });
+
+        $('bio-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = $('bio-status');
+            const save = $('bio-save');
+            save.disabled = true;
+            status.dataset.tone = 'info';
+            status.textContent = 'Saving…';
+            try {
+                const res = await fetch('/api/leaderboard?action=profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bio: $('bio-input').value }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    status.dataset.tone = 'error';
+                    status.replaceChildren('Your login expired. ', h('a', { href: loginHref() }, 'Log in again'), ' to save.');
+                    return;
+                }
+                if (!res.ok) {
+                    status.dataset.tone = 'error';
+                    status.textContent = data.error || 'Couldn’t save your bio. Try again?';
+                    return;
+                }
+                profile.bio = typeof data.bio === 'string' ? data.bio : '';
+                setEditing(false);
+                toast('Bio saved!', 'success');
+            } catch {
+                status.dataset.tone = 'error';
+                status.textContent = 'Couldn’t reach the server. Check your connection and try again.';
+            } finally {
+                save.disabled = false;
+            }
+        });
+
+        // Logging out elsewhere on the page hides the edit button.
+        onSession(() => { if (profile && $('bio-form').hidden) renderBio(); });
+
+        /* ---------- Load ---------- */
+
+        async function load() {
+            let name = (new URLSearchParams(location.search).get('u') || '').trim();
+            if (!name) {
+                // No name in the link: show your own profile, if you're logged in.
+                const { loggedIn, username } = await sessionReady;
+                if (!loggedIn || !username) {
+                    showMessage({
+                        eyebrow: 'Your profile',
+                        title: 'Log in to see your profile.',
+                        text: 'Your profile shows off your clicks, high scores, Trustle streak and favorite Trusty TV channel.',
+                        actions: [
+                            h('a', { class: 'btn btn-lg', href: loginHref() }, 'Log in'),
+                            h('a', { class: 'btn btn-lg btn-outline', href: '/pages/auth/register.html' }, 'Sign up'),
+                        ],
+                    });
+                    return;
+                }
+                name = username;
+                history.replaceState(null, '', profileHref(name));
+            }
+
+            show('loading');
+            try {
+                const res = await fetch(`/api/leaderboard?action=profile&u=${encodeURIComponent(name)}`);
+                if (res.status === 404) {
+                    showMessage({
+                        eyebrow: 'Profile not found',
+                        title: 'No one here by that name.',
+                        text: `Trusty checked every page of the notebook and couldn’t find “${name}”.`,
+                        actions: [h('a', { class: 'btn btn-lg', href: '/pages/leaderboard.html' }, 'See the leaderboards')],
+                    });
+                    return;
+                }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                profile = { ...data, bio: typeof data.bio === 'string' ? data.bio : '', tv: data.tv || {} };
+                render();
+            } catch {
+                showMessage({
+                    eyebrow: 'Uh oh',
+                    title: 'Couldn’t load this profile.',
+                    text: 'Something went wrong on the way here. Give it another try.',
+                    actions: [h('button', { type: 'button', class: 'btn btn-lg', onclick: load }, 'Try again')],
+                });
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>
