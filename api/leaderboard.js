@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db.js';
+import { connectToDatabase } from '../utils/db.js';
 
 export default async (req, res) => {
     if (req.method !== 'GET') {

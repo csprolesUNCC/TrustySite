@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db.js';
+import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).

@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db.js';
+import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { puzzleNumber, cleanGame, mergeGame, sameGame } from '../scripts/trustle.js';
 

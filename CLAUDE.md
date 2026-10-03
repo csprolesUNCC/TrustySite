@@ -36,8 +36,9 @@ Fan site for "Trusty da Horse", a stick-figure horse drawn on notebook paper: st
 ## Backend: `api/` serverless functions (ES modules)
 
 - Each file default-exports `async (req, res)` and branches on `req.method`; some multiplex via `?action=` (`clicks.js`: POST `action=tv` for Trusty TV rewards; `flappy-api.js`: `action=personal`; `draw-api.js`: `get_leaderboard` / `submit` / `get_personal`).
+- **Vercel's Hobby plan allows at most 12 functions per deployment, and every `.js` file under `api/` counts as one** (11 today). Past 12, every deploy fails, so shared helpers belong in `utils/`, not `api/`.
 - **Two separate MongoDB connection helpers — pick the right one:**
-  - `api/db.js` → named export `connectToDatabase()`, uses `MONGODB_URI`, returns the `flappy_scores` db directly. Used for game data (scores, clicks, drawings, leaderboard).
-  - `api/connect.js` → default export, uses `USERS_MONGODB_URI`, returns `{ client, db }` for the `trusty-users` db. Used by `api/auth/*`.
+  - `utils/db.js` → named export `connectToDatabase()`, uses `MONGODB_URI`, returns the `flappy_scores` db directly. Used for game data (scores, clicks, drawings, leaderboard).
+  - `utils/connect.js` → default export, uses `USERS_MONGODB_URI`, returns `{ client, db }` for the `trusty-users` db. Used by `api/auth/*`.
 - Auth: `api/auth/login.js` issues a JWT (`{ userId, username }`, 1 day) in an HttpOnly `authToken` cookie. Protected endpoints call `authenticateUser(req)` from `utils/auth.js`, which returns the decoded payload or `null`.
 - Password reset emails go through Resend (`api/auth/request-reset.js`) and link to `/pages/auth/reset-password.html?token=…` — keep that path stable. `api/gemini.js` proxies TrustyGPT to Gemini (`gemini-3.5-flash-lite`, picked for its free-tier daily limit) with Trusty's persona and lore (`PERSONA`) as the system instruction; the chat page sends the whole conversation as `history`, and the function drops the oldest turns past `HISTORY_CHARS`.

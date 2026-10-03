@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Resend } from 'resend';
-import connectToDatabase from '../connect.js';
+import connectToDatabase from '../../utils/connect.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
