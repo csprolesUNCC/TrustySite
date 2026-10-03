@@ -660,6 +660,189 @@ kbd {
 }
 
 /* =========================================================================
+   Trustle
+   ========================================================================= */
+.trustle {
+  --tile-gap: 6px;
+  width: 100%;
+  max-width: 540px;
+  margin-inline: auto;
+  container-type: inline-size;
+}
+
+/* Trusty's face and what he says */
+.trustle-talk { display: flex; align-items: center; gap: 12px; min-height: 64px; }
+.trustle-face { flex: none; width: 60px; height: 60px; transform-origin: 50% 90%; transition: transform .4s var(--ease-out); }
+.trustle-face.is-happy { animation: trustle-hop .5s var(--ease-out) 3; }
+.trustle-face.is-shaking { animation: trustle-no .4s ease-in-out; }
+.trustle-face.is-sad { transform: rotate(-14deg) translateY(4px); }
+@keyframes trustle-hop { 40% { transform: translateY(-14px) rotate(-6deg); } }
+@keyframes trustle-no { 20%, 60% { transform: rotate(-10deg); } 40%, 80% { transform: rotate(10deg); } }
+.trustle-speech { margin: 0; line-height: 1.35; }
+
+.trustle-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; min-height: 36px; margin: 12px 0; }
+.trustle-hint {
+  margin: 0 0 14px;
+  padding: 8px 14px 10px;
+  border-radius: 2px 2px 4px 2px;
+  background: var(--note-yellow);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .06), 0 10px 18px -12px rgba(0, 0, 0, .35);
+  transform: rotate(-.5deg);
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+.trustle-hint strong {
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--font-body);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--pencil);
+}
+
+/* The board: tiles shrink to fit long words and short screens */
+.trustle-board {
+  --tile: min(62px, (100cqi - (var(--len, 5) - 1) * var(--tile-gap)) / var(--len, 5), max(40px, (100dvh - 380px) / 6.6));
+  display: grid;
+  justify-content: center;
+  gap: var(--tile-gap);
+}
+.trustle-row { display: grid; grid-template-columns: repeat(var(--len, 5), var(--tile)); gap: var(--tile-gap); }
+.trustle-row.is-shaking { animation: trustle-shake .45s ease-in-out; }
+
+.trustle-tile {
+  --tile-bg: #fff;
+  --tile-fg: var(--ink);
+  --tile-line: var(--ink);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--tile);
+  height: var(--tile);
+  border: 2px solid var(--grid-strong);
+  border-radius: 7px 5px 8px 6px / 6px 8px 5px 7px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-marker);
+  font-size: calc(var(--tile) * .54);
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.trustle-tile[data-filled] { border-color: var(--ink); animation: tile-pop .12s ease-out; }
+.trustle-tile[data-state] { background: var(--tile-bg); color: var(--tile-fg); border-color: var(--tile-line); animation: none; }
+.trustle-tile[data-state="correct"] { --tile-bg: var(--green); --tile-fg: #fff; }
+.trustle-tile[data-state="present"] { --tile-bg: var(--highlight); }
+.trustle-tile[data-state="absent"] { --tile-bg: #d5d8dd; --tile-fg: var(--pencil); --tile-line: #aeb2b9; }
+.trustle-tile.is-flipping { animation: tile-flip .48s ease-in-out var(--delay, 0s) both; }
+.trustle-tile.is-bouncing { animation: tile-bounce .6s ease-in-out calc(var(--i, 0) * 90ms) both; }
+@keyframes tile-pop { 50% { transform: scale(1.1); } }
+/* Turns over, and shows its colour once it's edge-on */
+@keyframes tile-flip {
+  0% { transform: rotateX(0); background: #fff; color: var(--ink); border-color: var(--ink); }
+  49.9% { background: #fff; color: var(--ink); border-color: var(--ink); }
+  50% { transform: rotateX(90deg); background: var(--tile-bg); color: var(--tile-fg); border-color: var(--tile-line); }
+  100% { transform: rotateX(0); background: var(--tile-bg); color: var(--tile-fg); border-color: var(--tile-line); }
+}
+@keyframes tile-bounce {
+  0%, 100% { transform: none; }
+  35% { transform: translateY(-28%); }
+  60% { transform: translateY(6%); }
+  80% { transform: translateY(-3%); }
+}
+@keyframes trustle-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+/* On-screen keyboard */
+.trustle-keys { display: grid; gap: 8px; margin-top: 18px; user-select: none; -webkit-user-select: none; }
+.trustle-key-row { display: flex; justify-content: center; gap: 6px; }
+.trustle-key {
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 46px;
+  height: 54px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font: 800 1.05rem/1 var(--font-body);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s, transform .08s;
+}
+.trustle-key:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
+.trustle-key-wide { flex-grow: 1.6; max-width: 74px; font-size: .72rem; letter-spacing: .03em; text-transform: uppercase; }
+.trustle-key .icon { width: 24px; height: 24px; }
+.trustle-key-spacer { flex: .5 1 0; max-width: 23px; }
+.trustle-key[data-state="correct"] { background: var(--green); color: #fff; }
+.trustle-key[data-state="present"] { background: var(--highlight); }
+.trustle-key[data-state="absent"] { background: #d5d8dd; color: var(--pencil); border-color: #9ea2a9; box-shadow: 2px 2px 0 #9ea2a9; }
+@media (hover: hover) {
+  .trustle-key:not([data-state]):hover { background: var(--paper-deep); }
+}
+@media (max-width: 420px) {
+  .trustle-keys { gap: 7px; }
+  .trustle-key-row { gap: 4px; }
+  .trustle-key { height: 52px; font-size: 1rem; }
+  .trustle-key-wide { font-size: .6rem; letter-spacing: 0; }
+}
+
+/* After the game */
+.trustle-result { margin-top: 20px; text-align: center; transform: rotate(-.8deg); }
+.trustle-result h2 { font-size: 2rem; }
+.trustle-result-label { margin: 0; font-size: .74rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--pencil); }
+.trustle-answer { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: 6px 0 12px; }
+.trustle-answer span {
+  display: grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border: 2px solid var(--ink);
+  border-radius: 7px 5px 8px 6px / 6px 8px 5px 7px;
+  background: var(--green);
+  color: #fff;
+  font-family: var(--font-marker);
+  font-size: clamp(1rem, 5cqi, 1.5rem);
+  line-height: 1;
+}
+.trustle-why { max-width: 36ch; margin: 0 auto 8px; font-family: var(--font-hand); font-weight: 700; font-size: 1.4rem; line-height: 1.15; }
+.trustle-fill { color: var(--green); }
+.trustle-result-actions { justify-content: center; margin: 16px 0 12px; }
+.trustle-next { margin: 0; font-weight: 650; color: var(--ink-soft); }
+.trustle-next strong { font-family: var(--font-marker); font-weight: 400; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+
+/* Side panels */
+.panel > .trustle-dist-title { margin: 18px 0 8px; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--pencil); }
+.trustle-dist { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.trustle-dist li { display: grid; grid-template-columns: 1em minmax(0, 1fr); align-items: center; gap: 8px; font-weight: 800; font-size: .88rem; }
+.trustle-dist-bar {
+  width: max(1.9em, var(--w, 0%));
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--pencil-light);
+  color: #fff;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.trustle-dist .is-today .trustle-dist-bar { background: var(--green); }
+.trustle-how-lead { margin: 0 0 12px; }
+.trustle-how { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.trustle-how li { display: flex; align-items: center; gap: 10px; font-size: .95rem; line-height: 1.35; }
+.trustle-how .trustle-tile { --tile: 34px; flex: none; }
+
+/* =========================================================================
    Arcade (externally hosted games)
    ========================================================================= */
 .arcade-stage { --ar: 1.6; --stage-room: 24px; touch-action: auto; background: #111; }

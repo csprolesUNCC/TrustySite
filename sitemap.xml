@@ -56,6 +56,10 @@
         <lastmod>2026-09-28</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
+        <loc>https://trustydahorse.com/pages/games/trustle.html</loc>
+        <lastmod>2026-09-29</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.7</priority>
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/games/flappy.html</loc>
@@ -113,6 +117,12 @@
     </url>
 
     <url>
+        <loc>https://trustydahorse.com/pages/tools.html</loc>
+        <lastmod>2026-09-30</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://trustydahorse.com/pages/trustyGPT.html</loc>
         <lastmod>2026-09-26</lastmod>
         <changefreq>weekly</changefreq>
@@ -128,6 +138,12 @@
         <loc>https://trustydahorse.com/pages/viewer.html</loc>
         <lastmod>2026-09-26</lastmod>
         <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/weather.html</loc>
+        <lastmod>2026-09-30</lastmod>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>

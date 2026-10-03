@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import connectToDatabase from '../connect.js';
+import connectToDatabase from '../../utils/connect.js';
 const SALT_ROUNDS = 10;
 
 export default async (req, res) => {
@@ -9,14 +9,24 @@ export default async (req, res) => {
 
     try {
         const { db } = await connectToDatabase();
-        const { username, email, password } = req.body;
+
+        const username = req.body?.username?.trim();
+        // Store emails in lowercase
+        const email = req.body?.email?.trim().toLowerCase();
+        const password = req.body?.password;
+
         if (!username || !email || !password) {
             return res.status(400).json({ message: 'Missing required fields.' });
         }
 
         const usersCollection = db.collection('users');
 
-        const existingUser = await usersCollection.findOne({ $or: [{ email }, { username }] });
+        // Collation catches duplicates against old mixed-case emails.
+        // Note: this also makes the username check case-insensitive ("Bob" and "bob" conflict).
+        const existingUser = await usersCollection.findOne(
+            { $or: [{ email }, { username }] },
+            { collation: { locale: 'en', strength: 2 } }
+        );
         if (existingUser) {
             return res.status(409).json({ message: 'Email or username already in use.' });
         }

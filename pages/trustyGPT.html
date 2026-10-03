@@ -78,6 +78,8 @@
         const status = document.getElementById('chat-status');
         const suggestions = document.getElementById('chat-suggestions');
         const GREETING = 'whaddup';
+        // The whole conversation so far, sent with each message so Trusty remembers it.
+        let history = [];
         let busy = false;
 
         // Minimal, DOM-only Markdown: paragraphs, line breaks, lists, **bold**, *italic*, `code`.
@@ -142,7 +144,7 @@
                 const res = await fetch('/api/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text }),
+                    body: JSON.stringify({ message: text, history }),
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && typeof data.reply === 'string' && data.reply) reply = data.reply;
@@ -152,6 +154,7 @@
             }
             typing.remove();
             if (reply !== null) {
+                history.push({ role: 'user', text }, { role: 'model', text: reply });
                 addMessage('bot', formatReply(reply));
             } else {
                 const row = addMessage('bot', errorText, { error: true });
@@ -178,6 +181,7 @@
         }
 
         function reset() {
+            history = [];
             log.replaceChildren();
             addMessage('bot', GREETING);
             suggestions.hidden = false;

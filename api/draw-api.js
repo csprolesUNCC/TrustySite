@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db.js';
+import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { decodePngDataUrl } from '../utils/png.js';
 import { gradeDrawing, GRADER_VERSION } from '../scripts/draw-grader.js';

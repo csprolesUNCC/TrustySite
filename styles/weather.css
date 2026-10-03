@@ -1,0 +1,123 @@
+/* Weatherman Trusty (pages/weather.html). The doodle icons and the home page card are in stylesheet.css. */
+
+.wx-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 56px);
+}
+
+/* Trusty and his speech bubble */
+.wx-anchor { display: grid; justify-items: center; gap: 18px; margin: 0; }
+.wx-bubble {
+  position: relative;
+  max-width: 460px;
+  padding: 16px 20px;
+  background: var(--note-blue);
+  border: 2px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: var(--shadow-ink);
+  font-size: 1.08rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+/* The tail points down at Trusty's head (on the left of the drawing). */
+.wx-bubble::after {
+  content: "";
+  position: absolute;
+  left: 26%;
+  bottom: -11px;
+  width: 20px;
+  height: 20px;
+  background: var(--note-blue);
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg);
+}
+.wx-trusty { width: min(100%, 380px); height: auto; }
+
+/* The weather board: graph paper, like a map behind the weatherman */
+.wx-board {
+  gap: 14px;
+  min-height: 300px;
+  padding: clamp(20px, 3vw, 32px);
+  background-color: #fff;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.wx-board :where(p, h2) { margin: 0; }
+.wx:not([data-state="ready"]) .wx-board { align-items: center; justify-content: center; text-align: center; }
+.wx-board-art { width: 104px; }
+.wx-board-title { font-size: clamp(1.5rem, 3vw, 1.9rem); }
+.wx-board-text { max-width: 40ch; color: var(--ink-soft); }
+.wx-board .btn { margin-top: 6px; }
+
+.wx-place {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--red);
+}
+.wx-now { display: flex; align-items: center; gap: clamp(14px, 3vw, 24px); }
+.wx-now-art { flex: none; width: clamp(84px, 14vw, 120px); }
+.wx-now-temp { font-family: var(--font-marker); font-size: clamp(3.2rem, 8vw, 4.6rem); line-height: 1; }
+.wx-now-label { margin-top: 4px; font-weight: 750; font-size: 1.15rem; }
+.wx-now-feels { color: var(--pencil); }
+
+.wx-stats-title { margin-top: 4px; font-family: var(--font-hand); font-weight: 700; font-size: 1.6rem; line-height: 1; }
+.wx-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.wx-stats > div {
+  padding: 8px 12px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-card);
+}
+.wx-stats dt { font-size: .78rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--pencil); }
+.wx-stats dd { margin: 2px 0 0; font-weight: 750; font-size: 1.05rem; }
+
+/* Next 12 hours */
+.wx-hours-panel { margin-top: clamp(24px, 4vw, 40px); }
+.wx-hours {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+.wx-hours li {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 76px;
+  padding: 10px 6px;
+  background: var(--paper);
+  border: 2px solid var(--rule);
+  border-radius: var(--radius-card);
+  scroll-snap-align: start;
+}
+.wx-hours li:first-child { background: var(--note-yellow); border-color: var(--ink); }
+.wx-hour-time { font-size: .85rem; font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
+.wx-hour-art { width: 38px; }
+.wx-hour-temp { font-weight: 800; font-size: 1.05rem; }
+.wx-hour-rain { min-height: 1.2em; font-size: .85rem; font-weight: 700; color: var(--blue); }
+
+.wx-credit { margin-top: 20px; }
+
+@media (max-width: 820px) {
+  .wx-main { grid-template-columns: 1fr; }
+  .wx-trusty { width: min(72%, 300px); }
+}
+@media (max-width: 440px) {
+  .wx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

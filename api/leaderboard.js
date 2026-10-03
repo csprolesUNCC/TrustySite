@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db.js';
+import { connectToDatabase } from '../utils/db.js';
 
 export default async (req, res) => {
     if (req.method !== 'GET') {
@@ -10,7 +10,7 @@ export default async (req, res) => {
         const collection = db.collection('click_game');
 
         const leaderboard = await collection
-            .find({})
+            .find({}, { projection: { recent: 0 } })
             .sort({ clicks: -1 })
             .toArray();
 

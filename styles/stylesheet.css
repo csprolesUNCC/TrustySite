@@ -782,6 +782,50 @@ trusty-footer { display: block; }
 .site-nav a[aria-current] { color: var(--ink); }
 .site-nav a[aria-current]::after { opacity: 1; transform: scaleX(1); }
 
+/* Dropdown group (Trusty Tools): the page link, a caret, and a card of links under them */
+.nav-drop { position: relative; display: flex; align-items: center; }
+.nav-drop > a { padding-right: 2px; }
+.nav-drop > a::after { right: 2px; }
+.nav-drop-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-soft);
+}
+.nav-drop-toggle svg { width: 16px; height: 16px; transition: transform .2s var(--ease-out); }
+.nav-drop-toggle:hover { color: var(--ink); }
+.nav-drop-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.site-nav .nav-drop-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -6px;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-ink);
+  animation: menu-in .18s var(--ease-out);
+}
+/* Bridges the gap so the pointer can travel from the link to the menu without it closing. */
+.site-nav .nav-drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
+.nav-drop-toggle[aria-expanded="true"] + .nav-drop-menu { display: flex; }
+@media (hover: hover) {
+  .nav-drop:hover .nav-drop-menu { display: flex; }
+  .nav-drop:hover .nav-drop-toggle svg { transform: rotate(180deg); }
+}
+
 .header-actions { display: flex; align-items: center; gap: 10px; margin-left: 12px; }
 .account { display: flex; align-items: center; gap: 8px; }
 .account-name {
@@ -832,6 +876,7 @@ trusty-footer { display: block; }
   animation: plus-one .7s var(--ease-out) forwards;
 }
 @keyframes plus-one { to { transform: translateY(-26px) rotate(-8deg); opacity: 0; } }
+.plus-one.slow-down { left: 4px; font-size: .85rem; white-space: nowrap; animation-duration: 1s; }
 
 .menu-toggle {
   display: none;
@@ -880,6 +925,8 @@ trusty-footer { display: block; }
 .mobile-menu li + li { margin-top: var(--line); }
 .mobile-menu li a[aria-current] { color: var(--blue); }
 .mobile-menu li a[aria-current]::before { content: "\2192\00a0"; color: var(--red); }
+.mobile-menu .mobile-sub { margin-top: var(--line); padding-left: 1.4rem; }
+.mobile-menu .mobile-sub a { font-size: 1.1rem; color: var(--ink-soft); }
 .mobile-account { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
 .mobile-account .account-name { flex: 1 0 100%; font-size: 1.5rem; }
 
@@ -986,20 +1033,34 @@ trusty-footer { display: block; }
   transform: rotate(5deg);
   font-size: 1.6rem;
 }
+/* Stuck over the bottom edge of the sheet, below Trusty's back. It's in the flow and grows downward,
+   so a long update pushes the page down instead of climbing up over Trusty. */
 .hero-note {
-  position: absolute;
-  right: clamp(12px, 3vw, 44px);
-  bottom: -52px;
-  width: min(290px, 28vw);
+  position: relative;
   z-index: 2;
-}
-@media (min-width: 901px) {
-  .hero { padding-bottom: 36px; }
+  width: min(290px, 28vw);
+  margin: -52px clamp(12px, 3vw, 44px) 0 auto;
 }
 .hero-note p { font-size: .98rem; }
 
 /* A gentle bob that tips his head (on the left) up */
 .trusty-bob { animation: bob 3.2s ease-in-out infinite; transform-origin: 40% 90%; }
+/* Home page Trusty: click him and he neighs */
+.hero-neigh {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* The wiggle runs on the drawing itself (not the button), so it keeps blending into the paper */
+.hero-neigh.is-neighing img { animation: bob 3.2s ease-in-out infinite, neigh .5s var(--ease-out); }
+@keyframes neigh {
+  25% { rotate: -4deg; scale: 1.04; }
+  55% { rotate: 3deg; }
+}
 @keyframes bob {
   0%, 100% { transform: translateY(0) rotate(0); }
   50% { transform: translateY(-6px) rotate(1.2deg); }
@@ -1050,6 +1111,32 @@ trusty-footer { display: block; }
   font-weight: 650;
 }
 
+/* Hand-drawn weather icons from scripts/weather.js (home card and the weather page) */
+.doodle { display: block; width: 100%; height: auto; overflow: visible; fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.doodle .sun { fill: var(--highlight); }
+.doodle .moon { fill: var(--note-yellow); }
+.doodle .cloud { fill: #fff; }
+.doodle .cloud-dark { fill: #d9dce2; }
+.doodle .drop, .doodle .flake { stroke: var(--blue); }
+.doodle .bolt { fill: var(--gold); }
+
+/* Trusty Weather card on the home page: full width above the other teasers */
+.wx-teaser { grid-column: 1 / -1; }
+.wx-teaser-art {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  padding: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--note-blue);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.wx-teaser-art img { width: 100%; height: auto; }
+/* Above the card's stretched link, so tapping it asks for the location instead of opening the page */
+.wx-teaser .btn { position: relative; z-index: 2; }
+
 .cta-band {
   display: flex;
   flex-wrap: wrap;
@@ -1080,6 +1167,7 @@ trusty-footer { display: block; }
   .hero { padding-bottom: 12px; }
   .teaser { gap: 16px; align-items: start; }
   .teaser-avatar { width: 64px; height: 64px; }
+  .wx-teaser-art { width: 64px; height: 64px; padding: 9px; }
   .teaser-thumb { width: 88px; }
 }
 @media (max-width: 520px) {
