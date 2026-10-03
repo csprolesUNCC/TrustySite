@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en" class="game-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Fever — Trusty da Horse</title>
+    <meta name="description" content="Trusty's take on Curve Fever: steer your line, cut everyone off, and be the last one drawing. Play friends on one keyboard or the computer.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Fever">
+    <meta property="og:description" content="Don't cross the lines! Trusty's take on Curve Fever.">
+    <meta property="og:image" content="https://trustydahorse.com/images/fever_thumbnail.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/games.html">All games</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">Don't cross the lines!</p>
+                    <h1>Trusty Fever</h1>
+                </div>
+                <div class="game-actions">
+                    <button class="btn btn-outline btn-sm mute-btn" type="button" id="mute-btn" aria-pressed="false">
+                        <svg class="icon icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9c1.2 1.6 1.2 4.4 0 6M18.5 6.5c2.5 3 2.5 8 0 11"/></svg>
+                        <svg class="icon icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+                        Mute
+                    </button>
+                    <button class="btn btn-outline btn-sm" type="button" id="focus-btn" aria-pressed="false">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                        Full screen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container game-layout">
+            <section class="game-main" aria-label="Game">
+                <div class="stage fever-stage" id="stage" tabindex="0" aria-label="Trusty Fever. Hold left or right to steer your line. Don't hit the walls or any line.">
+                    <canvas id="game" aria-hidden="true"></canvas>
+                    <button class="btn btn-outline btn-sm focus-close" type="button" data-focus-close hidden>&#10005; Exit</button>
+                    <p class="focus-hint">Turn your phone sideways for a bigger view.</p>
+                    <p class="sr-only" id="announce" aria-live="polite"></p>
+
+                    <div class="stage-overlay" id="overlay-start">
+                        <p class="overlay-kicker">Don't cross the lines!</p>
+                        <h2 class="overlay-title" id="start-title">Loading&hellip;</h2>
+                        <p class="overlay-sub" id="start-sub"></p>
+                        <p class="overlay-sub"><span class="desktop-only" id="start-keys"></span><span class="touch-only">Hold the left or right side of the board, or the buttons below, to steer.</span></p>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="start-btn" disabled>Start</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="setup-btn">Game setup</button>
+                        </div>
+                    </div>
+
+                    <div class="stage-overlay" id="overlay-pause" hidden>
+                        <h2 class="overlay-title">Paused</h2>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="resume-btn">Resume</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="quit-btn">End game</button>
+                        </div>
+                        <p class="overlay-hint desktop-only">Press <kbd>Esc</kbd> or <kbd>P</kbd> to keep playing.</p>
+                    </div>
+
+                    <div class="stage-overlay" id="overlay-over" hidden>
+                        <p class="overlay-kicker">Game over</p>
+                        <h2 class="overlay-title" id="over-title"></h2>
+                        <ol class="fever-final" id="over-list"></ol>
+                        <p class="overlay-sub" id="over-sub"></p>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="again-btn">Play again</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="change-btn">Change setup</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="touch-pad fever-pad" id="pad">
+                    <button class="pad-btn fever-steer" type="button" data-steer="left" aria-label="Steer left">&#9664;</button>
+                    <button class="pad-btn pad-word" type="button" id="pad-pause">Pause</button>
+                    <button class="pad-btn fever-steer" type="button" data-steer="right" aria-label="Steer right">&#9654;</button>
+                </div>
+            </section>
+
+            <aside class="game-side">
+                <div class="panel">
+                    <h2 class="panel-title">Scores <span class="fever-target" id="target"></span></h2>
+                    <ol class="fever-scores" id="scores"></ol>
+                    <p class="side-note" id="record"></p>
+                </div>
+
+                <div class="panel" id="setup">
+                    <h2 class="panel-title">Game setup</h2>
+                    <div class="fever-setup">
+                        <div class="setup-row desktop-only">
+                            <span class="setup-label" id="humans-label">Players at this keyboard</span>
+                            <div class="segmented compact" role="group" aria-labelledby="humans-label" data-setting="humans">
+                                <button type="button" data-value="1">1</button>
+                                <button type="button" data-value="2">2</button>
+                                <button type="button" data-value="3">3</button>
+                                <button type="button" data-value="4">4</button>
+                            </div>
+                        </div>
+                        <div class="setup-row">
+                            <span class="setup-label" id="bots-label">Computer players</span>
+                            <div class="segmented compact" role="group" aria-labelledby="bots-label" data-setting="bots">
+                                <button type="button" data-value="0">0</button>
+                                <button type="button" data-value="1">1</button>
+                                <button type="button" data-value="2">2</button>
+                                <button type="button" data-value="3">3</button>
+                                <button type="button" data-value="4">4</button>
+                                <button type="button" data-value="5">5</button>
+                            </div>
+                        </div>
+                        <div class="setup-row">
+                            <span class="setup-label" id="skill-label">Computer skill</span>
+                            <div class="segmented compact" role="group" aria-labelledby="skill-label" data-setting="skill">
+                                <button type="button" data-value="easy">Easy</button>
+                                <button type="button" data-value="normal">Normal</button>
+                                <button type="button" data-value="hard">Hard</button>
+                            </div>
+                        </div>
+                        <div class="setup-row">
+                            <span class="setup-label" id="powerups-label">Power-ups</span>
+                            <div class="segmented compact" role="group" aria-labelledby="powerups-label" data-setting="powerups">
+                                <button type="button" data-value="on">On</button>
+                                <button type="button" data-value="off">Off</button>
+                            </div>
+                        </div>
+                        <div class="setup-row">
+                            <span class="setup-label" id="length-label">Game length</span>
+                            <div class="segmented compact" role="group" aria-labelledby="length-label" data-setting="length">
+                                <button type="button" data-value="5">Quick</button>
+                                <button type="button" data-value="10">Classic</button>
+                                <button type="button" data-value="15">Long</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="side-note" id="setup-note" hidden>Changes start with your next game.</p>
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title">How to play</h2>
+                    <ul class="how-to bullets">
+                        <li><span class="keys">&#9999;&#65039;</span> Every line keeps moving. Steer left and right, and don't hit a wall or any line, even your own.</li>
+                        <li><span class="keys">&#9986;&#65039;</span> Lines leave little gaps now and then. Squeeze through!</li>
+                        <li><span class="keys">&#127942;</span> Whenever someone crashes, everyone still drawing gets a point. First to the target, at least 2 points ahead, wins.</li>
+                        <li class="desktop-only"><span class="keys"><kbd>Esc</kbd><kbd>P</kbd></span> Pause</li>
+                    </ul>
+                    <h3 class="fever-legend-title">Power-ups</h3>
+                    <p class="side-note">Green ones help you, red ones mess with everyone else, and blue ones hit everybody.</p>
+                    <ul class="fever-legend" id="legend"></ul>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { fmt, h } from '/scripts/site.js';
+        import {
+            setupCanvas, offscreen, drawGraphPaper, sound, bindMuteButton, bindFocusMode,
+            isForeignKey, isActivationKey, fontsReady, bringIntoView,
+        } from '/scripts/game-kit.js';
+        import { createMatch, ARENA_W, ARENA_H, PLAYERS, POWERS } from '/scripts/fever-engine.js';
+
+        // The rules and computer players live in fever-engine.js; this page draws the game and reads the controls.
+        const MARGIN = 72;           // the notebook margin on the left, where the scores go
+        const W = MARGIN + ARENA_W;
+        const H = ARENA_H;
+        const STEP_MS = 1000 / 60;   // the game runs 60 steps a second on every screen
+        const FAST_FORWARD = 8;      // steps per tick once every person at the keyboard is out
+        const INK = '#1b1b1f';
+        const HAND = 'Caveat, "Segoe Print", cursive';
+        const MARKER = '"Permanent Marker", "Comic Sans MS", cursive';
+        const SETUP_KEY = 'trusty:fever:setup';
+        const RECORD_KEY = 'trusty:fever:record';
+        // The computers play behind the start screen.
+        const DEMO_SETUP = { humans: 0, bots: 4, skill: 'normal', powerups: true, length: 5 };
+
+        // Each person at the keyboard gets a pair of keys (physical keys, so any layout works); the fourth
+        // uses the mouse buttons. Playing alone, the arrows or A and D both work.
+        const KEYSETS = [
+            { left: ['ArrowLeft'], right: ['ArrowRight'], label: '← →' },
+            { left: ['KeyA'], right: ['KeyD'], label: 'A D' },
+            { left: ['KeyJ'], right: ['KeyL'], label: 'J L' },
+            { mouse: true, label: 'mouse buttons' },
+        ];
+        const SOLO_KEYS = { left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], label: '← →' };
+        const GAME_CODES = new Set(['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'KeyJ', 'KeyL']);
+
+        const GROUP_STYLE = {
+            self: { fill: '#d7f2cc', edge: '#23824a' },
+            others: { fill: '#ffd3de', edge: '#d6334b' },
+            all: { fill: '#d3e7ff', edge: '#1f4fbf' },
+        };
+        const LEGEND = [
+            ['fast', 'Zoom: you speed up'],
+            ['slow', 'Slow-mo: you slow down'],
+            ['thin', 'Skinny: your line gets thin'],
+            ['ghost', 'Ghost: no line, and you pass through lines'],
+            ['rush', 'Everyone else speeds up'],
+            ['fat', 'Everyone else’s line gets chunky'],
+            ['flip', 'Everyone else’s controls flip'],
+            ['square', 'Everyone else can only make sharp 90° turns'],
+            ['eraser', 'Rubs out every line'],
+            ['walls', 'The walls open up: go off one side, come back on the other'],
+        ];
+
+        const $ = (id) => document.getElementById(id);
+        const stage = $('stage');
+        const { ctx, scale } = setupCanvas($('game'), W, H);
+        const trails = offscreen(ARENA_W, ARENA_H, scale);
+        const overlays = { start: $('overlay-start'), pause: $('overlay-pause'), over: $('overlay-over') };
+        const touchFirst = matchMedia('(pointer: coarse)').matches;
+        const sounds = {
+            crash: sound('/sound/vineboom.m4a', { volume: 0.5 }),
+            power: sound('/sound/bubble.mp3', { volume: 0.5 }),
+            win: sound('/sound/horse.m4a', { volume: 0.7 }),
+            twentyOne: sound('/sound/21.mp3'),
+        };
+
+        let state = 'loading'; // loading | intro | game | paused | over
+        let match = null;      // the game being played, or the computers' demo behind the start screen
+        let setup = loadSetup();
+        let bg = null;
+        let lastFrame = 0;
+        let stepClock = 0;
+        let overAt = 0;
+        let gameOverTimer = 0;
+        let banner = null;
+        const labels = [];
+
+        /* ---------- Setup ---------- */
+
+        function fixSetup(s) {
+            if (touchFirst) s.humans = 1;
+            s.bots = Math.min(s.bots, 6 - s.humans);
+            if (s.humans + s.bots < 2) s.bots = 2 - s.humans;
+            return s;
+        }
+
+        function loadSetup() {
+            let saved = {};
+            try { saved = JSON.parse(localStorage.getItem(SETUP_KEY)) || {}; } catch { /* storage blocked or unreadable */ }
+            return fixSetup({
+                humans: [1, 2, 3, 4].includes(saved.humans) ? saved.humans : 1,
+                bots: [0, 1, 2, 3, 4, 5].includes(saved.bots) ? saved.bots : 3,
+                skill: ['easy', 'normal', 'hard'].includes(saved.skill) ? saved.skill : 'normal',
+                powerups: typeof saved.powerups === 'boolean' ? saved.powerups : true,
+                length: [5, 10, 15].includes(saved.length) ? saved.length : 5,
+            });
+        }
+
+        function saveSetup() {
+            try { localStorage.setItem(SETUP_KEY, JSON.stringify(setup)); } catch { /* storage blocked */ }
+        }
+
+        const readValue = (key, raw) => (key === 'skill' ? raw : key === 'powerups' ? raw === 'on' : Number(raw));
+        const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+        const keysFor = (p, humans) => (humans === 1 ? SOLO_KEYS : KEYSETS[p.id - 1]);
+        const keyChips = (k) => (k.mouse ? ['mouse buttons'] : k.label.split(' ').map((key) => h('kbd', null, key)));
+
+        function describe(s) {
+            const target = s.length * (s.humans + s.bots - 1);
+            const bots = s.bots ? plural(s.bots, 'computer player') : '';
+            const who = s.humans === 1 ? `You vs ${bots}` : `${s.humans} players${bots ? ` and ${bots}` : ''}`;
+            return `${who}. First to ${target} points wins.`;
+        }
+
+        function keysHint(s) {
+            if (s.humans === 1) return ['Steer with ', ...keyChips(KEYSETS[0]), ' or ', ...keyChips(KEYSETS[1]), '.'];
+            return PLAYERS.slice(0, s.humans).flatMap((look, i) => [
+                i ? ' · ' : '', h('strong', { style: { color: look.color } }, look.name), ' ', ...keyChips(KEYSETS[i]),
+            ]);
+        }
+
+        // Who's playing, before a game starts.
+        function lineup(s) {
+            const players = PLAYERS.slice(0, s.humans + s.bots).map((look, i) => ({
+                ...look, id: i + 1, human: i < s.humans, score: 0, alive: true,
+            }));
+            return { players, target: s.length * (players.length - 1), humans: s.humans };
+        }
+
+        function renderSetup() {
+            for (const group of document.querySelectorAll('[data-setting]')) {
+                const key = group.dataset.setting;
+                for (const btn of group.querySelectorAll('button')) {
+                    const value = readValue(key, btn.dataset.value);
+                    btn.setAttribute('aria-pressed', String(value === setup[key]));
+                    if (key === 'bots') btn.disabled = setup.humans + value > 6 || setup.humans + value < 2;
+                }
+            }
+            $('start-sub').textContent = describe(setup);
+            $('start-keys').replaceChildren(...keysHint(setup));
+            if (state === 'loading' || state === 'intro') renderScores(lineup(setup));
+        }
+
+        for (const group of document.querySelectorAll('[data-setting]')) {
+            group.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn || btn.disabled) return;
+                const key = group.dataset.setting;
+                setup[key] = readValue(key, btn.dataset.value);
+                fixSetup(setup);
+                saveSetup();
+                renderSetup();
+                $('setup-note').hidden = state !== 'game' && state !== 'paused';
+            });
+        }
+
+        /* ---------- Scores and record ---------- */
+
+        function renderScores(m = match) {
+            const lead = Math.max(...m.players.map((p) => p.score));
+            const playing = state === 'game' || state === 'paused';
+            $('target').textContent = `first to ${m.target}`;
+            $('scores').replaceChildren(...m.players.map((p) => h('li', {
+                class: [lead > 0 && p.score === lead ? 'is-leader' : '', playing && !p.alive ? 'is-out' : ''].join(' ').trim() || null,
+            },
+            h('span', { class: 'fever-swatch', style: { background: p.color } }),
+            h('span', { class: 'fever-who' },
+                h('strong', null, p.name),
+                h('small', null, !p.human ? 'computer' : m.humans === 1 ? 'you' : keysFor(p, m.humans).label)),
+            h('span', { class: 'fever-pts' }, fmt(p.score)))));
+        }
+
+        function loadRecord() {
+            try {
+                const r = JSON.parse(localStorage.getItem(RECORD_KEY));
+                if (r && Number.isInteger(r.played) && Number.isInteger(r.won)) return r;
+            } catch { /* storage blocked or unreadable */ }
+            return { played: 0, won: 0 };
+        }
+
+        function renderRecord(r = loadRecord()) {
+            $('record').textContent = r.played
+                ? `Your record against the computers on this device: ${plural(r.won, 'win')} in ${plural(r.played, 'game')}.`
+                : 'Beat the computers to start your record on this device.';
+        }
+
+        function announce(text) {
+            $('announce').textContent = text;
+        }
+
+        /* ---------- Drawing ---------- */
+
+        function paintBackground() {
+            const { canvas, ctx: g } = offscreen(W, H, scale);
+            g.fillStyle = '#fdfbf4';
+            g.fillRect(0, 0, MARGIN, H);
+            g.save();
+            g.translate(MARGIN, 0);
+            drawGraphPaper(g, ARENA_W, ARENA_H, { cell: 25, line: '#dde7f3' });
+            g.restore();
+            g.strokeStyle = '#f0a3ac';
+            g.lineWidth = 1.5;
+            g.beginPath();
+            g.moveTo(MARGIN - 9, 0); g.lineTo(MARGIN - 9, H);
+            g.moveTo(MARGIN - 5, 0); g.lineTo(MARGIN - 5, H);
+            g.stroke();
+            return canvas;
+        }
+
+        // Trusty's face: a circle, two lines for eyes and a smile (or crossed-out eyes).
+        function drawFace(g, x, y, R, color, { dead = false, alpha = 1 } = {}) {
+            g.save();
+            g.globalAlpha = alpha;
+            g.translate(x, y);
+            g.beginPath();
+            g.arc(0, 0, R, 0, Math.PI * 2);
+            g.fillStyle = '#fff';
+            g.fill();
+            g.lineWidth = Math.max(1.6, R * 0.17);
+            g.strokeStyle = color;
+            g.stroke();
+            g.lineCap = 'round';
+            g.lineWidth = Math.max(1.3, R * 0.13);
+            g.beginPath();
+            if (dead) {
+                const e = R * 0.15;
+                for (const ex of [-R * 0.32, R * 0.2]) {
+                    g.moveTo(ex - e, -R * 0.33 - e); g.lineTo(ex + e, -R * 0.33 + e);
+                    g.moveTo(ex + e, -R * 0.33 - e); g.lineTo(ex - e, -R * 0.33 + e);
+                }
+                g.moveTo(-R * 0.38, R * 0.42);
+                g.quadraticCurveTo(-R * 0.05, R * 0.18, R * 0.3, R * 0.42);
+            } else {
+                g.moveTo(-R * 0.3, -R * 0.5); g.lineTo(-R * 0.3, -R * 0.12);
+                g.moveTo(R * 0.18, -R * 0.5); g.lineTo(R * 0.18, -R * 0.12);
+                g.moveTo(-R * 0.45, R * 0.18);
+                g.quadraticCurveTo(-R * 0.1, R * 0.62, R * 0.4, R * 0.2);
+            }
+            g.stroke();
+            g.restore();
+        }
+
+        // A power-up: a colored circle (who it hits) with a doodle (what it does). Drawn for a radius of 13.
+        function drawPower(g, kind, x, y, R = 13) {
+            const style = GROUP_STYLE[POWERS[kind].group];
+            g.save();
+            g.translate(x, y);
+            g.beginPath();
+            g.arc(0, 0, R, 0, Math.PI * 2);
+            g.fillStyle = style.fill;
+            g.fill();
+            g.lineWidth = 2;
+            g.strokeStyle = style.edge;
+            g.stroke();
+            g.scale(R / 13, R / 13);
+            g.strokeStyle = INK;
+            g.fillStyle = INK;
+            g.lineWidth = 1.8;
+            g.lineCap = 'round';
+            g.lineJoin = 'round';
+            g.beginPath();
+            if (kind === 'fast' || kind === 'rush') {
+                g.moveTo(-6, -5); g.lineTo(-1, 0); g.lineTo(-6, 5);
+                g.moveTo(0, -5); g.lineTo(5, 0); g.lineTo(0, 5);
+                g.stroke();
+            } else if (kind === 'slow') {
+                // A snail: shell, body and a feeler.
+                g.arc(1.5, -0.5, 4.5, 0, Math.PI * 2);
+                g.moveTo(3.4, -0.5);
+                g.arc(1.5, -0.5, 1.9, 0, Math.PI * 1.5);
+                g.moveTo(-7, 4.5); g.lineTo(7, 4.5);
+                g.moveTo(-5.5, 4.5); g.lineTo(-7, -2); g.lineTo(-8, -4.5);
+                g.stroke();
+            } else if (kind === 'thin' || kind === 'fat') {
+                g.lineWidth = kind === 'thin' ? 1.2 : 5.5;
+                g.moveTo(-6, 6); g.lineTo(6, -6);
+                g.stroke();
+            } else if (kind === 'ghost') {
+                g.moveTo(-5.5, 6);
+                g.lineTo(-5.5, -1);
+                g.arc(0, -1, 5.5, Math.PI, 0);
+                g.lineTo(5.5, 6);
+                g.lineTo(3.7, 4.4); g.lineTo(1.8, 6); g.lineTo(0, 4.4); g.lineTo(-1.8, 6); g.lineTo(-3.7, 4.4);
+                g.closePath();
+                g.fillStyle = '#fff';
+                g.fill();
+                g.stroke();
+                g.fillStyle = INK;
+                g.beginPath();
+                g.arc(-2, -1, 1.1, 0, Math.PI * 2);
+                g.arc(2, -1, 1.1, 0, Math.PI * 2);
+                g.fill();
+            } else if (kind === 'flip') {
+                g.moveTo(-6, -3); g.lineTo(6, -3); g.moveTo(3, -6); g.lineTo(6, -3); g.lineTo(3, 0);
+                g.moveTo(6, 3); g.lineTo(-6, 3); g.moveTo(-3, 0); g.lineTo(-6, 3); g.lineTo(-3, 6);
+                g.stroke();
+            } else if (kind === 'square') {
+                g.moveTo(-5, -6); g.lineTo(-5, 4); g.lineTo(6, 4);
+                g.moveTo(3, 1); g.lineTo(6, 4); g.lineTo(3, 7);
+                g.stroke();
+            } else if (kind === 'eraser') {
+                g.rotate(-0.6);
+                g.fillStyle = '#f29aa8';
+                g.fillRect(-7, -3.5, 5, 7);
+                g.strokeRect(-7, -3.5, 14, 7);
+                g.moveTo(-2, -3.5); g.lineTo(-2, 3.5);
+                g.stroke();
+            } else if (kind === 'walls') {
+                g.setLineDash([3, 2.6]);
+                g.strokeRect(-6, -6, 12, 12);
+            }
+            g.restore();
+        }
+
+        function clearTrails() {
+            trails.ctx.clearRect(0, 0, ARENA_W, ARENA_H);
+        }
+
+        function drawInk(e) {
+            const g = trails.ctx;
+            g.strokeStyle = e.color;
+            g.lineWidth = e.width;
+            g.lineCap = 'round';
+            g.beginPath();
+            for (let i = 0; i < e.segs.length; i += 4) {
+                g.moveTo(e.segs[i], e.segs[i + 1]);
+                g.lineTo(e.segs[i + 2], e.segs[i + 3]);
+            }
+            g.stroke();
+        }
+
+        function outlinedText(text, x, y, font, color, outline = 6) {
+            ctx.font = font;
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = outline;
+            ctx.strokeStyle = '#fff';
+            ctx.strokeText(text, x, y);
+            ctx.fillStyle = color;
+            ctx.fillText(text, x, y);
+        }
+
+        function drawWalls(now) {
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = INK;
+            if (match.wrapLeft > 0) {
+                // Open walls march around the edge, and blink just before they close.
+                ctx.setLineDash([12, 10]);
+                ctx.lineDashOffset = -now / 40;
+                ctx.strokeStyle = match.wrapLeft < 90 && Math.floor(now / 160) % 2 ? INK : '#1f4fbf';
+            }
+            ctx.strokeRect(1.5, 1.5, ARENA_W - 3, ARENA_H - 3);
+            ctx.restore();
+        }
+
+        function drawPlayer(p, now) {
+            if (match.phase === 'ready') {
+                // Where everyone starts and which way they're facing.
+                const cos = Math.cos(p.a);
+                const sin = Math.sin(p.a);
+                ctx.save();
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(p.x + cos * 16, p.y + sin * 16);
+                ctx.lineTo(p.x + cos * 36, p.y + sin * 36);
+                ctx.lineTo(p.x + cos * 29 - sin * 6, p.y + sin * 29 + cos * 6);
+                ctx.moveTo(p.x + cos * 36, p.y + sin * 36);
+                ctx.lineTo(p.x + cos * 29 + sin * 6, p.y + sin * 29 - cos * 6);
+                ctx.stroke();
+                ctx.restore();
+                drawFace(ctx, p.x, p.y, 11, p.color);
+                if (!match.demo) {
+                    const name = p.human && match.humans > 1 ? `${p.name} (${keysFor(p, match.humans).label})` : p.human ? `${p.name} (you)` : p.name;
+                    ctx.textAlign = 'center';
+                    outlinedText(name, p.x, p.y - (sin < -0.5 ? -34 : 20), `700 22px ${HAND}`, p.color);
+                }
+                return;
+            }
+            if (!p.alive) {
+                drawFace(ctx, p.x, p.y, 8, p.color, { dead: true });
+                return;
+            }
+            ctx.save();
+            if (p.ghost) ctx.globalAlpha = 0.45 + 0.2 * Math.sin(now / 90);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r + 1.6, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffe45c';
+            ctx.fill();
+            ctx.lineWidth = 1.6;
+            ctx.strokeStyle = p.color;
+            ctx.stroke();
+            ctx.restore();
+            if (p.human && (p.flip || p.square)) {
+                ctx.textAlign = 'center';
+                outlinedText(p.flip ? 'backwards!' : 'square!', p.x, p.y - p.r - 10, `700 18px ${HAND}`, p.color, 5);
+            }
+        }
+
+        function drawLabels(now) {
+            ctx.textAlign = 'center';
+            for (let i = labels.length - 1; i >= 0; i--) {
+                const l = labels[i];
+                const t = (now - l.born) / 1500;
+                if (t >= 1) {
+                    labels.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4;
+                const x = Math.min(ARENA_W - 110, Math.max(110, l.x));
+                const y = Math.max(30, l.y - 22 - t * 24);
+                outlinedText(l.text, x, y, `700 24px ${HAND}`, l.color, 6);
+                ctx.restore();
+            }
+        }
+
+        function drawStatus() {
+            ctx.textAlign = 'center';
+            if (match.demo) return;
+            if (match.phase === 'ready') {
+                outlinedText(`Round ${match.round}`, ARENA_W / 2, 56, `34px ${MARKER}`, INK, 8);
+                outlinedText('Get ready…', ARENA_W / 2, 90, `700 28px ${HAND}`, '#d6334b', 6);
+            } else if ((match.phase === 'end' || match.phase === 'over') && banner) {
+                outlinedText(banner.text, ARENA_W / 2, 60, `36px ${MARKER}`, banner.color, 9);
+                if (match.phase === 'end') outlinedText('Next round…', ARENA_W / 2, 96, `700 26px ${HAND}`, '#5a5d63', 6);
+            } else if (fastForward()) {
+                ctx.textAlign = 'right';
+                outlinedText('fast-forward ⏩', ARENA_W - 16, ARENA_H - 16, `700 24px ${HAND}`, '#5a5d63', 6);
+            }
+        }
+
+        // The margin: "first to", then each player's face and score.
+        function drawMargin(now) {
+            const cx = (MARGIN - 9) / 2;
+            ctx.save();
+            ctx.textAlign = 'center';
+            if (!match.demo) {
+                ctx.fillStyle = '#d6334b';
+                ctx.font = `700 18px ${HAND}`;
+                ctx.fillText('first to', cx, 24);
+                ctx.font = `22px ${MARKER}`;
+                ctx.fillText(String(match.target), cx, 50);
+            }
+            const top = 90;
+            const gap = Math.min(84, (H - top - 30) / match.players.length);
+            match.players.forEach((p, i) => {
+                const y = top + i * gap;
+                const out = match.phase !== 'ready' && !p.alive;
+                drawFace(ctx, cx, y, 12, p.color, { dead: out, alpha: out ? 0.5 : 1 });
+                const pop = p.bumpAt ? Math.max(0, 1 - (now - p.bumpAt) / 450) : 0;
+                ctx.save();
+                ctx.translate(cx, y + 38);
+                ctx.scale(1 + pop * 0.4, 1 + pop * 0.4);
+                ctx.font = `24px ${MARKER}`;
+                ctx.fillStyle = p.color;
+                ctx.fillText(String(p.score), 0, 0);
+                ctx.restore();
+            });
+            ctx.restore();
+        }
+
+        function draw(now) {
+            ctx.drawImage(bg, 0, 0, W, H);
+            ctx.drawImage(trails.canvas, MARGIN, 0, ARENA_W, ARENA_H);
+            ctx.save();
+            ctx.translate(MARGIN, 0);
+            drawWalls(now);
+            for (const pu of match.powerups) {
+                pu.shownAt ??= now;
+                const grow = Math.min(1, (now - pu.shownAt) / 220);
+                drawPower(ctx, pu.kind, pu.x, pu.y + Math.sin(now / 320 + pu.x) * 1.2, 13 * (0.4 + 0.6 * grow));
+            }
+            for (const p of match.players) drawPlayer(p, now);
+            drawLabels(now);
+            drawStatus();
+            ctx.restore();
+            drawMargin(now);
+        }
+
+        /* ---------- Game flow ---------- */
+
+        function showOverlay(name) {
+            for (const [key, el] of Object.entries(overlays)) el.hidden = key !== name;
+        }
+
+        const byId = (id) => match.players[id - 1];
+
+        function handle(events) {
+            const live = !match.demo;
+            for (const e of events) {
+                if (e.type === 'round') {
+                    clearTrails();
+                    labels.length = 0;
+                    banner = null;
+                    if (live) {
+                        renderScores();
+                        announce(`Round ${e.round}. Get ready.`);
+                    }
+                } else if (e.type === 'ink') {
+                    drawInk(e);
+                } else if (e.type === 'erase') {
+                    clearTrails();
+                } else if (e.type === 'crash') {
+                    if (live && byId(e.id).human) sounds.crash.play();
+                    if (live) renderScores();
+                } else if (e.type === 'score') {
+                    const now = performance.now();
+                    for (const id of e.ids) {
+                        const p = byId(id);
+                        p.bumpAt = now;
+                        if (live && p.human && p.score === 21) sounds.twentyOne.play();
+                    }
+                    if (live) renderScores();
+                } else if (e.type === 'pickup') {
+                    const def = POWERS[e.kind];
+                    const p = byId(e.id);
+                    labels.push({ text: def.label, x: p.x, y: p.y, color: GROUP_STYLE[def.group].edge, born: performance.now() });
+                    if (live && p.human) sounds.power.play();
+                } else if (e.type === 'roundEnd') {
+                    const winner = e.id ? byId(e.id) : null;
+                    const you = winner && winner.human && match.humans === 1;
+                    banner = winner
+                        ? { text: you ? 'You win the round!' : `${winner.name} wins the round!`, color: winner.color }
+                        : { text: 'Nobody makes it!', color: INK };
+                    if (live) {
+                        renderScores();
+                        announce(`${banner.text} ${match.players.map((p) => `${p.name} ${p.score}`).join(', ')}.`);
+                        if (winner && winner.human) sounds.win.play();
+                    }
+                } else if (e.type === 'gameOver') {
+                    if (live) gameOverTimer = setTimeout(finishGame, 1400);
+                    else match.restartAt = performance.now() + 1500;
+                }
+            }
+        }
+
+        function startDemo() {
+            match = createMatch(DEMO_SETUP, { readySteps: 40, firstReadySteps: 30, endSteps: 70 });
+            match.demo = true;
+            match.humans = 0;
+            handle(match.begin());
+        }
+
+        function toIntro() {
+            clearTimeout(gameOverTimer);
+            state = 'intro';
+            releaseAll();
+            startDemo();
+            showOverlay('start');
+            $('setup-note').hidden = true;
+            renderSetup();
+        }
+
+        function startGame() {
+            clearTimeout(gameOverTimer);
+            match = createMatch(setup);
+            match.humans = setup.humans;
+            state = 'game';
+            releaseAll();
+            showOverlay(null);
+            $('setup-note').hidden = true;
+            handle(match.begin());
+            renderScores();
+            stage.focus({ preventScroll: true });
+            bringIntoView();
+        }
+
+        function finishGame() {
+            if (state !== 'game' || !match.champion) return;
+            state = 'over';
+            overAt = performance.now();
+            renderScores();
+            const champ = match.champion;
+            const ranked = [...match.players].sort((a, b) => b.score - a.score);
+            const solo = match.humans === 1;
+            $('over-title').textContent = champ.human && solo ? 'You win!' : `${champ.name} wins!`;
+            $('over-list').replaceChildren(...ranked.map((p) => h('li', null,
+                h('span', { class: 'fever-swatch', style: { background: p.color } }), `${p.name} ${fmt(p.score)}`)));
+            let sub = '';
+            if (solo) {
+                const record = loadRecord();
+                record.played += 1;
+                if (champ.human) record.won += 1;
+                try { localStorage.setItem(RECORD_KEY, JSON.stringify(record)); } catch { /* storage blocked */ }
+                renderRecord(record);
+                const place = ranked.findIndex((p) => p.human) + 1;
+                sub = champ.human ? 'You beat the computers!' : `You came ${['', '1st', '2nd', '3rd', '4th', '5th', '6th'][place]}. Better luck next time!`;
+            }
+            $('over-sub').textContent = sub;
+            $('over-sub').hidden = !sub;
+            showOverlay('over');
+            $('again-btn').focus({ preventScroll: true });
+            announce(`Game over. ${$('over-title').textContent}`);
+        }
+
+        function pause() {
+            if (state !== 'game') return;
+            state = 'paused';
+            clearTimeout(gameOverTimer);
+            releaseAll();
+            showOverlay('pause');
+            $('resume-btn').focus({ preventScroll: true });
+        }
+
+        function resume() {
+            if (state !== 'paused') return;
+            state = 'game';
+            lastFrame = 0;
+            showOverlay(null);
+            stage.focus({ preventScroll: true });
+            if (match.phase === 'over') gameOverTimer = setTimeout(finishGame, 600);
+        }
+
+        // Once everyone at the keyboard is out, the computers finish the round at 8x speed.
+        function fastForward() {
+            return state === 'game' && match.phase === 'play' && match.humans > 0
+                && !match.players.some((p) => p.human && p.alive);
+        }
+
+        function tick() {
+            if (state === 'game') applyControls();
+            const steps = fastForward() ? FAST_FORWARD : 1;
+            for (let i = 0; i < steps; i++) handle(match.update());
+        }
+
+        function frame(now) {
+            const elapsed = lastFrame ? Math.min(now - lastFrame, 250) : 0;
+            lastFrame = now;
+            if (state === 'game' || state === 'intro') {
+                stepClock += elapsed;
+                let steps = 0;
+                while (stepClock >= STEP_MS) {
+                    stepClock -= STEP_MS;
+                    tick();
+                    if (++steps >= 8) {
+                        stepClock = 0;
+                        break;
+                    }
+                }
+            } else {
+                stepClock = 0;
+            }
+            if (state === 'intro' && match.phase === 'over' && now > match.restartAt) startDemo();
+            if (match && bg) draw(now);
+            requestAnimationFrame(frame);
+        }
+
+        /* ---------- Controls ---------- */
+
+        const held = new Set();                      // keys down, by physical key
+        const pointers = new Map();                  // fingers (or the mouse) on the board: which half
+        const pad = { left: false, right: false };   // the on-screen buttons
+        const mouse = { left: false, right: false }; // the fourth player's mouse buttons
+
+        function releaseAll() {
+            held.clear();
+            pointers.clear();
+            pad.left = pad.right = false;
+            mouse.left = mouse.right = false;
+        }
+
+        const holding = (side) => [...pointers.values()].includes(side);
+
+        function applyControls() {
+            for (const p of match.players) {
+                if (!p.human) continue;
+                const keys = keysFor(p, match.humans);
+                let left = keys.mouse ? mouse.left : keys.left.some((code) => held.has(code));
+                let right = keys.mouse ? mouse.right : keys.right.some((code) => held.has(code));
+                if (p.id === 1) {
+                    left = left || pad.left || holding('left');
+                    right = right || pad.right || holding('right');
+                }
+                p.control.turn = (right ? 1 : 0) - (left ? 1 : 0);
+            }
+        }
+
+        // A fresh press also counts as one sharp turn, for "square turns".
+        function tap(p, dir) {
+            if (state === 'game' && p && p.human) p.control.tap = dir;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (isForeignKey(e) || isActivationKey(e)) return;
+            if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+                if (state === 'game') pause();
+                else if (state === 'paused') resume();
+                return;
+            }
+            if (e.key === ' ' || e.key === 'Enter') {
+                if (state === 'intro' && !$('start-btn').disabled) {
+                    e.preventDefault();
+                    startGame();
+                } else if (state === 'over' && performance.now() - overAt > 500) {
+                    e.preventDefault();
+                    startGame();
+                } else if (state === 'game') {
+                    e.preventDefault();
+                    match.skipWait();
+                }
+                return;
+            }
+            if (!GAME_CODES.has(e.code)) return;
+            held.add(e.code);
+            if (state !== 'game' && state !== 'paused') return;
+            e.preventDefault();
+            if (e.repeat || state !== 'game') return;
+            for (const p of match.players) {
+                if (!p.human) continue;
+                const keys = keysFor(p, match.humans);
+                if (keys.mouse) continue;
+                if (keys.left.includes(e.code)) tap(p, -1);
+                else if (keys.right.includes(e.code)) tap(p, 1);
+            }
+        });
+        document.addEventListener('keyup', (e) => held.delete(e.code));
+        window.addEventListener('blur', releaseAll);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+        // On the board: hold the left or right half to steer player 1. With four at the keyboard, the
+        // mouse buttons steer player 4 instead.
+        const mousePlayer = () => state === 'game' && match.humans === 4;
+        const sideOf = (e) => {
+            const r = stage.getBoundingClientRect();
+            return e.clientX < r.left + r.width / 2 ? 'left' : 'right';
+        };
+
+        function readMouse(e) {
+            const left = (e.buttons & 1) !== 0;
+            const right = (e.buttons & 2) !== 0;
+            const p = match.players[3];
+            if (left && !mouse.left) tap(p, -1);
+            if (right && !mouse.right) tap(p, 1);
+            mouse.left = left;
+            mouse.right = right;
+        }
+
+        stage.addEventListener('pointerdown', (e) => {
+            if (state !== 'game' || e.target.closest('button, a')) return;
+            e.preventDefault();
+            try { stage.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+            if (match.phase === 'end') match.skipWait();
+            if (e.pointerType === 'mouse' && mousePlayer()) {
+                readMouse(e);
+                return;
+            }
+            const side = sideOf(e);
+            pointers.set(e.pointerId, side);
+            tap(match.players[0], side === 'left' ? -1 : 1);
+        });
+        stage.addEventListener('pointermove', (e) => {
+            if (state !== 'game') return;
+            if (e.pointerType === 'mouse' && mousePlayer()) readMouse(e);
+            else if (pointers.has(e.pointerId)) pointers.set(e.pointerId, sideOf(e));
+        });
+        const lift = (e) => {
+            if (e.pointerType === 'mouse' && mousePlayer()) readMouse(e);
+            pointers.delete(e.pointerId);
+        };
+        stage.addEventListener('pointerup', lift);
+        stage.addEventListener('pointercancel', lift);
+        stage.addEventListener('contextmenu', (e) => {
+            if (state === 'game' || state === 'paused') e.preventDefault();
+        });
+
+        for (const btn of document.querySelectorAll('#pad [data-steer]')) {
+            const side = btn.dataset.steer;
+            let down = false;
+            btn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                down = true;
+                btn.classList.add('is-pressed');
+                pad[side] = true;
+                if (state !== 'game') return;
+                if (match.phase === 'end') match.skipWait();
+                tap(match.players[0], side === 'left' ? -1 : 1);
+            });
+            const up = () => {
+                if (!down) return;
+                down = false;
+                btn.classList.remove('is-pressed');
+                pad[side] = false;
+            };
+            btn.addEventListener('pointerup', up);
+            btn.addEventListener('pointerleave', up);
+            btn.addEventListener('pointercancel', up);
+            btn.addEventListener('contextmenu', (e) => e.preventDefault());
+        }
+        $('pad-pause').addEventListener('click', () => {
+            if (state === 'game') pause();
+            else if (state === 'paused') resume();
+        });
+
+        function showSetupPanel() {
+            const panel = $('setup');
+            panel.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+            panel.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
+        }
+
+        $('start-btn').addEventListener('click', startGame);
+        $('setup-btn').addEventListener('click', showSetupPanel);
+        $('resume-btn').addEventListener('click', resume);
+        $('quit-btn').addEventListener('click', toIntro);
+        $('again-btn').addEventListener('click', () => { if (performance.now() - overAt > 500) startGame(); });
+        $('change-btn').addEventListener('click', () => {
+            toIntro();
+            showSetupPanel();
+        });
+        bindMuteButton($('mute-btn'));
+        bindFocusMode(stage, $('focus-btn'), () => stage.focus({ preventScroll: true }));
+
+        /* ---------- Load ---------- */
+
+        $('legend').replaceChildren(...LEGEND.map(([kind, text]) => {
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+            const icon = document.createElement('canvas');
+            icon.width = icon.height = Math.round(30 * dpr);
+            icon.setAttribute('aria-hidden', 'true');
+            const g = icon.getContext('2d');
+            g.scale(dpr, dpr);
+            drawPower(g, kind, 15, 15, 13);
+            return h('li', null, icon, h('span', null, text));
+        }));
+        renderSetup();
+        renderRecord();
+
+        fontsReady.then(() => {
+            bg = paintBackground();
+            toIntro();
+            $('start-title').textContent = 'Trusty Fever';
+            $('start-btn').disabled = false;
+            requestAnimationFrame(frame);
+        });
+    </script>
+</body>
+</html>

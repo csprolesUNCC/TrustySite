@@ -304,6 +304,66 @@ kbd {
 }
 .segmented button img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
 .segmented button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.segmented.compact button { justify-content: center; min-width: 38px; padding: 4px 12px; }
+.segmented button:disabled { opacity: .35; cursor: not-allowed; }
+
+/* =========================================================================
+   Trusty Fever
+   ========================================================================= */
+.fever-stage { --ar: 1.4533; --stage-room: 24px; }
+@media (pointer: coarse) {
+  .fever-stage { --stage-room: 110px; }
+}
+/* The computers play behind the start screen, so let them show through. */
+.fever-stage #overlay-start { background: rgba(251, 248, 240, .78); }
+.fever-pad { align-items: center; gap: 12px; }
+.fever-pad .fever-steer { width: 112px; }
+.fever-pad .pad-word { width: auto; padding: 0 16px; font-size: .9rem; }
+
+.fever-target { font-family: var(--font-hand); font-weight: 700; font-size: 1.25rem; color: var(--red); }
+.fever-scores { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fever-scores li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1.5px dashed var(--grid-strong);
+  border-radius: 10px;
+  background: var(--paper);
+  transition: opacity .2s;
+}
+.fever-scores li.is-leader { border: 1.5px solid var(--ink); background: var(--note-yellow); }
+.fever-scores li.is-out { opacity: .5; }
+.fever-swatch { flex: none; width: 16px; height: 16px; border: 2px solid var(--ink); border-radius: 50%; }
+.fever-who { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.fever-who small { font-size: .78rem; font-weight: 600; color: var(--pencil); }
+.fever-pts { font-family: var(--font-marker); font-size: 1.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+
+.fever-setup { display: grid; gap: 14px; }
+.setup-row { display: grid; justify-items: start; gap: 6px; }
+.setup-label { font-weight: 700; font-size: .9rem; }
+
+.panel .fever-legend-title { margin: 18px 0 0; font-size: 1rem; }
+.fever-legend-title + .side-note { margin-top: 4px; }
+.fever-legend { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.fever-legend li { display: flex; align-items: center; gap: 10px; font-size: .92rem; line-height: 1.35; }
+.fever-legend canvas { flex: none; width: 30px; height: 30px; }
+
+.fever-final {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  max-width: 36em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+  font-size: clamp(.8rem, 2.4cqi, 1rem);
+}
+.fever-final li { display: inline-flex; align-items: center; gap: 6px; }
+.fever-final .fever-swatch { width: 12px; height: 12px; border-width: 1.5px; }
 
 /* =========================================================================
    Trustis
