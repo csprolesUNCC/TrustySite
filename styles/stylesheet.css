@@ -1445,7 +1445,7 @@ dialog.reader::backdrop { background: #1e1f23; }
 .chat-card {
   display: flex;
   flex-direction: column;
-  height: min(760px, calc(100dvh - var(--header-h) - 48px));
+  height: min(760px, calc(100svh - var(--header-h) - 48px));
   min-height: 440px;
   background: var(--card);
   border: 2px solid var(--ink);
@@ -1545,7 +1545,7 @@ dialog.reader::backdrop { background: #1e1f23; }
   .chat-intro h1 { margin: 0; font-size: clamp(2rem, 8vw, 2.6rem); }
   .chat-intro .eyebrow { margin: 0; align-self: end; }
   .chat-intro .lead, .chat-intro .chat-disclaimer { grid-column: 1 / -1; margin-top: 8px; }
-  .chat-card { height: calc(100dvh - var(--header-h) - 24px); min-height: 400px; }
+  .chat-card { height: calc(100svh - var(--header-h) - 24px); min-height: 400px; }
 }
 @media (max-width: 560px) {
   .chat-suggestions { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 12px; }

@@ -38,12 +38,13 @@ html.game-page trusty-header { position: relative; }
 }
 
 /* ---------- Stage: a fixed-aspect play area that always fits the screen ---------- */
+/* svh, not dvh: on phones dvh changes every time the toolbar hides or shows, which resized the stage mid-scroll. */
 .stage {
   --ar: 1.3333;
   --stage-room: 24px;
   position: relative;
   width: 100%;
-  width: min(100%, calc((100dvh - var(--stage-room)) * var(--ar)));
+  width: min(100%, calc((100svh - var(--stage-room)) * var(--ar)));
   min-width: min(100%, 300px);
   aspect-ratio: var(--ar);
   margin-inline: auto;
@@ -373,7 +374,7 @@ kbd {
   --gap: 14px;
   --pad-room: 0px;
   --top-room: 0px;
-  --board-w: min(420px, calc((100dvh - 36px - var(--pad-room) - var(--top-room)) * .4545), calc(100% - 2 * var(--side) - 2 * var(--gap)));
+  --board-w: min(420px, calc((100svh - 36px - var(--pad-room) - var(--top-room)) * .4545), calc(100% - 2 * var(--side) - 2 * var(--gap)));
   display: grid;
   grid-template-columns: var(--side) var(--board-w) var(--side);
   grid-template-rows: auto 1fr;
@@ -503,7 +504,7 @@ kbd {
 /* Phones held sideways: the pad goes either side of the board */
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
   .tetris-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
-  .tetris-main > .tetris { grid-column: 2; grid-row: 1; --side: 96px; --gap: 8px; --board-w: calc((100dvh - 36px) * .4545); }
+  .tetris-main > .tetris { grid-column: 2; grid-row: 1; --side: 96px; --gap: 8px; --board-w: calc((100svh - 36px) * .4545); }
   .tetris-stats { gap: 6px; }
   .tetris-box, .tetris-stats .stat { padding: 4px 8px; box-shadow: 1px 1px 0 var(--ink); }
   .tetris-box .stat-label, .tetris-stats .stat-label { font-size: .6rem; }
