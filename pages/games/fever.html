@@ -822,17 +822,19 @@
 
         const held = new Set();                      // keys down, by physical key
         const pointers = new Map();                  // fingers (or the mouse) on the board: which half
-        const pad = { left: false, right: false };   // the on-screen buttons
+        const padPointers = new Map();               // fingers on the buttons under the board: which side
         const mouse = { left: false, right: false }; // the fourth player's mouse buttons
+        const padEl = $('pad');
 
         function releaseAll() {
             held.clear();
             pointers.clear();
-            pad.left = pad.right = false;
+            padPointers.clear();
+            paintPad();
             mouse.left = mouse.right = false;
         }
 
-        const holding = (side) => [...pointers.values()].includes(side);
+        const holding = (side) => [...pointers.values(), ...padPointers.values()].includes(side);
 
         function applyControls() {
             for (const p of match.players) {
@@ -841,8 +843,8 @@
                 let left = keys.mouse ? mouse.left : keys.left.some((code) => held.has(code));
                 let right = keys.mouse ? mouse.right : keys.right.some((code) => held.has(code));
                 if (p.id === 1) {
-                    left = left || pad.left || holding('left');
-                    right = right || pad.right || holding('right');
+                    left = left || holding('left');
+                    right = right || holding('right');
                 }
                 p.control.turn = (right ? 1 : 0) - (left ? 1 : 0);
             }
@@ -851,6 +853,14 @@
         // A fresh press also counts as one sharp turn, for "square turns".
         function tap(p, dir) {
             if (state === 'game' && p && p.human) p.control.tap = dir;
+        }
+
+        // A finger on the board or the pad is holding `side`. Sliding onto the other side counts as a
+        // fresh press, so rocking a thumb between the two still makes square turns.
+        function hold(fingers, id, side) {
+            if (fingers.get(id) === side) return;
+            fingers.set(id, side);
+            tap(match.players[0], side === 'left' ? -1 : 1);
         }
 
         document.addEventListener('keydown', (e) => {
@@ -893,8 +903,8 @@
         // On the board: hold the left or right half to steer player 1. With four at the keyboard, the
         // mouse buttons steer player 4 instead.
         const mousePlayer = () => state === 'game' && match.humans === 4;
-        const sideOf = (e) => {
-            const r = stage.getBoundingClientRect();
+        const sideOf = (el, e) => {
+            const r = el.getBoundingClientRect();
             return e.clientX < r.left + r.width / 2 ? 'left' : 'right';
         };
 
@@ -917,14 +927,12 @@
                 readMouse(e);
                 return;
             }
-            const side = sideOf(e);
-            pointers.set(e.pointerId, side);
-            tap(match.players[0], side === 'left' ? -1 : 1);
+            hold(pointers, e.pointerId, sideOf(stage, e));
         });
         stage.addEventListener('pointermove', (e) => {
             if (state !== 'game') return;
             if (e.pointerType === 'mouse' && mousePlayer()) readMouse(e);
-            else if (pointers.has(e.pointerId)) pointers.set(e.pointerId, sideOf(e));
+            else if (pointers.has(e.pointerId)) hold(pointers, e.pointerId, sideOf(stage, e));
         });
         const lift = (e) => {
             if (e.pointerType === 'mouse' && mousePlayer()) readMouse(e);
@@ -936,29 +944,30 @@
             if (state === 'game' || state === 'paused') e.preventDefault();
         });
 
-        for (const btn of document.querySelectorAll('#pad [data-steer]')) {
-            const side = btn.dataset.steer;
-            let down = false;
-            btn.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                down = true;
-                btn.classList.add('is-pressed');
-                pad[side] = true;
-                if (state !== 'game') return;
-                if (match.phase === 'end') match.skipWait();
-                tap(match.players[0], side === 'left' ? -1 : 1);
-            });
-            const up = () => {
-                if (!down) return;
-                down = false;
-                btn.classList.remove('is-pressed');
-                pad[side] = false;
-            };
-            btn.addEventListener('pointerup', up);
-            btn.addEventListener('pointerleave', up);
-            btn.addEventListener('pointercancel', up);
-            btn.addEventListener('contextmenu', (e) => e.preventDefault());
+        // The buttons under the board work like the board: hold a side, and slide between them without
+        // lifting. The pad takes the whole touch (touch-action: none in games.css), so a thumb that drifts
+        // while holding never turns into a scroll that cancels the press.
+        function paintPad() {
+            const sides = [...padPointers.values()];
+            for (const btn of padEl.querySelectorAll('[data-steer]')) btn.classList.toggle('is-pressed', sides.includes(btn.dataset.steer));
         }
+        padEl.addEventListener('pointerdown', (e) => {
+            if (state !== 'game' || e.target.closest('#pad-pause')) return;
+            e.preventDefault();
+            try { padEl.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+            if (match.phase === 'end') match.skipWait();
+            hold(padPointers, e.pointerId, sideOf(padEl, e));
+            paintPad();
+        });
+        padEl.addEventListener('pointermove', (e) => {
+            if (!padPointers.has(e.pointerId)) return;
+            hold(padPointers, e.pointerId, sideOf(padEl, e));
+            paintPad();
+        });
+        const liftPad = (e) => { if (padPointers.delete(e.pointerId)) paintPad(); };
+        padEl.addEventListener('pointerup', liftPad);
+        padEl.addEventListener('pointercancel', liftPad);
+        padEl.addEventListener('contextmenu', (e) => e.preventDefault());
         $('pad-pause').addEventListener('click', () => {
             if (state === 'game') pause();
             else if (state === 'paused') resume();

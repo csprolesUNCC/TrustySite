@@ -317,7 +317,8 @@ kbd {
 }
 /* The computers play behind the start screen, so let them show through. */
 .fever-stage #overlay-start { background: rgba(251, 248, 240, .78); }
-.fever-pad { align-items: center; gap: 12px; }
+/* Holding a side must never turn into a scroll, or the browser cancels the press mid-turn. */
+.fever-pad { align-items: center; gap: 12px; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .fever-pad .fever-steer { width: 112px; }
 .fever-pad .pad-word { width: auto; padding: 0 16px; font-size: .9rem; }
 
