@@ -52,6 +52,10 @@
         <priority>0.8</priority>
     </url>
     <url>
+        <loc>https://trustydahorse.com/pages/games/fever.html</loc>
+        <lastmod>2026-09-28</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
         <loc>https://trustydahorse.com/pages/games/trustle.html</loc>
         <lastmod>2026-09-29</lastmod>
         <changefreq>daily</changefreq>
