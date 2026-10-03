@@ -100,6 +100,8 @@ export async function logout() {
   location.href = '/index.html';
 }
 
+export const profileHref = (username) => `/pages/profile.html?u=${encodeURIComponent(username)}`;
+
 export function loginHref() {
   if (location.pathname.startsWith('/pages/auth/')) return '/pages/auth/login.html';
   const next = location.pathname + location.search + location.hash;
@@ -154,7 +156,9 @@ const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 function accountContent() {
   if (session.loggedIn) {
     return [
-      h('span', { class: 'account-name', title: session.username }, `Hi, ${session.username || 'friend'}`),
+      session.username
+        ? h('a', { class: 'account-name', href: profileHref(session.username), title: 'Your profile' }, `Hi, ${session.username}`)
+        : h('span', { class: 'account-name' }, 'Hi, friend'),
       h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: logout }, 'Log out'),
     ];
   }

@@ -592,6 +592,9 @@ img[src$="/trusty.png"] { clip-path: inset(0 2%); }
 .board-row[data-rank="2"] .board-rank { color: #7c8591; }
 .board-row[data-rank="3"] .board-rank { color: #a8662b; }
 .board-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+/* Names link to profiles */
+a.board-name, a.podium-name { color: var(--ink); text-decoration: none; }
+a.board-name:hover, a.podium-name:hover { color: var(--blue); text-decoration: underline; }
 .board-score { font-family: var(--font-marker); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 .board-row.is-me { background: linear-gradient(transparent 12%, rgba(255, 228, 92, .55) 12%, rgba(255, 228, 92, .55) 88%, transparent 88%); }
 .board-row.is-me .board-name::after { content: " (you)"; font-weight: 500; color: var(--pencil); }
@@ -838,6 +841,8 @@ trusty-footer { display: block; }
   font-size: 1.35rem;
   line-height: 1;
 }
+a.account-name { color: var(--ink); text-decoration: none; }
+a.account-name:hover { color: var(--blue); text-decoration: underline; }
 
 /* The Trusty clicker (logged-in only) */
 .clicker {

@@ -1,6 +1,6 @@
 // Fetch + render the three leaderboards. Names and drawings come from other users, so everything
 // is built with DOM APIs (never innerHTML) and drawings must be PNG data URLs.
-import { h, fmt, session } from '/scripts/site.js';
+import { h, fmt, session, profileHref } from '/scripts/site.js';
 import { referenceCanvas } from '/scripts/draw-reference.js';
 
 const PNG_PREFIX = 'data:image/png;base64,';
@@ -42,15 +42,24 @@ export async function fetchBoard(key) {
   if (!Array.isArray(data)) throw new Error('Unexpected leaderboard response');
   return data.map((raw) => {
     const entry = board.normalize(raw || {});
+    const named = typeof entry.name === 'string' && entry.name.trim() !== '';
     return {
       ...entry,
-      name: typeof entry.name === 'string' && entry.name.trim() ? entry.name : 'Anonymous',
+      name: named ? entry.name : 'Anonymous',
+      profile: named ? profileHref(entry.name) : null,
       score: Number(entry.score) || 0,
     };
   });
 }
 
 const isMe = (entry) => session.loggedIn && session.username && entry.name === session.username;
+
+// A name links to that player's profile page.
+function nameTag(entry, className) {
+  return entry.profile
+    ? h('a', { class: className, href: entry.profile, title: `${entry.name}'s profile` }, entry.name)
+    : h('span', { class: className, title: entry.name }, entry.name);
+}
 
 function drawingThumb(entry, className) {
   if (!entry.drawing) return h('span', { class: `${className} board-thumb-empty`, 'aria-hidden': 'true' });
@@ -72,7 +81,7 @@ export function renderList(list, entries, { key, startRank = 1 }) {
     },
     h('span', { class: 'board-rank' }, rank),
     key === 'draw' ? drawingThumb(entry, 'board-thumb') : null,
-    h('span', { class: 'board-name', title: entry.name }, entry.name),
+    nameTag(entry, 'board-name'),
     h('span', { class: 'board-score' }, board.format(entry.score)));
   }));
 }
@@ -86,7 +95,7 @@ export function renderPodium(container, entries, { key }) {
   container.replaceChildren(h('ol', { class: 'podium', 'aria-label': `${board.label} top three` },
     entries.slice(0, 3).map((entry, i) => h('li', { class: `podium-spot place-${i + 1}${isMe(entry) ? ' is-me' : ''}` },
       key === 'draw' ? drawingThumb(entry, 'podium-thumb') : null,
-      h('span', { class: 'podium-name', title: entry.name }, entry.name),
+      nameTag(entry, 'podium-name'),
       h('span', { class: 'podium-score' }, board.format(entry.score)),
       h('span', { class: 'podium-block', 'aria-label': `Rank ${i + 1}` }, i + 1)))));
 }
