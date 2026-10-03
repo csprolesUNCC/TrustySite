@@ -1,0 +1,8 @@
+# Opens a PR when an action used in .github/workflows has a new release, e.g. a newer
+# claude-code-action than the commit claude.yml is pinned to. Merge it to update.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

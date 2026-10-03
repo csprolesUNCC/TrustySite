@@ -29,10 +29,16 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@v1
+      # Pinned to one release so @claude doesn't change between runs. Dependabot (.github/dependabot.yml)
+      # opens a PR when there's a newer one.
+      - uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1.0.240
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Pushes go through the action's own git-push.sh, which it always allows. Don't add a plain
+          # Bash(git push:*): its flags can run any command on the runner. No node either: the repo is
+          # public, so anyone can write the issue text @claude reads.
           claude_args: |
             --model opus
-            --effort high
-            --allowedTools "Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git checkout:*),Bash(git status:*),Bash(git diff:*)"
+            --effort max
+            --allowedTools "Bash(git add:*),Bash(git commit:*),Bash(git checkout:*),Bash(git status:*),Bash(git diff:*),Bash(git merge --ff-only:*)"
+            --append-system-prompt "Only when the person who mentioned you explicitly asks you to push to main: finish and push your branch as usual, then run git checkout main, then git merge --ff-only with your branch, then push main with the same push script you use for your branch (origin main). If any of those steps fail, for example because main moved while you worked, stop there, give the Create PR link instead and say why. Without that request, keep using your branch and the PR link."

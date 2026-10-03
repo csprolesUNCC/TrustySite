@@ -12,6 +12,12 @@ Fan site for "Trusty da Horse", a stick-figure horse drawn on notebook paper: st
 - Full stack: `vercel dev` (needs `.env` with `MONGODB_URI`, `USERS_MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `RESEND_API_KEY`). Frontend only: any static server at the repo root (e.g. `npx serve .`); API-backed features (login, leaderboards, clicker, TrustyGPT) won't work.
 - Pages must be served from the root — all asset, script and API paths are root-absolute (`/styles/...`, `/scripts/...`, `/api/...`).
 
+## @claude on GitHub
+
+- `.github/workflows/claude.yml` runs `anthropics/claude-code-action`, pinned to one release commit. Dependabot (`.github/dependabot.yml`) opens a PR when there's a newer one. @claude can't edit workflow files itself.
+- @claude works on a `claude/issue-N-…` branch and leaves a Create PR link. It only fast-forwards `main` to its branch and pushes it when the person who mentioned it explicitly asks it to push to main. Pushes to `main` deploy to the live site.
+- Its pushes go through the action's own `git-push.sh`. Don't add a plain `Bash(git push:*)` or `node` to its allowed tools: the repo is public, anyone can write the issue text @claude reads, and both can be made to run any command on the runner.
+
 ## Frontend architecture
 
 - **Design system:** `styles/stylesheet.css` holds tokens (paper/ink palette, Permanent Marker + Caveat fonts loaded from Google Fonts in each page head) and shared components: `.sheet` (ruled notebook paper), `.card`/`.card-link` (index cards with a stretched title link), `.sticky-note`, `.btn` variants, `.panel`, `.tabs`, `.board` (leaderboard rows), forms, dialogs. `.ink` makes black-on-white line art blend into the paper (`mix-blend-mode: multiply`). `styles/games.css` adds the game shell (`.stage` fixed-aspect play area with `--ar`/`--stage-room`, overlays, focus mode, touch pads) and is only linked from game pages.
