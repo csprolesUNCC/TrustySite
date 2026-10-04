@@ -12,6 +12,12 @@ Fan site for "Trusty da Horse", a stick-figure horse drawn on notebook paper: st
 - Full stack: `vercel dev` (needs `.env` with `MONGODB_URI`, `USERS_MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `RESEND_API_KEY`). Frontend only: any static server at the repo root (e.g. `npx serve .`); API-backed features (login, leaderboards, clicker, TrustyGPT) won't work.
 - Pages must be served from the root — all asset, script and API paths are root-absolute (`/styles/...`, `/scripts/...`, `/api/...`).
 
+## Shipping changes
+
+- Claude Code sessions push finished work straight to `main` without asking: commit on the session's branch, push it, then fast-forward `main` to it (`git push origin HEAD:main`). If `main` has moved, merge it into the branch first. Never force-push `main`.
+- `main` deploys to the live site, so check your change before pushing. There are no tests, so at least load the pages you touched and look for errors.
+- This doesn't apply to @claude on GitHub, which only pushes to `main` when explicitly asked (below).
+
 ## @claude on GitHub
 
 - `.github/workflows/claude.yml` runs `anthropics/claude-code-action`, pinned to one release commit. Dependabot (`.github/dependabot.yml`) opens a PR when there's a newer one. @claude can't edit workflow files itself.
