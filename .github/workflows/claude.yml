@@ -12,11 +12,15 @@ on:
 
 jobs:
   claude:
+    # Only Luke and Carson can start @claude, so nobody else can use the Claude subscription or give it
+    # orders. (The action also refuses anyone without write access; this makes it explicit.)
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      contains(fromJSON('["LukeHorne", "csprolesUNCC"]'), github.actor) && (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -34,6 +38,8 @@ jobs:
       - uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1.0.240
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # @claude only sees comments from Luke, Carson and itself, not from anyone else on the thread.
+          include_comments_by_actor: LukeHorne,csprolesUNCC,claude[bot]
           # Pushes go through the action's own git-push.sh, which it always allows. Don't add a plain
           # Bash(git push:*): its flags can run any command on the runner. No node either: the repo is
           # public, so anyone can write the issue text @claude reads.

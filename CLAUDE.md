@@ -21,8 +21,9 @@ Fan site for "Trusty da Horse", a stick-figure horse drawn on notebook paper: st
 ## @claude on GitHub
 
 - `.github/workflows/claude.yml` runs `anthropics/claude-code-action`, pinned to one release commit. Dependabot (`.github/dependabot.yml`) opens a PR when there's a newer one. @claude can't edit workflow files itself.
+- Only LukeHorne and csprolesUNCC can start it (the job's `if:`), and it only sees comments from them and itself (`include_comments_by_actor`). To let someone else use @claude, add them to both.
 - @claude works on a `claude/issue-N-…` branch and leaves a Create PR link. It only fast-forwards `main` to its branch and pushes it when the person who mentioned it explicitly asks it to push to main. Pushes to `main` deploy to the live site.
-- Its pushes go through the action's own `git-push.sh`. Don't add a plain `Bash(git push:*)` or `node` to its allowed tools: the repo is public, anyone can write the issue text @claude reads, and both can be made to run any command on the runner.
+- Its pushes go through the action's own `git-push.sh`. Don't add a plain `Bash(git push:*)` or `node` to its allowed tools: the repo is public, issues and PR reviews written by anyone still reach @claude when one of you points it at them, and both can be made to run any command on the runner.
 
 ## Frontend architecture
 
