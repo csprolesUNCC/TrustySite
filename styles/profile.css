@@ -66,6 +66,7 @@
 .profile-stat p { margin: 0; }
 .profile-stat .text-link { width: fit-content; margin-top: 8px; font-weight: 700; }
 .profile-stat-value { font-family: var(--font-marker); font-size: clamp(2rem, 4vw, 2.6rem); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.profile-stat-detail { color: var(--ink-soft); font-weight: 650; }
 .profile-stat-rank { color: var(--pencil); font-weight: 600; }
 .profile-stat-rank a { font-family: var(--font-marker); font-weight: 400; font-size: 1.15rem; }
 .profile-stat-empty { color: var(--pencil); }
@@ -85,8 +86,9 @@
 }
 .profile-drawing img { width: 100%; height: 100%; object-fit: contain; }
 
-/* Trustle takes the whole row: its numbers on one side, the guess bars on the other */
-.profile-stat.is-trustle { grid-column: 1 / -1; }
+/* Trustle takes two columns, next to Trustis (the whole row on smaller screens): its numbers on one side,
+   the guess bars on the other */
+.profile-stat.is-trustle { grid-column: span 2; }
 .profile-trustle { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px clamp(20px, 4vw, 40px); align-items: start; }
 .profile-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .profile-mini {
@@ -115,6 +117,7 @@
   .profile-top { grid-template-columns: 1fr; }
   .profile-tv { max-width: 420px; }
   .profile-stats { grid-template-columns: 1fr 1fr; }
+  .profile-stat.is-trustle { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   .profile-stats, .profile-trustle { grid-template-columns: 1fr; }

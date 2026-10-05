@@ -1,10 +1,15 @@
 import { connectToDatabase } from '../utils/db.js';
 import profile from '../utils/profile.js';
+import trustis from '../utils/trustis.js';
 
 export default async (req, res) => {
-    // Profile pages live here too (?action=profile, see utils/profile.js) to save a Vercel function.
+    // Profile pages (?action=profile, see utils/profile.js) and the Trustis board (?action=trustis, see
+    // utils/trustis.js) live here too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
+    }
+    if (req.query.action === 'trustis') {
+        return trustis(req, res);
     }
 
     if (req.method !== 'GET') {

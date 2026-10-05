@@ -198,6 +198,17 @@
                 profile.isMe ? h('a', { class: 'text-link', href: '/pages/games/draw.html' }, 'Play Draw Trusty') : null);
         }
 
+        function trustisCard() {
+            const t = profile.trustis;
+            return statCard('Trustis best', 'is-trustis',
+                t ? [
+                    value(fmt(t.score)),
+                    t.level ? h('p', { class: 'profile-stat-detail' }, `Level ${fmt(t.level)} · ${fmt(t.lines)} ${t.lines === 1 ? 'line' : 'lines'}`) : null,
+                    rankLine(t.rank, '/pages/leaderboard.html#trustis'),
+                ] : emptyLine('Hasn’t stacked any Trustys yet.'),
+                profile.isMe ? h('a', { class: 'text-link', href: '/pages/games/trustis.html' }, 'Play Trustis') : null);
+        }
+
         function trustleCard() {
             const t = profile.trustle;
             if (!t) {
@@ -228,7 +239,7 @@
             $('profile-since').textContent = Number.isNaN(since.getTime()) ? '' : `Trusty fan since ${joinedFormat.format(since)}.`;
             renderBio();
             renderTv();
-            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustleCard());
+            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), trustleCard());
             show('profile');
         }
 
