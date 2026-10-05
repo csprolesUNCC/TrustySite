@@ -104,8 +104,8 @@
                 </div>
             </section>
 
-            <aside class="game-side desktop-only">
-                <div class="panel">
+            <aside class="game-side">
+                <div class="panel desktop-only">
                     <h2 class="panel-title">Controls</h2>
                     <ul class="how-to">
                         <li><span class="keys"><kbd>&larr;</kbd><kbd>&rarr;</kbd></span> Move (hold to slide)</li>
@@ -118,6 +118,12 @@
                     </ul>
                 </div>
                 <div class="panel">
+                    <h2 class="panel-title">Top Stackers</h2>
+                    <ol class="board" id="leaderboard" aria-label="Trustis top 10"></ol>
+                    <p class="side-note" data-auth-show="out">Playing as a guest, so your best only saves on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboard.</p>
+                    <div class="panel-foot"><a class="text-link" href="/pages/leaderboard.html#trustis">Full leaderboard</a></div>
+                </div>
+                <div class="panel desktop-only">
                     <h2 class="panel-title">Scoring</h2>
                     <dl class="scoring-table">
                         <dt>Single</dt><dd>100</dd>
@@ -141,7 +147,8 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { fmt } from '/scripts/site.js';
+        import { fmt, toast, onSession, sessionExpired, loginHref } from '/scripts/site.js';
+        import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
         import { loadImage, setupCanvas, drawGraphPaper, isActivationKey, localBest, saveLocalBest, bringIntoView } from '/scripts/game-kit.js';
 
         /* ---------- Rules (standard "Guideline" Tetris) ---------- */
@@ -157,7 +164,7 @@
         const SOFT_DROP_FACTOR = 20;        // soft drop falls 20x faster than gravity
         const LINE_CLEAR_DELAY = 300;
         const NEXT_COUNT = 5;
-        const MAX_START_LEVEL = 15;
+        const MAX_START_LEVEL = 15;         // utils/trustis.js checks scores against the same
         const BEST_KEY = 'trustis-guideline';
         const LEVEL_KEY = 'trusty:trustis:level';
 
@@ -257,6 +264,8 @@
         let clearing = null;    // { rows, left } while cleared lines flash
         let played = false;
         let overAt = 0;
+        let loggedIn = null;
+        let best = 0;           // logged in, the account's best (on the leaderboard); otherwise this device's
         const keys = { held: [], dir: 0, t: 0, next: 0 };
 
         /* ---------- Pieces ---------- */
@@ -546,14 +555,18 @@
             overAt = performance.now();
             softDrop = false;
             $('action').replaceChildren();
-            const isBest = saveLocalBest(BEST_KEY, score) && score > 0;
-            const best = localBest(BEST_KEY);
+            // A guest's best saves on the device. Logged in, it only changes once the leaderboard has saved it.
+            const isBest = score > 0 && (loggedIn ? score > best : saveLocalBest(BEST_KEY, score));
+            if (isBest && !loggedIn) best = score;
             setStat('best', best);
             $('over-score').textContent = fmt(score);
             $('over-badge').hidden = !isBest;
-            $('over-sub').textContent = `Level ${level} · ${fmt(lines)} ${lines === 1 ? 'line' : 'lines'}. Your best is ${fmt(best)}.`;
+            overSummary = `Level ${level} · ${fmt(lines)} ${lines === 1 ? 'line' : 'lines'}.`;
+            if (!loggedIn) overNote(`Best on this device: ${fmt(best)}.`);
+            else overNote(isBest ? 'Saving your score…' : `Your best is ${fmt(best)}.`);
             showOverlay('over');
             $('again-btn').focus({ preventScroll: true });
+            if (loggedIn && isBest) submitScore({ score, lines, level });
         }
 
         function pause() {
@@ -622,6 +635,70 @@
                 if (lockTimer >= LOCK_DELAY || lockResets >= MAX_LOCK_RESETS) lock();
             } else {
                 lockTimer = 0;
+            }
+        }
+
+        /* ---------- Scores ---------- */
+
+        // The line under the final score: the game's level and lines, then how saving it went. Keep it short,
+        // the board is narrow on phones.
+        let overSummary = '';
+        const overNote = (text) => { $('over-sub').textContent = `${overSummary} ${text}`; };
+        // Logged in, "New best!" means on the leaderboard, so it comes off if the save doesn't go through.
+        const notSaved = (text) => {
+            $('over-badge').hidden = true;
+            overNote(text);
+        };
+
+        // A logged-in player's new best goes on the leaderboard (utils/trustis.js).
+        async function submitScore(game) {
+            try {
+                const res = await fetch('/api/leaderboard?action=trustis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(game),
+                });
+                if (res.status === 401) {
+                    sessionExpired();
+                    notSaved('Not saved: your login expired.');
+                } else if (res.status === 201) {
+                    best = Math.max(best, game.score);
+                    setStat('best', best);
+                    overNote('Saved to the leaderboard!');
+                    toast('High score saved!', 'success');
+                    loadLeaderboard();
+                } else if (res.ok) {
+                    // The account already has a better game (from another device, say).
+                    await loadPersonalBest();
+                    notSaved(`Your best is ${fmt(best)}.`);
+                } else {
+                    throw new Error(String(res.status));
+                }
+            } catch {
+                notSaved('Couldn’t save your score.');
+            }
+        }
+
+        async function loadPersonalBest() {
+            if (!loggedIn) return;
+            try {
+                const res = await fetch('/api/leaderboard?action=trustis&personal=1');
+                if (!res.ok) return;
+                const data = await res.json();
+                best = Math.max(best, Number(data.highScore) || 0);
+                setStat('best', best);
+            } catch { /* keep the last known best */ }
+        }
+
+        async function loadLeaderboard() {
+            const list = $('leaderboard');
+            if (!list.children.length) renderSkeleton(list, 5);
+            try {
+                const entries = await fetchBoard('trustis');
+                if (entries.length) renderList(list, entries.slice(0, 10), { key: 'trustis' });
+                else renderStatus(list, 'No scores yet! Be the first.');
+            } catch {
+                renderStatus(list, 'Couldn’t load the leaderboard.', 'error');
             }
         }
 
@@ -882,7 +959,16 @@
         $('menu-btn').addEventListener('click', toMenu);
         levelSelect.addEventListener('change', () => { if (state === 'intro') setStat('level', Number(levelSelect.value)); });
         setStat('level', Number(levelSelect.value));
-        setStat('best', localBest(BEST_KEY));
+        $('login-link').href = loginHref();
+
+        onSession(({ loggedIn: now }) => {
+            if (now === loggedIn) return;
+            loggedIn = now;
+            best = loggedIn ? 0 : localBest(BEST_KEY);
+            setStat('best', best);
+            loadPersonalBest();
+        });
+        loadLeaderboard();
 
         /* ---------- Load ---------- */
         (async () => {

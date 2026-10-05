@@ -1,4 +1,4 @@
-// Fetch + render the three leaderboards. Names and drawings come from other users, so everything
+// Fetch + render the leaderboards. Names and drawings come from other users, so everything
 // is built with DOM APIs (never innerHTML) and drawings must be PNG data URLs.
 import { h, fmt, session, profileHref } from '/scripts/site.js';
 import { referenceCanvas } from '/scripts/draw-reference.js';
@@ -31,6 +31,13 @@ export const BOARDS = {
     normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing) }),
     format: (n) => `${fmt(n)}%`,
     unit: 'accuracy',
+  },
+  trustis: {
+    url: '/api/leaderboard?action=trustis',
+    label: 'Trustis',
+    normalize: (e) => ({ name: e.name, score: e.score }),
+    format: (n) => fmt(n),
+    unit: 'points',
   },
 };
 

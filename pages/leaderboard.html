@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Leaderboards — Trusty da Horse</title>
-    <meta name="description" content="Are you the ultimate Trusty fan? See the top clickers and the best Flappy Trusty and Draw Trusty players.">
+    <meta name="description" content="Are you the ultimate Trusty fan? See the top clickers and the best Flappy Trusty, Draw Trusty and Trustis players.">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Trusty da Horse">
@@ -37,6 +37,7 @@
                 <button class="tab" role="tab" type="button" id="tab-clicks" aria-controls="panel-clicks" aria-selected="true" data-board="clicks">Top Clickers</button>
                 <button class="tab" role="tab" type="button" id="tab-flappy" aria-controls="panel-flappy" aria-selected="false" tabindex="-1" data-board="flappy">Flappy Trusty</button>
                 <button class="tab" role="tab" type="button" id="tab-draw" aria-controls="panel-draw" aria-selected="false" tabindex="-1" data-board="draw">Draw Trusty</button>
+                <button class="tab" role="tab" type="button" id="tab-trustis" aria-controls="panel-trustis" aria-selected="false" tabindex="-1" data-board="trustis">Trustis</button>
             </div>
 
             <div class="lb-panel" role="tabpanel" id="panel-clicks" aria-labelledby="tab-clicks" data-board="clicks">
@@ -80,6 +81,21 @@
                 <div class="panel">
                     <h2 class="panel-title">Top 10</h2>
                     <ol class="board" data-list aria-label="Draw Trusty, rank 4 to 10"></ol>
+                </div>
+            </div>
+
+            <div class="lb-panel" role="tabpanel" id="panel-trustis" aria-labelledby="tab-trustis" data-board="trustis" hidden>
+                <div class="lb-side">
+                    <div data-podium></div>
+                    <div class="sticky-note green lb-note">
+                        <h3>Top Stackers</h3>
+                        <p data-me-note>Only the top 10 make the board.</p>
+                        <a class="btn btn-sm" href="/pages/games/trustis.html">Play Trustis</a>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">Top 10</h2>
+                    <ol class="board" data-list aria-label="Trustis, rank 4 to 10"></ol>
                 </div>
             </div>
         </section>
