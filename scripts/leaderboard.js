@@ -1,6 +1,6 @@
 // Fetch + render the leaderboards. Names and drawings come from other users, so everything
 // is built with DOM APIs (never innerHTML) and drawings must be PNG data URLs.
-import { h, fmt, session, profileHref } from '/scripts/site.js';
+import { h, fmt, session, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
 import { referenceCanvas } from '/scripts/draw-reference.js';
 
 const PNG_PREFIX = 'data:image/png;base64,';
@@ -28,7 +28,7 @@ export const BOARDS = {
   draw: {
     url: '/api/draw-api?action=get_leaderboard',
     label: 'Draw Trusty',
-    normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing) }),
+    normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing), id: e.id, at: e.at }),
     format: (n) => `${fmt(n)}%`,
     unit: 'accuracy',
   },
@@ -119,9 +119,70 @@ export function renderSkeleton(list, rows = 6) {
 
 let viewer;
 let overlaySrc;
+// Drawings reported from this page (and ones still being sent), as reportKey()s.
+const reported = new Set();
+const reporting = new Set();
 
 function fileSafe(text) {
   return String(text).replace(/[^a-z0-9_-]+/gi, '_').slice(0, 40) || 'artist';
+}
+
+// Which exact drawing this is (the board and profile APIs send `id` and `at`; see utils/moderation.js).
+// Without them there's nothing to report.
+const reportKey = (entry) => (typeof entry.id === 'string' && typeof entry.at === 'string' ? `${entry.id}:${entry.at}` : null);
+
+function setReportStatus(message = '', tone = 'info') {
+  viewer.status.dataset.tone = tone;
+  viewer.status.replaceChildren(...[message].flat().filter(Boolean));
+}
+
+function showReportButton(entry) {
+  const key = reportKey(entry);
+  const done = reported.has(key);
+  viewer.report.hidden = !key || (session.loggedIn && entry.name === session.username);
+  viewer.report.disabled = done || reporting.has(key);
+  viewer.report.textContent = done ? 'Reported' : 'Report';
+}
+
+// Anyone logged in can report someone else's drawing to the admins, once.
+async function reportDrawing() {
+  const entry = viewer.entry;
+  const key = reportKey(entry);
+  if (!key || reported.has(key) || reporting.has(key)) return;
+  if (!session.loggedIn) {
+    setReportStatus(['Log in to report drawings. ', h('a', { href: loginHref() }, 'Log in')], 'info');
+    return;
+  }
+  if (!confirm(`Report ${entry.name}’s drawing to the admins? Only report drawings that don’t belong on the site.`)) return;
+
+  reporting.add(key);
+  showReportButton(entry);
+  setReportStatus('Sending your report…', 'info');
+  let message = 'Couldn’t reach the server. Check your connection and try again.';
+  let tone = 'error';
+  try {
+    const res = await fetch('/api/draw-api?action=report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: entry.id, at: entry.at }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      sessionExpired();
+      message = ['Your login expired. ', h('a', { href: loginHref() }, 'Log in again'), ' to report drawings.'];
+    } else if (res.ok) {
+      reported.add(key);
+      message = res.status === 201 ? 'Thanks! The admins will take a look.' : 'You already reported this drawing.';
+      tone = 'success';
+    } else {
+      message = data.error || 'Couldn’t send your report. Try again?';
+    }
+  } catch { /* keep the connection message */ }
+  reporting.delete(key);
+  // The viewer may be showing a different drawing by now.
+  if (reportKey(viewer.entry) !== key) return;
+  setReportStatus(message, tone);
+  showReportButton(entry);
 }
 
 export function openDrawing(entry) {
@@ -134,12 +195,15 @@ export function openDrawing(entry) {
     const overlay = h('img', { class: 'drawing-overlay', src: overlaySrc, alt: '', hidden: true });
     const toggle = h('button', { type: 'button', class: 'btn btn-outline btn-sm', 'aria-pressed': 'false' }, 'Show the real Trusty');
     const download = h('a', { class: 'btn btn-sm', download: 'trusty-drawing.png' }, 'Download PNG');
+    const report = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: reportDrawing }, 'Report');
+    const status = h('p', { class: 'form-status drawing-status', role: 'status' });
     const close = h('button', { type: 'button', class: 'btn btn-ghost btn-icon', 'aria-label': 'Close' }, '✕');
     const dialog = h('dialog', { class: 'modal', 'aria-labelledby': 'drawing-title' },
       h('div', { class: 'modal-head' }, title, close),
       h('div', { class: 'modal-body' },
         h('div', { class: 'drawing-frame' }, art, overlay),
-        h('div', { class: 'drawing-actions' }, toggle, download)));
+        h('div', { class: 'drawing-actions' }, toggle, download, report),
+        status));
 
     toggle.addEventListener('click', () => {
       overlay.hidden = !overlay.hidden;
@@ -149,8 +213,12 @@ export function openDrawing(entry) {
     close.addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
     document.body.append(dialog);
-    viewer = { dialog, title, art, overlay, toggle, download };
+    viewer = { dialog, title, art, overlay, toggle, download, report, status };
   }
+
+  viewer.entry = entry;
+  setReportStatus();
+  showReportButton(entry);
 
   const board = BOARDS.draw;
   viewer.title.textContent = `${entry.name}'s masterpiece (${board.format(entry.score)})`;

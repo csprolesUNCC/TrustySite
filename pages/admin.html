@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Admin Panel — Trusty da Horse</title>
+    <meta name="description" content="Admin tools for Trusty da Horse.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#fbf8f0">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container section" id="state-loading">
+            <p class="muted" role="status">Checking your admin badge…</p>
+        </div>
+
+        <!-- Logged out, or not an admin -->
+        <div class="container notfound" id="state-message" hidden>
+            <div class="sheet notfound-sheet">
+                <img class="ink" src="/images/seahorse.jpg" alt="" width="1536" height="1173">
+                <div>
+                    <p class="eyebrow" id="message-eyebrow"></p>
+                    <h1 id="message-title"></h1>
+                    <p class="lead" id="message-text"></p>
+                    <div class="btn-row" id="message-actions"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="state-admin" hidden>
+            <header class="page-head container">
+                <p class="eyebrow">Admins only</p>
+                <h1>Admin Panel</h1>
+                <p class="lead">Look over Draw Trusty drawings and usernames, and take down anything that doesn’t belong on the site.</p>
+            </header>
+
+            <section class="section-tight container" aria-label="Admin tools">
+                <div class="tabs" role="tablist" aria-label="Admin tools">
+                    <button class="tab" role="tab" type="button" id="tab-drawings" aria-controls="panel-drawings" aria-selected="true" data-tab="drawings">Drawings</button>
+                    <button class="tab" role="tab" type="button" id="tab-users" aria-controls="panel-users" aria-selected="false" tabindex="-1" data-tab="users">Usernames</button>
+                </div>
+
+                <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
+                    <div class="admin-head">
+                        <p class="admin-summary" id="drawings-summary" role="status"></p>
+                        <ul class="admin-key" aria-label="Card colors">
+                            <li data-level="1">1 report</li>
+                            <li data-level="2">2 reports</li>
+                            <li data-level="3">3 or more</li>
+                        </ul>
+                    </div>
+                    <ul class="admin-drawings" id="drawings" aria-label="Draw Trusty drawings, most reported first"></ul>
+                </div>
+
+                <div role="tabpanel" id="panel-users" aria-labelledby="tab-users" data-tab="users" hidden>
+                    <div class="admin-head">
+                        <p class="admin-summary" id="users-summary" role="status"></p>
+                    </div>
+                    <div id="users"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
+        import { openDrawing } from '/scripts/leaderboard.js';
+
+        // Everything here comes from utils/moderation.js (?action=admin on api/leaderboard.js), which checks
+        // that you're an admin on every request. Names come from other users, so they're only ever set as text.
+        const API = '/api/leaderboard?action=admin';
+        const $ = (id) => document.getElementById(id);
+        const states = ['loading', 'message', 'admin'];
+        const show = (which) => states.forEach((s) => { $(`state-${s}`).hidden = s !== which; });
+        const dateFormat = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+
+        function formatDate(value) {
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '' : dateFormat.format(date);
+        }
+
+        function showMessage({ eyebrow, title, text, actions = [] }) {
+            $('message-eyebrow').textContent = eyebrow;
+            $('message-title').textContent = title;
+            $('message-text').textContent = text;
+            $('message-actions').replaceChildren(...actions);
+            show('message');
+        }
+
+        function needLogin() {
+            showMessage({
+                eyebrow: 'Admins only',
+                title: 'Log in to open the admin panel.',
+                text: 'This page is for the site’s admins. Log in with an admin account to use it.',
+                actions: [h('a', { class: 'btn btn-lg', href: loginHref() }, 'Log in')],
+            });
+        }
+
+        function notAdmin() {
+            showMessage({
+                eyebrow: 'Admins only',
+                title: 'This page is just for admins.',
+                text: 'Your account isn’t an admin, so there’s nothing here for you. Trusty says nice try, though.',
+                actions: [h('a', { class: 'btn btn-lg', href: '/index.html' }, 'Back to the home page')],
+            });
+        }
+
+        // A 401 means the login ran out and a 403 that this account isn't an admin: either way the panel
+        // makes way for a message, and `denied` tells the caller to stop.
+        async function request(query, options) {
+            const res = await fetch(API + query, options);
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) {
+                sessionExpired();
+                needLogin();
+            } else if (res.status === 403) {
+                notAdmin();
+            }
+            return { res, data, denied: res.status === 401 || res.status === 403 };
+        }
+
+        const nameLink = (name, className) => (name
+            ? h('a', { class: className, href: profileHref(name), title: `${name}’s profile` }, name)
+            : h('span', { class: className }, '(no name)'));
+
+        const retryButton = (key) => h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => load(key) }, 'Try again');
+
+        /* ---------- Drawings ---------- */
+
+        let drawings = [];
+        let drawingTotal = 0;
+
+        function summarizeDrawings() {
+            const reported = drawings.filter((d) => d.reports > 0).length;
+            const some = drawings.length < drawingTotal ? ` Showing the ${fmt(drawings.length)} most reported and newest.` : '';
+            $('drawings-summary').textContent = drawingTotal
+                ? `${plural(drawingTotal, 'drawing')} on the site, ${reported ? `${fmt(reported)} with reports to check` : 'none reported'}.${some}`
+                : 'Nobody has saved a drawing yet.';
+        }
+
+        // Each card loads its own picture, so the list stays small however big the drawings are.
+        function drawingCard(d) {
+            const src = `${API}&view=drawing&id=${encodeURIComponent(d.id)}&at=${encodeURIComponent(d.at)}`;
+            const card = h('li', { class: 'admin-drawing', dataset: { level: Math.min(d.reports, 3) } },
+                h('button', {
+                    type: 'button',
+                    class: 'admin-drawing-art',
+                    'aria-label': d.name ? `View ${d.name}’s drawing` : 'View this drawing',
+                    onclick: () => openDrawing({ name: d.name || 'Someone', score: d.score, drawing: src }),
+                }, h('img', { src, alt: '', width: 500, height: 500, loading: 'lazy' })),
+                h('div', { class: 'admin-drawing-info' },
+                    nameLink(d.name, 'admin-drawing-name'),
+                    h('span', { class: 'admin-drawing-meta' }, [`${fmt(d.score)}%`, formatDate(d.at)].filter(Boolean).join(' · ')),
+                    h('span', { class: 'admin-reports' }, d.reports > 0 ? plural(d.reports, 'report') : 'No reports')),
+                h('div', { class: 'admin-drawing-actions' },
+                    d.reports > 0 ? h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => dismiss(d, card) }, 'Looks fine') : null,
+                    h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: () => remove(d, card) }, 'Remove')));
+            return card;
+        }
+
+        async function loadDrawings() {
+            const list = $('drawings');
+            const summary = $('drawings-summary');
+            summary.textContent = 'Loading drawings…';
+            try {
+                const { res, data, denied } = await request('&view=drawings');
+                if (denied) return;
+                if (!res.ok || !Array.isArray(data.drawings)) throw new Error(`HTTP ${res.status}`);
+                drawings = data.drawings.map((d) => ({ ...d, reports: Number(d.reports) || 0 }));
+                drawingTotal = Math.max(Number(data.total) || 0, drawings.length);
+                list.replaceChildren(...drawings.map(drawingCard));
+                summarizeDrawings();
+            } catch {
+                loaded.delete('drawings');
+                list.replaceChildren();
+                summary.replaceChildren('Couldn’t load the drawings. ', retryButton('drawings'));
+            }
+        }
+
+        // Removing a drawing or clearing its reports. Both only go through if it's still the drawing on the
+        // card (a new high score replaces it); if not, the list is loaded again.
+        async function moderate(d, card, action) {
+            const buttons = [...card.querySelectorAll('button')];
+            buttons.forEach((b) => { b.disabled = true; });
+            try {
+                const { res, data, denied } = await request('', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ do: action, id: d.id, at: d.at }),
+                });
+                if (denied) return false;
+                if (res.status === 409) {
+                    toast(data.error || 'That drawing changed since the page loaded.', 'error');
+                    loadDrawings();
+                    return false;
+                }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return true;
+            } catch {
+                toast(action === 'remove' ? 'Couldn’t remove that drawing. Try again?' : 'Couldn’t clear those reports. Try again?', 'error');
+                return false;
+            } finally {
+                buttons.forEach((b) => { b.disabled = false; });
+            }
+        }
+
+        async function remove(d, card) {
+            const whose = d.name ? `${d.name}’s` : 'this';
+            if (!confirm(`Remove ${whose} drawing? Its ${d.score}% score comes off the leaderboard too, and this can’t be undone.`)) return;
+            if (!(await moderate(d, card, 'remove'))) return;
+            const next = card.nextElementSibling || card.previousElementSibling;
+            card.remove();
+            drawings = drawings.filter((x) => x !== d);
+            drawingTotal -= 1;
+            summarizeDrawings();
+            toast('Drawing removed.', 'success');
+            next?.querySelector('button')?.focus();
+        }
+
+        async function dismiss(d, card) {
+            if (!(await moderate(d, card, 'dismiss'))) return;
+            d.reports = 0;
+            const fresh = drawingCard(d);
+            card.replaceWith(fresh);
+            summarizeDrawings();
+            toast('Reports cleared.', 'success');
+            fresh.querySelector('.btn')?.focus();
+        }
+
+        /* ---------- Usernames ---------- */
+
+        function renderUsers(users, total) {
+            const flagged = users.filter((u) => u.flags.length);
+            const rest = users.filter((u) => !u.flags.length);
+            const some = users.length < total ? ` Showing the newest ${fmt(users.length)}.` : '';
+            $('users-summary').textContent = `${plural(total, 'account')}, ${flagged.length
+                ? `${fmt(flagged.length)} with ${flagged.length === 1 ? 'a word that might not belong' : 'words that might not belong'}`
+                : 'none with a word from the bad-word list'}.${some}`;
+
+            const groups = [];
+            if (flagged.length) {
+                groups.push(h('section', { class: 'admin-users', 'aria-labelledby': 'flagged-title' },
+                    h('h2', { class: 'admin-subhead', id: 'flagged-title' }, `Check these (${fmt(flagged.length)})`),
+                    h('ul', { class: 'admin-flagged' }, flagged.map((u) => h('li', null,
+                        nameLink(u.name, 'admin-user-name'),
+                        h('span', { class: 'admin-flags' }, 'Has ', u.flags.map((word, i) => [i ? ', ' : '', h('mark', null, word)])),
+                        h('span', { class: 'admin-user-joined' }, formatDate(u.joined) && `Joined ${formatDate(u.joined)}`))))));
+            }
+            groups.push(h('section', { class: 'admin-users', 'aria-labelledby': 'everyone-title' },
+                h('h2', { class: 'admin-subhead', id: 'everyone-title' }, `${flagged.length ? 'Everyone else' : 'Everyone'} (${fmt(rest.length)})`),
+                h('p', { class: 'muted' }, 'Newest first. Names link to profiles.'),
+                h('ul', { class: 'admin-names' }, rest.map((u) => h('li', null, nameLink(u.name, null))))));
+            $('users').replaceChildren(...groups);
+        }
+
+        async function loadUsers() {
+            const summary = $('users-summary');
+            summary.textContent = 'Loading usernames…';
+            try {
+                const { res, data, denied } = await request('&view=users');
+                if (denied) return;
+                if (!res.ok || !Array.isArray(data.users)) throw new Error(`HTTP ${res.status}`);
+                const users = data.users.map((u) => ({ ...u, flags: Array.isArray(u.flags) ? u.flags : [] }));
+                renderUsers(users, Math.max(Number(data.total) || 0, users.length));
+            } catch {
+                loaded.delete('users');
+                $('users').replaceChildren();
+                summary.replaceChildren('Couldn’t load the usernames. ', retryButton('users'));
+            }
+        }
+
+        /* ---------- Tabs ---------- */
+
+        const tabs = [...document.querySelectorAll('[role="tab"]')];
+        const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
+        const loaders = { drawings: loadDrawings, users: loadUsers };
+        const loaded = new Set();
+
+        function load(key) {
+            loaded.add(key);
+            loaders[key]();
+        }
+
+        function select(key, { focus = false, updateHash = true } = {}) {
+            if (!panels[key]) key = 'drawings';
+            for (const tab of tabs) {
+                const on = tab.dataset.tab === key;
+                tab.setAttribute('aria-selected', String(on));
+                tab.tabIndex = on ? 0 : -1;
+                if (on && focus) tab.focus();
+            }
+            for (const [k, panel] of Object.entries(panels)) panel.hidden = k !== key;
+            if (updateHash) history.replaceState(null, '', key === 'drawings' ? location.pathname : `#${key}`);
+            if (!loaded.has(key)) load(key);
+        }
+
+        tabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => select(tab.dataset.tab));
+            tab.addEventListener('keydown', (e) => {
+                const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                if (e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    select(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.tab, { focus: true });
+                } else if (dir) {
+                    e.preventDefault();
+                    select(tabs[(i + dir + tabs.length) % tabs.length].dataset.tab, { focus: true });
+                }
+            });
+        });
+
+        /* ---------- Start ---------- */
+
+        async function start() {
+            const { loggedIn, isAdmin } = await sessionReady;
+            if (!loggedIn) return needLogin();
+            if (!isAdmin) return notAdmin();
+            show('admin');
+            select(location.hash.slice(1) || 'drawings', { updateHash: false });
+            window.addEventListener('hashchange', () => select(location.hash.slice(1) || 'drawings', { updateHash: false }));
+        }
+
+        start();
+    </script>
+</body>
+</html>

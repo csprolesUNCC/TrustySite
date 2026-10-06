@@ -2,7 +2,9 @@
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
+const LS_ADMIN = 'trusty:admin';
 const FACE = '/images/mobile-icon.png';
+const ADMIN_PAGE = '/pages/admin.html';
 const CLICK_LIMIT = 3; // header clicker: clicks per second
 
 function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
@@ -48,11 +50,17 @@ export function toast(message, tone = 'info', ms = 2800) {
 export const session = {
   get loggedIn() { return lsGet(LS_FLAG) === 'true'; },
   get username() { return lsGet(LS_USER) || ''; },
-  save(username) { lsSet(LS_FLAG, 'true'); lsSet(LS_USER, username || ''); },
-  clear() { lsDel(LS_FLAG); lsDel(LS_USER); },
+  // Only shows the Admin button: the server checks every admin request itself.
+  get isAdmin() { return this.loggedIn && lsGet(LS_ADMIN) === 'true'; },
+  save(username, admin = false) {
+    lsSet(LS_FLAG, 'true');
+    lsSet(LS_USER, username || '');
+    if (admin) lsSet(LS_ADMIN, 'true'); else lsDel(LS_ADMIN);
+  },
+  clear() { lsDel(LS_FLAG); lsDel(LS_USER); lsDel(LS_ADMIN); },
 };
 
-function sessionState() { return { loggedIn: session.loggedIn, username: session.username }; }
+function sessionState() { return { loggedIn: session.loggedIn, username: session.username, isAdmin: session.isAdmin }; }
 
 function publishSession() {
   document.documentElement.dataset.auth = session.loggedIn ? 'in' : 'out';
@@ -69,9 +77,12 @@ export const sessionReady = (async () => {
       publishSession();
     } else if (res.ok) {
       const data = await res.json().catch(() => null);
-      if (data && typeof data.username === 'string' && data.username && data.username !== session.username) {
-        session.save(data.username);
-        publishSession();
+      if (data && typeof data.username === 'string' && data.username) {
+        const admin = data.isAdmin === true;
+        if (data.username !== session.username || admin !== session.isAdmin) {
+          session.save(data.username, admin);
+          publishSession();
+        }
       }
     }
   } catch { /* offline: trust the local flag, as the old site did */ }
@@ -153,14 +164,19 @@ const ICON_CARET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path class="icon-open" d="M4 7c5-.6 11 .4 16-.2M4 12.2c6 .4 10-.5 16 0M4 17.4c4-.4 10 .3 16-.3"/><path class="icon-close" d="M6.2 6c4 4 7.8 8.2 11.8 12.2M18 5.8C14 10 10 14 6 18.2"/></svg>';
 
-function accountContent() {
+// Admins also get an Admin button: under their name in the header, so the row is no wider than anyone
+// else's, and next to Log out in the menu.
+function accountContent({ menu = false } = {}) {
   if (session.loggedIn) {
-    return [
-      session.username
-        ? h('a', { class: 'account-name', href: profileHref(session.username), title: 'Your profile' }, `Hi, ${session.username}`)
-        : h('span', { class: 'account-name' }, 'Hi, friend'),
-      h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: logout }, 'Log out'),
-    ];
+    const name = session.username
+      ? h('a', { class: 'account-name', href: profileHref(session.username), title: 'Your profile' }, `Hi, ${session.username}`)
+      : h('span', { class: 'account-name' }, 'Hi, friend');
+    const logOut = h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: logout }, 'Log out');
+    if (!session.isAdmin) return [name, logOut];
+    const current = normPath(location.pathname) === normPath(ADMIN_PAGE) ? 'page' : null;
+    return menu
+      ? [name, h('a', { class: 'btn btn-highlight btn-sm', href: ADMIN_PAGE, 'aria-current': current }, 'Admin panel'), logOut]
+      : [h('div', { class: 'account-who' }, name, h('a', { class: 'admin-link', href: ADMIN_PAGE, 'aria-current': current }, 'Admin')), logOut];
   }
   return [
     h('a', { class: 'btn btn-ghost btn-sm', href: loginHref() }, 'Log in'),
@@ -200,7 +216,7 @@ class TrustyHeader extends HTMLElement {
 
     const renderAccount = () => {
       desktopAccount.replaceChildren(...accountContent());
-      mobileAccount.replaceChildren(...accountContent());
+      mobileAccount.replaceChildren(...accountContent({ menu: true }));
       clicker.hidden = !session.loggedIn;
     };
     renderAccount();
