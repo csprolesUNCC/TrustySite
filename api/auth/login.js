@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '../../utils/connect.js';
-import { authenticateUser } from '../../utils/auth.js';
+import { authenticateUser, isAdmin } from '../../utils/auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -14,9 +14,11 @@ export default async (req, res) => {
         const user = authenticateUser(req);
 
         if (user) {
-            return res.status(200).json({ 
-                isLoggedIn: true, 
-                username: user.username 
+            // isAdmin only decides whether the header shows the Admin link; the admin API checks for itself.
+            return res.status(200).json({
+                isLoggedIn: true,
+                username: user.username,
+                isAdmin: isAdmin(user)
             });
         } else {
             return res.status(401).json({ 
@@ -71,7 +73,7 @@ export default async (req, res) => {
         const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '1d' });
 
         res.setHeader('Set-Cookie', `authToken=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24}`); // 1 day in seconds
-        res.status(200).json({ message: 'Login successful', username: user.username });
+        res.status(200).json({ message: 'Login successful', username: user.username, isAdmin: isAdmin(tokenPayload) });
 
     } catch (error) {
         console.error('Login API Error:', error);

@@ -94,7 +94,7 @@
 
     <script type="module">
         import { h, fmt, toast, session, sessionReady, sessionExpired, onSession, loginHref, profileHref } from '/scripts/site.js';
-        import { safeDrawing, openDrawing } from '/scripts/leaderboard.js';
+        import { safeDrawing, openDrawing, reportRef } from '/scripts/leaderboard.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
 
         const BIO_MAX = 300; // utils/profile.js allows the same
@@ -186,7 +186,7 @@
         function drawCard() {
             const d = profile.draw;
             const drawing = d && safeDrawing(d.drawing);
-            const entry = d && { name: profile.username, score: d.score, drawing };
+            const entry = d && { name: profile.username, score: d.score, drawing, report: reportRef(d) };
             return statCard('Best Draw Trusty', 'is-draw',
                 d ? h('div', { class: 'profile-draw' },
                         drawing

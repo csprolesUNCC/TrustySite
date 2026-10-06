@@ -1,6 +1,7 @@
 import { connectToDatabase } from './db.js';
 import connectToUsersDatabase from './connect.js';
 import { authenticateUser } from './auth.js';
+import { PNG_DATA_URL, drawingKey } from './drawings.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 import { puzzleNumber, cleanGame, statsFrom } from '../scripts/trustle.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
@@ -13,7 +14,6 @@ import { CHANNELS } from '../scripts/tv-lineup.js';
 
 const BIO_MAX = 300; // pages/profile.html allows the same
 
-const PNG_DATA_URL = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
 const CASE_INSENSITIVE = { locale: 'en', strength: 2 }; // the same collation register.js checks names with
 
 // Plain text only: no control characters or text-direction tricks, Unix line breaks, no spaces at the
@@ -57,7 +57,7 @@ async function getProfile(req, res) {
     const [clickDoc, flappyDoc, drawDoc, trustisDoc, trustleDoc, profileDoc] = await Promise.all([
         clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1 } }),
         flappyCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
-        drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1 } }),
+        drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1, reportedBy: 1 } }),
         trustisCol.findOne({ userId }, { ...best, projection: { score: 1, lines: 1, level: 1, timestamp: 1 } }),
         db.collection('trustle').findOne({ userId }, { projection: { games: 1 } }),
         db.collection('profiles').findOne({ userId }, { projection: { bio: 1 } }),
@@ -102,6 +102,7 @@ async function getProfile(req, res) {
             score: drawDoc.score,
             rank: drawRank,
             drawing: typeof drawDoc.drawing === 'string' && PNG_DATA_URL.test(drawDoc.drawing) ? drawDoc.drawing : null,
+            ...drawingKey(drawDoc, me), // for the drawing viewer's Report button
         } : null,
         trustis: hasTrustis ? { score: trustisDoc.score, rank: trustisRank, lines: trustisDoc.lines, level: trustisDoc.level } : null,
         trustle: trustle.played ? trustle : null,

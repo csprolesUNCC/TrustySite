@@ -38,4 +38,16 @@ function authenticateUser(req) {
     }
 }
 
-export { authenticateUser };
+// The admins (pages/admin.html, utils/admin.js), by username. The login token carries the name exactly as it
+// was registered, and it has to match exactly: someone who signs up as "Carson" isn't an admin.
+const ADMINS = ['carson', 'luke'];
+
+/**
+ * @param {object|null} user - What authenticateUser returned.
+ * @returns {boolean} Whether that user is an admin.
+ */
+function isAdmin(user) {
+    return Boolean(user) && ADMINS.includes(user.username);
+}
+
+export { authenticateUser, isAdmin };

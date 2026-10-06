@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Admin panel — Trusty da Horse</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#fbf8f0">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container section" id="state-loading">
+            <p class="muted" role="status">Checking your admin badge…</p>
+        </div>
+
+        <!-- Logged out, not an admin, or the request failed -->
+        <div class="container notfound" id="state-message" hidden>
+            <div class="sheet notfound-sheet">
+                <img class="ink" src="/images/seahorse.jpg" alt="" width="1536" height="1173">
+                <div>
+                    <p class="eyebrow" id="message-eyebrow"></p>
+                    <h1 id="message-title"></h1>
+                    <p class="lead" id="message-text"></p>
+                    <div class="btn-row" id="message-actions"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="state-admin" hidden>
+            <header class="page-head container">
+                <p class="eyebrow">Admins only</p>
+                <h1>Admin panel</h1>
+                <p class="lead">Take down Draw Trusty drawings that don’t belong on the site, and check usernames for bad words.</p>
+            </header>
+
+            <section class="section-tight container" aria-label="Admin tools">
+                <div class="tabs" role="tablist" aria-label="Admin tools">
+                    <button class="tab" role="tab" type="button" id="tab-drawings" aria-controls="panel-drawings" aria-selected="true" data-tab="drawings">Drawings</button>
+                    <button class="tab" role="tab" type="button" id="tab-usernames" aria-controls="panel-usernames" aria-selected="false" tabindex="-1" data-tab="usernames">Usernames</button>
+                </div>
+
+                <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
+                    <div class="admin-bar">
+                        <p class="admin-summary" id="drawings-summary" role="status"></p>
+                        <label class="admin-check"><input type="checkbox" id="only-reported"> Only reported</label>
+                    </div>
+                    <p class="admin-legend">Players can report a drawing once each. The more reports a drawing has, the redder its card: <span class="admin-key" data-level="1">1</span> <span class="admin-key" data-level="2">2–3</span> <span class="admin-key" data-level="3">4+</span></p>
+                    <ul class="admin-drawings" id="drawings" aria-label="Draw Trusty drawings, most reported first"></ul>
+                    <p class="admin-empty" id="drawings-empty" hidden></p>
+                </div>
+
+                <div role="tabpanel" id="panel-usernames" aria-labelledby="tab-usernames" data-tab="usernames" hidden>
+                    <p class="admin-summary" id="usernames-summary" role="status"></p>
+                    <div class="panel admin-flagged">
+                        <h2 class="panel-title">Might need a look</h2>
+                        <ul class="admin-flags" id="flagged"></ul>
+                    </div>
+                    <div class="panel">
+                        <h2 class="panel-title">Everyone</h2>
+                        <div class="field admin-search">
+                            <label for="name-search">Find a username</label>
+                            <input id="name-search" type="search" autocomplete="off" spellcheck="false">
+                        </div>
+                        <ul class="admin-names" id="all-names" aria-label="Every username"></ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <dialog class="modal" id="remove-dialog" aria-labelledby="remove-title">
+        <form method="dialog">
+            <div class="modal-head"><h2 id="remove-title">Remove this drawing?</h2></div>
+            <div class="modal-body">
+                <p id="remove-text"></p>
+                <div class="btn-row">
+                    <button class="btn btn-red" value="remove">Remove it</button>
+                    <button class="btn btn-ghost" value="cancel" autofocus>Cancel</button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+
+    <script type="module">
+        import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
+        import { openDrawing } from '/scripts/leaderboard.js';
+
+        // Everything here comes from utils/admin.js (?action=admin on api/leaderboard.js), which only answers
+        // the admins listed in utils/auth.js. Names come from other users, so they're only ever text.
+        const API = '/api/leaderboard?action=admin';
+        const $ = (id) => document.getElementById(id);
+        const states = ['loading', 'message', 'admin'];
+        const show = (which) => states.forEach((s) => { $(`state-${s}`).hidden = s !== which; });
+        const dateFormat = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+
+        function formatDate(value) {
+            const date = new Date(value);
+            return value && !Number.isNaN(date.getTime()) ? dateFormat.format(date) : '';
+        }
+
+        function showMessage({ eyebrow, title, text, actions = [] }) {
+            $('message-eyebrow').textContent = eyebrow;
+            $('message-title').textContent = title;
+            $('message-text').textContent = text;
+            $('message-actions').replaceChildren(...actions);
+            show('message');
+        }
+
+        const showLogIn = () => showMessage({
+            eyebrow: 'Admin panel',
+            title: 'Log in first.',
+            text: 'The admin panel is for Trusty’s admins. Log in with an admin account to use it.',
+            actions: [h('a', { class: 'btn btn-lg', href: loginHref() }, 'Log in')],
+        });
+
+        const showNotAdmin = () => showMessage({
+            eyebrow: 'Admins only',
+            title: 'This page is for admins.',
+            text: 'Your account isn’t an admin, so there’s nothing for you here. Trusty says hi, though.',
+            actions: [h('a', { class: 'btn btn-lg', href: '/index.html' }, 'Back to the homepage')],
+        });
+
+        // Every request goes through here. A 401 or 403 swaps the page for the right message and gives null.
+        async function adminFetch(query, options) {
+            const res = await fetch(`${API}${query}`, options);
+            if (res.status === 401) {
+                sessionExpired();
+                showLogIn();
+                return null;
+            }
+            if (res.status === 403) {
+                showNotAdmin();
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            return { ok: res.ok, status: res.status, data };
+        }
+
+        /* ---------- Drawings ---------- */
+
+        let drawings = [];
+        const cards = new Map(); // drawing id → its card
+
+        // The card's tint: 1 report, 2–3, or 4 and up.
+        const level = (reports) => (reports >= 4 ? 3 : reports >= 2 ? 2 : reports >= 1 ? 1 : 0);
+        // The timestamp in the address keeps a newer drawing from coming out of the cache.
+        const imageHref = (d) => `${API}&view=image&id=${encodeURIComponent(d.id)}&at=${encodeURIComponent(d.at || '')}`;
+
+        function drawingCard(d) {
+            const name = d.name || 'Anonymous';
+            const src = imageHref(d);
+            return h('li', { class: 'admin-drawing', dataset: { level: level(d.reports) } },
+                h('button', { type: 'button', class: 'admin-drawing-art', 'aria-label': `View ${name}'s drawing`, onclick: () => openDrawing({ name, score: d.score, drawing: src }) },
+                    h('img', { src, alt: '', width: 500, height: 500, loading: 'lazy' })),
+                h('div', { class: 'admin-drawing-info' },
+                    d.name ? h('a', { class: 'admin-drawing-name', href: profileHref(d.name) }, d.name) : h('span', { class: 'admin-drawing-name' }, name),
+                    h('p', { class: 'admin-drawing-meta' }, [`${fmt(d.score)}%`, formatDate(d.at)].filter(Boolean).join(' · ')),
+                    h('p', { class: 'admin-reports' }, d.reports ? plural(d.reports, 'report') : 'No reports')),
+                h('div', { class: 'admin-drawing-actions' },
+                    h('button', { type: 'button', class: 'btn btn-red btn-sm', onclick: () => removeDrawing(d) }, 'Remove'),
+                    d.reports ? h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => dismissReports(d) }, 'Looks fine') : null));
+        }
+
+        function updateDrawingsSummary() {
+            const reported = drawings.filter((d) => d.reports).length;
+            const onlyReported = $('only-reported').checked;
+            $('drawings-summary').textContent = drawings.length
+                ? `${plural(drawings.length, 'drawing')} on the site, ${reported ? `${fmt(reported)} with reports` : 'none reported'}.`
+                : '';
+            $('drawings').classList.toggle('only-reported', onlyReported);
+            const empty = !drawings.length ? 'Nobody has drawn Trusty yet.'
+                : onlyReported && !reported ? 'No reported drawings. Everyone’s behaving!' : '';
+            $('drawings-empty').textContent = empty;
+            $('drawings-empty').hidden = !empty;
+        }
+
+        // Gives false if the page now shows a log in or admins only message instead.
+        async function loadDrawings() {
+            const result = await adminFetch('&view=drawings');
+            if (!result) return false;
+            if (!result.ok || !Array.isArray(result.data.drawings)) throw new Error(`HTTP ${result.status}`);
+            drawings = result.data.drawings.filter((d) => d && typeof d.id === 'string');
+            cards.clear();
+            $('drawings').replaceChildren(...drawings.map((d) => {
+                const card = drawingCard(d);
+                cards.set(d.id, card);
+                return card;
+            }));
+            updateDrawingsSummary();
+            return true;
+        }
+
+        // After a card goes away or changes, keep the keyboard on a card that's still showing.
+        function focusNear(card) {
+            const showing = (el) => el && el.getClientRects().length > 0;
+            if (showing(card)) return card.querySelector('.admin-drawing-art').focus();
+            for (const step of ['nextElementSibling', 'previousElementSibling']) {
+                let other = card[step];
+                while (other && !showing(other)) other = other[step];
+                if (other) return other.querySelector('.admin-drawing-art').focus();
+            }
+        }
+
+        function confirmRemove(d) {
+            const dialog = $('remove-dialog');
+            $('remove-text').textContent = `${d.name || 'This player'}’s drawing (${fmt(d.score)}%) comes off the leaderboard and their profile, along with its score. They can always draw a new one.`;
+            dialog.returnValue = '';
+            dialog.showModal();
+            return new Promise((resolve) => {
+                dialog.addEventListener('close', () => resolve(dialog.returnValue === 'remove'), { once: true });
+            });
+        }
+
+        // op: 'remove' or 'dismiss'. Gives true if it worked.
+        async function moderate(d, op) {
+            try {
+                const result = await adminFetch('', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ op, id: d.id, at: d.at }),
+                });
+                if (!result) return false;
+                if (result.status === 409) {
+                    // Someone drew a new one or the other admin got there first: show what's there now.
+                    toast(result.data.error || 'That drawing changed. Here’s the latest.', 'error', 4000);
+                    await loadDrawings().catch(() => {});
+                    return false;
+                }
+                if (!result.ok) {
+                    toast(result.data.error || 'That didn’t work. Try again?', 'error');
+                    return false;
+                }
+                return true;
+            } catch {
+                toast('Couldn’t reach the server. Check your connection.', 'error');
+                return false;
+            }
+        }
+
+        function setBusy(card, busy) {
+            card.querySelectorAll('.admin-drawing-actions button').forEach((button) => { button.disabled = busy; });
+        }
+
+        async function removeDrawing(d) {
+            if (!(await confirmRemove(d))) return;
+            const card = cards.get(d.id);
+            setBusy(card, true);
+            if (!(await moderate(d, 'remove'))) {
+                setBusy(card, false);
+                return;
+            }
+            const near = card.nextElementSibling || card.previousElementSibling;
+            card.remove();
+            cards.delete(d.id);
+            drawings = drawings.filter((other) => other !== d);
+            updateDrawingsSummary();
+            toast(`${d.name ? `${d.name}’s drawing` : 'The drawing'} is gone.`, 'success');
+            if (near) focusNear(near);
+        }
+
+        async function dismissReports(d) {
+            const card = cards.get(d.id);
+            setBusy(card, true);
+            if (!(await moderate(d, 'dismiss'))) {
+                setBusy(card, false);
+                return;
+            }
+            d.reports = 0;
+            const fresh = drawingCard(d);
+            card.replaceWith(fresh);
+            cards.set(d.id, fresh);
+            updateDrawingsSummary();
+            toast('Reports cleared. It stays up.', 'success');
+            focusNear(fresh);
+        }
+
+        $('only-reported').addEventListener('change', updateDrawingsSummary);
+
+        /* ---------- Usernames ---------- */
+
+        let users = null;
+        let usersRequest = null;
+
+        function flaggedRow(u) {
+            const joined = formatDate(u.joined);
+            return h('li', { class: 'admin-flag' },
+                h('a', { href: profileHref(u.username) }, u.username),
+                h('ul', { class: 'tags', 'aria-label': 'Flagged for' }, u.flags.map((word) => h('li', { class: 'tag tag-pink' }, word))),
+                joined ? h('span', { class: 'admin-joined' }, `Joined ${joined}`) : null);
+        }
+
+        function renderNames() {
+            if (!users) return;
+            const query = $('name-search').value.trim().toLowerCase();
+            const shown = query ? users.filter((u) => u.username.toLowerCase().includes(query)) : users;
+            $('all-names').replaceChildren(...(shown.length
+                ? shown.map((u) => h('li', { class: u.flags.length ? 'is-flagged' : null }, h('a', { href: profileHref(u.username) }, u.username)))
+                : [h('li', { class: 'admin-empty' }, query ? `No usernames with “${query}” in them.` : 'No accounts yet.')]));
+        }
+
+        async function loadUsernames() {
+            $('usernames-summary').textContent = 'Loading usernames…';
+            try {
+                const result = await adminFetch('&view=usernames');
+                if (!result) return;
+                if (!result.ok || !Array.isArray(result.data.users)) throw new Error(`HTTP ${result.status}`);
+                users = result.data.users
+                    .filter((u) => u && typeof u.username === 'string')
+                    .map((u) => ({ ...u, flags: Array.isArray(u.flags) ? u.flags.filter((w) => typeof w === 'string') : [] }))
+                    .sort((a, b) => a.username.localeCompare(b.username, undefined, { sensitivity: 'base' }));
+                const flagged = users.filter((u) => u.flags.length);
+                $('usernames-summary').textContent = `${plural(users.length, 'account')}, ${flagged.length ? `${fmt(flagged.length)} with a bad word in the name` : 'none with bad words in the name'}.`;
+                $('flagged').replaceChildren(...(flagged.length
+                    ? flagged.map(flaggedRow)
+                    : [h('li', { class: 'admin-empty' }, 'Nothing flagged. Everyone picked a nice name!')]));
+                renderNames();
+            } catch {
+                usersRequest = null;
+                $('usernames-summary').replaceChildren('Couldn’t load the usernames. ',
+                    h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => { usersRequest ||= loadUsernames(); } }, 'Try again'));
+            }
+        }
+
+        $('name-search').addEventListener('input', renderNames);
+
+        /* ---------- Tabs ---------- */
+
+        const tabs = [...document.querySelectorAll('[role="tab"]')];
+        const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
+
+        function select(key, { focus = false, updateHash = true } = {}) {
+            if (!panels[key]) key = 'drawings';
+            for (const tab of tabs) {
+                const on = tab.dataset.tab === key;
+                tab.setAttribute('aria-selected', String(on));
+                tab.tabIndex = on ? 0 : -1;
+                if (on && focus) tab.focus();
+            }
+            for (const [k, panel] of Object.entries(panels)) panel.hidden = k !== key;
+            if (updateHash) history.replaceState(null, '', key === 'drawings' ? location.pathname : `#${key}`);
+            if (key === 'usernames') usersRequest ||= loadUsernames();
+        }
+
+        tabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => select(tab.dataset.tab));
+            tab.addEventListener('keydown', (e) => {
+                const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                if (e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    select(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.tab, { focus: true });
+                } else if (dir) {
+                    e.preventDefault();
+                    select(tabs[(i + dir + tabs.length) % tabs.length].dataset.tab, { focus: true });
+                }
+            });
+        });
+
+        /* ---------- Start ---------- */
+
+        async function start() {
+            show('loading');
+            const { loggedIn } = await sessionReady;
+            if (!loggedIn) {
+                showLogIn();
+                return;
+            }
+            try {
+                // The drawings list doubles as the check that you're an admin.
+                if (!(await loadDrawings())) return;
+            } catch {
+                showMessage({
+                    eyebrow: 'Uh oh',
+                    title: 'Couldn’t load the admin panel.',
+                    text: 'Something went wrong on the way here. Give it another try.',
+                    actions: [h('button', { type: 'button', class: 'btn btn-lg', onclick: start }, 'Try again')],
+                });
+                return;
+            }
+            show('admin');
+            select(location.hash.slice(1) || 'drawings', { updateHash: false });
+        }
+
+        window.addEventListener('hashchange', () => {
+            if (!$('state-admin').hidden) select(location.hash.slice(1) || 'drawings', { updateHash: false });
+        });
+
+        start();
+    </script>
+</body>
+</html>

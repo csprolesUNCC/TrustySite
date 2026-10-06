@@ -844,6 +844,22 @@ trusty-footer { display: block; }
 }
 a.account-name { color: var(--ink); text-decoration: none; }
 a.account-name:hover { color: var(--blue); text-decoration: underline; }
+/* Admins get a link to the admin panel under their name: the header row has no room for another button */
+.account-who { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.account-admin {
+  padding: 0 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--highlight);
+  color: var(--ink);
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.5;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.account-admin:hover, .account-admin[aria-current] { color: var(--ink); background: var(--gold); }
 
 /* The Trusty clicker (logged-in only) */
 .clicker {
@@ -1421,6 +1437,18 @@ dialog.reader::backdrop { background: #1e1f23; }
 .drawing-frame img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .drawing-frame .drawing-overlay { opacity: .45; pointer-events: none; }
 .drawing-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
+/* Asking before a report goes to the admins */
+.drawing-ask {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--red);
+  border-radius: 10px;
+  background: var(--note-pink);
+  text-align: center;
+}
+.drawing-ask p { margin: 0 0 10px; font-weight: 650; }
+.drawing-ask .btn-row { justify-content: center; }
+.drawing-status { margin: 12px 0 0; text-align: center; }
 
 /* =========================================================================
    TrustyGPT chat

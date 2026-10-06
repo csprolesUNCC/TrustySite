@@ -72,7 +72,7 @@ if (loginForm) {
     try {
       const { res, data } = await postJSON('/api/auth/login', { email: $('email').value, password: $('password').value });
       if (res.ok) {
-        session.save(data.username);
+        session.save(data.username, data.isAdmin === true);
         setStatus(status, 'Logged in! Taking you back…', 'success');
         location.href = next || '/index.html';
         return;

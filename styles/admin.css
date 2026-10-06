@@ -1,0 +1,99 @@
+/* Admin panel (pages/admin.html) */
+
+.admin-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 20px;
+  margin-bottom: 8px;
+}
+.admin-summary { margin: 0 0 18px; font-weight: 650; color: var(--ink-soft); }
+.admin-bar .admin-summary { margin: 0; }
+.admin-check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 650; cursor: pointer; }
+.admin-check input { width: 20px; height: 20px; margin: 0; }
+.admin-legend { margin: 0 0 20px; font-size: .92rem; color: var(--pencil); }
+.admin-empty { color: var(--pencil); }
+
+.btn-red { --btn-bg: var(--red); --btn-fg: #fff; --btn-border: #a3192f; --btn-shadow: #a3192f; }
+
+/* Drawings: a card each, tinted by how many reports it has (level 1: one, 2: two or three, 3: four or more) */
+.admin-drawings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: clamp(14px, 2vw, 22px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-drawings.only-reported .admin-drawing[data-level="0"] { display: none; }
+.admin-drawing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-ink);
+}
+.admin-drawing[data-level="1"], .admin-key[data-level="1"] { background: var(--note-yellow); }
+.admin-drawing[data-level="2"], .admin-key[data-level="2"] { background: #ffd39b; }
+.admin-drawing[data-level="3"], .admin-key[data-level="3"] { background: var(--note-pink); border-color: var(--red); }
+.admin-drawing[data-level="3"] { box-shadow: 3px 3px 0 var(--red); }
+.admin-key {
+  display: inline-block;
+  min-width: 2.4em;
+  padding: 0 6px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  color: var(--ink);
+  font-weight: 800;
+  text-align: center;
+}
+.admin-drawing-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.admin-drawing-art img { width: 100%; height: 100%; object-fit: contain; }
+.admin-drawing-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.admin-drawing-info p { margin: 0; }
+.admin-drawing-name { font-weight: 750; color: var(--ink); overflow-wrap: anywhere; }
+a.admin-drawing-name:hover { color: var(--blue); }
+.admin-drawing-meta { font-size: .9rem; color: var(--pencil); }
+.admin-reports { font-weight: 800; }
+.admin-drawing[data-level="0"] .admin-reports { font-weight: 600; color: var(--pencil); }
+.admin-drawing[data-level="3"] .admin-reports { color: var(--red); }
+.admin-drawing-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+
+/* Usernames */
+.admin-flagged { margin-bottom: clamp(20px, 3vw, 28px); }
+.admin-flags { margin: 0; padding: 0; list-style: none; }
+.admin-flag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 4px;
+  border-bottom: 1.5px dashed var(--rule);
+}
+.admin-flag:last-child { border-bottom: 0; }
+.admin-flag > a { min-width: 0; font-weight: 750; color: var(--ink); overflow-wrap: anywhere; }
+.admin-flag > a:hover { color: var(--blue); }
+.admin-joined { margin-left: auto; font-size: .88rem; color: var(--pencil); }
+.admin-search { max-width: 360px; }
+.admin-names { margin: 0; padding: 0; list-style: none; columns: 13rem; column-gap: 24px; }
+.admin-names li { break-inside: avoid; padding: 3px 0; overflow-wrap: anywhere; }
+.admin-names .admin-empty { column-span: all; }
+.admin-names a { color: var(--ink); text-decoration: none; }
+.admin-names a:hover { color: var(--blue); text-decoration: underline; }
+/* Flagged names stand out in the full list too */
+.admin-names .is-flagged a { background: linear-gradient(transparent 12%, var(--note-pink) 12%, var(--note-pink) 88%, transparent 88%); }
