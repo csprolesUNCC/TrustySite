@@ -2,6 +2,7 @@
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
+const LS_ADMIN = 'trusty:admin'; // the username the server last said is an admin (only shows the Admin button)
 const FACE = '/images/mobile-icon.png';
 const CLICK_LIMIT = 3; // header clicker: clicks per second
 
@@ -45,16 +46,17 @@ export function toast(message, tone = 'info', ms = 2800) {
 
 /* ---------- Session ---------- */
 
-// Set from GET /api/auth/login once sessionReady settles. It only shows the Admin button: the admin
-// API checks for itself on every request.
-let admin = false;
+// Whether to show the Admin button (the admin API checks for itself on every request). It starts from the
+// server's last answer for this username, so the header doesn't jump on every page, and GET /api/auth/login
+// corrects it once sessionReady settles.
+let admin = Boolean(lsGet(LS_USER)) && lsGet(LS_ADMIN) === lsGet(LS_USER);
 
 export const session = {
   get loggedIn() { return lsGet(LS_FLAG) === 'true'; },
   get username() { return lsGet(LS_USER) || ''; },
   get admin() { return admin && session.loggedIn; },
   save(username) { lsSet(LS_FLAG, 'true'); lsSet(LS_USER, username || ''); },
-  clear() { lsDel(LS_FLAG); lsDel(LS_USER); admin = false; },
+  clear() { lsDel(LS_FLAG); lsDel(LS_USER); lsDel(LS_ADMIN); admin = false; },
 };
 
 function sessionState() { return { loggedIn: session.loggedIn, username: session.username, admin: session.admin }; }
@@ -77,8 +79,11 @@ export const sessionReady = (async () => {
       const data = await res.json().catch(() => null);
       const renamed = data && typeof data.username === 'string' && data.username && data.username !== session.username;
       if (renamed) session.save(data.username);
-      admin = Boolean(data && data.isAdmin === true);
-      if (renamed || admin) publishSession();
+      const wasAdmin = admin;
+      admin = Boolean(data && data.isAdmin === true && session.username);
+      if (admin) lsSet(LS_ADMIN, session.username);
+      else lsDel(LS_ADMIN);
+      if (renamed || admin !== wasAdmin) publishSession();
     }
   } catch { /* offline: trust the local flag, as the old site did */ }
   return sessionState();
@@ -357,3 +362,4 @@ class TrustyFooter extends HTMLElement {
 customElements.define('trusty-header', TrustyHeader);
 customElements.define('trusty-footer', TrustyFooter);
 document.documentElement.dataset.auth = session.loggedIn ? 'in' : 'out';
+document.documentElement.toggleAttribute('data-admin', session.admin);

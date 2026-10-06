@@ -72,7 +72,7 @@ a.admin-drawing-name:hover { color: var(--blue); text-decoration: underline; }
 .admin-drawing-meta { font-size: .88rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .admin-drawing[data-tier="high"] .admin-reports { background: var(--red); border-color: var(--red); color: #fff; }
 .admin-drawing .btn-row { gap: 8px; margin-top: auto; }
-.admin-remove { --btn-bg: var(--red); --btn-border: #9e1f33; --btn-shadow: #9e1f33; }
+.admin-remove { --btn-bg: var(--red); --btn-border: var(--red-dark); --btn-shadow: var(--red-dark); }
 
 /* Usernames: the flagged ones, then everyone else */
 .admin-name-lists { display: grid; gap: clamp(18px, 3vw, 28px); }
@@ -94,7 +94,8 @@ a.admin-drawing-name:hover { color: var(--blue); text-decoration: underline; }
   padding: 8px 4px;
   border-bottom: 1.5px dashed var(--rule);
 }
-.admin-name > a { min-width: 0; overflow-wrap: anywhere; font-weight: 650; color: var(--ink); text-decoration: none; }
-.admin-name > a:hover { color: var(--blue); text-decoration: underline; }
-.admin-name.is-flagged > a { padding: 0 4px; background: linear-gradient(transparent 12%, var(--note-pink) 12%, var(--note-pink) 88%, transparent 88%); }
+.admin-name-link { min-width: 0; overflow-wrap: anywhere; font-weight: 650; color: var(--ink); }
+a.admin-name-link { text-decoration: none; }
+a.admin-name-link:hover { color: var(--blue); text-decoration: underline; }
+.admin-name.is-flagged .admin-name-link { padding: 0 4px; background: linear-gradient(transparent 12%, var(--note-pink) 12%, var(--note-pink) 88%, transparent 88%); }
 .admin-name-date { margin-left: auto; font-size: .82rem; color: var(--pencil); white-space: nowrap; }

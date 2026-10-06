@@ -139,11 +139,17 @@
             });
         });
 
-        // The number of reported drawings or flagged names, in red on the tab.
+        // The number of reported drawings or flagged names, in red on the tab. Screen readers hear "Drawings, 3 reported".
         function tabCount(key, n, what) {
             const tab = tabs.find((t) => t.dataset.tab === key);
             tab.querySelector('.admin-count')?.remove();
-            if (n) tab.append(h('span', { class: 'admin-count' }, fmt(n), h('span', { class: 'sr-only' }, ` ${what}`)));
+            if (n) tab.append(h('span', { class: 'admin-count' }, h('span', { class: 'sr-only' }, ', '), fmt(n), h('span', { class: 'sr-only' }, ` ${what}`)));
+        }
+
+        // A name, linking to its profile. Names cut short by the server (`long`) have no profile to link to.
+        function nameTag(name, long, className) {
+            if (long) return h('span', { class: className, title: 'Very long name, cut short' }, `${name}…`);
+            return h('a', { class: className, href: profileHref(name), title: `${name}’s profile` }, name);
         }
 
         /* ---------- Drawings ---------- */
@@ -204,7 +210,7 @@
                 h('div', { class: 'admin-drawing-info' },
                     name === 'Anonymous'
                         ? h('span', { class: 'admin-drawing-name' }, name)
-                        : h('a', { class: 'admin-drawing-name', href: profileHref(name), title: `${name}’s profile` }, name),
+                        : nameTag(name, d.long === true, 'admin-drawing-name'),
                     h('span', { class: 'admin-drawing-meta' }, [`${fmt(d.score)}%`, day(d.at)].filter(Boolean).join(' · ')),
                     reports),
                 h('div', { class: 'btn-row' }, keep, remove));
@@ -261,7 +267,7 @@
         function nameRow(user) {
             const flags = Array.isArray(user.flags) ? user.flags : [];
             return h('li', { class: `admin-name${flags.length ? ' is-flagged' : ''}` },
-                h('a', { href: profileHref(user.username) }, user.username),
+                nameTag(user.username, user.long === true, 'admin-name-link'),
                 flags.length ? h('ul', { class: 'tags', 'aria-label': 'Flagged words' }, flags.map((word) => h('li', { class: 'tag tag-pink' }, word))) : null,
                 h('span', { class: 'admin-name-date', title: 'Joined' }, day(user.joined)));
         }
@@ -296,7 +302,7 @@
                     return;
                 }
                 if (res.status === 403) {
-                    showMessage('Admins only.', 'This page is just for Trusty’s admins. Sorry! (Admins are the usernames in the site’s ADMIN_USERNAMES setting on Vercel.)',
+                    showMessage('Admins only.', 'This page is just for Trusty’s admins. Sorry!',
                         [h('a', { class: 'btn', href: '/index.html' }, 'Back to the home page')]);
                     return;
                 }

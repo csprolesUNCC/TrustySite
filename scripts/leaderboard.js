@@ -10,6 +10,12 @@ export function safeDrawing(src) {
   return typeof src === 'string' && src.startsWith(PNG_PREFIX) && BASE64.test(src.slice(PNG_PREFIX.length)) ? src : null;
 }
 
+// What the drawing viewer's Report button needs from a Draw Trusty drawing the API sent (the leaderboard
+// or a profile): its id and time, and whether you've already reported it.
+export function reportFields(e) {
+  return { id: typeof e.id === 'string' ? e.id : null, at: typeof e.at === 'string' ? e.at : null, reported: e.reported === true };
+}
+
 export const BOARDS = {
   clicks: {
     url: '/api/leaderboard',
@@ -28,8 +34,8 @@ export const BOARDS = {
   draw: {
     url: '/api/draw-api?action=get_leaderboard',
     label: 'Draw Trusty',
-    // `id` and `reported` (whether you've reported it) are for the drawing viewer's Report button.
-    normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing), id: typeof e.id === 'string' ? e.id : null, reported: e.reported === true }),
+    // `id`, `at` and `reported` (whether you've reported it) are for the drawing viewer's Report button.
+    normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing), ...reportFields(e) }),
     format: (n) => `${fmt(n)}%`,
     unit: 'accuracy',
   },
@@ -159,7 +165,7 @@ async function reportDrawing(entry, button) {
     res = await fetch('/api/draw-api?action=report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: entry.id }),
+      body: JSON.stringify({ id: entry.id, at: entry.at }),
     });
   } catch {
     reportStatus(entry, 'Couldn’t reach the server. Try again?', 'error');
@@ -169,12 +175,16 @@ async function reportDrawing(entry, button) {
   if (res.status === 401) {
     sessionExpired();
     reportStatus(entry, 'Your login expired. Log in again to report drawings.', 'error');
-  } else if (res.ok) {
+    return;
+  }
+  if (res.ok) {
     entry.reported = true;
     reportStatus(entry, 'Reported. Thanks! An admin will take a look.', 'success');
-  } else {
-    reportStatus(entry, data.error || 'Couldn’t report that drawing. Try again?', 'error');
+    return;
   }
+  // The drawing was removed (404) or replaced by a new one (409): this one can't be reported anymore.
+  if (res.status === 404 || res.status === 409) entry.id = null;
+  reportStatus(entry, data.error || 'Couldn’t report that drawing. Try again?', 'error');
 }
 
 export function openDrawing(entry) {

@@ -20,8 +20,18 @@ import { GRADER_VERSION } from '../scripts/draw-grader.js';
 const DRAWING_ID = /^[a-f0-9]{24}$/i;
 const PNG_PREFIX = 'data:image/png;base64,';
 const PNG_DATA_URL = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
+// Sign-up doesn't limit how long a name is, so longer ones are cut short here (with `long: true`) to keep one
+// huge name from making the list too big to send. Profiles can't be looked up past this length either.
+const NAME_MAX = 100;
 
 const timeOf = (date) => new Date(date || 0).getTime() || 0;
+
+function shortName(name) {
+    const text = typeof name === 'string' ? name : '';
+    if (text.length <= NAME_MAX) return { name: text, long: false };
+    const cut = text.slice(0, NAME_MAX);
+    return { name: /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut, long: true }; // don't split an emoji
+}
 
 async function list(res) {
     const db = await connectToDatabase();
@@ -37,23 +47,33 @@ async function list(res) {
     ]);
 
     const drawings = drawingDocs
-        .map((doc) => ({
-            id: String(doc._id),
-            name: doc.name,
-            score: doc.score,
-            reports: Array.isArray(doc.reportedBy) ? doc.reportedBy.length : 0,
-            at: doc.timestamp,
-        }))
+        .map((doc) => {
+            const { name, long } = shortName(doc.name);
+            return {
+                id: String(doc._id),
+                name,
+                long,
+                score: doc.score,
+                reports: Array.isArray(doc.reportedBy) ? doc.reportedBy.length : 0,
+                at: doc.timestamp,
+            };
+        })
         .sort((a, b) => b.reports - a.reports || timeOf(b.at) - timeOf(a.at));
 
     // sort() keeps the newest-first order within the flagged and unflagged names.
     const users = accounts
         .filter((account) => typeof account.username === 'string')
-        .map((account) => ({
-            username: account.username,
-            joined: account.createdAt || account._id.getTimestamp(),
-            flags: badWordsIn(account.username),
-        }))
+        .map((account) => {
+            const { name, long } = shortName(account.username);
+            const flags = badWordsIn(name);
+            if (long) flags.push('very long name');
+            return {
+                username: name,
+                long,
+                joined: account.createdAt || (typeof account._id?.getTimestamp === 'function' ? account._id.getTimestamp() : null),
+                flags,
+            };
+        })
         .sort((a, b) => (b.flags.length > 0) - (a.flags.length > 0));
 
     return res.status(200).json({ drawings, users });

@@ -19,18 +19,19 @@ export default async (req, res) => {
         const collection = db.collection('draw_scores');
 
         // --- HANDLER 1: GET LEADERBOARD ---
-        // Each drawing comes with its id, for reporting it, and whether you already have. Who reported a
-        // drawing (`reportedBy`) stays private; admins only see how many did (utils/admin.js).
+        // Each drawing comes with what reporting it takes (its id and time, see HANDLER 4) and whether you
+        // already have. Who reported a drawing (`reportedBy`) stays private; admins only see how many did.
         if (req.method === 'GET' && action === 'get_leaderboard') {
             const user = authenticateUser(req);
             const scores = await collection
                 .find(CURRENT)
-                .project({ name: 1, score: 1, drawing: 1, reportedBy: 1 })
+                .project({ name: 1, score: 1, drawing: 1, timestamp: 1, reportedBy: 1 })
                 .sort({ score: -1, timestamp: 1 })
                 .limit(10)
                 .toArray();
             return res.status(200).json(scores.map((doc) => ({
                 id: String(doc._id),
+                at: doc.timestamp,
                 name: doc.name,
                 score: doc.score,
                 drawing: doc.drawing,
@@ -100,15 +101,20 @@ export default async (req, res) => {
         }
 
         // --- HANDLER 4: REPORT A DRAWING ---
-        // Logged-in players can report someone else's drawing, once each. Admins see how many reports
-        // each drawing has on pages/admin.html.
+        // POST { id, at }: logged-in players can report someone else's drawing, once each. Admins see how
+        // many reports each drawing has on pages/admin.html. A new high score replaces a drawing but keeps
+        // its id, so `at` (the drawing's time from the leaderboard or profile) makes sure the report lands on
+        // the drawing the player saw: if it's been replaced since, this answers 409.
         if (req.method === 'POST' && action === 'report') {
             const user = authenticateUser(req);
             if (!user) return res.status(401).json({ error: 'Auth required' });
 
-            const id = req.body && req.body.id;
+            const { id, at } = req.body || {};
             if (typeof id !== 'string' || !DRAWING_ID.test(id)) {
                 return res.status(400).json({ error: 'Invalid drawing' });
+            }
+            if (at !== null && (typeof at !== 'string' || Number.isNaN(Date.parse(at)))) {
+                return res.status(400).json({ error: 'Invalid drawing time' });
             }
             const drawing = await collection.findOne({ _id: new ObjectId(id) }, { projection: { userId: 1 } });
             if (!drawing) {
@@ -118,7 +124,13 @@ export default async (req, res) => {
                 return res.status(400).json({ error: 'You can’t report your own drawing.' });
             }
 
-            await collection.updateOne({ _id: drawing._id }, { $addToSet: { reportedBy: String(user.userId) } });
+            const { matchedCount } = await collection.updateOne(
+                { _id: drawing._id, timestamp: at === null ? null : new Date(at) },
+                { $addToSet: { reportedBy: String(user.userId) } }
+            );
+            if (!matchedCount) {
+                return res.status(409).json({ error: 'They just replaced this drawing with a new one. Reload to see it.' });
+            }
             return res.status(200).json({ reported: true });
         }
 

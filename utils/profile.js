@@ -98,10 +98,11 @@ async function getProfile(req, res) {
         bio: profileDoc && typeof profileDoc.bio === 'string' ? profileDoc.bio : '',
         clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank } : null,
         flappy: hasFlappy ? { score: flappyDoc.score, rank: flappyRank } : null,
-        // The id and `reported` (whether you've reported it) are for the drawing viewer's Report button,
+        // The id, time and `reported` (whether you've reported it) are for the drawing viewer's Report button,
         // as on the leaderboard (api/draw-api.js).
         draw: hasDraw ? {
             id: String(drawDoc._id),
+            at: drawDoc.timestamp,
             score: drawDoc.score,
             rank: drawRank,
             drawing: typeof drawDoc.drawing === 'string' && PNG_DATA_URL.test(drawDoc.drawing) ? drawDoc.drawing : null,
