@@ -296,7 +296,7 @@
                     return;
                 }
                 if (res.status === 403) {
-                    showMessage('Admins only.', 'This page is just for Trusty’s admins. Sorry!',
+                    showMessage('Admins only.', 'This page is just for Trusty’s admins. Sorry! (Admins are the usernames in the site’s ADMIN_USERNAMES setting on Vercel.)',
                         [h('a', { class: 'btn', href: '/index.html' }, 'Back to the home page')]);
                     return;
                 }
