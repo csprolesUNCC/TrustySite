@@ -23,7 +23,8 @@
 
 .admin-empty { grid-column: 1 / -1; padding: 16px 4px; color: var(--pencil); }
 
-/* Drawings, most reported first. Reports tint a card: one makes it yellow, two pink, three or more red. */
+/* Drawings, most reported first. Reports tint a card: one makes it yellow, two pink, and three or more pink
+   with a red border and a red report count. */
 .admin-drawings {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));

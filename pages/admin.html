@@ -150,7 +150,7 @@
 
         let drawings = [];
 
-        // Reports tint a drawing's card: one makes it yellow, two pink, three or more red.
+        // Reports tint a drawing's card: one makes it yellow, two pink, three or more pink and red (admin.css).
         const tier = (reports) => (reports >= 3 ? 'high' : reports === 2 ? 'mid' : reports === 1 ? 'low' : 'none');
 
         function renderDrawingsSummary() {
