@@ -45,17 +45,23 @@ export function toast(message, tone = 'info', ms = 2800) {
 
 /* ---------- Session ---------- */
 
+// Set from GET /api/auth/login once sessionReady settles. It only shows the Admin button: the admin
+// API checks for itself on every request.
+let admin = false;
+
 export const session = {
   get loggedIn() { return lsGet(LS_FLAG) === 'true'; },
   get username() { return lsGet(LS_USER) || ''; },
+  get admin() { return admin && session.loggedIn; },
   save(username) { lsSet(LS_FLAG, 'true'); lsSet(LS_USER, username || ''); },
-  clear() { lsDel(LS_FLAG); lsDel(LS_USER); },
+  clear() { lsDel(LS_FLAG); lsDel(LS_USER); admin = false; },
 };
 
-function sessionState() { return { loggedIn: session.loggedIn, username: session.username }; }
+function sessionState() { return { loggedIn: session.loggedIn, username: session.username, admin: session.admin }; }
 
 function publishSession() {
   document.documentElement.dataset.auth = session.loggedIn ? 'in' : 'out';
+  document.documentElement.toggleAttribute('data-admin', session.admin);
   document.dispatchEvent(new CustomEvent('trusty:session', { detail: sessionState() }));
 }
 
@@ -69,10 +75,10 @@ export const sessionReady = (async () => {
       publishSession();
     } else if (res.ok) {
       const data = await res.json().catch(() => null);
-      if (data && typeof data.username === 'string' && data.username && data.username !== session.username) {
-        session.save(data.username);
-        publishSession();
-      }
+      const renamed = data && typeof data.username === 'string' && data.username && data.username !== session.username;
+      if (renamed) session.save(data.username);
+      admin = Boolean(data && data.isAdmin === true);
+      if (renamed || admin) publishSession();
     }
   } catch { /* offline: trust the local flag, as the old site did */ }
   return sessionState();
@@ -153,14 +159,19 @@ const ICON_CARET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path class="icon-open" d="M4 7c5-.6 11 .4 16-.2M4 12.2c6 .4 10-.5 16 0M4 17.4c4-.4 10 .3 16-.3"/><path class="icon-close" d="M6.2 6c4 4 7.8 8.2 11.8 12.2M18 5.8C14 10 10 14 6 18.2"/></svg>';
 
+const ADMIN_PAGE = '/pages/admin.html';
+
 function accountContent() {
   if (session.loggedIn) {
     return [
       session.username
         ? h('a', { class: 'account-name', href: profileHref(session.username), title: 'Your profile' }, `Hi, ${session.username}`)
         : h('span', { class: 'account-name' }, 'Hi, friend'),
+      session.admin
+        ? h('a', { class: 'btn btn-highlight btn-sm', href: ADMIN_PAGE, 'aria-current': currentState({ href: ADMIN_PAGE }) }, 'Admin')
+        : null,
       h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: logout }, 'Log out'),
-    ];
+    ].filter(Boolean);
   }
   return [
     h('a', { class: 'btn btn-ghost btn-sm', href: loginHref() }, 'Log in'),

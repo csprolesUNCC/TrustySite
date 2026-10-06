@@ -1,6 +1,6 @@
 // Fetch + render the leaderboards. Names and drawings come from other users, so everything
 // is built with DOM APIs (never innerHTML) and drawings must be PNG data URLs.
-import { h, fmt, session, profileHref } from '/scripts/site.js';
+import { h, fmt, toast, session, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
 import { referenceCanvas } from '/scripts/draw-reference.js';
 
 const PNG_PREFIX = 'data:image/png;base64,';
@@ -28,7 +28,8 @@ export const BOARDS = {
   draw: {
     url: '/api/draw-api?action=get_leaderboard',
     label: 'Draw Trusty',
-    normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing) }),
+    // `id` and `reported` (whether you've reported it) are for the drawing viewer's Report button.
+    normalize: (e) => ({ name: e.name, score: e.score, drawing: safeDrawing(e.drawing), id: typeof e.id === 'string' ? e.id : null, reported: e.reported === true }),
     format: (n) => `${fmt(n)}%`,
     unit: 'accuracy',
   },
@@ -124,6 +125,47 @@ function fileSafe(text) {
   return String(text).replace(/[^a-z0-9_-]+/gi, '_').slice(0, 40) || 'artist';
 }
 
+// Logged-in players can report someone else's drawing, once each (api/draw-api.js, action=report).
+// Admins see the reports on pages/admin.html.
+function reportControl(entry) {
+  if (!entry.id || isMe(entry)) return null;
+  if (!session.loggedIn) return h('a', { class: 'btn btn-ghost btn-sm', href: loginHref() }, 'Log in to report');
+  if (entry.reported) return h('button', { type: 'button', class: 'btn btn-ghost btn-sm', disabled: true }, 'Reported');
+  return h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: (e) => reportDrawing(entry, e.currentTarget) }, 'Report');
+}
+
+function renderReport(entry) {
+  const control = reportControl(entry);
+  viewer.report.replaceChildren(...(control ? [control] : []));
+}
+
+async function reportDrawing(entry, button) {
+  button.disabled = true;
+  let res;
+  try {
+    res = await fetch('/api/draw-api?action=report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: entry.id }),
+    });
+  } catch {
+    button.disabled = false;
+    toast('Couldn’t reach the server. Try again?', 'error');
+    return;
+  }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    sessionExpired();
+    toast('Your login expired. Log in again to report drawings.', 'error');
+  } else if (res.ok) {
+    entry.reported = true;
+    toast('Reported. Thanks for keeping the notebook clean!', 'success');
+  } else {
+    toast(data.error || 'Couldn’t report that drawing. Try again?', 'error');
+  }
+  if (viewer.entry === entry) renderReport(entry);
+}
+
 export function openDrawing(entry) {
   if (!entry.drawing) return;
   overlaySrc ||= referenceCanvas(6).toDataURL('image/png');
@@ -134,12 +176,13 @@ export function openDrawing(entry) {
     const overlay = h('img', { class: 'drawing-overlay', src: overlaySrc, alt: '', hidden: true });
     const toggle = h('button', { type: 'button', class: 'btn btn-outline btn-sm', 'aria-pressed': 'false' }, 'Show the real Trusty');
     const download = h('a', { class: 'btn btn-sm', download: 'trusty-drawing.png' }, 'Download PNG');
+    const report = h('span', { class: 'drawing-report' });
     const close = h('button', { type: 'button', class: 'btn btn-ghost btn-icon', 'aria-label': 'Close' }, '✕');
     const dialog = h('dialog', { class: 'modal', 'aria-labelledby': 'drawing-title' },
       h('div', { class: 'modal-head' }, title, close),
       h('div', { class: 'modal-body' },
         h('div', { class: 'drawing-frame' }, art, overlay),
-        h('div', { class: 'drawing-actions' }, toggle, download)));
+        h('div', { class: 'drawing-actions' }, toggle, download, report)));
 
     toggle.addEventListener('click', () => {
       overlay.hidden = !overlay.hidden;
@@ -149,10 +192,11 @@ export function openDrawing(entry) {
     close.addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
     document.body.append(dialog);
-    viewer = { dialog, title, art, overlay, toggle, download };
+    viewer = { dialog, title, art, overlay, toggle, download, report };
   }
 
   const board = BOARDS.draw;
+  viewer.entry = entry;
   viewer.title.textContent = `${entry.name}'s masterpiece (${board.format(entry.score)})`;
   viewer.art.src = entry.drawing;
   viewer.art.alt = `${entry.name}'s drawing of Trusty`;
@@ -161,5 +205,6 @@ export function openDrawing(entry) {
   viewer.toggle.textContent = 'Show the real Trusty';
   viewer.download.href = entry.drawing;
   viewer.download.download = `${fileSafe(entry.name)}_Trusty_${entry.score}pct.png`;
+  renderReport(entry);
   viewer.dialog.showModal();
 }

@@ -947,6 +947,16 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   [data-auth="in"] .menu-toggle { display: inline-flex; }
   [data-auth="in"] .header-actions { margin-left: auto; }
 }
+/* Admins also get an Admin button, which doesn't fit in the page's width, so their header row is 100px wider
+   than the page from 1340px, and below that the nav moves into the menu. */
+@media (max-width: 1339.98px) {
+  [data-admin] .site-nav, [data-admin] .header-actions .account { display: none; }
+  [data-admin] .menu-toggle { display: inline-flex; }
+  [data-admin] .header-actions { margin-left: auto; }
+}
+@media (min-width: 1340px) {
+  [data-admin] .header-inner { width: min(100% - 2 * var(--gutter), var(--container) + 100px); }
+}
 @media (min-width: 1240px) {
   .clicker { padding-right: 10px; }
   .clicker-label { display: none; }
@@ -1421,6 +1431,8 @@ dialog.reader::backdrop { background: #1e1f23; }
 .drawing-frame img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .drawing-frame .drawing-overlay { opacity: .45; pointer-events: none; }
 .drawing-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
+/* Holds the Report button (or nothing, on your own drawing), which sits in the row like the other buttons */
+.drawing-report { display: contents; }
 
 /* =========================================================================
    TrustyGPT chat

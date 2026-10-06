@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Admin Panel — Trusty da Horse</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#fbf8f0">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/admin.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Admins only</p>
+            <h1>Admin Panel</h1>
+            <p class="lead">Keep the notebook clean: check the Draw Trusty drawings people reported, and look over everyone’s usernames.</p>
+        </header>
+
+        <div class="container" id="state-loading">
+            <p class="muted" role="status">Checking your admin pass…</p>
+        </div>
+
+        <!-- Logged out, not an admin, or the request failed -->
+        <div class="container" id="state-message" hidden>
+            <div class="sheet admin-message">
+                <h2 id="message-title"></h2>
+                <p id="message-text"></p>
+                <div class="btn-row" id="message-actions"></div>
+            </div>
+        </div>
+
+        <section class="section-tight container" id="state-admin" aria-label="Admin tools" hidden>
+            <div class="tabs" role="tablist" aria-label="Admin tools">
+                <button class="tab" role="tab" type="button" id="tab-drawings" aria-controls="panel-drawings" aria-selected="true" data-tab="drawings">Drawings</button>
+                <button class="tab" role="tab" type="button" id="tab-usernames" aria-controls="panel-usernames" aria-selected="false" tabindex="-1" data-tab="usernames">Usernames</button>
+            </div>
+
+            <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
+                <div class="section-head">
+                    <div>
+                        <h2>Draw Trusty drawings</h2>
+                        <p id="drawings-summary"></p>
+                    </div>
+                </div>
+                <ul class="admin-drawings" id="drawings"></ul>
+            </div>
+
+            <div role="tabpanel" id="panel-usernames" aria-labelledby="tab-usernames" data-tab="usernames" hidden>
+                <div class="section-head">
+                    <div>
+                        <h2>Usernames</h2>
+                        <p id="usernames-summary"></p>
+                    </div>
+                </div>
+                <div class="admin-name-lists">
+                    <div class="panel admin-flagged">
+                        <h3 class="panel-title">Flagged</h3>
+                        <ul class="admin-names" id="flagged"></ul>
+                    </div>
+                    <div class="panel">
+                        <h3 class="panel-title">Everyone else</h3>
+                        <ul class="admin-names" id="usernames"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
+
+        // utils/admin.js, which checks that you're an admin on every request.
+        const API = '/api/leaderboard?action=admin';
+        const $ = (id) => document.getElementById(id);
+        const states = ['loading', 'message', 'admin'];
+        const show = (which) => states.forEach((s) => { $(`state-${s}`).hidden = s !== which; });
+
+        const dateFormat = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        function day(value) {
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '' : dateFormat.format(date);
+        }
+        const count = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+
+        function showMessage(title, text, actions = []) {
+            $('message-title').textContent = title;
+            $('message-text').textContent = text;
+            $('message-actions').replaceChildren(...actions);
+            show('message');
+        }
+
+        function showLoggedOut() {
+            showMessage('Log in first.', 'The admin panel is for Trusty’s admins. Log in to check if that’s you.',
+                [h('a', { class: 'btn', href: loginHref() }, 'Log in')]);
+        }
+
+        /* ---------- Tabs ---------- */
+
+        const tabs = [...document.querySelectorAll('[role="tab"]')];
+        const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
+
+        function select(key, { focus = false, updateHash = true } = {}) {
+            if (!panels[key]) key = 'drawings';
+            for (const tab of tabs) {
+                const on = tab.dataset.tab === key;
+                tab.setAttribute('aria-selected', String(on));
+                tab.tabIndex = on ? 0 : -1;
+                if (on && focus) tab.focus();
+            }
+            for (const [k, panel] of Object.entries(panels)) panel.hidden = k !== key;
+            if (updateHash) history.replaceState(null, '', key === 'drawings' ? location.pathname : `#${key}`);
+        }
+
+        tabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => select(tab.dataset.tab));
+            tab.addEventListener('keydown', (e) => {
+                const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                if (e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    select(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.tab, { focus: true });
+                } else if (dir) {
+                    e.preventDefault();
+                    select(tabs[(i + dir + tabs.length) % tabs.length].dataset.tab, { focus: true });
+                }
+            });
+        });
+
+        // The number of reported drawings or flagged names, in red on the tab.
+        function tabCount(key, n, what) {
+            const tab = tabs.find((t) => t.dataset.tab === key);
+            tab.querySelector('.admin-count')?.remove();
+            if (n) tab.append(h('span', { class: 'admin-count' }, fmt(n), h('span', { class: 'sr-only' }, ` ${what}`)));
+        }
+
+        /* ---------- Drawings ---------- */
+
+        let drawings = [];
+
+        // Reports tint a drawing's card: one makes it yellow, two pink, three or more red.
+        const tier = (reports) => (reports >= 3 ? 'high' : reports === 2 ? 'mid' : reports === 1 ? 'low' : 'none');
+
+        function renderDrawingsSummary() {
+            const reported = drawings.filter((d) => d.reports > 0).length;
+            $('drawings-summary').textContent = drawings.length
+                ? `${count(drawings.length, 'drawing')} on the site, ${reported ? `${fmt(reported)} reported` : 'none reported'}. The most reported come first, then the newest. Removing one takes its score off the leaderboard too.`
+                : 'No one has drawn Trusty yet.';
+            tabCount('drawings', reported, 'reported');
+        }
+
+        // Sends an admin action for a drawing. Answers 'ok', 'gone' (someone already removed it) or null if it
+        // didn't work, in which case it has already said why.
+        async function moderate(body, button) {
+            button.disabled = true;
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    showLoggedOut();
+                    return null;
+                }
+                if (res.status === 404) return 'gone';
+                if (!res.ok) {
+                    toast(data.error || 'That didn’t work. Try again?', 'error');
+                    return null;
+                }
+                return 'ok';
+            } catch {
+                toast('Couldn’t reach the server. Try again?', 'error');
+                return null;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function drawingCard(d) {
+            const name = typeof d.name === 'string' && d.name ? d.name : 'Anonymous';
+            // The drawing's time is in the link so a new drawing (same id) isn't covered up by the cached old one.
+            const src = `${API}&drawing=${encodeURIComponent(d.id)}&v=${encodeURIComponent(d.at || '')}`;
+            const reports = h('span', { class: 'tag admin-reports' });
+            const keep = h('button', { type: 'button', class: 'btn btn-outline btn-sm' }, 'Looks fine');
+            const remove = h('button', { type: 'button', class: 'btn btn-sm admin-remove' }, 'Remove');
+            const card = h('li', { class: 'admin-drawing' },
+                h('a', { class: 'admin-art', href: src, target: '_blank', rel: 'noopener', 'aria-label': `Open ${name}’s drawing full size` },
+                    h('img', { src, alt: '', width: 500, height: 500, loading: 'lazy', decoding: 'async' })),
+                h('div', { class: 'admin-drawing-info' },
+                    name === 'Anonymous'
+                        ? h('span', { class: 'admin-drawing-name' }, name)
+                        : h('a', { class: 'admin-drawing-name', href: profileHref(name), title: `${name}’s profile` }, name),
+                    h('span', { class: 'admin-drawing-meta' }, [`${fmt(d.score)}%`, day(d.at)].filter(Boolean).join(' · ')),
+                    reports),
+                h('div', { class: 'btn-row' }, keep, remove));
+
+            const update = () => {
+                card.dataset.tier = tier(d.reports);
+                reports.textContent = d.reports ? count(d.reports, 'report') : 'No reports';
+                reports.classList.toggle('tag-quiet', !d.reports);
+                keep.hidden = !d.reports;
+            };
+            const drop = () => {
+                drawings = drawings.filter((other) => other !== d);
+                card.remove();
+                renderDrawingsSummary();
+            };
+            update();
+
+            keep.addEventListener('click', async () => {
+                const result = await moderate({ dismiss: d.id }, keep);
+                if (result === 'gone') {
+                    drop();
+                    toast('That drawing is already gone.');
+                } else if (result === 'ok') {
+                    d.reports = 0;
+                    update();
+                    renderDrawingsSummary();
+                    toast('Reports cleared.', 'success');
+                }
+            });
+
+            remove.addEventListener('click', async () => {
+                if (!confirm(`Remove ${name}’s drawing? It comes off the leaderboard and their profile, along with its ${fmt(d.score)}% score. This can’t be undone.`)) return;
+                // `at` makes sure it's still the drawing shown here, not a new high score that replaced it.
+                const result = await moderate({ remove: d.id, at: d.at ?? null }, remove);
+                if (result === 'gone') {
+                    drop();
+                    toast('That drawing is already gone.');
+                } else if (result === 'ok') {
+                    drop();
+                    toast('Drawing removed.', 'success');
+                }
+            });
+            return card;
+        }
+
+        function renderDrawings() {
+            $('drawings').replaceChildren(...drawings.map(drawingCard));
+            renderDrawingsSummary();
+        }
+
+        /* ---------- Usernames ---------- */
+
+        function nameRow(user) {
+            const flags = Array.isArray(user.flags) ? user.flags : [];
+            return h('li', { class: `admin-name${flags.length ? ' is-flagged' : ''}` },
+                h('a', { href: profileHref(user.username) }, user.username),
+                flags.length ? h('ul', { class: 'tags', 'aria-label': 'Flagged words' }, flags.map((word) => h('li', { class: 'tag tag-pink' }, word))) : null,
+                h('span', { class: 'admin-name-date', title: 'Joined' }, day(user.joined)));
+        }
+
+        function renderUsers(users) {
+            const flagged = users.filter((u) => Array.isArray(u.flags) && u.flags.length);
+            const rest = users.filter((u) => !flagged.includes(u));
+            $('usernames-summary').textContent = `${count(users.length, 'account')}, ${flagged.length ? `${fmt(flagged.length)} flagged` : 'none flagged'}. Flagged names have a bad word in them, even spelled with numbers or symbols. The check can’t catch everything, so skim the rest too. Newest first, and each name links to its profile.`;
+            $('flagged').replaceChildren(...(flagged.length
+                ? flagged.map(nameRow)
+                : [h('li', { class: 'admin-empty' }, 'Nothing flagged right now.')]));
+            $('usernames').replaceChildren(...(rest.length
+                ? rest.map(nameRow)
+                : [h('li', { class: 'admin-empty' }, 'No one else yet.')]));
+            tabCount('usernames', flagged.length, 'flagged');
+        }
+
+        /* ---------- Load ---------- */
+
+        async function load() {
+            const { loggedIn } = await sessionReady;
+            if (!loggedIn) {
+                showLoggedOut();
+                return;
+            }
+            show('loading');
+            try {
+                const res = await fetch(API);
+                if (res.status === 401) {
+                    sessionExpired();
+                    showLoggedOut();
+                    return;
+                }
+                if (res.status === 403) {
+                    showMessage('Admins only.', 'This page is just for Trusty’s admins. Sorry!',
+                        [h('a', { class: 'btn', href: '/index.html' }, 'Back to the home page')]);
+                    return;
+                }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                drawings = (Array.isArray(data.drawings) ? data.drawings : []).filter((d) => d && typeof d.id === 'string');
+                renderDrawings();
+                renderUsers((Array.isArray(data.users) ? data.users : []).filter((u) => u && typeof u.username === 'string'));
+                show('admin');
+            } catch {
+                showMessage('Couldn’t load the admin panel.', 'Something went wrong on the way here. Give it another try.',
+                    [h('button', { type: 'button', class: 'btn', onclick: load }, 'Try again')]);
+            }
+        }
+
+        select(location.hash.slice(1) || 'drawings', { updateHash: false });
+        window.addEventListener('hashchange', () => select(location.hash.slice(1) || 'drawings', { updateHash: false }));
+        load();
+    </script>
+</body>
+</html>

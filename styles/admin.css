@@ -1,0 +1,99 @@
+/* Admin panel (pages/admin.html) */
+
+.admin-message { max-width: 680px; }
+.admin-message h2 { margin-bottom: .4em; }
+
+/* How many drawings are reported or names flagged, in red on the tab */
+.admin-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.7em;
+  height: 1.7em;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: .75rem;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: .15em;
+}
+
+.admin-empty { grid-column: 1 / -1; padding: 16px 4px; color: var(--pencil); }
+
+/* Drawings, most reported first. Reports tint a card: one makes it yellow, two pink, three or more red. */
+.admin-drawings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: clamp(14px, 2vw, 22px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-drawing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-ink);
+}
+.admin-drawing[data-tier="low"] { background: var(--note-yellow); }
+.admin-drawing[data-tier="mid"] { background: var(--note-pink); }
+.admin-drawing[data-tier="high"] { background: var(--note-pink); border-color: var(--red); box-shadow: 4px 4px 0 var(--red); }
+.admin-art {
+  display: block;
+  aspect-ratio: 1;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.admin-art img { width: 100%; height: 100%; object-fit: contain; }
+.admin-drawing-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.admin-drawing-name {
+  flex: 1 1 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 750;
+  color: var(--ink);
+}
+a.admin-drawing-name { text-decoration: none; }
+a.admin-drawing-name:hover { color: var(--blue); text-decoration: underline; }
+.admin-drawing-meta { font-size: .88rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.admin-drawing[data-tier="high"] .admin-reports { background: var(--red); border-color: var(--red); color: #fff; }
+.admin-drawing .btn-row { gap: 8px; margin-top: auto; }
+.admin-remove { --btn-bg: var(--red); --btn-border: #9e1f33; --btn-shadow: #9e1f33; }
+
+/* Usernames: the flagged ones, then everyone else */
+.admin-name-lists { display: grid; gap: clamp(18px, 3vw, 28px); }
+.admin-flagged { border-color: var(--red); box-shadow: 3px 3px 0 var(--red); }
+.admin-names {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 0 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  padding: 8px 4px;
+  border-bottom: 1.5px dashed var(--rule);
+}
+.admin-name > a { min-width: 0; overflow-wrap: anywhere; font-weight: 650; color: var(--ink); text-decoration: none; }
+.admin-name > a:hover { color: var(--blue); text-decoration: underline; }
+.admin-name.is-flagged > a { padding: 0 4px; background: linear-gradient(transparent 12%, var(--note-pink) 12%, var(--note-pink) 88%, transparent 88%); }
+.admin-name-date { margin-left: auto; font-size: .82rem; color: var(--pencil); white-space: nowrap; }

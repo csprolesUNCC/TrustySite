@@ -186,7 +186,7 @@
         function drawCard() {
             const d = profile.draw;
             const drawing = d && safeDrawing(d.drawing);
-            const entry = d && { name: profile.username, score: d.score, drawing };
+            const entry = d && { name: profile.username, score: d.score, drawing, id: typeof d.id === 'string' ? d.id : null, reported: d.reported === true };
             return statCard('Best Draw Trusty', 'is-draw',
                 d ? h('div', { class: 'profile-draw' },
                         drawing
