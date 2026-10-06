@@ -6,6 +6,12 @@ if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not defined in environment variables.');
 }
 
+// Admins (pages/admin.html) are the accounts named in ADMIN_USERNAMES, comma-separated, in any case.
+// Only list names that are already registered: anyone could sign up as a free one and be an admin.
+const ADMIN_USERNAMES = new Set(
+    (process.env.ADMIN_USERNAMES || '').split(',').map((name) => name.trim().toLowerCase()).filter(Boolean)
+);
+
 // Helper to extract the token from cookies
 function getAuthToken(req) {
     const cookies = req.headers.cookie;
@@ -38,4 +44,13 @@ function authenticateUser(req) {
     }
 }
 
-export { authenticateUser };
+/**
+ * Whether a user from authenticateUser() is an admin. Admin APIs check this on every request.
+ * @param {object|null} user - The decoded token payload, or null.
+ * @returns {boolean}
+ */
+function isAdmin(user) {
+    return Boolean(user && typeof user.username === 'string' && ADMIN_USERNAMES.has(user.username.toLowerCase()));
+}
+
+export { authenticateUser, isAdmin };

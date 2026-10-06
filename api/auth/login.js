@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '../../utils/connect.js';
-import { authenticateUser } from '../../utils/auth.js';
+import { authenticateUser, isAdmin } from '../../utils/auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -14,9 +14,10 @@ export default async (req, res) => {
         const user = authenticateUser(req);
 
         if (user) {
-            return res.status(200).json({ 
-                isLoggedIn: true, 
-                username: user.username 
+            return res.status(200).json({
+                isLoggedIn: true,
+                username: user.username,
+                isAdmin: isAdmin(user) // shows the header's Admin button
             });
         } else {
             return res.status(401).json({ 

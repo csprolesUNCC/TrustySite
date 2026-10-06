@@ -57,7 +57,7 @@ async function getProfile(req, res) {
     const [clickDoc, flappyDoc, drawDoc, trustisDoc, trustleDoc, profileDoc] = await Promise.all([
         clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1 } }),
         flappyCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
-        drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1 } }),
+        drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1, reportedBy: 1 } }),
         trustisCol.findOne({ userId }, { ...best, projection: { score: 1, lines: 1, level: 1, timestamp: 1 } }),
         db.collection('trustle').findOne({ userId }, { projection: { games: 1 } }),
         db.collection('profiles').findOne({ userId }, { projection: { bio: 1 } }),
@@ -98,10 +98,14 @@ async function getProfile(req, res) {
         bio: profileDoc && typeof profileDoc.bio === 'string' ? profileDoc.bio : '',
         clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank } : null,
         flappy: hasFlappy ? { score: flappyDoc.score, rank: flappyRank } : null,
+        // The id and `reported` (whether you've reported it) are for the drawing viewer's Report button,
+        // as on the leaderboard (api/draw-api.js).
         draw: hasDraw ? {
+            id: String(drawDoc._id),
             score: drawDoc.score,
             rank: drawRank,
             drawing: typeof drawDoc.drawing === 'string' && PNG_DATA_URL.test(drawDoc.drawing) ? drawDoc.drawing : null,
+            reported: Boolean(me) && Array.isArray(drawDoc.reportedBy) && drawDoc.reportedBy.includes(String(me.userId)),
         } : null,
         trustis: hasTrustis ? { score: trustisDoc.score, rank: trustisRank, lines: trustisDoc.lines, level: trustisDoc.level } : null,
         trustle: trustle.played ? trustle : null,
