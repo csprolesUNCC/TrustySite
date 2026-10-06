@@ -22,29 +22,29 @@ const WORDS = [
 const INNOCENT = [
     'therapist', 'grape', 'drape', 'scrape', 'trapez', 'parapet', 'torpedo', 'pedometer', 'sussex', 'essex',
     'middlesex', 'unisex', 'sextant', 'sextet', 'sexton', 'scunthorpe', 'shitake', 'fuku', 'dickens',
-    'dickinson', 'dickson', 'peacock', 'hancock', 'woodcock', 'gamecock', 'shuttlecock', 'cockatoo',
-    'cockatiel', 'cockpit', 'cocktail', 'cockroach', 'swank', 'milford', 'retardant', 'montenegro', 'negroni',
-    'pakistan', 'vandyke', 'fagan', 'fagin', 'sheila', 'nazir', 'nazia', 'nazim',
+    'dickinson', 'dickson', 'peacock', 'hancock', 'hitchcock', 'woodcock', 'gamecock', 'shuttlecock', 'cockatoo',
+    'cockatiel', 'cocker', 'cockpit', 'cocktail', 'cockroach', 'swank', 'thorny', 'milford', 'retardant',
+    'montenegro', 'negroni', 'pakistan', 'vandyke', 'fagan', 'fagin', 'sheila', 'nazir', 'nazia', 'nazim',
 ];
 
 // Characters people swap in for letters. A 1 could be an i or an l, so names are checked both ways.
 const LOOKALIKES = { 0: 'o', 3: 'e', 4: 'a', 5: 's', 7: 't', 8: 'b', '@': 'a', $: 's', '!': 'i', '|': 'l', '+': 't' };
 
 // The ways a name might spell something: lowercase with accents and look-alikes undone (sh1t, $lut) and
-// everything that isn't a letter dropped (f_u.c-k), minus the innocent words.
+// everything that isn't a letter dropped (f_u.c-k), minus the innocent words. A letter written three or more
+// times in a row (fuuuck, asssshole) is also squeezed back to one and to two. Pairs are left alone, or "speedo"
+// would turn into "spedo".
 function spellings(name) {
     const plain = name.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase();
-    return ['i', 'l'].map((one) => {
-        let text = '';
-        for (const ch of plain) text += ch === '1' ? one : LOOKALIKES[ch] || ch;
-        text = text.replace(/[^a-z]/g, '');
-        for (const word of INNOCENT) text = text.replaceAll(word, '');
-        return text;
-    });
+    return ['i', 'l']
+        .flatMap((one) => {
+            let text = '';
+            for (const ch of plain) text += ch === '1' ? one : LOOKALIKES[ch] || ch;
+            text = text.replace(/[^a-z]/g, '');
+            return [text, text.replace(/(.)\1{2,}/g, '$1'), text.replace(/(.)\1{2,}/g, '$1$1')];
+        })
+        .map((text) => INNOCENT.reduce((rest, word) => rest.replaceAll(word, ''), text));
 }
-
-// Stretched letters (fuuuck) are squeezed back to one each.
-const squeeze = (text) => text.replace(/(.)\1+/g, '$1');
 
 /**
  * The bad words in a username.
@@ -53,6 +53,6 @@ const squeeze = (text) => text.replace(/(.)\1+/g, '$1');
  */
 export function badWordsIn(name) {
     if (typeof name !== 'string') return [];
-    const texts = spellings(name).flatMap((text) => [text, squeeze(text)]);
+    const texts = spellings(name);
     return WORDS.filter((word) => texts.some((text) => text.includes(word)));
 }

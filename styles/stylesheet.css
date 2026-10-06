@@ -1433,6 +1433,7 @@ dialog.reader::backdrop { background: #1e1f23; }
 .drawing-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
 /* Holds the Report button (or nothing, on your own drawing), which sits in the row like the other buttons */
 .drawing-report { display: contents; }
+.drawing-status { margin: 12px 0 0; text-align: center; }
 
 /* =========================================================================
    TrustyGPT chat

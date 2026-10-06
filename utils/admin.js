@@ -12,10 +12,10 @@ import { GRADER_VERSION } from '../scripts/draw-grader.js';
 //     the ones utils/bad-words.js flags moved to the top. Never returns an email.
 //   GET &drawing=<id>: that drawing as a PNG, for the page's <img> tags. Sending every drawing inside the
 //     list could go over Vercel's 4.5 MB response limit.
-//   POST { remove: <id>, at: <its timestamp> }: deletes a drawing, and its score with it, from the leaderboard
-//     and the profile. A new high score replaces a drawing but keeps its id, so `at` (the drawing's time from
-//     the list) makes sure it's the drawing the admin saw: if it's been replaced since, this answers 409.
-//   POST { dismiss: <id> }: clears a drawing's reports once an admin has decided it's fine.
+//   POST { remove: <id>, at }: deletes a drawing, and its score with it, from the leaderboard and the profile.
+//   POST { dismiss: <id>, at }: clears a drawing's reports once an admin has decided it's fine.
+//   A new high score replaces a drawing but keeps its id, so both send `at`, the drawing's time from the list,
+//   to make sure they change the drawing the admin saw. If it's been replaced since, they answer 409.
 
 const DRAWING_ID = /^[a-f0-9]{24}$/i;
 const PNG_PREFIX = 'data:image/png;base64,';
@@ -78,28 +78,26 @@ async function sendDrawing(req, res) {
 
 async function moderate(req, res) {
     const { remove, dismiss, at } = req.body || {};
-    const id = remove !== undefined ? remove : dismiss;
+    const removing = remove !== undefined;
+    const id = removing ? remove : dismiss;
     if (typeof id !== 'string' || !DRAWING_ID.test(id)) return res.status(400).json({ error: 'Invalid drawing' });
+    if (at !== null && (typeof at !== 'string' || Number.isNaN(Date.parse(at)))) {
+        return res.status(400).json({ error: 'Invalid drawing time' });
+    }
 
     const db = await connectToDatabase();
     const collection = db.collection('draw_scores');
     const _id = new ObjectId(id);
+    const seen = { _id, timestamp: at === null ? null : new Date(at) };
 
-    if (remove !== undefined) {
-        if (at !== null && (typeof at !== 'string' || Number.isNaN(Date.parse(at)))) {
-            return res.status(400).json({ error: 'Invalid drawing time' });
-        }
-        const { deletedCount } = await collection.deleteOne({ _id, timestamp: at === null ? null : new Date(at) });
-        if (deletedCount) return res.status(200).json({ removed: true });
-        if (await collection.countDocuments({ _id })) {
-            return res.status(409).json({ error: 'That player just replaced this drawing with a new one. Reload to see it.' });
-        }
-        return res.status(404).json({ error: 'That drawing is already gone.' });
+    const done = removing
+        ? (await collection.deleteOne(seen)).deletedCount
+        : (await collection.updateOne(seen, { $unset: { reportedBy: '' } })).matchedCount;
+    if (done) return res.status(200).json(removing ? { removed: true } : { reports: 0 });
+    if (await collection.countDocuments({ _id })) {
+        return res.status(409).json({ error: 'That player just replaced this drawing with a new one. Reload to see it.' });
     }
-
-    const { matchedCount } = await collection.updateOne({ _id }, { $unset: { reportedBy: '' } });
-    if (!matchedCount) return res.status(404).json({ error: 'That drawing is already gone.' });
-    return res.status(200).json({ reports: 0 });
+    return res.status(404).json({ error: 'That drawing is already gone.' });
 }
 
 export default async function admin(req, res) {

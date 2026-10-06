@@ -222,8 +222,10 @@
             };
             update();
 
+            // Both actions send `at` so they only change the drawing shown here, not a new high score that
+            // replaced it since the page loaded (that answers 409, and moderate() says to reload).
             keep.addEventListener('click', async () => {
-                const result = await moderate({ dismiss: d.id }, keep);
+                const result = await moderate({ dismiss: d.id, at: d.at ?? null }, keep);
                 if (result === 'gone') {
                     drop();
                     toast('That drawing is already gone.');
@@ -237,7 +239,6 @@
 
             remove.addEventListener('click', async () => {
                 if (!confirm(`Remove ${name}’s drawing? It comes off the leaderboard and their profile, along with its ${fmt(d.score)}% score. This can’t be undone.`)) return;
-                // `at` makes sure it's still the drawing shown here, not a new high score that replaced it.
                 const result = await moderate({ remove: d.id, at: d.at ?? null }, remove);
                 if (result === 'gone') {
                     drop();

@@ -139,6 +139,19 @@ function renderReport(entry) {
   viewer.report.replaceChildren(...(control ? [control] : []));
 }
 
+// Says how a report went. The open viewer is a modal that covers toasts, so it says it inside the dialog.
+function reportStatus(entry, message, tone) {
+  if (!viewer.dialog.open || viewer.entry !== entry) {
+    toast(message, tone);
+    return;
+  }
+  viewer.status.dataset.tone = tone;
+  viewer.status.textContent = message;
+  renderReport(entry);
+  // The button that had focus was replaced; keep keyboard focus in the dialog.
+  if (!viewer.dialog.contains(document.activeElement)) viewer.close.focus();
+}
+
 async function reportDrawing(entry, button) {
   button.disabled = true;
   let res;
@@ -149,21 +162,19 @@ async function reportDrawing(entry, button) {
       body: JSON.stringify({ id: entry.id }),
     });
   } catch {
-    button.disabled = false;
-    toast('Couldn’t reach the server. Try again?', 'error');
+    reportStatus(entry, 'Couldn’t reach the server. Try again?', 'error');
     return;
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     sessionExpired();
-    toast('Your login expired. Log in again to report drawings.', 'error');
+    reportStatus(entry, 'Your login expired. Log in again to report drawings.', 'error');
   } else if (res.ok) {
     entry.reported = true;
-    toast('Reported. Thanks for keeping the notebook clean!', 'success');
+    reportStatus(entry, 'Reported. Thanks! An admin will take a look.', 'success');
   } else {
-    toast(data.error || 'Couldn’t report that drawing. Try again?', 'error');
+    reportStatus(entry, data.error || 'Couldn’t report that drawing. Try again?', 'error');
   }
-  if (viewer.entry === entry) renderReport(entry);
 }
 
 export function openDrawing(entry) {
@@ -177,12 +188,14 @@ export function openDrawing(entry) {
     const toggle = h('button', { type: 'button', class: 'btn btn-outline btn-sm', 'aria-pressed': 'false' }, 'Show the real Trusty');
     const download = h('a', { class: 'btn btn-sm', download: 'trusty-drawing.png' }, 'Download PNG');
     const report = h('span', { class: 'drawing-report' });
+    const status = h('p', { class: 'form-status drawing-status', role: 'status' });
     const close = h('button', { type: 'button', class: 'btn btn-ghost btn-icon', 'aria-label': 'Close' }, '✕');
     const dialog = h('dialog', { class: 'modal', 'aria-labelledby': 'drawing-title' },
       h('div', { class: 'modal-head' }, title, close),
       h('div', { class: 'modal-body' },
         h('div', { class: 'drawing-frame' }, art, overlay),
-        h('div', { class: 'drawing-actions' }, toggle, download, report)));
+        h('div', { class: 'drawing-actions' }, toggle, download, report),
+        status));
 
     toggle.addEventListener('click', () => {
       overlay.hidden = !overlay.hidden;
@@ -192,7 +205,7 @@ export function openDrawing(entry) {
     close.addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
     document.body.append(dialog);
-    viewer = { dialog, title, art, overlay, toggle, download, report };
+    viewer = { dialog, title, art, overlay, toggle, download, report, status, close };
   }
 
   const board = BOARDS.draw;
@@ -205,6 +218,7 @@ export function openDrawing(entry) {
   viewer.toggle.textContent = 'Show the real Trusty';
   viewer.download.href = entry.drawing;
   viewer.download.download = `${fileSafe(entry.name)}_Trusty_${entry.score}pct.png`;
+  viewer.status.textContent = '';
   renderReport(entry);
   viewer.dialog.showModal();
 }
