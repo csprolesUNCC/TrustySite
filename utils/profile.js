@@ -102,6 +102,9 @@ async function getProfile(req, res) {
             score: drawDoc.score,
             rank: drawRank,
             drawing: typeof drawDoc.drawing === 'string' && PNG_DATA_URL.test(drawDoc.drawing) ? drawDoc.drawing : null,
+            // For the Report button (utils/moderation.js)
+            id: String(drawDoc._id),
+            at: drawDoc.timestamp,
         } : null,
         trustis: hasTrustis ? { score: trustisDoc.score, rank: trustisRank, lines: trustisDoc.lines, level: trustisDoc.level } : null,
         trustle: trustle.played ? trustle : null,

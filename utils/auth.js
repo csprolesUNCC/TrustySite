@@ -38,4 +38,17 @@ function authenticateUser(req) {
     }
 }
 
-export { authenticateUser };
+// The accounts that can use the admin panel (pages/admin.html, utils/moderation.js). Sign-up refuses a name
+// that only differs from an existing one in capitals, so matching these case-insensitively can't let
+// anyone else in, as long as both accounts exist.
+const ADMINS = ['carson', 'luke'];
+
+/**
+ * @param {object|null} user - The payload from authenticateUser.
+ * @returns {boolean} Whether that user is an admin.
+ */
+function isAdmin(user) {
+    return Boolean(user && typeof user.username === 'string' && ADMINS.includes(user.username.toLowerCase()));
+}
+
+export { authenticateUser, isAdmin };

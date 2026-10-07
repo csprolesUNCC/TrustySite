@@ -1,6 +1,7 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { decodePngDataUrl } from '../utils/png.js';
+import { reportDrawing } from '../utils/moderation.js';
 import { gradeDrawing, GRADER_VERSION } from '../scripts/draw-grader.js';
 
 // Drawings are shown to every visitor, so only accept a real PNG data URL of sane size.
@@ -12,6 +13,12 @@ const CURRENT = { grader: GRADER_VERSION };
 
 export default async (req, res) => {
     const { action } = req.query;
+
+    // Reporting a drawing (POST ?action=report) is handled in utils/moderation.js.
+    if (action === 'report') {
+        return reportDrawing(req, res);
+    }
+
     try {
         const db = await connectToDatabase();
         const collection = db.collection('draw_scores');
@@ -20,11 +27,12 @@ export default async (req, res) => {
         if (req.method === 'GET' && action === 'get_leaderboard') {
             const scores = await collection
                 .find(CURRENT)
-                .project({ name: 1, score: 1, drawing: 1, _id: 0 })
+                .project({ name: 1, score: 1, drawing: 1, timestamp: 1 })
                 .sort({ score: -1, timestamp: 1 })
                 .limit(10)
                 .toArray();
-            return res.status(200).json(scores);
+            // `id` and `at` pick out this exact drawing for the Report button (see utils/moderation.js).
+            return res.status(200).json(scores.map(({ _id, timestamp, ...entry }) => ({ ...entry, id: _id, at: timestamp })));
         }
 
         // --- HANDLER 2: GET USER HIGH SCORE ---
@@ -69,6 +77,7 @@ export default async (req, res) => {
                 return res.status(200).json({ message: 'Not a new high score', score: graded });
             }
 
+            // A new drawing starts with no reports; the old one's reports were about a different picture.
             await collection.updateOne(
                 { userId: user.userId },
                 {
@@ -79,7 +88,8 @@ export default async (req, res) => {
                         drawing: image,
                         grader: GRADER_VERSION,
                         timestamp: new Date()
-                    }
+                    },
+                    $unset: { reports: '', reportedBy: '' }
                 },
                 { upsert: true }
             );
