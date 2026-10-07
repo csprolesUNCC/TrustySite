@@ -632,6 +632,18 @@ kbd {
 .bet-input { width: 7.5em; }
 .action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .action-row #deal-btn { grid-column: 1 / -1; }
+/* Phones and tablets, where the controls sit under the table: what you can do right now comes first, right under
+   the cards (Deal between rounds, Hit/Stand/Double/Split during one), and controls you can't use yet are hidden,
+   so the table and your buttons fit on one screen. render() sets data-phase. */
+@media (max-width: 960px) {
+  .casino-controls .insurance { order: -2; }
+  .casino-controls .action-row { order: -1; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .casino-controls .action-row .btn { padding-inline: .3em; }
+  .casino-controls[data-phase="bet"] .action-row > :not(#deal-btn),
+  .casino-controls[data-phase="play"] #deal-btn,
+  .casino-controls:not([data-phase="bet"]) #bet-row,
+  .casino-controls[data-phase="insurance"] .action-row { display: none; }
+}
 
 /* Player hands: one normally, up to four after splitting */
 .hands { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 18px; }
@@ -659,6 +671,23 @@ kbd {
   .card-corner { font-size: 1.05rem; }
   .cards { min-height: 96px; gap: 8px; }
   .chip-btn { width: 48px; height: 48px; }
+  /* A shorter table, so the cards and the buttons under it fit on a phone screen together */
+  .casino { padding: 12px 10px; }
+  .casino::after { inset: 6px; }
+  .table-row { gap: 6px; }
+  .table-row + .table-row { margin-top: 6px; }
+  .hand-label { gap: 8px; font-size: 1rem; }
+  .dealer-avatar { width: 40px; height: 31px; padding: 2px; border-radius: 7px; }
+  .casino-status { min-height: 2.4em; margin-top: 8px; font-size: 1.15rem; line-height: 1.2; }
+  .hand { gap: 6px; padding: 4px; }
+  .hands { gap: 8px 10px; }
+  /* A split hand is only as wide as its cards (its total, bet and result wrap under them), so two fit side by side */
+  .hands.is-split .hand-meta { width: 0; min-width: 100%; }
+  /* Long hands overlap instead of wrapping onto a second row, so the table doesn't grow mid-round */
+  .cards { flex-wrap: nowrap; }
+  .cards:has(> :nth-child(5)) .card-face + .card-face { margin-left: -28px; }
+  .cards:has(> :nth-child(7)) .card-face + .card-face { margin-left: -46px; }
+  .hands.is-split .card-face + .card-face { margin-left: -38px; }
 }
 
 /* =========================================================================

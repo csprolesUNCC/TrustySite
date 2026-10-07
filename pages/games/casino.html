@@ -53,7 +53,7 @@
             </section>
 
             <aside class="game-side">
-                <div class="panel casino-controls">
+                <div class="panel casino-controls" id="controls">
                     <div class="bankroll">
                         <div>
                             <span class="stat-label">Bankroll</span>
@@ -238,11 +238,14 @@
         }
 
         const RESULT_TEXT = { blackjack: 'Blackjack!', win: 'Win', lose: 'Lose', push: 'Push', bust: 'Bust' };
+        // Shown before the first deal, so the table already has room for your cards and doesn't grow when they come.
+        const NO_HAND = { cards: [], bet: 0, fromSplit: false, result: null };
 
         function renderHands() {
             const box = $('hands');
-            while (box.children.length > hands.length) box.lastElementChild.remove();
-            while (box.children.length < hands.length) {
+            const shown = hands.length ? hands : [NO_HAND];
+            while (box.children.length > shown.length) box.lastElementChild.remove();
+            while (box.children.length < shown.length) {
                 box.append(h('div', { class: 'hand' },
                     h('div', { class: 'cards' }),
                     h('div', { class: 'hand-meta' },
@@ -252,7 +255,7 @@
             }
             const split = hands.length > 1;
             box.classList.toggle('is-split', split);
-            hands.forEach((hand, i) => {
+            shown.forEach((hand, i) => {
                 const el = box.children[i];
                 const [cardsEl, meta] = el.children;
                 const [valueEl, betEl, resultEl] = meta.children;
@@ -289,6 +292,8 @@
             $('bet-display').textContent = money(state === 'betting' || state === 'settled' ? bet : hands.reduce((sum, hand) => sum + hand.bet, 0) + insurance);
 
             const betting = state === 'betting' || state === 'settled';
+            const phase = betting ? 'bet' : state === 'insurance' ? 'insurance' : 'play';
+            $('controls').dataset.phase = phase;
             $('deal-btn').disabled = !betting || bet < 1 || bet > bank;
             $('hit-btn').disabled = state !== 'player';
             $('stand-btn').disabled = state !== 'player';
@@ -300,9 +305,32 @@
             $('broke').hidden = !(betting && bank < 1);
             $('insurance').hidden = state !== 'insurance';
             if (document.activeElement !== $('bet-input')) $('bet-input').value = bet || '';
+
+            // When a round starts or ends, when the insurance question comes up, and when a split makes the table taller.
+            const height = casino.offsetHeight;
+            if (shownPhase && (phase !== shownPhase || (!betting && height !== tableHeight))) showTable();
+            shownPhase = phase;
+            tableHeight = height;
         }
 
         function setStatus(text) { $('status').textContent = text; }
+
+        // On phones and tablets the controls sit under the table. When a round starts, scroll the table to the top of
+        // the screen so the cards and the buttons are both on it, in the same spot every round (on a screen too short
+        // for both: the buttons, and as much of the table as fits above them).
+        const casino = document.querySelector('.casino');
+        const stacked = matchMedia('(max-width: 960px)');
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        let shownPhase = '';
+        let tableHeight = 0;
+        function showTable() {
+            if (!stacked.matches) return;
+            const top = casino.getBoundingClientRect().top - 12;
+            const buttons = [...document.querySelectorAll('.action-row, .insurance')].filter((el) => el.offsetParent);
+            const bottom = Math.max(...buttons.map((el) => el.getBoundingClientRect().bottom)) + 12;
+            const by = bottom - top <= innerHeight ? top : bottom - innerHeight;
+            if (Math.abs(by) > 1) scrollBy({ top: by, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+        }
 
         /* ---------- Betting ---------- */
 
