@@ -43,9 +43,34 @@
                 </figure>
             </div>
 
-            <aside class="sticky-note hero-note" aria-labelledby="update-title">
-                <h2 id="update-title">📢 Latest Update: September 27, 2026</h2>
-                <p><strong>Full Revamp!</strong> Trusty's site has been given a full makeover! Explore all the classic games you remember, polished and shiny for your enjoyment. Alternatively, you can sit back and enjoy the various channels on Trusty TV!</p>
+            <!-- Filled in from utils/update.js by the first script at the bottom, which also lets admins edit it -->
+            <aside class="sticky-note hero-note" id="update-note" aria-labelledby="update-title" hidden>
+                <h2 id="update-title">📢 Latest Update</h2>
+                <p class="hero-note-text" id="update-text"></p>
+                <button class="btn btn-outline btn-sm hero-note-edit" type="button" id="update-edit" hidden>Edit update</button>
+                <form class="hero-note-form" id="update-form" hidden>
+                    <div class="field">
+                        <label for="update-date">Date</label>
+                        <div class="hero-note-date">
+                            <input type="date" id="update-date" required>
+                            <button class="btn btn-outline btn-sm" type="button" id="update-today">Today</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="update-headline">Bold headline (optional)</label>
+                        <input type="text" id="update-headline" maxlength="60">
+                    </div>
+                    <div class="field">
+                        <label for="update-input">Message</label>
+                        <textarea id="update-input" rows="6" maxlength="400" required placeholder="What’s new with Trusty?"></textarea>
+                        <span class="hint" id="update-count" aria-live="polite"></span>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-sm" type="submit" id="update-save">Save</button>
+                        <button class="btn btn-ghost btn-sm" type="button" id="update-cancel">Cancel</button>
+                    </div>
+                    <p class="form-status" id="update-status" role="status"></p>
+                </form>
             </aside>
         </section>
 
@@ -168,6 +193,136 @@
     </main>
 
     <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, toast, session, sessionExpired, onSession, loginHref } from '/scripts/site.js';
+
+        // Latest Update note, from utils/update.js (?action=update on api/leaderboard.js). The page keeps the last
+        // update it got, so next time the note shows right away while it checks for a newer one. Admins get an
+        // Edit button that turns the note into a form (the server checks they're an admin before saving).
+        const API = '/api/leaderboard?action=update';
+        const KEPT_KEY = 'trusty:update';
+        const TEXT_MAX = 400; // utils/update.js allows the same
+        const $ = (id) => document.getElementById(id);
+        const dateFormat = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+
+        let update = null; // what the note shows: { date, headline, text }
+        let checked = false; // whether that came from the server on this visit: only then can admins edit it
+
+        const usable = (u) => (u && typeof u.date === 'string' && typeof u.headline === 'string' && typeof u.text === 'string' && u.text ? u : null);
+        const editing = () => !$('update-form').hidden;
+
+        function keep(u) {
+            try { localStorage.setItem(KEPT_KEY, JSON.stringify(u)); } catch { /* storage blocked */ }
+        }
+
+        function showEdit() {
+            $('update-edit').hidden = !checked || !session.isAdmin || editing();
+        }
+
+        // The date is a day on the calendar (YYYY-MM-DD), so it's shown in UTC to stay the same day everywhere.
+        function render() {
+            const day = new Date(`${update.date}T00:00:00Z`);
+            $('update-title').textContent = Number.isNaN(day.getTime()) ? '📢 Latest Update' : `📢 Latest Update: ${dateFormat.format(day)}`;
+            $('update-text').replaceChildren(...(update.headline ? [h('strong', null, update.headline), ' '] : []), update.text);
+            $('update-note').hidden = false;
+            showEdit();
+        }
+
+        try { update = usable(JSON.parse(localStorage.getItem(KEPT_KEY))); } catch { /* storage blocked or unreadable */ }
+        if (update) render();
+
+        async function load() {
+            try {
+                // Admins skip the CDN's copy, so they see what they just saved.
+                const res = await fetch(session.isAdmin ? `${API}&fresh=1` : API);
+                const data = res.ok ? usable(await res.json()) : null;
+                if (!data) return;
+                update = data;
+                checked = true;
+                keep(data);
+                render();
+            } catch { /* keep showing the update this browser already had, if any */ }
+        }
+
+        /* ---------- Editing (admins) ---------- */
+
+        function updateCount() {
+            $('update-count').textContent = `${$('update-input').value.length}/${TEXT_MAX}`;
+        }
+
+        // Today on the admin's own calendar, written the way a date input wants it (valueAsDate would use UTC's day).
+        function today() {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        }
+
+        function setEditing(on) {
+            $('update-form').hidden = !on;
+            $('update-text').hidden = on;
+            $('update-status').textContent = '';
+            if (on) {
+                $('update-date').value = update.date;
+                $('update-headline').value = update.headline;
+                $('update-input').value = update.text;
+                updateCount();
+                showEdit();
+                $('update-input').focus();
+            } else {
+                render();
+                $('update-edit').focus();
+            }
+        }
+
+        $('update-edit').addEventListener('click', () => setEditing(true));
+        $('update-cancel').addEventListener('click', () => setEditing(false));
+        $('update-today').addEventListener('click', () => { $('update-date').value = today(); });
+        $('update-input').addEventListener('input', updateCount);
+        $('update-form').addEventListener('keydown', (e) => { if (e.key === 'Escape') setEditing(false); });
+
+        $('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = $('update-status');
+            const save = $('update-save');
+            save.disabled = true;
+            status.dataset.tone = 'info';
+            status.textContent = 'Saving…';
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: $('update-date').value, headline: $('update-headline').value, text: $('update-input').value }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    status.dataset.tone = 'error';
+                    status.replaceChildren('Your login expired. ', h('a', { href: loginHref() }, 'Log in again'), ' to save.');
+                    return;
+                }
+                const posted = res.ok ? usable(data) : null;
+                if (!posted) {
+                    status.dataset.tone = 'error';
+                    status.textContent = data.error || 'Couldn’t save the update. Try again?';
+                    return;
+                }
+                update = posted;
+                keep(posted);
+                setEditing(false);
+                toast('Update posted!', 'success');
+            } catch {
+                status.dataset.tone = 'error';
+                status.textContent = 'Couldn’t reach the server. Check your connection and try again.';
+            } finally {
+                save.disabled = false;
+            }
+        });
+
+        // Logging in or out (or the login running out) shows or hides the Edit button.
+        onSession(showEdit);
+        load();
+    </script>
 
     <script type="module">
         import { h } from '/scripts/site.js';

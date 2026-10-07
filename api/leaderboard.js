@@ -2,11 +2,12 @@ import { connectToDatabase } from '../utils/db.js';
 import profile from '../utils/profile.js';
 import trustis from '../utils/trustis.js';
 import adminApi from '../utils/moderation.js';
+import latestUpdate from '../utils/update.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), the Trustis board (?action=trustis, see
-    // utils/trustis.js) and the admin panel (?action=admin, see utils/moderation.js) live here too to save
-    // Vercel functions.
+    // utils/trustis.js), the admin panel (?action=admin, see utils/moderation.js) and the home page's Latest
+    // Update (?action=update, see utils/update.js) live here too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
     }
@@ -15,6 +16,9 @@ export default async (req, res) => {
     }
     if (req.query.action === 'admin') {
         return adminApi(req, res);
+    }
+    if (req.query.action === 'update') {
+        return latestUpdate(req, res);
     }
 
     if (req.method !== 'GET') {
