@@ -1065,6 +1065,18 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   margin: -52px clamp(12px, 3vw, 44px) 0 auto;
 }
 .hero-note p { font-size: .98rem; }
+/* The update comes from utils/update.js, line breaks and all. Admins get a button under it that turns the
+   note into a form. */
+.hero-note-text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.hero-note-edit { margin-top: 14px; }
+.hero-note-form { margin-top: 10px; }
+.hero-note-form .field { margin-bottom: 12px; }
+/* The Today button sits next to the date, or under it when the note is too narrow */
+.hero-note-date { display: flex; flex-wrap: wrap; gap: 8px; }
+.hero-note-date input { flex: 1 1 9em; }
+.hero-note-form textarea { resize: vertical; min-height: 8em; }
+.hero-note-form .hint { text-align: right; }
+.hero-note-form .form-status { margin: 10px 0 0; }
 
 /* A gentle bob that tips his head (on the left) up */
 .trusty-bob { animation: bob 3.2s ease-in-out infinite; transform-origin: 40% 90%; }

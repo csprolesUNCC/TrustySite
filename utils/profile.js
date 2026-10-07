@@ -1,6 +1,7 @@
 import { connectToDatabase } from './db.js';
 import connectToUsersDatabase from './connect.js';
 import { authenticateUser } from './auth.js';
+import { cleanText } from './text.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 import { puzzleNumber, cleanGame, statsFrom } from '../scripts/trustle.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
@@ -15,18 +16,6 @@ const BIO_MAX = 300; // pages/profile.html allows the same
 
 const PNG_DATA_URL = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
 const CASE_INSENSITIVE = { locale: 'en', strength: 2 }; // the same collation register.js checks names with
-
-// Plain text only: no control characters or text-direction tricks, Unix line breaks, no spaces at the
-// ends of lines, and at most one blank line in a row.
-function cleanBio(text) {
-    return text
-        .replace(/\r\n?/g, '\n')
-        .replace(/\t/g, ' ')
-        .replace(/(?!\n)[\p{Cc}\p{Bidi_Control}]/gu, '')
-        .replace(/[^\S\n]+$/gm, '')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-}
 
 // Your place on a board sorted by `field` (high first). Boards that break ties put earlier scores first
 // (`ties: true`, needs a timestamp); the clicker board doesn't break them.
@@ -118,7 +107,7 @@ async function saveBio(req, res) {
 
     const sent = req.body && req.body.bio;
     if (typeof sent !== 'string' || sent.length > BIO_MAX * 10) return res.status(400).json({ error: 'Invalid bio' });
-    const bio = cleanBio(sent);
+    const bio = cleanText(sent);
     if (bio.length > BIO_MAX) return res.status(400).json({ error: `Keep your bio to ${BIO_MAX} characters.` });
 
     const db = await connectToDatabase();
