@@ -72,9 +72,21 @@
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M5 12.5V20h14v-7.5"/></svg>
                             Share
                         </button>
+                        <button class="btn btn-outline btn-lg" type="button" id="everyone-btn">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-8M12 20V4M19 20v-5"/></svg>
+                            How everyone did
+                        </button>
                     </div>
                     <p class="trustle-next" id="next"></p>
                 </section>
+
+                <dialog class="modal trustle-everyone" id="everyone" aria-labelledby="everyone-title">
+                    <div class="modal-head">
+                        <h2 id="everyone-title">How everyone did</h2>
+                        <button class="btn btn-ghost btn-icon" type="button" id="everyone-close" aria-label="Close">✕</button>
+                    </div>
+                    <div class="modal-body" id="everyone-body" aria-live="polite"></div>
+                </dialog>
 
                 <p class="sr-only" id="announce" aria-live="polite"></p>
             </section>
@@ -588,6 +600,69 @@
             const clock = `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
             $('next').replaceChildren('Next Trustle in ', h('strong', null, clock));
         }
+
+        /* ---------- How everyone else did ---------- */
+
+        // Counted fresh each time from the games logged-in players have saved (your own left out), so it
+        // needs nothing stored beyond what Trustle already keeps.
+        let everyoneAsk = 0;
+
+        async function showEveryone() {
+            const ask = ++everyoneAsk;
+            const puzzle = n;
+            const body = $('everyone-body');
+            body.replaceChildren(h('p', { class: 'trustle-everyone-lead' }, 'Counting everyone’s games…'));
+            if (!$('everyone').open) $('everyone').showModal();
+            try {
+                const res = await fetch(`/api/trustle-api?n=${puzzle}`, { credentials: 'same-origin', cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const counts = await res.json();
+                if (ask !== everyoneAsk) return;
+                // A new day started while it was counting: these numbers aren't for the game on screen any more.
+                if (puzzle !== n) return $('everyone').close();
+                body.replaceChildren(...everyoneView(counts));
+            } catch {
+                if (ask === everyoneAsk) body.replaceChildren(h('p', { class: 'trustle-everyone-lead' }, 'Couldn’t count them right now. Try again in a bit.'));
+            }
+        }
+
+        function everyoneView({ players, dist, lost }) {
+            const note = h('p', { class: 'side-note' }, session.loggedIn
+                ? 'Everyone who played logged in, not counting you.'
+                : 'Everyone who played logged in. Log in and your games count too.');
+            if (!players) return [h('p', { class: 'trustle-everyone-lead' }, 'Nobody else has finished this one yet. You’re first!'), note];
+
+            const won = guesses[guesses.length - 1] === answer;
+            const rows = [...dist, lost]; // guesses 1–6, then out of guesses
+            const mine = won ? guesses.length - 1 : MAX_GUESSES;
+            const behind = rows.slice(mine + 1).reduce((a, b) => a + b, 0);
+            const wins = players - lost;
+            const tries = dist.reduce((sum, count, i) => sum + count * (i + 1), 0);
+            let lead;
+            if (!won) lead = lost ? `${lost} of them ran out of guesses too.` : 'Everyone else got it. Ouch.';
+            else if (behind === players) lead = 'You beat every last one of them.';
+            else if (!behind) lead = 'Nobody did worse than you. It happens.';
+            else lead = `You did better than ${Math.round((behind / players) * 100)}% of them.`;
+
+            const most = Math.max(1, ...rows);
+            return [
+                h('p', { class: 'trustle-everyone-lead' }, lead),
+                h('div', { class: 'stat-grid' },
+                    h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Players'), h('span', { class: 'stat-value' }, players)),
+                    h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Win %'), h('span', { class: 'stat-value' }, Math.round((wins / players) * 100))),
+                    h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Average'), h('span', { class: 'stat-value' }, wins ? (tries / wins).toFixed(1) : '–'))),
+                h('h3', { class: 'trustle-dist-title' }, 'Guesses it took'),
+                h('ol', { class: 'trustle-dist' }, rows.map((count, i) => h('li', { class: won && i === mine ? 'is-today' : null },
+                    h('span', null, i < MAX_GUESSES ? i + 1 : 'X'),
+                    h('span', { class: 'trustle-dist-bar', style: `--w: ${Math.round((count / most) * 100)}%` }, count),
+                    h('span', { class: 'trustle-you' }, i === mine ? '← you' : '')))),
+                note,
+            ];
+        }
+
+        $('everyone-btn').addEventListener('click', showEveryone);
+        $('everyone-close').addEventListener('click', () => $('everyone').close());
+        $('everyone').addEventListener('click', (e) => { if (e.target === $('everyone')) $('everyone').close(); });
 
         $('share-btn').addEventListener('click', async () => {
             const text = shareText({
