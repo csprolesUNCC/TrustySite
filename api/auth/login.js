@@ -1,12 +1,6 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import connectToDatabase from '../../utils/connect.js';
-import { authenticateUser, isAdmin } from '../../utils/auth.js';
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET is not defined in environment variables.');
-}
+import { authenticateUser, isAdmin, setAuthCookie, shouldRenew } from '../../utils/auth.js';
 
 export default async (req, res) => {
 
@@ -14,6 +8,7 @@ export default async (req, res) => {
         const user = authenticateUser(req);
 
         if (user) {
+            if (shouldRenew(user)) setAuthCookie(res, user);
             // isAdmin only decides whether the page shows the Admin button; admin requests check it again.
             return res.status(200).json({
                 isLoggedIn: true,
@@ -70,9 +65,7 @@ export default async (req, res) => {
             username: user.username 
         };
 
-        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '1d' });
-
-        res.setHeader('Set-Cookie', `authToken=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24}`); // 1 day in seconds
+        setAuthCookie(res, tokenPayload);
         res.status(200).json({ message: 'Login successful', username: user.username, isAdmin: isAdmin(tokenPayload) });
 
     } catch (error) {
