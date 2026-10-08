@@ -55,10 +55,12 @@ function setAuthCookie(res, { userId, username }) {
 
 /**
  * @param {object} user - The payload from authenticateUser.
- * @returns {boolean} Whether its token is old enough to swap for a fresh one.
+ * @returns {boolean} Whether its token is old enough to swap for a fresh one. Goes by the time left,
+ * so shorter tokens (the old 1-day ones) are renewed straight away.
  */
 function shouldRenew(user) {
-    return typeof user.iat !== 'number' || Date.now() / 1000 - user.iat > RENEW_AFTER_SECONDS;
+    if (typeof user.exp !== 'number') return true;
+    return user.exp - Date.now() / 1000 < SESSION_SECONDS - RENEW_AFTER_SECONDS;
 }
 
 // The accounts that can use the admin panel (pages/admin.html, utils/moderation.js). Sign-up refuses a name
