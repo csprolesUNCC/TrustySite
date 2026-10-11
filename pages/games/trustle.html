@@ -628,9 +628,8 @@
 
         function everyoneView({ players, dist, lost }) {
             const note = h('p', { class: 'side-note' }, session.loggedIn
-                ? 'Everyone who played logged in, not counting you.'
-                : 'Everyone who played logged in. Log in and your games count too.');
-            if (!players) return [h('p', { class: 'trustle-everyone-lead' }, 'Nobody else has finished this one yet. You’re first!'), note];
+                ? 'Everyone who played logged in. Only the chart counts you.'
+                : 'Everyone who played logged in, plus you in the chart. Log in and your games count too.');
 
             const won = guesses[guesses.length - 1] === answer;
             const rows = [...dist, lost]; // guesses 1–6, then out of guesses
@@ -639,20 +638,24 @@
             const wins = players - lost;
             const tries = dist.reduce((sum, count, i) => sum + count * (i + 1), 0);
             let lead;
-            if (!won) lead = lost ? `${lost} of them ran out of guesses too.` : 'Everyone else got it. Ouch.';
+            if (!players) lead = 'Nobody else has finished this one yet. You’re first!';
+            else if (!won) lead = lost ? `${lost} of them ran out of guesses too.` : 'Everyone else got it. Ouch.';
             else if (behind === players) lead = 'You beat every last one of them.';
             else if (!behind) lead = 'Nobody did worse than you. It happens.';
             else lead = `You did better than ${Math.round((behind / players) * 100)}% of them.`;
 
-            const most = Math.max(1, ...rows);
-            return [
-                h('p', { class: 'trustle-everyone-lead' }, lead),
-                h('div', { class: 'stat-grid' },
+            // The numbers are everyone else; the chart adds your own game to its bar.
+            const chart = rows.map((count, i) => count + (i === mine ? 1 : 0));
+            const most = Math.max(1, ...chart);
+            const stats = players ? [h('div', { class: 'stat-grid' },
                     h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Players'), h('span', { class: 'stat-value' }, players)),
                     h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Win %'), h('span', { class: 'stat-value' }, Math.round((wins / players) * 100))),
-                    h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Average'), h('span', { class: 'stat-value' }, wins ? (tries / wins).toFixed(1) : '–'))),
+                    h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, 'Average'), h('span', { class: 'stat-value' }, wins ? (tries / wins).toFixed(1) : '–')))] : [];
+            return [
+                h('p', { class: 'trustle-everyone-lead' }, lead),
+                ...stats,
                 h('h3', { class: 'trustle-dist-title' }, 'Guesses it took'),
-                h('ol', { class: 'trustle-dist' }, rows.map((count, i) => h('li', { class: won && i === mine ? 'is-today' : null },
+                h('ol', { class: 'trustle-dist' }, chart.map((count, i) => h('li', { class: won && i === mine ? 'is-today' : null },
                     h('span', null, i < MAX_GUESSES ? i + 1 : 'X'),
                     h('span', { class: 'trustle-dist-bar', style: `--w: ${Math.round((count / most) * 100)}%` }, count),
                     h('span', { class: 'trustle-you' }, i === mine ? '← you' : '')))),
