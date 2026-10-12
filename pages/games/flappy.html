@@ -311,6 +311,16 @@
 
             const y = (state === 'intro' || state === 'ready') ? START_Y + Math.sin(now / 280) * 7 : horse.prevY + (horse.y - horse.prevY) * blend;
             const tilt = state === 'playing' ? Math.max(-0.25, Math.min(0.35, horse.v * 0.03)) : 0;
+            if (form === 'seahorse') {
+                // The seahorse is a thin line in the middle of the same wide hitbox as the other forms (kept so
+                // scores stay comparable), so show the box he really crashes with. It doesn't tilt: the hitbox doesn't.
+                ctx.save();
+                ctx.setLineDash([8, 6]);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(255,255,255,.6)';
+                ctx.strokeRect(HORSE_X, y, HORSE_W, HORSE_H);
+                ctx.restore();
+            }
             ctx.save();
             ctx.translate(HORSE_X + HORSE_W / 2, y + HORSE_H / 2);
             ctx.rotate(tilt);
