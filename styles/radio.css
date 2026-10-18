@@ -1,0 +1,211 @@
+/* =========================================================================
+   Trusty Radio: an old wooden tabletop radio whose dial window is the YouTube
+   player. Loaded after tv.css, which it shares the knobs, the sound cue, the
+   live badge and the "On now" sidebar with. YouTube's embed rules: the player
+   stays visible (no hiding it to play just the sound), nothing may sit on top
+   of it, and it must be at least 200 x 200 px, so the decoration lives around it.
+   ========================================================================= */
+.radio { --handle: clamp(40px, 6vw, 60px); position: relative; max-width: 880px; margin-inline: auto; padding-top: var(--handle); }
+
+/* Carrying handle */
+.radio-handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: clamp(150px, 34%, 280px);
+  height: calc(var(--handle) + 8px);
+  transform: translateX(-50%);
+  border: 6px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
+}
+.radio-handle::before, .radio-handle::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  width: 22px;
+  height: 14px;
+  border: 3px solid var(--ink);
+  border-radius: 6px 6px 0 0;
+  background: #6b4526;
+}
+.radio-handle::before { left: -14px; }
+.radio-handle::after { right: -14px; }
+
+/* Cabinet */
+.radio-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: clamp(12px, 2vw, 22px);
+  padding: clamp(12px, 2.2vw, 24px);
+  border: 3px solid var(--ink);
+  border-radius: 30px 36px 28px 34px / 36px 28px 34px 30px;
+  background:
+    repeating-linear-gradient(94deg, rgba(70, 35, 8, .09) 0 2px, transparent 2px 9px, rgba(70, 35, 8, .05) 9px 10px, transparent 10px 23px),
+    linear-gradient(180deg, #c98a4b 0%, #b1703a 100%);
+  box-shadow: var(--shadow-ink-lg);
+}
+
+/* Speaker: a cone behind wooden slats over speaker cloth. It thumps along while something's playing. */
+.radio-grille {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  min-height: 160px;
+  border: 3px solid var(--ink);
+  border-radius: 20px 16px 22px 18px;
+  background:
+    repeating-linear-gradient(45deg, rgba(27, 27, 31, .07) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(27, 27, 31, .07) 0 1px, transparent 1px 4px),
+    #d9c39a;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .25), inset 0 6px 14px rgba(0, 0, 0, .25);
+}
+.radio-grille::before {
+  content: "";
+  width: 74%;
+  max-width: 260px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #3b2f22 0 12%, #8a7352 13% 18%, #b49c74 19% 60%, #9a8260 61% 66%, #b49c74 67%);
+  box-shadow: 0 0 0 3px rgba(27, 27, 31, .35);
+}
+.radio-grille::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, #6b4526 0 7px, #4e3119 7px 9px, transparent 9px 20px);
+  opacity: .92;
+}
+.radio.is-playing .radio-grille::before { animation: radio-thump .48s ease-in-out infinite alternate; }
+@keyframes radio-thump { to { transform: scale(1.035); } }
+.radio-badge {
+  position: absolute;
+  z-index: 1;
+  bottom: 14px;
+  left: 50%;
+  margin: 0;
+  padding: .2em .6em;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff4e2;
+  font-family: var(--font-marker);
+  font-size: clamp(.9rem, 1.8vw, 1.15rem);
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateX(-50%) rotate(-4deg);
+}
+
+/* Dial face: the window (the player), the name plate, the tuning dial, presets and knobs */
+.radio-face {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: clamp(10px, 1.6vw, 16px);
+  border: 3px solid var(--ink);
+  border-radius: 18px 14px 20px 16px;
+  background: #ead7b0;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35);
+}
+/* The window and its screen are TV's bezel and screen (static, messages, the player filling it), a bit smaller. */
+.radio-window { padding: clamp(8px, 1.2vw, 12px); border-radius: 16px; }
+/* At least 204px tall, so YouTube's 200px minimum holds however narrow it gets (the video letterboxes). */
+.radio-screen { min-height: 204px; }
+
+.radio-plate { padding: 0; }
+.radio-plate .tv-plate-name { color: var(--ink); text-shadow: none; }
+.radio.sound-on .tv-cue { display: none; }
+.radio.off-air .tv-plate-live { background: var(--pencil); }
+.radio.off-air .tv-plate-live .live-dot { animation: none; opacity: .5; }
+.tv-guide .radio-guide-empty { display: block; color: var(--pencil); }
+
+/* Tuning dial: 88 to 108 with a red needle that slides to the station */
+.radio-dial {
+  position: relative;
+  height: 58px;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  background: radial-gradient(90% 120% at 50% 100%, #fff6d8, #f4dfa6);
+  box-shadow: inset 0 0 12px rgba(255, 196, 90, .55);
+  overflow: hidden;
+}
+.radio-band { position: absolute; inset: 6px 18px 0; }
+.radio-band::before, .radio-band::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+/* A tick every 1 MHz, a long one every 4 MHz (under each number) */
+.radio-band::before { height: 9px; background: repeating-linear-gradient(90deg, var(--ink) 0 1.5px, transparent 1.5px 5%); width: calc(100% + 1.5px); }
+.radio-band::after { height: 17px; background: repeating-linear-gradient(90deg, var(--ink) 0 2.5px, transparent 2.5px 20%); width: calc(100% + 2.5px); }
+.radio-mhz {
+  position: absolute;
+  top: 0;
+  margin: 0;
+  font: 800 clamp(.68rem, 1.6vw, .85rem)/1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  transform: translateX(-50%);
+}
+.radio-needle {
+  --at: 0;
+  position: absolute;
+  top: -6px;
+  bottom: 0;
+  left: calc(var(--at) * 100%);
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--red);
+  box-shadow: 0 0 6px rgba(220, 40, 40, .6);
+  transition: left .45s var(--ease-out);
+}
+
+.radio-row { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.radio-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-preset {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 76px;
+  padding: 7px 10px 6px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff4e2;
+  color: var(--ink);
+  box-shadow: 2px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform .12s var(--ease-out), box-shadow .12s var(--ease-out), background-color .12s;
+}
+.radio-preset b { font: 800 1rem/1 var(--font-body); font-variant-numeric: tabular-nums; }
+.radio-preset span { font: 700 .62rem/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.radio-preset[aria-pressed="true"] { background: var(--highlight); transform: translate(2px, 3px); box-shadow: none; }
+.radio-preset:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+
+.radio-knobs { display: flex; gap: 14px; }
+.radio-knobs .tv-knob { width: clamp(44px, 5.5vw, 54px); }
+/* Pops up above the knobs, so it never covers the window. */
+.radio .tv-knob-note { top: auto; right: 0; bottom: calc(100% + 8px); left: auto; transform: rotate(-3deg); }
+
+.radio-feet { display: flex; justify-content: space-between; padding-inline: 8%; }
+.radio-feet span { width: clamp(30px, 5vw, 48px); height: clamp(10px, 1.4vw, 14px); border-radius: 0 0 8px 8px; background: var(--ink); }
+
+@media (max-width: 640px) {
+  .radio-body { grid-template-columns: minmax(0, 1fr); }
+  /* The speaker drops under the face as a strip of slats. */
+  .radio-grille { order: 1; min-height: 64px; }
+  .radio-grille::before { width: 120px; }
+  .radio-badge { bottom: 50%; transform: translate(-50%, 50%) rotate(-4deg); }
+}
+@media (max-width: 400px) {
+  .radio-preset { min-width: 0; flex: 1; }
+  .radio-presets, .radio-knobs { flex: 1 0 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio.is-playing .radio-grille::before { animation: none; }
+  .radio-needle, .radio-preset { transition: none; }
+}

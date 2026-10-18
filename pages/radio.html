@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Radio — Trusty da Horse</title>
+    <meta name="description" content="Trusty Radio is always on. Tune in and hear the same thing as everyone else, right now.">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Radio">
+    <meta property="og:description" content="Always on. Tune in and listen with everyone else.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.youtube-nocookie.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/tv.css">
+    <link rel="stylesheet" href="/styles/radio.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container tv-head">
+            <p class="eyebrow" id="station-number">88.5 FM</p>
+            <h1>Trusty Radio</h1>
+            <p class="lead">Always on. Tune in and you're hearing the same thing as everyone else, right now.</p>
+        </header>
+
+        <section class="section-tight container tv-layout" aria-label="Trusty Radio">
+            <div class="tv-main">
+                <div class="radio" id="radio">
+                    <div class="radio-handle" aria-hidden="true"></div>
+                    <div class="radio-body">
+                        <div class="radio-grille" aria-hidden="true"><p class="radio-badge">Trusty</p></div>
+                        <div class="radio-face">
+                            <div class="tv-bezel radio-window">
+                                <!-- YouTube's rules: the video stays visible and nothing may cover it, so the static only shows while it's hidden. -->
+                                <div class="tv-screen radio-screen is-static" id="screen">
+                                    <div id="player"></div>
+                                    <canvas class="tv-static" id="static" width="160" height="90" aria-hidden="true"></canvas>
+                                    <p class="tv-message" id="message" role="status">Tuning in&hellip;</p>
+                                </div>
+                            </div>
+                            <div class="tv-plate radio-plate">
+                                <p class="tv-plate-name" id="plate-name" aria-hidden="true">Trusty Talk <span>88.5</span></p>
+                                <p class="tv-plate-live" aria-hidden="true"><span class="live-dot"></span><span id="plate-live">On air</span></p>
+                                <button class="tv-cue" type="button" id="cue">&#128263; Tap for sound</button>
+                            </div>
+                            <div class="radio-dial" aria-hidden="true">
+                                <div class="radio-band" id="band">
+                                    <span class="radio-needle" id="needle"></span>
+                                </div>
+                            </div>
+                            <div class="radio-row">
+                                <div class="radio-presets" id="presets" role="group" aria-label="Stations"></div>
+                                <div class="radio-knobs">
+                                    <div class="tv-knob-wrap">
+                                        <button class="tv-knob" type="button" id="tune-knob" aria-label="Tune to the next station"></button>
+                                        <span class="tv-knob-label" aria-hidden="true">Tuning</span>
+                                    </div>
+                                    <div class="tv-knob-wrap">
+                                        <div class="tv-knob" id="volume-knob" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Muted"></div>
+                                        <span class="tv-knob-label" aria-hidden="true">Volume</span>
+                                    </div>
+                                </div>
+                                <p class="tv-knob-note" id="knob-note" role="status" hidden></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="radio-feet" aria-hidden="true"><span></span><span></span></div>
+                </div>
+
+                <div class="tv-controls">
+                    <button class="btn btn-outline btn-sm" type="button" id="sound-btn" aria-pressed="false">Sound on</button>
+                </div>
+            </div>
+
+            <aside class="tv-side">
+                <div class="panel tv-now">
+                    <p class="tv-onair"><span class="live-dot"></span> On air now</p>
+                    <h2 class="tv-now-title" id="now-title">&hellip;</h2>
+                    <div class="tv-progress" aria-hidden="true"><span id="now-bar"></span></div>
+                    <p class="tv-now-meta" id="now-meta"></p>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">Coming up</h2>
+                    <ol class="tv-guide" id="guide"></ol>
+                </div>
+                <p class="tv-note">Every station plays back to back, all day, every day. Everyone listening hears the same moment, so tell your friends to tune in.</p>
+                <p class="tv-note">Trusty Talk is Trusty TV's channel 21 on the radio, so it's always airing the same show.</p>
+            </aside>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h } from '/scripts/site.js';
+        import { STATIONS, BAND } from '/scripts/radio-lineup.js';
+        import { buildSchedule, onAir, upNext } from '/scripts/tv-schedule.js';
+
+        const $ = (id) => document.getElementById(id);
+        const radio = $('radio');
+        const screen = $('screen');
+        const schedules = STATIONS.map((s) => buildSchedule(s.lineup));
+        // Open on the station in the link (#fm), otherwise the first one that has something to play.
+        let station = STATIONS.findIndex((s) => `#${s.key}` === location.hash);
+        if (station < 0) station = Math.max(0, schedules.findIndex((s) => s.shows.length));
+        let schedule = schedules[station];
+        let holdUntil = 0; // a moment of static between stations
+        const TUNE_MS = 450;
+        const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+        const STATE = { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED: 5 };
+        const DRIFT_LIMIT = 2.5; // seconds out of step with the schedule before jumping back to live
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        let skew = 0;       // the server's clock minus this device's clock (ms)
+        let player = null;
+        let current = -1;   // the airing (slot) loaded in the player
+        let currentShow = null;
+        let broken = -1;    // a song that won't play (deleted, or embedding turned off)
+        let soundOn = false;
+        let soundTried = false; // tried turning sound on by itself yet
+        const SOUND_KEY = 'trusty:radio:sound';
+        const VOLUME_KEY = 'trusty:radio:volume';
+        // Sound is on unless this listener turned it off last time.
+        let wantSound = (() => { try { return localStorage.getItem(SOUND_KEY) !== '0'; } catch { return true; } })();
+        // The level sound comes back at (1-100); muting leaves it alone.
+        let volume = (() => {
+            try {
+                const saved = Number(localStorage.getItem(VOLUME_KEY));
+                return saved >= 1 && saved <= 100 ? saved : 100;
+            } catch { return 100; }
+        })();
+        let soundAskedAt = 0;
+        let guideFor = -1;
+        let knobTurns = 0;
+        let noteTimer = 0;
+        const warned = new Set();
+
+        const now = () => Date.now() + skew;
+        const offAir = () => !schedule.shows.length;
+        const tuning = () => performance.now() < holdUntil;
+        const mhz = (s) => s.frequency.toFixed(1);
+
+        function length(seconds) {
+            const s = Math.max(0, Math.round(seconds));
+            const hours = Math.floor(s / 3600);
+            const mins = Math.floor((s % 3600) / 60);
+            const secs = String(s % 60).padStart(2, '0');
+            return hours ? `${hours}:${String(mins).padStart(2, '0')}:${secs}` : `${mins}:${secs}`;
+        }
+
+        /* ---------- Static (only while there's no picture: tuning, off the air, or a broken song) ---------- */
+
+        const noise = $('static').getContext('2d');
+        let noiseRunning = false;
+
+        function paintNoise() {
+            const image = noise.createImageData(160, 90);
+            const px = image.data;
+            for (let i = 0; i < px.length; i += 4) {
+                const v = (Math.random() * 255) | 0;
+                px[i] = v;
+                px[i + 1] = v;
+                px[i + 2] = v;
+                px[i + 3] = 255;
+            }
+            noise.putImageData(image, 0, 0);
+        }
+
+        function noiseLoop() {
+            if (!screen.classList.contains('is-static') || document.hidden) {
+                noiseRunning = false;
+                return;
+            }
+            paintNoise();
+            requestAnimationFrame(noiseLoop);
+        }
+
+        function showStatic(message = '') {
+            screen.classList.add('is-static');
+            radio.classList.remove('is-playing');
+            $('message').textContent = message;
+            $('message').hidden = !message;
+            if (reduceMotion) paintNoise();
+            else if (!noiseRunning) {
+                noiseRunning = true;
+                requestAnimationFrame(noiseLoop);
+            }
+        }
+
+        function hideStatic() {
+            screen.classList.remove('is-static');
+            $('message').hidden = true;
+        }
+
+        // The hiss between stations, at the radio's volume (only when the sound is on).
+        let hissContext = null;
+        function hiss(ms) {
+            if (!soundOn) return;
+            try {
+                hissContext ||= new AudioContext();
+                const rate = hissContext.sampleRate;
+                const buffer = hissContext.createBuffer(1, Math.ceil(rate * ms / 1000), rate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                const source = hissContext.createBufferSource();
+                source.buffer = buffer;
+                const gain = hissContext.createGain();
+                const end = hissContext.currentTime + ms / 1000;
+                gain.gain.setValueAtTime(0.06 * volume / 100, hissContext.currentTime);
+                gain.gain.linearRampToValueAtTime(0, end);
+                source.connect(gain).connect(hissContext.destination);
+                source.start();
+            } catch { /* no Web Audio: tune in silently */ }
+        }
+
+        /* ---------- Clock ---------- */
+
+        // A phone with the wrong time would be out of step with everyone, so use the server's clock instead
+        // (every response from the site says what time it is).
+        async function syncClock() {
+            try {
+                const sent = Date.now();
+                const res = await fetch(location.pathname, { method: 'HEAD', cache: 'no-store' });
+                const received = Date.now();
+                const server = Date.parse(res.headers.get('Date') || '');
+                if (!Number.isFinite(server)) return;
+                // The header is rounded down to the second, so on average the server is half a second later.
+                const offset = server + 500 - (sent + received) / 2;
+                skew = Math.abs(offset) > 1500 ? offset : 0;
+            } catch { /* keep this device's clock */ }
+        }
+
+        /* ---------- Schedule ---------- */
+
+        function renderInfo(air) {
+            if (!air) {
+                if (guideFor === -2) return;
+                guideFor = -2;
+                $('now-title').textContent = 'Off the air';
+                $('now-bar').style.transform = 'scaleX(0)';
+                $('now-meta').textContent = 'Nothing on this station yet. Try another one.';
+                $('guide').replaceChildren(h('li', { class: 'radio-guide-empty' }, 'Nothing scheduled'));
+                return;
+            }
+            if (guideFor !== air.slot) {
+                guideFor = air.slot;
+                $('now-title').textContent = air.show.title || 'Mystery song';
+                $('guide').replaceChildren(...upNext(schedule, air, schedule.shows.length > 1 ? 5 : 1).map(({ show, startsAt }) => h('li', null,
+                    h('time', { datetime: new Date(startsAt).toISOString() }, clock.format(startsAt)),
+                    h('span', null, show.title || 'Mystery song'))));
+            }
+            const next = upNext(schedule, air, 1)[0].show;
+            $('now-bar').style.transform = `scaleX(${Math.min(1, air.offset / air.show.seconds)})`;
+            $('now-meta').textContent = `${length(air.show.seconds - air.offset)} left · then ${next.title || 'more radio'}`;
+        }
+
+        // Keeps the player on whatever the schedule says is airing, at the right second.
+        function tune(checkDrift = false) {
+            const air = onAir(schedule, now());
+            renderInfo(air);
+            if (!air || !player || typeof player.loadVideoById !== 'function' || tuning()) return;
+            if (air.slot !== current) {
+                current = air.slot;
+                currentShow = air.show;
+                broken = -1;
+                hideStatic();
+                player.loadVideoById({ videoId: air.show.id, startSeconds: air.offset });
+                return;
+            }
+            if (broken === current) return;
+            const state = player.getPlayerState();
+            if (state === STATE.CUED) player.playVideo();
+            // Pausing is allowed; pressing play again jumps back to what's airing now.
+            if (checkDrift && state === STATE.PLAYING && Math.abs(player.getCurrentTime() - air.offset) > DRIFT_LIMIT) {
+                player.seekTo(air.offset, true);
+            }
+        }
+
+        // Tells whoever edits the lineup when a length is wrong, since the schedule is built from them.
+        function checkLength() {
+            const show = currentShow;
+            const real = player.getDuration();
+            if (!show || !(real > 0) || warned.has(show.id)) return;
+            if (Math.abs(real - show.seconds) > 2) {
+                warned.add(show.id);
+                console.warn(`Trusty Radio: "${show.title || show.id}" is ${length(real)} long, but its lineup says ${length(show.seconds)}. Fix it in the lineup (scripts/radio-lineup.js) to keep the schedule right.`);
+            }
+        }
+
+        /* ---------- Player ---------- */
+
+        function loadYouTube() {
+            return new Promise((resolve, reject) => {
+                if (window.YT && window.YT.Player) {
+                    resolve(window.YT);
+                    return;
+                }
+                window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+                const script = document.createElement('script');
+                script.src = 'https://www.youtube.com/iframe_api';
+                script.onerror = () => reject(new Error('YouTube did not load'));
+                document.head.append(script);
+            });
+        }
+
+        // YouTube's rules: autoplay only once at least half of the player is on screen.
+        function halfVisible(el) {
+            return new Promise((resolve) => {
+                const watcher = new IntersectionObserver((entries) => {
+                    if (entries.some((entry) => entry.intersectionRatio >= 0.5)) {
+                        watcher.disconnect();
+                        resolve();
+                    }
+                }, { threshold: [0.5] });
+                watcher.observe(el);
+            });
+        }
+
+        function startPlayer(YT) {
+            // Opening on a station that's off the air: the player waits, empty, for one that isn't.
+            const air = onAir(schedule, now());
+            if (air) {
+                current = air.slot;
+                currentShow = air.show;
+                hideStatic();
+            }
+            player = new YT.Player('player', {
+                host: 'https://www.youtube-nocookie.com',
+                width: '100%',
+                height: '100%',
+                ...(air && { videoId: air.show.id }),
+                playerVars: {
+                    autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3,
+                    cc_load_policy: 0, origin: location.origin,
+                    ...(air && { start: Math.floor(air.offset) }),
+                },
+                events: {
+                    onReady: () => {
+                        player.getIframe().title = 'Trusty Radio';
+                        player.mute();
+                        tune(true);
+                        if (!offAir()) player.playVideo();
+                    },
+                    onStateChange: (e) => {
+                        if (offAir() || tuning()) return;
+                        if (e.data === STATE.PLAYING) {
+                            // YouTube turns captions on for muted autoplay (and for listeners who always want them),
+                            // ignoring cc_load_policy, so switch them off each time a song starts.
+                            player.unloadModule('captions');
+                            player.unloadModule('cc');
+                            hideStatic();
+                            radio.classList.add('is-playing');
+                            checkLength();
+                            tune(true);
+                            // Browsers only allow sound after a tap on the page, so try once it's playing;
+                            // if it's refused, the PAUSED case below carries on muted and the cue shows.
+                            if (wantSound && !soundTried) {
+                                soundTried = true;
+                                setSound(true);
+                                // Some browsers keep it muted without pausing; show the cue then too.
+                                setTimeout(() => { if (soundOn && player.isMuted()) setSound(false); }, 1000);
+                            }
+                            return;
+                        }
+                        radio.classList.remove('is-playing');
+                        if (e.data === STATE.ENDED) {
+                            showStatic('Stay tuned!');
+                        } else if (e.data === STATE.PAUSED && soundOn && performance.now() - soundAskedAt < 1500) {
+                            // Browsers can refuse sound without a real tap. Rather than stop, carry on muted.
+                            setSound(false);
+                            player.playVideo();
+                        }
+                    },
+                    onError: () => {
+                        broken = current;
+                        showStatic('Technical difficulties. Please stand by.');
+                    },
+                },
+            });
+        }
+
+        /* ---------- Controls ---------- */
+
+        function setSound(on, remember = false) {
+            if (remember) {
+                wantSound = on;
+                try { localStorage.setItem(SOUND_KEY, on ? '1' : '0'); } catch { /* storage blocked */ }
+            }
+            soundOn = on;
+            soundAskedAt = performance.now();
+            if (player && typeof player.unMute === 'function') {
+                if (on) {
+                    player.unMute();
+                    player.setVolume(volume);
+                } else {
+                    player.mute();
+                }
+            }
+            radio.classList.toggle('sound-on', on);
+            $('sound-btn').textContent = on ? 'Sound off' : 'Sound on';
+            $('sound-btn').setAttribute('aria-pressed', String(on));
+            showVolume();
+        }
+
+        // Turning the dial all the way down mutes; turning it up from there turns the sound on.
+        function setVolume(level) {
+            level = Math.round(Math.max(0, Math.min(100, level)));
+            if (level === 0) {
+                if (soundOn) setSound(false, true);
+                return;
+            }
+            volume = level;
+            try { localStorage.setItem(VOLUME_KEY, String(level)); } catch { /* storage blocked */ }
+            if (!soundOn) setSound(true, true);
+            else if (player && typeof player.setVolume === 'function') player.setVolume(level);
+            showVolume();
+        }
+
+        // The dial turns from -135deg (muted) to 135deg (full).
+        function showVolume() {
+            const level = soundOn ? volume : 0;
+            const knob = $('volume-knob');
+            knob.style.setProperty('--turn', `${-135 + level * 2.7}deg`);
+            knob.setAttribute('aria-valuenow', String(level));
+            knob.setAttribute('aria-valuetext', level ? `${level}%` : 'Muted');
+        }
+
+        $('cue').addEventListener('click', () => setSound(true, true));
+        $('sound-btn').addEventListener('click', () => setSound(!soundOn, true));
+
+        // The volume dial: drag up or right to turn it up, scroll on it, or use the arrow keys.
+        // A click without dragging mutes or unmutes, like the Sound button.
+        const knob = $('volume-knob');
+        const DRAG_FULL = 150; // px of dragging from silent to full
+        let drag = null;
+
+        knob.addEventListener('pointerdown', (e) => {
+            if (!e.isPrimary || e.button > 0) return;
+            e.preventDefault();
+            knob.focus({ preventScroll: true });
+            try { knob.setPointerCapture(e.pointerId); } catch { /* pointer already released */ }
+            drag = { id: e.pointerId, x: e.clientX, y: e.clientY, from: soundOn ? volume : 0, moved: false };
+        });
+        knob.addEventListener('pointermove', (e) => {
+            if (!drag || e.pointerId !== drag.id) return;
+            const dx = e.clientX - drag.x;
+            const dy = e.clientY - drag.y;
+            if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+            drag.moved = true;
+            knob.classList.add('is-turning');
+            setVolume(drag.from + (dx - dy) * (100 / DRAG_FULL));
+        });
+        const endDrag = (e) => {
+            if (!drag || e.pointerId !== drag.id) return;
+            if (!drag.moved && e.type === 'pointerup') setSound(!soundOn, true);
+            drag = null;
+            knob.classList.remove('is-turning');
+        };
+        knob.addEventListener('pointerup', endDrag);
+        knob.addEventListener('pointercancel', endDrag);
+
+        knob.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            setVolume((soundOn ? volume : 0) - Math.sign(e.deltaY) * 5);
+        }, { passive: false });
+
+        knob.addEventListener('keydown', (e) => {
+            const level = soundOn ? volume : 0;
+            const keys = {
+                ArrowUp: level + 5, ArrowRight: level + 5, ArrowDown: level - 5, ArrowLeft: level - 5,
+                PageUp: level + 20, PageDown: level - 20, Home: 0, End: 100,
+            };
+            if (e.key in keys) setVolume(keys[e.key]);
+            else if (e.key === 'Enter' || e.key === ' ') setSound(!soundOn, true);
+            else return;
+            e.preventDefault();
+        });
+
+        // If the browser held the sound back, the listener's first tap or key press anywhere turns it on.
+        function soundOnFirstTouch(e) {
+            if (e.target.closest && e.target.closest('#cue, #sound-btn, #volume-knob')) return;
+            document.removeEventListener('pointerdown', soundOnFirstTouch, true);
+            document.removeEventListener('keydown', soundOnFirstTouch, true);
+            if (wantSound && !soundOn) setSound(true);
+        }
+        if (wantSound) {
+            document.addEventListener('pointerdown', soundOnFirstTouch, true);
+            document.addEventListener('keydown', soundOnFirstTouch, true);
+        }
+
+        /* ---------- Stations ---------- */
+
+        const at = (s) => (s.frequency - BAND.low) / (BAND.high - BAND.low);
+        const presets = STATIONS.map((s, i) => {
+            const button = h('button', { class: 'radio-preset', type: 'button', 'aria-pressed': 'false' },
+                h('b', null, mhz(s)), h('span', null, s.name));
+            button.addEventListener('click', () => { if (i !== station) tuneTo(i); });
+            return button;
+        });
+        $('presets').replaceChildren(...presets);
+        for (let f = BAND.low; f <= BAND.high; f += 4) {
+            $('band').append(h('p', { class: 'radio-mhz', style: { left: `${at({ frequency: f }) * 100}%` } }, String(f)));
+        }
+
+        function showStation() {
+            const s = STATIONS[station];
+            $('station-number').textContent = `${mhz(s)} FM`;
+            $('plate-name').replaceChildren(`${s.name} `, h('span', null, mhz(s)));
+            $('needle').style.setProperty('--at', String(at(s)));
+            presets.forEach((p, i) => p.setAttribute('aria-pressed', String(i === station)));
+            radio.classList.toggle('off-air', offAir());
+            $('plate-live').textContent = offAir() ? 'Off air' : 'On air';
+        }
+
+        // Moves to another station, with a moment of static (and hiss) in between.
+        function tuneTo(index) {
+            station = index;
+            schedule = schedules[station];
+            current = -1;
+            guideFor = -1;
+            broken = -1;
+            const s = STATIONS[station];
+            showStation();
+            history.replaceState(null, '', `#${s.key}`);
+            const note = $('knob-note');
+            note.textContent = `${mhz(s)}: ${s.name}`;
+            note.hidden = false;
+            clearTimeout(noteTimer);
+            noteTimer = setTimeout(() => { note.hidden = true; }, 1800);
+            holdUntil = performance.now() + TUNE_MS;
+            if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
+            if (offAir()) {
+                showStatic('Off the air');
+                renderInfo(null);
+                return;
+            }
+            showStatic();
+            hiss(TUNE_MS);
+            tune(); // the guide updates now; the song after the static
+            setTimeout(() => tune(), TUNE_MS);
+        }
+
+        // The tuning knob moves up the dial to the next station (and from the top back to the bottom).
+        $('tune-knob').addEventListener('click', () => {
+            knobTurns += 1;
+            $('tune-knob').style.setProperty('--turn', `${knobTurns * 60}deg`);
+            tuneTo((station + 1) % STATIONS.length);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            tune(true);
+            if (screen.classList.contains('is-static')) showStatic($('message').hidden ? '' : $('message').textContent);
+        });
+
+        /* ---------- Go ---------- */
+
+        showStation();
+        showStatic('Tuning in…');
+        if (schedules.every((s) => !s.shows.length)) {
+            showStatic('Off the air');
+            renderInfo(null);
+        } else {
+            await syncClock();
+            if (offAir()) showStatic('Off the air');
+            tune();
+            let ticks = 0;
+            setInterval(() => tune(++ticks % 5 === 0), 1000);
+            try {
+                const YT = await loadYouTube();
+                await halfVisible(screen);
+                startPlayer(YT);
+            } catch {
+                showStatic('Trusty Radio can’t reach YouTube right now.');
+            }
+        }
+    </script>
+</body>
+</html>
