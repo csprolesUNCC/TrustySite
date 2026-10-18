@@ -242,6 +242,13 @@ function setupDropdown(group) {
   const setOpen = (open) => toggle.setAttribute('aria-expanded', String(open));
   const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
   toggle.addEventListener('click', () => setOpen(!isOpen()));
+  // Pointing at a group closes any other one opened with its caret, so two menus never overlap.
+  group.addEventListener('pointerenter', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    document.querySelectorAll('.nav-drop-toggle[aria-expanded="true"]').forEach((other) => {
+      if (other !== toggle) other.setAttribute('aria-expanded', 'false');
+    });
+  });
   group.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) { setOpen(false); toggle.focus(); }
   });

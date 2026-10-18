@@ -755,7 +755,8 @@ trusty-footer { display: block; }
 }
 .brand-name small { font-size: .8em; color: var(--red); }
 
-.site-nav { margin-left: auto; }
+/* Centered between the logo and the account area. */
+.site-nav { margin-inline: auto; }
 .site-nav ul { display: flex; align-items: center; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .site-nav a {
   position: relative;
@@ -834,6 +835,7 @@ trusty-footer { display: block; }
 .account { display: flex; align-items: center; gap: 8px; }
 .account-name {
   max-width: 11ch;
+  padding-right: .15em; /* room for the handwriting's last letter, which leans past its box */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
