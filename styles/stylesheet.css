@@ -953,18 +953,18 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
 .mobile-account { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
 .mobile-account .account-name { flex: 1 0 100%; font-size: 1.5rem; }
 
-/* The full nav needs about 1,100px, more with the logged-in clicker and name, so below that it moves into the menu. */
-@media (max-width: 1119.98px) {
+/* The full nav needs about 1,160px, more with the logged-in clicker and name, so below that it moves into the menu. */
+@media (max-width: 1199.98px) {
   .site-nav, .header-actions .account { display: none; }
   .menu-toggle { display: inline-flex; }
   .header-actions { margin-left: auto; }
 }
-@media (max-width: 1239.98px) {
+@media (max-width: 1359.98px) {
   [data-auth="in"] .site-nav, [data-auth="in"] .header-actions .account { display: none; }
   [data-auth="in"] .menu-toggle { display: inline-flex; }
   [data-auth="in"] .header-actions { margin-left: auto; }
 }
-@media (min-width: 1240px) {
+@media (min-width: 1360px) {
   .clicker { padding-right: 10px; }
   .clicker-label { display: none; }
 }
