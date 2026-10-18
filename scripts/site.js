@@ -125,6 +125,7 @@ const NAV = [
   { href: '/pages/comics.html', label: 'Comics', section: '/pages/comics' },
   { href: '/pages/games.html', label: 'Games', section: '/pages/games' },
   { href: '/pages/tv.html', label: 'Trusty TV' },
+  { href: '/pages/radio.html', label: 'Trusty Radio' },
   { href: '/pages/tools.html', label: 'Trusty Tools', items: [
     { href: '/pages/trustyGPT.html', label: 'TrustyGPT' },
     { href: '/pages/viewer.html', label: '3D Trusty' },
@@ -351,7 +352,7 @@ class TrustyFooter extends HTMLElement {
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('p', null, 'Comics, games, and a state of the art AI horse. Drawn in the margins since 8th grade math.')),
-        col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['Trusty TV', '/pages/tv.html'], ['Trusty Tools', '/pages/tools.html'], ['TrustyGPT', '/pages/trustyGPT.html'], ['3D Trusty', '/pages/viewer.html'], ['Trusty Weather', '/pages/weather.html']]),
+        col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['Trusty TV', '/pages/tv.html'], ['Trusty Radio', '/pages/radio.html'], ['Trusty Tools', '/pages/tools.html'], ['TrustyGPT', '/pages/trustyGPT.html'], ['3D Trusty', '/pages/viewer.html'], ['Trusty Weather', '/pages/weather.html']]),
         col('More', [['Leaderboards', '/pages/leaderboard.html'], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
         h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),
