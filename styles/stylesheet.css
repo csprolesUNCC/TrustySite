@@ -868,7 +868,7 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
 .clicker {
   position: relative;
   display: inline-flex;
-  flex-shrink: 0; /* when the header is tight, the name gets cut short instead of the count */
+  flex-shrink: 0; /* when the row is tight, the name next to it (or the site name, on phones) gets cut short instead */
   align-items: center;
   gap: 8px;
   height: 40px;
@@ -906,6 +906,7 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
 
 .menu-toggle {
   display: none;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -971,11 +972,25 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   .clicker { padding-right: 10px; }
   .clicker-label { display: none; }
 }
+@media (max-width: 480px) {
+  .clicker { padding-right: 10px; }
+  .clicker-label { display: none; }
+  /* A big click count on a narrow phone: the site name ends in "…" rather than pushing the menu button off-screen. */
+  .header-inner { gap: 10px; }
+  .site-header .brand { flex-shrink: 1; min-width: 0; gap: 7px; }
+  .site-header .brand-name { overflow: hidden; text-overflow: ellipsis; }
+  .header-actions { flex-shrink: 0; gap: 8px; }
+}
 @media (max-width: 420px) {
   .brand-name { font-size: 1.15rem; }
   .brand-mark { width: 34px; height: 34px; }
-  .clicker { padding-right: 10px; }
-  .clicker-label { display: none; }
+}
+@media (max-width: 380px) {
+  .site-header .brand-name { font-size: 1.05rem; }
+}
+/* The smallest phones only have room for the face next to the clicker. */
+@media (max-width: 344.98px) {
+  [data-auth="in"] .site-header .brand-name { display: none; }
 }
 
 /* =========================================================================
