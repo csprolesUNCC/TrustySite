@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '../../utils/connect.js';
 import { authenticateUser, isAdmin, setAuthCookie, shouldRenew } from '../../utils/auth.js';
+import { copyName, currentUsername } from '../../utils/rename.js';
 
 export default async (req, res) => {
 
@@ -8,12 +9,25 @@ export default async (req, res) => {
         const user = authenticateUser(req);
 
         if (user) {
-            if (shouldRenew(user)) setAuthCookie(res, user);
+            // A token from before a rename (made on another device, see utils/rename.js) still has the old name,
+            // and anything saved with it since then went out under that name. Copy the new one again and swap
+            // the token; if the copying fails, keep the old token so the next page load tries again.
+            const username = await currentUsername(user);
+            if (username !== user.username) {
+                try {
+                    await copyName(user.userId, username);
+                    setAuthCookie(res, { userId: user.userId, username });
+                } catch (error) {
+                    console.error('Login API Error: copying a changed username failed:', error);
+                }
+            } else if (shouldRenew(user)) {
+                setAuthCookie(res, user);
+            }
             // isAdmin only decides whether the page shows the Admin button; admin requests check it again.
             return res.status(200).json({
                 isLoggedIn: true,
-                username: user.username,
-                isAdmin: isAdmin(user)
+                username,
+                isAdmin: isAdmin({ username })
             });
         } else {
             return res.status(401).json({ 

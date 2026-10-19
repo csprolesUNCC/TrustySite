@@ -1,5 +1,6 @@
 // Login, register, forgot-password and reset-password forms. Each page includes only its own form.
 import { h, session } from '/scripts/site.js';
+import { usernameProblem } from '/scripts/username.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -90,12 +91,21 @@ const registerForm = $('register-form');
 if (registerForm) {
   const status = $('form-status');
   const submit = registerForm.querySelector('[type="submit"]');
+  const username = $('username');
   const password = $('password');
   const confirm = $('confirm-password');
+  username.addEventListener('input', () => username.removeAttribute('aria-invalid'));
   confirm.addEventListener('input', () => confirm.removeAttribute('aria-invalid'));
 
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const problem = usernameProblem(username.value.trim());
+    if (problem) {
+      username.setAttribute('aria-invalid', 'true');
+      setStatus(status, problem, 'error');
+      username.focus();
+      return;
+    }
     if (password.value !== confirm.value) {
       confirm.setAttribute('aria-invalid', 'true');
       setStatus(status, 'Passwords do not match.', 'error');
@@ -106,7 +116,7 @@ if (registerForm) {
     setLoading(submit, true, 'Creating account…');
     try {
       const { res, data } = await postJSON('/api/auth/register', {
-        username: $('username').value.trim(),
+        username: username.value.trim(),
         email: $('email').value,
         password: password.value,
       });
