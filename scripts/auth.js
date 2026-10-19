@@ -74,7 +74,7 @@ if (loginForm) {
       if (res.ok) {
         session.save(data.username, data.isAdmin === true);
         setStatus(status, 'Logged in! Taking you back…', 'success');
-        location.href = next || '/index.html';
+        location.href = next || '/';
         return;
       }
       setStatus(status, data.message || 'Login failed. Please try again.', 'error');

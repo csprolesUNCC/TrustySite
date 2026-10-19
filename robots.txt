@@ -1,0 +1,7 @@
+# Search engines can crawl everything. Pages that shouldn't show up in search results
+# (the login pages, the admin panel, the 404 page) have a noindex tag instead, which
+# crawlers only see if they're allowed to fetch the page.
+User-agent: *
+Allow: /
+
+Sitemap: https://trustydahorse.com/sitemap.xml

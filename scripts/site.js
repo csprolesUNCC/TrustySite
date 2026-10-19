@@ -108,7 +108,7 @@ export function announceClicks(clicks, added) {
 export async function logout() {
   session.clear();
   try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* cookie expires anyway */ }
-  location.href = '/index.html';
+  location.href = '/';
 }
 
 export const profileHref = (username) => `/pages/profile.html?u=${encodeURIComponent(username)}`;
@@ -215,7 +215,7 @@ class TrustyHeader extends HTMLElement {
       h('a', { class: 'skip-link', href: '#main' }, 'Skip to content'),
       h('header', { class: 'site-header' },
         h('div', { class: 'container header-inner' },
-          h('a', { class: 'brand', href: '/index.html', 'aria-label': 'Trusty da Horse — home' },
+          h('a', { class: 'brand', href: '/', 'aria-label': 'Trusty da Horse — home' },
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('nav', { class: 'site-nav', 'aria-label': 'Main' }, navList({ dropdowns: true })),
@@ -362,7 +362,7 @@ class TrustyFooter extends HTMLElement {
     this.replaceChildren(h('footer', { class: 'site-footer' },
       h('div', { class: 'container footer-inner' },
         h('div', { class: 'footer-brand' },
-          h('a', { class: 'brand', href: '/index.html' },
+          h('a', { class: 'brand', href: '/' },
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('p', null, 'Comics, games, and a state of the art AI horse. Drawn in the margins since 8th grade math.')),
