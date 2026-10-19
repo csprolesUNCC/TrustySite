@@ -1,3 +1,9 @@
 {
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/pages/games/embed/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    }
+  ]
 }
