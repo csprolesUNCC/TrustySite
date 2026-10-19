@@ -72,7 +72,7 @@
                                         <span class="tv-knob-label" aria-hidden="true">Volume</span>
                                     </div>
                                 </div>
-                                <p class="tv-knob-note" id="knob-note" role="status" hidden></p>
+                                <p class="sr-only" id="announce" aria-live="polite"></p>
                             </div>
                         </div>
                     </div>
@@ -143,7 +143,6 @@
         let soundAskedAt = 0;
         let guideFor = -1;
         let knobTurns = 0;
-        let noteTimer = 0;
         const warned = new Set();
 
         const now = () => Date.now() + skew;
@@ -533,11 +532,7 @@
             const s = STATIONS[station];
             showStation();
             history.replaceState(null, '', `#${s.key}`);
-            const note = $('knob-note');
-            note.textContent = `${mhz(s)}: ${s.name}`;
-            note.hidden = false;
-            clearTimeout(noteTimer);
-            noteTimer = setTimeout(() => { note.hidden = true; }, 1800);
+            $('announce').textContent = `${mhz(s)}: ${s.name}`;
             holdUntil = performance.now() + TUNE_MS;
             if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
             if (offAir()) {

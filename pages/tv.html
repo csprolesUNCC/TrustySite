@@ -65,7 +65,7 @@
                                     <div class="tv-knob" id="volume-knob" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Muted"></div>
                                     <span class="tv-knob-label" aria-hidden="true">Volume</span>
                                 </div>
-                                <p class="tv-knob-note" id="knob-note" role="status" hidden></p>
+                                <p class="sr-only" id="announce" aria-live="polite"></p>
                             </div>
                             <div class="tv-speaker" aria-hidden="true"></div>
                             <span class="tv-led" aria-hidden="true"></span>
@@ -139,7 +139,6 @@
         let soundAskedAt = 0;
         let guideFor = -1;
         let knobTurns = 0;
-        let noteTimer = 0;
         const warned = new Set();
 
         const now = () => Date.now() + skew;
@@ -527,11 +526,7 @@
             const c = CHANNELS[channel];
             showChannel();
             history.replaceState(null, '', `#${c.key}`);
-            const note = $('knob-note');
-            note.textContent = `${c.number}: ${c.fullName || c.name}`;
-            note.hidden = false;
-            clearTimeout(noteTimer);
-            noteTimer = setTimeout(() => { note.hidden = true; }, 1800);
+            $('announce').textContent = `${c.number}: ${c.fullName || c.name}`;
             if (!schedule.shows.length) {
                 showStatic('Off the air');
                 return;

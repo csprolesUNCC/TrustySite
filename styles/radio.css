@@ -164,7 +164,7 @@
   transition: left .45s var(--ease-out);
 }
 
-.radio-row { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.radio-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .radio-presets { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-preset {
   display: grid;
@@ -187,8 +187,6 @@
 
 .radio-knobs { display: flex; gap: 14px; }
 .radio-knobs .tv-knob { width: clamp(44px, 5.5vw, 54px); }
-/* Pops up above the knobs, so it never covers the window. */
-.radio .tv-knob-note { top: auto; right: 0; bottom: calc(100% + 8px); left: auto; transform: rotate(-3deg); }
 
 .radio-feet { display: flex; justify-content: space-between; padding-inline: 8%; }
 .radio-feet span { width: clamp(30px, 5vw, 48px); height: clamp(10px, 1.4vw, 14px); border-radius: 0 0 8px 8px; background: var(--ink); }

@@ -163,7 +163,6 @@
   border-radius: 18px 14px 20px 16px;
   background: #ead7b0;
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35);
-  position: relative;
 }
 .tv-brand { font-family: var(--font-marker); font-size: 1.15rem; line-height: 1; transform: rotate(-4deg); }
 .tv-knobs { display: grid; gap: 12px; justify-items: center; }
@@ -197,28 +196,6 @@
 #volume-knob { --turn: -135deg; touch-action: none; cursor: grab; }
 #volume-knob.is-turning { transition: none; }
 .tv-knob-label { font: 800 .6rem/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
-/* Pops up over the speaker grille, so it never covers the screen. */
-.tv-knob-note {
-  position: absolute;
-  z-index: 2;
-  bottom: 40px;
-  left: 50%;
-  width: max-content;
-  max-width: 130px;
-  margin: 0;
-  padding: 8px 12px;
-  border: 2px solid var(--ink);
-  border-radius: 12px;
-  background: var(--note-yellow);
-  box-shadow: 2px 2px 0 var(--ink);
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 1.15rem;
-  line-height: 1.1;
-  text-align: center;
-  transform: translateX(-50%) rotate(-3deg);
-}
-.tv-knob-note[hidden] { display: none; }
 .tv-speaker {
   flex: 1;
   width: 100%;
@@ -252,7 +229,6 @@
   .tv-body { grid-template-columns: minmax(0, 1fr); }
   .tv-panel { flex-direction: row; justify-content: space-between; gap: 12px; padding: 8px 12px; }
   .tv-knobs { display: flex; gap: 14px; }
-  .tv-knob-note { top: 50%; right: 10px; bottom: auto; left: auto; max-width: 150px; transform: translateY(-50%) rotate(-3deg); }
   .tv-speaker { min-height: 0; height: 36px; }
   .tv-legs { padding-inline: 10%; }
 }
