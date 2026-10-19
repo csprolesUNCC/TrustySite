@@ -1,7 +1,7 @@
 // The rules for picking a username, with no DOM, so the sign-up form (scripts/auth.js), the profile page's
 // Change username form (pages/profile.html) and the server (api/auth/register.js, utils/rename.js) all go by
 // the same ones. Names from before these rules keep working; the rules only apply when a name is picked.
-// pages/auth/register.html and pages/profile.html write the numbers into their hints, so change them there too.
+// pages/auth/register.html and pages/profile.html write these numbers into their forms, so change them there too.
 
 export const USERNAME_MAX = 32;
 // After changing your username, how long until you can change it again.

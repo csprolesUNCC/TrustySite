@@ -3,6 +3,9 @@
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
 const LS_ADMIN = 'trusty:admin';
+// Device keys that remember by username whose data they hold (Trustle's games), so a rename moves them along
+// instead of looking like someone else logged in.
+const LS_NAME_KEYS = ['trusty:trustle:owner'];
 const FACE = '/images/mobile-icon.png';
 const ADMIN_PAGE = '/pages/admin.html';
 const CLICK_LIMIT = 3; // header clicker: clicks per second
@@ -62,6 +65,11 @@ export const session = {
 
 function sessionState() { return { loggedIn: session.loggedIn, username: session.username, isAdmin: session.isAdmin }; }
 
+function renameOnDevice(from, to) {
+  if (!from || from === to) return;
+  for (const key of LS_NAME_KEYS) if (lsGet(key) === from) lsSet(key, to);
+}
+
 function publishSession() {
   document.documentElement.dataset.auth = session.loggedIn ? 'in' : 'out';
   document.dispatchEvent(new CustomEvent('trusty:session', { detail: sessionState() }));
@@ -80,6 +88,8 @@ export const sessionReady = (async () => {
       if (data && typeof data.username === 'string' && data.username) {
         const admin = data.isAdmin === true;
         if (data.username !== session.username || admin !== session.isAdmin) {
+          // Same login, different name: the account was renamed on another device.
+          renameOnDevice(session.username, data.username);
           session.save(data.username, admin);
           publishSession();
         }
@@ -97,6 +107,14 @@ export function onSession(callback) {
 // For when a protected API answers 401: the login cookie expired, so show the page logged out.
 export function sessionExpired() {
   session.clear();
+  publishSession();
+}
+
+// For after changing your username (pages/profile.html): the API has set a login cookie with the new name, so
+// the header and this device's saved data switch to it too.
+export function sessionRenamed(username) {
+  renameOnDevice(session.username, username);
+  session.save(username, session.isAdmin);
   publishSession();
 }
 

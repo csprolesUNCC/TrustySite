@@ -65,7 +65,8 @@ function shouldRenew(user) {
 
 // The accounts that can use the admin panel (pages/admin.html, utils/moderation.js). Sign-up refuses a name
 // that only differs from an existing one in capitals, so matching these case-insensitively can't let
-// anyone else in, as long as both accounts exist.
+// anyone else in, as long as both accounts exist. Changing your username (utils/rename.js) refuses these
+// names, and admin accounts can't change theirs, since that would hand the name to whoever took it next.
 const ADMINS = ['carson', 'luke'];
 
 /**

@@ -1,7 +1,8 @@
 import { connectToDatabase } from './db.js';
 import connectToUsersDatabase from './connect.js';
-import { authenticateUser } from './auth.js';
+import { authenticateUser, isAdmin } from './auth.js';
 import { cleanText } from './text.js';
+import { nextRename } from './rename.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 import { puzzleNumber, cleanGame, statsFrom } from '../scripts/trustle.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
@@ -9,7 +10,8 @@ import { CHANNELS } from '../scripts/tv-lineup.js';
 // Profile pages (pages/profile.html), served from api/leaderboard.js as ?action=profile so they don't
 // take up another Vercel function.
 //   GET ?u=<username>: anyone can see a profile. The stats come from the game data the site already
-//     keeps; only the bio is written by the user. Never returns an email.
+//     keeps; only the bio is written by the user. Never returns an email. Your own profile also says
+//     whether you can change your username yet (`rename`, see utils/rename.js).
 //   POST { bio }: saves the logged-in user's own bio (in the `profiles` collection of the game db).
 
 const BIO_MAX = 300; // pages/profile.html allows the same
@@ -32,7 +34,7 @@ async function getProfile(req, res) {
     const { db: usersDb } = await connectToUsersDatabase();
     const account = await usersDb.collection('users').findOne(
         { username: name },
-        { collation: CASE_INSENSITIVE, projection: { username: 1, createdAt: 1 } }
+        { collation: CASE_INSENSITIVE, projection: { username: 1, createdAt: 1, usernameChangedAt: 1 } }
     );
     if (!account) return res.status(404).json({ error: 'No one by that name' });
 
@@ -80,10 +82,13 @@ async function getProfile(req, res) {
     }
 
     const me = authenticateUser(req);
+    const isMe = Boolean(me && String(me.userId) === userId);
     return res.status(200).json({
         username: account.username,
         memberSince: account.createdAt || account._id.getTimestamp(),
-        isMe: Boolean(me && String(me.userId) === userId),
+        isMe,
+        // Admin accounts can't change their username; `next` is when everyone else can again (null: now).
+        rename: isMe ? { admin: isAdmin(account), next: nextRename(account) } : null,
         bio: profileDoc && typeof profileDoc.bio === 'string' ? profileDoc.bio : '',
         clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank } : null,
         flappy: hasFlappy ? { score: flappyDoc.score, rank: flappyRank } : null,
