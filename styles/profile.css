@@ -1,5 +1,14 @@
 /* Profile pages (pages/profile.html) */
 
+/* Usernames have no spaces to wrap at, so a long one breaks anywhere rather than running off a phone screen. */
+.profile-name { overflow-wrap: anywhere; }
+
+/* Your own profile: changing your username, under the name */
+.profile-rename { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 16px; }
+.profile-rename-note { margin: 0; color: var(--pencil); font-weight: 600; }
+.profile-rename-note:empty { display: none; }
+.profile-rename-dialog .field { margin-bottom: 12px; }
+
 .profile-top {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);

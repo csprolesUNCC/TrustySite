@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '../../utils/connect.js';
+import { usernameProblem } from '../../scripts/username.js';
 const SALT_ROUNDS = 10;
 
 export default async (req, res) => {
@@ -17,6 +18,11 @@ export default async (req, res) => {
 
         if (!username || !email || !password) {
             return res.status(400).json({ message: 'Missing required fields.' });
+        }
+        // The same rules as changing your username (utils/rename.js).
+        const problem = usernameProblem(username);
+        if (problem) {
+            return res.status(400).json({ message: problem });
         }
 
         const usersCollection = db.collection('users');

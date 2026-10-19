@@ -32,7 +32,8 @@
             <form id="register-form">
                 <div class="field">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" autocomplete="username" required spellcheck="false">
+                    <input type="text" id="username" name="username" autocomplete="username" maxlength="32" aria-describedby="username-hint" required spellcheck="false">
+                    <span class="hint" id="username-hint">Up to 32 characters, no spaces or @.</span>
                 </div>
                 <div class="field">
                     <label for="email">Email</label>

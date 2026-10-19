@@ -47,8 +47,13 @@
         <div id="state-profile" hidden>
             <header class="page-head container">
                 <p class="eyebrow">Trusty fan profile</p>
-                <h1 id="profile-name"></h1>
+                <h1 class="profile-name" id="profile-name"></h1>
                 <p class="lead" id="profile-since"></p>
+                <!-- Your own profile only -->
+                <div class="profile-rename" id="rename" hidden>
+                    <button class="btn btn-outline btn-sm" type="button" id="rename-open">Change username</button>
+                    <p class="profile-rename-note" id="rename-note"></p>
+                </div>
             </header>
 
             <section class="section-tight container profile-top" aria-label="About">
@@ -88,14 +93,36 @@
                 <div class="profile-stats" id="stats"></div>
             </section>
         </div>
+
+        <!-- Changing your username (utils/rename.js). The limits are RENAME_DAYS and USERNAME_MAX in scripts/username.js. -->
+        <dialog class="modal profile-rename-dialog" id="rename-dialog" aria-labelledby="rename-title">
+            <div class="modal-head">
+                <h2 id="rename-title">Change your username</h2>
+                <button class="btn btn-ghost btn-icon" type="button" id="rename-close" aria-label="Close">✕</button>
+            </div>
+            <form class="modal-body" id="rename-form">
+                <p>Your clicks, high scores, drawing and Trustle stats come with you. Once you change it, you can’t change it again for 90 days.</p>
+                <div class="field">
+                    <label for="rename-input">New username</label>
+                    <input type="text" id="rename-input" maxlength="32" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="rename-hint" required>
+                    <span class="hint" id="rename-hint">Up to 32 characters, no spaces or @.</span>
+                </div>
+                <p class="form-status" id="rename-status" role="status"></p>
+                <div class="btn-row">
+                    <button class="btn" type="submit" id="rename-save">Change username</button>
+                    <button class="btn btn-ghost" type="button" id="rename-cancel">Cancel</button>
+                </div>
+            </form>
+        </dialog>
     </main>
 
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, session, sessionReady, sessionExpired, onSession, loginHref, profileHref } from '/scripts/site.js';
+        import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref } from '/scripts/site.js';
         import { safeDrawing, openDrawing } from '/scripts/leaderboard.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
+        import { usernameProblem } from '/scripts/username.js';
 
         const BIO_MAX = 300; // utils/profile.js allows the same
         const $ = (id) => document.getElementById(id);
@@ -237,6 +264,7 @@
             $('profile-name').textContent = profile.username;
             const since = new Date(profile.memberSince);
             $('profile-since').textContent = Number.isNaN(since.getTime()) ? '' : `Trusty fan since ${joinedFormat.format(since)}.`;
+            renderRename();
             renderBio();
             renderTv();
             $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), trustleCard());
@@ -305,8 +333,98 @@
             }
         });
 
-        // Logging out elsewhere on the page hides the edit button.
-        onSession(() => { if (profile && $('bio-form').hidden) renderBio(); });
+        /* ---------- Changing your username ---------- */
+
+        const renameDialog = $('rename-dialog');
+        const renameInput = $('rename-input');
+
+        // Admins keep their name; everyone else can change theirs once every 90 days (utils/rename.js).
+        function renderRename() {
+            const rename = profile.isMe && session.loggedIn ? profile.rename : null;
+            $('rename').hidden = !rename;
+            if (!rename) return;
+            const next = rename.next ? new Date(rename.next) : null;
+            const waiting = Boolean(next) && !Number.isNaN(next.getTime());
+            $('rename-open').hidden = Boolean(rename.admin) || waiting;
+            $('rename-note').textContent = rename.admin
+                ? 'Admin accounts keep their username, since the admin panel goes by it.'
+                : waiting ? `You can change your username again on ${joinedFormat.format(next)}.` : '';
+        }
+
+        $('rename-open').addEventListener('click', () => {
+            renameInput.value = profile.username;
+            renameInput.removeAttribute('aria-invalid');
+            $('rename-status').textContent = '';
+            renameDialog.showModal();
+            renameInput.focus();
+            renameInput.select();
+        });
+        $('rename-close').addEventListener('click', () => renameDialog.close());
+        $('rename-cancel').addEventListener('click', () => renameDialog.close());
+        renameDialog.addEventListener('click', (e) => { if (e.target === renameDialog) renameDialog.close(); });
+        renameInput.addEventListener('input', () => renameInput.removeAttribute('aria-invalid'));
+
+        $('rename-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = $('rename-status');
+            const username = renameInput.value.trim();
+            const problem = username === profile.username ? 'That’s already your username.' : usernameProblem(username);
+            if (problem) {
+                renameInput.setAttribute('aria-invalid', 'true');
+                status.dataset.tone = 'error';
+                status.textContent = problem;
+                renameInput.focus();
+                return;
+            }
+            const save = $('rename-save');
+            save.disabled = true;
+            status.dataset.tone = 'info';
+            status.textContent = 'Saving…';
+            try {
+                const res = await fetch('/api/leaderboard?action=rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    status.dataset.tone = 'error';
+                    status.replaceChildren('Your login expired. ', h('a', { href: loginHref() }, 'Log in again'), ' to change your username.');
+                    return;
+                }
+                if (!res.ok) {
+                    status.dataset.tone = 'error';
+                    status.textContent = data.error || 'Couldn’t change your username. Try again?';
+                    if (res.status === 400 || res.status === 409) renameInput.setAttribute('aria-invalid', 'true');
+                    // Changed from another tab in the meantime: show when it can change again.
+                    if (data.nextRename) {
+                        profile.rename.next = data.nextRename;
+                        renderRename();
+                    }
+                    return;
+                }
+                profile.username = typeof data.username === 'string' ? data.username : username;
+                profile.rename.next = data.nextRename || null;
+                sessionRenamed(profile.username);
+                history.replaceState(null, '', profileHref(profile.username));
+                render();
+                renameDialog.close();
+                toast('Username changed!', 'success');
+            } catch {
+                status.dataset.tone = 'error';
+                status.textContent = 'Couldn’t reach the server. Check your connection and try again.';
+            } finally {
+                save.disabled = false;
+            }
+        });
+
+        // Logging out elsewhere on the page hides the edit and rename buttons.
+        onSession(() => {
+            if (!profile) return;
+            renderRename();
+            if ($('bio-form').hidden) renderBio();
+        });
 
         /* ---------- Load ---------- */
 
