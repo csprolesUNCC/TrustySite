@@ -138,6 +138,13 @@
             } catch { return 100; }
         })();
         let soundAskedAt = 0;
+        let askedByTap = false; // the last try at sound came from the viewer's own tap or key press
+        // Where a tap can turn the sound on: 'page' (anywhere, as in most browsers), 'video' (only on the video
+        // itself, as in the browsers built into Instagram and Facebook: the player is YouTube's page, and a tap
+        // on ours doesn't reach it) or 'nowhere'. Found out when a tap for sound gets refused.
+        let soundFrom = 'page';
+        let videoTapAt = -Infinity;
+        let keyAt = -Infinity;
         let guideFor = -1;
         let knobTurns = 0;
         const warned = new Set();
@@ -331,10 +338,8 @@
                             }
                         } else if (e.data === STATE.ENDED) {
                             showStatic('Stay tuned!');
-                        } else if (e.data === STATE.PAUSED && soundOn && performance.now() - soundAskedAt < 1500) {
-                            // Browsers can refuse sound without a real tap. Rather than stop, carry on muted.
-                            setSound(false);
-                            player.playVideo();
+                        } else if (e.data === STATE.PAUSED) {
+                            soundPaused();
                         }
                     },
                     onError: () => {
@@ -407,8 +412,11 @@
                 wantSound = on;
                 try { localStorage.setItem(SOUND_KEY, on ? '1' : '0'); } catch { /* storage blocked */ }
             }
+            // Where only a tap on the video turns the sound on, trying from here would just stutter the show.
+            if (on && soundFrom !== 'page' && performance.now() - videoTapAt > 1000) return;
             soundOn = on;
             soundAskedAt = performance.now();
+            askedByTap = on && remember;
             if (player && typeof player.unMute === 'function') {
                 if (on) {
                     player.unMute();
@@ -445,6 +453,61 @@
             knob.setAttribute('aria-valuenow', String(level));
             knob.setAttribute('aria-valuetext', level ? `${level}%` : 'Muted');
         }
+
+        const CUES = { page: 'Tap for sound', video: 'Tap the video for sound', nowhere: 'Open in your browser for sound' };
+        function soundStartsFrom(where) {
+            soundFrom = where;
+            $('cue').textContent = `\u{1F507} ${CUES[where]}`;
+        }
+
+        // YouTube pauses the show when the browser refuses sound, and when the video is tapped.
+        function soundPaused() {
+            const t = performance.now();
+            if (t - videoTapAt < 1500) {
+                // The tap on the video that just turned the sound on also paused it.
+                player.playVideo();
+            } else if (soundOn && t - soundAskedAt < 1500) {
+                // Refused. Rather than stop, carry on muted. If the viewer tapped for it, this browser only
+                // counts taps on the video.
+                if (askedByTap) soundStartsFrom('video');
+                setSound(false);
+                player.playVideo();
+            } else if (soundFrom === 'video' && wantSound && !soundOn && !document.hidden) {
+                // A tap on the video that only paused it (browsers that don't move focus into the player).
+                soundFromVideo();
+            }
+        }
+
+        // Sound on from a tap on the video, which counts as a tap inside YouTube's player for a few seconds.
+        function soundFromVideo() {
+            videoTapAt = performance.now();
+            setSound(true);
+            player.playVideo();
+            setTimeout(() => {
+                if (!soundOn) return;
+                if (player.getPlayerState() !== STATE.PAUSED && !player.isMuted()) {
+                    // That unlocked YouTube's player, so the sound buttons work from now on.
+                    soundStartsFrom('page');
+                    return;
+                }
+                // Not even that works here: carry on muted.
+                if (soundFrom === 'video') soundStartsFrom('nowhere');
+                setSound(false);
+                player.playVideo();
+            }, 1500);
+        }
+
+        // A tap on the video moves focus into YouTube's player, which is how this page hears about it.
+        // (Tabbing into it with the keyboard isn't a tap, so that doesn't count.)
+        document.addEventListener('keydown', () => { keyAt = performance.now(); }, true);
+        window.addEventListener('blur', () => {
+            const frame = player && typeof player.getIframe === 'function' && player.getIframe();
+            if (!frame || document.activeElement !== frame || performance.now() - keyAt < 500) return;
+            if (!wantSound || soundOn || soundFrom === 'nowhere') return;
+            soundFromVideo();
+            // Back out of the player, so another tap on it is heard too.
+            setTimeout(() => frame.blur(), 0);
+        });
 
         $('cue').addEventListener('click', () => setSound(true, true));
         $('sound-btn').addEventListener('click', () => setSound(!soundOn, true));
