@@ -49,7 +49,12 @@
                 </div>
                 <figure class="hero-art">
                     <button type="button" class="hero-neigh" id="hero-neigh" aria-label="Trusty da Horse: a smiling stick-figure horse with a round head and a very long back. Click him to hear him neigh."><img class="ink trusty-bob" src="/images/trusty.png" alt="" width="1536" height="1173" fetchpriority="high"></button>
-                    <figcaption class="hand" aria-hidden="true">&#8601; this is Trusty. say hi</figcaption>
+                    <!-- Filled in from scripts/jokes.js by the second script at the bottom -->
+                    <figcaption class="joke" id="joke" hidden>
+                        <span class="joke-label">Trusty's joke of the day</span>
+                        <span class="joke-setup" id="joke-setup"></span>
+                        <span class="joke-punchline" id="joke-punchline"></span>
+                    </figcaption>
                 </figure>
             </div>
 
@@ -337,6 +342,13 @@
     <script type="module">
         import { h } from '/scripts/site.js';
         import { sound } from '/scripts/game-kit.js';
+        import { jokeOfTheDay } from '/scripts/jokes.js';
+
+        // Today's joke in the bubble next to Trusty.
+        const joke = jokeOfTheDay();
+        document.getElementById('joke-setup').textContent = joke.setup;
+        document.getElementById('joke-punchline').textContent = joke.punchline;
+        document.getElementById('joke').hidden = false;
 
         // Click Trusty and he neighs (quiet if sound is muted in the games).
         const neigh = sound('/sound/horse.m4a');
