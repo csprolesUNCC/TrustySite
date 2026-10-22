@@ -239,17 +239,6 @@ kbd {
     linear-gradient(var(--card), var(--card));
   cursor: crosshair;
 }
-.draw-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 10% 10%;
-  opacity: .6;
-  pointer-events: none;
-}
 .draw-stage canvas { position: relative; }
 .draw-hud {
   display: flex;
