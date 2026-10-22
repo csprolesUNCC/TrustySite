@@ -407,7 +407,7 @@
 
         /* ---------- Controls ---------- */
 
-        function setSound(on, remember = false) {
+        function setSound(on, remember = false, byTap = false) {
             if (remember) {
                 wantSound = on;
                 try { localStorage.setItem(SOUND_KEY, on ? '1' : '0'); } catch { /* storage blocked */ }
@@ -416,7 +416,7 @@
             if (on && soundFrom !== 'page' && performance.now() - videoTapAt > 1000) return;
             soundOn = on;
             soundAskedAt = performance.now();
-            askedByTap = on && remember;
+            askedByTap = on && byTap;
             if (player && typeof player.unMute === 'function') {
                 if (on) {
                     player.unMute();
@@ -431,8 +431,10 @@
             showVolume();
         }
 
-        // Turning the dial all the way down mutes; turning it up from there turns the sound on.
-        function setVolume(level) {
+        // Turning the dial all the way down mutes; turning it up from there turns the sound on, unless the viewer
+        // isn't in the middle of a tap (a touch drag or the scroll wheel): browsers refuse sound then, so the dial
+        // waits for the end of the drag (endDrag) or the cue.
+        function setVolume(level, byTap = false) {
             level = Math.round(Math.max(0, Math.min(100, level)));
             if (level === 0) {
                 if (soundOn) setSound(false, true);
@@ -440,8 +442,9 @@
             }
             volume = level;
             try { localStorage.setItem(VOLUME_KEY, String(level)); } catch { /* storage blocked */ }
-            if (!soundOn) setSound(true, true);
-            else if (player && typeof player.setVolume === 'function') player.setVolume(level);
+            if (!soundOn) {
+                if (byTap || !navigator.userActivation || navigator.userActivation.isActive) setSound(true, true, byTap);
+            } else if (player && typeof player.setVolume === 'function') player.setVolume(level);
             showVolume();
         }
 
@@ -472,7 +475,7 @@
                 if (askedByTap) soundStartsFrom('video');
                 setSound(false);
                 player.playVideo();
-            } else if (soundFrom === 'video' && wantSound && !soundOn && !document.hidden) {
+            } else if (soundFrom !== 'page' && wantSound && !soundOn && !document.hidden) {
                 // A tap on the video that only paused it (browsers that don't move focus into the player).
                 soundFromVideo();
             }
@@ -483,8 +486,13 @@
             videoTapAt = performance.now();
             setSound(true);
             player.playVideo();
-            setTimeout(() => {
+            const check = () => {
                 if (!soundOn) return;
+                // Changing the channel can pause the video on purpose: look again once the new one has started.
+                if (performance.now() < holdUntil) {
+                    setTimeout(check, holdUntil - performance.now() + 1000);
+                    return;
+                }
                 if (player.getPlayerState() !== STATE.PAUSED && !player.isMuted()) {
                     // That unlocked YouTube's player, so the sound buttons work from now on.
                     soundStartsFrom('page');
@@ -494,7 +502,8 @@
                 if (soundFrom === 'video') soundStartsFrom('nowhere');
                 setSound(false);
                 player.playVideo();
-            }, 1500);
+            };
+            setTimeout(check, 1500);
         }
 
         // A tap on the video moves focus into YouTube's player, which is how this page hears about it.
@@ -503,14 +512,14 @@
         window.addEventListener('blur', () => {
             const frame = player && typeof player.getIframe === 'function' && player.getIframe();
             if (!frame || document.activeElement !== frame || performance.now() - keyAt < 500) return;
-            if (!wantSound || soundOn || soundFrom === 'nowhere') return;
+            if (!wantSound || soundOn || soundFrom === 'page') return;
             soundFromVideo();
             // Back out of the player, so another tap on it is heard too.
             setTimeout(() => frame.blur(), 0);
         });
 
-        $('cue').addEventListener('click', () => setSound(true, true));
-        $('sound-btn').addEventListener('click', () => setSound(!soundOn, true));
+        $('cue').addEventListener('click', () => setSound(true, true, true));
+        $('sound-btn').addEventListener('click', () => setSound(!soundOn, true, true));
 
         // The volume dial: drag up or right to turn it up, scroll on it, or use the arrow keys.
         // A click without dragging mutes or unmutes, like the Sound button.
@@ -532,11 +541,14 @@
             if (!drag.moved && Math.hypot(dx, dy) < 4) return;
             drag.moved = true;
             knob.classList.add('is-turning');
-            setVolume(drag.from + (dx - dy) * (100 / DRAG_FULL));
+            drag.level = drag.from + (dx - dy) * (100 / DRAG_FULL);
+            setVolume(drag.level);
         });
         const endDrag = (e) => {
             if (!drag || e.pointerId !== drag.id) return;
-            if (!drag.moved && e.type === 'pointerup') setSound(!soundOn, true);
+            if (!drag.moved && e.type === 'pointerup') setSound(!soundOn, true, true);
+            // Lifting a finger is a tap, so a drag that turned the dial up can turn the sound on now.
+            else if (drag.moved && e.type === 'pointerup' && drag.level >= 0.5 && !soundOn) setSound(true, true, true);
             drag = null;
             knob.classList.remove('is-turning');
         };
@@ -554,8 +566,8 @@
                 ArrowUp: level + 5, ArrowRight: level + 5, ArrowDown: level - 5, ArrowLeft: level - 5,
                 PageUp: level + 20, PageDown: level - 20, Home: 0, End: 100,
             };
-            if (e.key in keys) setVolume(keys[e.key]);
-            else if (e.key === 'Enter' || e.key === ' ') setSound(!soundOn, true);
+            if (e.key in keys) setVolume(keys[e.key], true);
+            else if (e.key === 'Enter' || e.key === ' ') setSound(!soundOn, true, true);
             else return;
             e.preventDefault();
         });
