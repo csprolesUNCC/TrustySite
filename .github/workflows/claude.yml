@@ -35,7 +35,7 @@ jobs:
 
       # Pinned to one release so @claude doesn't change between runs. Dependabot (.github/dependabot.yml)
       # opens a PR when there's a newer one.
-      - uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1.0.240
+      - uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # @claude only sees comments from Luke, Carson and itself, not from anyone else on the thread.
