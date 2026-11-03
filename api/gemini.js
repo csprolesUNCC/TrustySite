@@ -1,10 +1,15 @@
 import fetch from "node-fetch";
+import { countHit, clientIp } from "../utils/rate-limit.js";
 
 // TrustyGPT: sends the chat to Gemini with Trusty's persona as the system instruction.
 // POST { message, history? } -> { reply }. `history` is the whole conversation so far, oldest first, as
 // [{ role: "user" | "model", text }]. Very long chats drop their oldest turns to stay under HISTORY_CHARS.
 
 const MODEL = "gemini-3.5-flash-lite";
+
+// Messages each visitor (by IP address) can send per RATE_WINDOW_MS (utils/rate-limit.js).
+const RATE_LIMIT = 40;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 // Who Trusty is. Edit freely: it's sent with every message, so keep it to what he needs to know. Keep the
 // website in its own section with the rules for when to mention it: the model works in whatever it's told
@@ -73,7 +78,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `Keep it under ${MAX_CHARS} characters.` });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    // Gemini's free tier has a daily limit for the whole site, so one visitor can't use it all up.
+    if (await countHit(`gemini:${clientIp(req)}`, RATE_WINDOW_MS) > RATE_LIMIT) {
+        return res.status(429).json({ error: "Whoa, slow down! Trusty needs a breather. Try again in a few minutes." });
+    }
+
+    // The key goes in a header rather than the URL, so it can't end up in anyone's request logs.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
     const body = {
         systemInstruction: { parts: [{ text: PERSONA }] },
@@ -86,14 +97,18 @@ export default async function handler(req, res) {
     try {
         const response = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify(body)
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Gemini API Error:", errorText);
-            return res.status(response.status).json({ error: "Gemini API Error" });
+            console.error("Gemini API Error:", response.status, errorText);
+            // 429: the site's daily Gemini quota is used up.
+            if (response.status === 429) {
+                return res.status(503).json({ error: "Trusty has talked himself hoarse today. Come back tomorrow!" });
+            }
+            return res.status(502).json({ error: "Gemini API Error" });
         }
 
         const data = await response.json();

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '../../utils/connect.js';
-import { usernameProblem } from '../../scripts/username.js';
+import { usernameProblem, passwordProblem } from '../../scripts/username.js';
+import { countHit, clientIp } from '../../utils/rate-limit.js';
 const SALT_ROUNDS = 10;
 
 export default async (req, res) => {
@@ -9,21 +10,31 @@ export default async (req, res) => {
     }
 
     try {
-        const { db } = await connectToDatabase();
-
-        const username = req.body?.username?.trim();
+        // Only plain strings go anywhere near the database query below.
+        const text = (value) => (typeof value === 'string' ? value.trim() : '');
+        const username = text(req.body?.username);
         // Store emails in lowercase
-        const email = req.body?.email?.trim().toLowerCase();
+        const email = text(req.body?.email).toLowerCase();
         const password = req.body?.password;
 
         if (!username || !email || !password) {
             return res.status(400).json({ message: 'Missing required fields.' });
         }
-        // The same rules as changing your username (utils/rename.js).
-        const problem = usernameProblem(username);
+        if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ message: 'That email address doesn’t look right.' });
+        }
+        // The same rules as changing your username (utils/rename.js) and resetting a password.
+        const problem = usernameProblem(username) || passwordProblem(password);
         if (problem) {
             return res.status(400).json({ message: problem });
         }
+
+        // At most 10 sign-ups an hour from one IP address, so nobody can script a pile of accounts.
+        if (await countHit(`register:${clientIp(req)}`, 60 * 60 * 1000) > 10) {
+            return res.status(429).json({ message: 'Too many new accounts from here. Try again in an hour.' });
+        }
+
+        const { db } = await connectToDatabase();
 
         const usersCollection = db.collection('users');
 

@@ -2,6 +2,13 @@ import bcrypt from 'bcryptjs';
 import connectToDatabase from '../../utils/connect.js';
 import { authenticateUser, isAdmin, setAuthCookie, shouldRenew } from '../../utils/auth.js';
 import { copyName, currentUsername } from '../../utils/rename.js';
+import { countHit, overLimit, clientIp } from '../../utils/rate-limit.js';
+
+// Wrong passwords allowed per FAIL_WINDOW_MS, from one IP address and for one account (utils/rate-limit.js).
+const FAIL_WINDOW_MS = 15 * 60 * 1000;
+const FAILS_PER_IP = 20;
+const FAILS_PER_ACCOUNT = 10;
+const TOO_MANY = { message: 'Too many tries. Wait 15 minutes and try again.' };
 
 export default async (req, res) => {
 
@@ -42,16 +49,30 @@ export default async (req, res) => {
     }
 
     try {
-        const { db } = await connectToDatabase();
-
         // Accept either an email or a username. The form field may still be
         // named "email", so fall back to that for backwards compatibility.
-        const identifier = (req.body?.identifier ?? req.body?.email)?.trim();
+        const sent = req.body?.identifier ?? req.body?.email;
+        const identifier = typeof sent === 'string' ? sent.trim() : '';
         const password = req.body?.password;
 
-        if (!identifier || !password) {
+        // Only plain strings go into the lookup (an object there would be a query of its own).
+        if (!identifier || typeof password !== 'string' || !password) {
             return res.status(400).json({ message: 'Missing required fields.' });
         }
+
+        const ipKey = `login-ip:${clientIp(req)}`;
+        const accountKey = `login-account:${identifier.toLowerCase()}`;
+        const [ipBlocked, accountBlocked] = await Promise.all([
+            overLimit(ipKey, FAILS_PER_IP, FAIL_WINDOW_MS),
+            overLimit(accountKey, FAILS_PER_ACCOUNT, FAIL_WINDOW_MS),
+        ]);
+        if (ipBlocked || accountBlocked) return res.status(429).json(TOO_MANY);
+
+        const { db } = await connectToDatabase();
+        const failed = async () => {
+            await Promise.all([countHit(ipKey, FAIL_WINDOW_MS), countHit(accountKey, FAIL_WINDOW_MS)]);
+            return res.status(401).json({ message: 'Invalid credentials.' });
+        };
 
         const usersCollection = db.collection('users');
 
@@ -65,14 +86,10 @@ export default async (req, res) => {
         const user = await usersCollection.findOne(query, {
             collation: { locale: 'en', strength: 2 }
         });
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials.' });
-        }
+        if (!user) return await failed();
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials.' });
-        }
+        if (!isMatch) return await failed();
 
         const tokenPayload = { 
             userId: user._id, 

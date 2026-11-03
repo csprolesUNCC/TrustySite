@@ -34,9 +34,11 @@ export default async (req, res) => {
         const db = await connectToDatabase();
         const collection = db.collection('click_game');
 
+        // The page shows the top 50 (MAX_ROWS in pages/leaderboard.html); profiles work out ranks on their own.
         const leaderboard = await collection
-            .find({}, { projection: { _id: 0, username: 1, clicks: 1 } })
+            .find({ clicks: { $gt: 0 } }, { projection: { _id: 0, username: 1, clicks: 1 } })
             .sort({ clicks: -1 })
+            .limit(50)
             .toArray();
 
         return res.status(200).json(leaderboard);
