@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Flappy Trusty — Trusty da Horse</title>
-    <meta name="description" content="Flappy Trusty: Test your patience with this retro arcade physics game! How far can Trusty the Horse fly through the deadly pipes?">
+    <meta name="description" content="Flappy Trusty: Test your patience with this retro arcade physics game! How far can Trusty the Horse fly through the deadly pipes? Plus a new daily course every midnight.">
     <link rel="canonical" href="https://trustydahorse.com/pages/games/flappy.html">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
@@ -46,6 +46,11 @@
                     </button>
                 </div>
             </div>
+            <!-- Free flight is the classic game; the daily course is the same pencils for everyone today (scripts/flappy-daily.js) -->
+            <div class="mode-switch" role="group" aria-label="Game mode">
+                <button class="mode-btn" type="button" data-mode="free" aria-pressed="true">Free flight</button>
+                <button class="mode-btn" type="button" data-mode="daily" aria-pressed="false">Daily course <span class="mode-tag">New</span></button>
+            </div>
         </div>
 
         <div class="container game-layout">
@@ -56,11 +61,12 @@
                     <p class="focus-hint">Turn your phone sideways for a bigger view.</p>
 
                     <div class="stage-overlay" id="overlay-start">
-                        <p class="overlay-kicker">Get ready</p>
+                        <p class="overlay-kicker" id="start-kicker">Get ready</p>
                         <h2 class="overlay-title" id="start-title">Loading&hellip;</h2>
-                        <p class="overlay-sub">Click, tap or press <kbd>Space</kbd> to flap. Guide Trusty through the gaps.</p>
+                        <p class="overlay-sub" id="start-sub">Click, tap or press <kbd>Space</kbd> to flap. Guide Trusty through the gaps.</p>
                         <div class="overlay-actions">
                             <button class="btn btn-lg" type="button" id="start-btn" disabled>Start flapping</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="free-btn" hidden>Free flight</button>
                         </div>
                         <p class="overlay-hint desktop-only">Press <kbd>P</kbd> to pause.</p>
                     </div>
@@ -79,7 +85,7 @@
                         <p class="overlay-sub" id="over-sub"></p>
                         <div class="overlay-actions">
                             <button class="btn btn-lg" type="button" id="again-btn">Play again</button>
-                            <a class="btn btn-lg btn-outline" href="/pages/leaderboard.html#flappy">Leaderboard</a>
+                            <a class="btn btn-lg btn-outline" id="over-board" href="/pages/leaderboard.html#flappy">Leaderboard</a>
                         </div>
                     </div>
                 </div>
@@ -89,10 +95,10 @@
                 <div class="panel">
                     <h2 class="panel-title">Your scores</h2>
                     <div class="stat-grid">
-                        <div class="stat"><span class="stat-label">Last flight</span><span class="stat-value" id="stat-last">0</span></div>
+                        <div class="stat"><span class="stat-label" id="stat-last-label">Last flight</span><span class="stat-value" id="stat-last">0</span></div>
                         <div class="stat"><span class="stat-label" id="stat-best-label">Best</span><span class="stat-value" id="stat-best">0</span></div>
                     </div>
-                    <p class="side-note" data-auth-show="out">Playing as a guest, so your best only saves on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboard.</p>
+                    <p class="side-note" data-auth-show="out">Playing as a guest, so your scores only save on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboards.</p>
                 </div>
 
                 <div class="panel">
@@ -101,13 +107,15 @@
                         <li><span class="keys"><kbd>Space</kbd><kbd>&uarr;</kbd></span> Flap (or click / tap the game)</li>
                         <li class="desktop-only"><span class="keys"><kbd>P</kbd></span> Pause</li>
                         <li><span class="keys">&#127942;</span> Fly through a gap to score a point. Something happens at 10&hellip; and at 20.</li>
+                        <li><span class="keys">&#128197;</span> Daily course: the same pencils for everyone, new every midnight. Three tries; your best counts.</li>
                     </ul>
                 </div>
 
                 <div class="panel">
-                    <h2 class="panel-title">Trusty's Top Flaps</h2>
-                    <ol class="board" id="board" aria-label="Flappy Trusty top 10"></ol>
-                    <div class="panel-foot"><a class="text-link" href="/pages/leaderboard.html#flappy">Full leaderboard</a></div>
+                    <h2 class="panel-title" id="board-title">Trusty's Top Flaps</h2>
+                    <ol class="board" id="board" aria-labelledby="board-title"></ol>
+                    <p class="side-note" id="board-note" hidden></p>
+                    <div class="panel-foot"><a class="text-link" id="board-link" href="/pages/leaderboard.html#flappy">Full leaderboard</a></div>
                 </div>
             </aside>
         </div>
@@ -116,7 +124,8 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
+        import { h, onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
+        import { courseNumber, courseRandom, DAILY_TRIES } from '/scripts/flappy-daily.js';
         import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
         import {
             loadImage, inkSprite, setupCanvas, offscreen, drawRuledPaper, sound, bindMuteButton,
@@ -159,6 +168,19 @@
         let best = 0;
         let sprites;
         let backgrounds;
+        let lastFlight = 0;
+
+        // Daily course (scripts/flappy-daily.js): the same pencils for everyone today, from the day's random numbers
+        // instead of Math.random, and DAILY_TRIES tries. Logged-in players' tries and best are on the server
+        // (utils/flappy-daily.js); guests' are kept on the device.
+        const DAILY_KEY = 'trusty:flappy-daily'; // { day, best, tries }
+        let mode = location.hash === '#daily' ? 'daily' : 'free';
+        let rng = Math.random;
+        let skew = 0; // how far this device's clock is from the site's, so everyone switches courses together
+        const clock = () => Date.now() + skew;
+        let daily = { day: courseNumber(), best: 0, tries: 0 };
+        const triesLeft = () => Math.max(0, DAILY_TRIES - daily.tries);
+        const canFly = () => mode === 'free' || triesLeft() > 0;
 
         const clouds = Array.from({ length: 4 }, (_, i) => ({ x: 120 + i * 210 + Math.random() * 60, y: 70 + Math.random() * 200, s: 0.7 + Math.random() * 0.6 }));
         const bubbles = Array.from({ length: 16 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: 3 + Math.random() * 7 }));
@@ -347,9 +369,10 @@
                 ctx.font = '700 30px Caveat, "Segoe Print", cursive';
                 ctx.lineWidth = 6;
                 ctx.strokeStyle = underwater ? '#1b3f7d' : '#fdfbf4';
-                ctx.strokeText(`best: ${fmt(best)}`, 72, 44);
+                const hud = mode === 'daily' ? `course #${daily.day} · best today: ${fmt(daily.best)}` : `best: ${fmt(best)}`;
+                ctx.strokeText(hud, 72, 44);
                 ctx.fillStyle = underwater ? 'rgba(255,255,255,.9)' : '#d6334b';
-                ctx.fillText(`best: ${fmt(best)}`, 72, 44);
+                ctx.fillText(hud, 72, 44);
                 if (state === 'ready') {
                     ctx.textAlign = 'center';
                     ctx.font = '700 44px Caveat, "Segoe Print", cursive';
@@ -368,6 +391,7 @@
             pipeTimer = 0;
             score = 0;
             form = 'classic';
+            rng = mode === 'daily' ? courseRandom(daily.day) : Math.random;
         }
 
         function showOverlay(name) {
@@ -380,7 +404,14 @@
         }
 
         function begin() {
+            if (mode === 'daily' && courseNumber(clock()) !== daily.day) {
+                // Midnight passed while the page was open: today's course is a new one.
+                loadDaily();
+                return;
+            }
+            if (!canFly()) return;
             state = 'playing';
+            lockModes(true);
             showOverlay(null);
             bringIntoView();
             flap();
@@ -410,7 +441,7 @@
 
             pipeTimer += dt;
             if (pipeTimer > SPAWN_EVERY) {
-                pipes.push({ x: W, prevX: W, top: Math.floor(Math.random() * 250) + 50 });
+                pipes.push({ x: W, prevX: W, top: Math.floor(rng() * 250) + 50 });
                 pipeTimer = 0;
             }
             for (const p of pipes) p.x -= PIPE_SPEED * dt;
@@ -463,9 +494,13 @@
         async function gameOver() {
             state = 'over';
             overAt = performance.now();
+            lockModes(false);
             const final = score;
-            $('stat-last').textContent = fmt(final);
+            lastFlight = final;
             $('over-score').textContent = fmt(final);
+            setAgain();
+            if (mode === 'daily') return dailyOver(final);
+            $('over-badge').textContent = 'New personal best!';
 
             let isBest = false;
             if (loggedIn) {
@@ -485,7 +520,9 @@
             if (loggedIn && isBest) await submitScore(final);
         }
 
-        async function submitScore(final) {
+        // `quiet`: a daily flight that's also an all-time best saves it without changing the game-over message.
+        async function submitScore(final, { quiet = false } = {}) {
+            const say = (text) => { if (!quiet) $('over-sub').textContent = text; };
             try {
                 const res = await fetch('/api/flappy-api', {
                     method: 'POST',
@@ -493,19 +530,166 @@
                     body: JSON.stringify({ score: final }),
                 });
                 if (res.status === 401) {
-                    $('over-sub').textContent = 'Your session expired, so this score wasn’t saved. Log in again to save scores.';
+                    say('Your session expired, so this score wasn’t saved. Log in again to save scores.');
                     return;
                 }
                 if (!res.ok) throw new Error(String(res.status));
-                $('over-sub').textContent = 'High score saved to the leaderboard!';
-                toast('High score saved!', 'success');
+                say('High score saved to the leaderboard!');
+                toast(quiet ? 'That’s a new all-time best too!' : 'High score saved!', 'success');
                 await Promise.all([loadPersonalBest(), loadBoard()]);
             } catch {
-                $('over-sub').textContent = 'Couldn’t save your score. Check your connection.';
+                say('Couldn’t save your score. Check your connection.');
             }
         }
 
+        /* ---------- Daily course ---------- */
+
+        function dailySummary() {
+            const left = triesLeft();
+            const text = `Today’s best: ${fmt(daily.best)}. ${left > 0
+                ? `${left} ${left === 1 ? 'try' : 'tries'} left.`
+                : `That’s all ${DAILY_TRIES} tries. A new course starts at midnight Eastern.`}`;
+            return loggedIn ? text : `${text} Log in to get on today’s board.`;
+        }
+
+        async function dailyOver(final) {
+            const isBest = final > daily.best && final > 0;
+            daily = { day: daily.day, best: Math.max(daily.best, final), tries: daily.tries + 1 };
+            $('over-badge').textContent = 'New best today!';
+            $('over-badge').hidden = !isBest;
+            $('over-sub').textContent = dailySummary();
+            setAgain();
+            renderBest();
+            showOverlay('over');
+            $('again-btn').focus({ preventScroll: true });
+
+            // It's still Flappy Trusty: a daily flight can be a new all-time best as well.
+            if (loggedIn && final > best && final > 0) {
+                best = final;
+                submitScore(final, { quiet: true });
+            } else if (!loggedIn && saveLocalBest('flappy', final)) {
+                best = final;
+            }
+            if (!loggedIn) {
+                try { localStorage.setItem(DAILY_KEY, JSON.stringify(daily)); } catch { /* storage blocked */ }
+                return;
+            }
+            try {
+                const res = await fetch('/api/leaderboard?action=flappy-daily', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ day: daily.day, score: final }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    $('over-sub').textContent = 'Your session expired, so this flight wasn’t saved. Log in again to get on today’s board.';
+                    return;
+                }
+                if (res.status === 409 && data.day !== daily.day) {
+                    $('over-sub').textContent = 'A new course started at midnight, so that flight was on yesterday’s. Today’s is ready!';
+                    await loadDaily();
+                    return;
+                }
+                if (!res.ok && res.status !== 409) throw new Error(String(res.status));
+                // The server's count wins (it also knows about flights on other devices).
+                daily = { day: daily.day, best: Number(data.best) || daily.best, tries: Number(data.tries) || daily.tries };
+                $('over-sub').textContent = dailySummary();
+                setAgain();
+                renderBest();
+                if (isBest && res.ok) toast('Saved to today’s board!', 'success');
+                loadBoard();
+            } catch {
+                $('over-sub').textContent = 'Couldn’t save this flight. Check your connection.';
+            }
+        }
+
+        // Today's tries and best: the server's for logged-in players, this device's for guests.
+        async function loadDaily() {
+            const day = courseNumber(clock());
+            let next = { day, best: 0, tries: 0 };
+            if (loggedIn) {
+                try {
+                    const res = await fetch('/api/leaderboard?action=flappy-daily&personal=1', { cache: 'no-store' });
+                    const data = res.ok ? await res.json() : null;
+                    if (data && data.day === day) next = { day, best: Number(data.best) || 0, tries: Math.min(DAILY_TRIES, Number(data.tries) || 0) };
+                } catch { /* show a fresh day */ }
+            } else {
+                try {
+                    const kept = JSON.parse(localStorage.getItem(DAILY_KEY));
+                    if (kept && kept.day === day) next = { day, best: Math.max(0, Number(kept.best) || 0), tries: Math.min(DAILY_TRIES, Math.max(0, Number(kept.tries) || 0)) };
+                } catch { /* storage blocked or unreadable */ }
+            }
+            const newDay = next.day !== daily.day;
+            daily = next;
+            if (state === 'playing' || state === 'paused') return;
+            if (mode === 'daily') {
+                reset();
+                if (state === 'ready' || state === 'over') state = 'intro';
+                if (state === 'intro') { renderStart(); showOverlay('start'); }
+                if (newDay) loadBoard();
+            }
+            renderBest();
+        }
+
+        // Everyone should switch courses at the same moment, even with a phone set to the wrong time, so use the
+        // site's clock when this device's is off (every response from the site says what time it is).
+        async function syncClock() {
+            try {
+                const sent = Date.now();
+                const res = await fetch(location.pathname, { method: 'HEAD', cache: 'no-store' });
+                const received = Date.now();
+                const server = Date.parse(res.headers.get('Date') || '');
+                if (!Number.isFinite(server)) return;
+                const offset = server + 500 - (sent + received) / 2; // the header is rounded down to the second
+                skew = Math.abs(offset) > 1500 ? offset : 0;
+            } catch { /* keep this device's clock */ }
+        }
+
+        /* ---------- Modes ---------- */
+
+        function renderStart() {
+            const isDaily = mode === 'daily';
+            const left = triesLeft();
+            $('start-kicker').textContent = isDaily ? `Daily course #${daily.day}` : 'Get ready';
+            $('start-title').textContent = !isDaily ? 'Tap to flap' : left > 0 ? 'Same pencils for everyone' : 'Done for today!';
+            $('start-sub').replaceChildren(...(!isDaily
+                ? ['Click, tap or press ', h('kbd', null, 'Space'), ' to flap. Guide Trusty through the gaps.']
+                : left > 0
+                    ? [`Everyone flies this exact course today. ${DAILY_TRIES} tries and your best one counts: `, h('strong', null, `${left} left`), '.']
+                    : [`Your best today: ${fmt(daily.best)}. A new course starts at midnight Eastern.`]));
+            $('start-btn').hidden = isDaily && left === 0;
+            $('free-btn').hidden = !(isDaily && left === 0);
+        }
+
+        function setAgain() {
+            const left = triesLeft();
+            $('again-btn').textContent = mode === 'free' ? 'Play again' : left > 0 ? `Try again (${left} left)` : 'Free flight';
+            $('over-board').href = `/pages/leaderboard.html#${mode === 'daily' ? 'daily' : 'flappy'}`;
+        }
+
+        // No switching mid-flight (a daily flight can't be dodged that way).
+        function lockModes(locked) {
+            for (const b of document.querySelectorAll('.mode-btn')) b.disabled = locked;
+        }
+
+        function setMode(next, { updateHash = true } = {}) {
+            if (state === 'playing' || state === 'paused') return;
+            mode = next === 'daily' ? 'daily' : 'free';
+            for (const b of document.querySelectorAll('.mode-btn')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+            if (updateHash) history.replaceState(null, '', mode === 'daily' ? '#daily' : location.pathname + location.search);
+            reset();
+            renderBest();
+            renderSkeleton($('board'), 5);
+            loadBoard();
+            if (mode === 'daily' && courseNumber(clock()) !== daily.day) loadDaily();
+            if (state === 'loading') return;
+            state = 'intro';
+            renderStart();
+            showOverlay('start');
+        }
+
         function restart() {
+            if (!canFly()) return;
             reset();
             state = 'ready';
             showOverlay(null);
@@ -532,12 +716,21 @@
             if (state === 'playing') flap();
             else if (state === 'intro' || state === 'ready') begin();
             else if (state === 'paused') resume();
-            else if (state === 'over' && performance.now() - overAt > 450) restart();
+            else if (state === 'over' && performance.now() - overAt > 450 && canFly()) restart();
         }
 
         /* ---------- Scores ---------- */
 
         function renderBest() {
+            if (mode === 'daily') {
+                $('stat-last-label').textContent = 'Tries left';
+                $('stat-last').textContent = String(triesLeft());
+                $('stat-best-label').textContent = loggedIn ? 'Best today' : 'Best today (this device)';
+                $('stat-best').textContent = fmt(daily.best);
+                return;
+            }
+            $('stat-last-label').textContent = 'Last flight';
+            $('stat-last').textContent = fmt(lastFlight);
             $('stat-best').textContent = fmt(best);
             $('stat-best-label').textContent = loggedIn ? 'Best' : 'Best (this device)';
         }
@@ -555,11 +748,24 @@
 
         async function loadBoard() {
             const list = $('board');
+            const key = mode === 'daily' ? 'daily' : 'flappy';
+            const day = daily.day;
+            $('board-title').textContent = key === 'daily' ? `Today’s course #${day}` : 'Trusty’s Top Flaps';
+            $('board-link').href = `/pages/leaderboard.html#${key}`;
+            $('board-note').hidden = true;
             if (!list.children.length) renderSkeleton(list, 5);
             try {
-                const entries = await fetchBoard('flappy');
-                if (entries.length) renderList(list, entries.slice(0, 10), { key: 'flappy' });
-                else renderStatus(list, 'No scores yet! Be the first.');
+                const [entries, yesterday] = await Promise.all([
+                    fetchBoard(key),
+                    key === 'daily' && day > 1 ? fetchBoard('daily', `&day=${day - 1}`).catch(() => []) : [],
+                ]);
+                if ((mode === 'daily' ? 'daily' : 'flappy') !== key) return; // switched modes while it loaded
+                if (entries.length) renderList(list, entries.slice(0, 10), { key });
+                else renderStatus(list, key === 'daily' ? 'Nobody’s flown today’s course yet. Be the first!' : 'No scores yet! Be the first.');
+                if (yesterday.length) {
+                    $('board-note').textContent = `Yesterday’s winner: ${yesterday[0].name}, with ${fmt(yesterday[0].score)}.`;
+                    $('board-note').hidden = false;
+                }
             } catch {
                 renderStatus(list, 'Couldn’t load the leaderboard.', 'error');
             }
@@ -587,7 +793,14 @@
         document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
         $('start-btn').addEventListener('click', begin);
         $('resume-btn').addEventListener('click', resume);
-        $('again-btn').addEventListener('click', () => { if (performance.now() - overAt > 450) restart(); });
+        $('again-btn').addEventListener('click', () => {
+            if (performance.now() - overAt <= 450) return;
+            if (canFly()) restart();
+            else setMode('free');
+        });
+        $('free-btn').addEventListener('click', () => setMode('free'));
+        for (const b of document.querySelectorAll('.mode-btn')) b.addEventListener('click', () => setMode(b.dataset.mode));
+        window.addEventListener('hashchange', () => setMode(location.hash === '#daily' ? 'daily' : 'free', { updateHash: false }));
         $('login-link').href = loginHref();
         bindMuteButton($('mute-btn'));
         bindFocusMode(stage, $('focus-btn'), () => stage.focus({ preventScroll: true }));
@@ -598,16 +811,18 @@
             if (changed) {
                 best = loggedIn ? 0 : localBest('flappy');
                 loadPersonalBest();
+                loadDaily();
             }
             renderBest();
         });
 
-        loadBoard();
+        setMode(mode, { updateHash: false });
         sessionReady.then(loadPersonalBest);
+        syncClock().then(() => { if (courseNumber(clock()) !== daily.day) loadDaily(); });
 
         Promise.all([loadArt(), fontsReady]).then(() => {
             state = 'intro';
-            $('start-title').textContent = 'Tap to flap';
+            renderStart();
             $('start-btn').disabled = false;
             requestAnimationFrame(frame);
         }).catch(() => {

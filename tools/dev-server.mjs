@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { courseNumber, DAILY_TRIES } from '../scripts/flappy-daily.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,8 +23,9 @@ const NAMES = ['carson', 'luke', 'hayhound', 'neigh_sayer', 'stickfig', 'pencilp
 const board = (scoreKey, nameKey, top) => NAMES.map((name, i) => ({ [nameKey]: name, [scoreKey]: top - i * Math.round(top / 14) }));
 const loggedIn = (req) => /(?:^|;\s*)mock=in(?:;|$)/.test(req.headers.cookie || '');
 const today = () => new Date().toISOString().slice(0, 10);
+let daily = { day: 0, best: 0, tries: 0 }; // the logged-in player's Daily Flappy, until the server restarts
 
-function api(req, url) {
+function api(req, url, body) {
   const p = url.pathname;
   const action = url.searchParams.get('action');
   const me = loggedIn(req);
@@ -34,7 +36,19 @@ function api(req, url) {
   if (p === '/api/leaderboard') {
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'trustis') return [200, url.searchParams.get('personal') ? { highScore: 5000 } : board('score', 'name', 90000)];
-    if (action === 'flappy-daily') return [200, url.searchParams.get('personal') ? { highScore: 4 } : board('score', 'name', 30)];
+    if (action === 'flappy-daily') {
+      const day = courseNumber();
+      if (daily.day !== day) daily = { day, best: 0, tries: 0 };
+      if (req.method === 'POST') {
+        if (!me) return [401, { error: 'Authentication required' }];
+        if (body.day !== day) return [409, { error: 'New course', day }];
+        if (daily.tries >= DAILY_TRIES) return [409, { error: 'Out of tries', ...daily }];
+        daily = { day, best: Math.max(daily.best, Number(body.score) || 0), tries: daily.tries + 1 };
+        return [200, daily];
+      }
+      if (url.searchParams.get('personal')) return [200, me ? daily : { day, best: 0, tries: 0 }];
+      return [200, board('score', 'name', 30)];
+    }
     if (action === 'profile' && req.method === 'GET') {
       const u = url.searchParams.get('u') || 'carson';
       return [200, {
@@ -72,9 +86,11 @@ export function startServer(port = 8787) {
       let raw = '';
       req.on('data', (c) => { raw += c; });
       req.on('end', () => {
-        const [status, body] = api(req, url);
+        let sent = {};
+        try { sent = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
+        const [status, answer] = api(req, url, sent);
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        res.end(JSON.stringify(body));
+        res.end(JSON.stringify(answer));
       });
       return;
     }

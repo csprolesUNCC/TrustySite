@@ -22,6 +22,7 @@ const CASE_INSENSITIVE = { locale: 'en', strength: 2 }; // the same collation re
 const NAME_COPIES = [
     ['click_game', 'username'],
     ['scores', 'name'], // Flappy Trusty
+    ['flappy_daily', 'name'], // Daily Flappy (every course they've flown)
     ['draw_scores', 'name'],
     ['trustis_scores', 'name'],
     ['trustle', 'username'],

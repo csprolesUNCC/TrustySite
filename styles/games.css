@@ -227,6 +227,17 @@ kbd {
    Flappy Trusty
    ========================================================================= */
 .flappy-stage { --ar: 1.3333; cursor: pointer; }
+/* Flappy's Free flight / Daily course switch, under the title */
+.mode-switch { display: inline-flex; margin-top: 14px; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; background: var(--card); box-shadow: 2px 2px 0 var(--ink); }
+.mode-btn { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border: 0; background: transparent; color: var(--ink); font-weight: 750; font-size: .95rem; touch-action: manipulation; }
+.mode-btn + .mode-btn { border-left: 2px solid var(--ink); }
+.mode-btn[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.mode-btn:not([aria-pressed="true"]):not(:disabled):hover { background: var(--paper-deep); }
+.mode-btn:disabled { cursor: not-allowed; }
+.mode-btn:disabled:not([aria-pressed="true"]) { color: var(--pencil); }
+.mode-btn:focus-visible { outline-offset: -5px; outline-color: var(--highlight); }
+.mode-tag { font-family: var(--font-hand); font-size: 1.1rem; font-weight: 700; line-height: 1; color: var(--red); }
+.mode-btn[aria-pressed="true"] .mode-tag { color: var(--highlight); }
 
 /* =========================================================================
    Draw Trusty

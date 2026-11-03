@@ -4,12 +4,14 @@ import trustis from '../utils/trustis.js';
 import adminApi from '../utils/moderation.js';
 import latestUpdate from '../utils/update.js';
 import rename from '../utils/rename.js';
+import flappyDaily from '../utils/flappy-daily.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), changing your username (?action=rename, see
-    // utils/rename.js), the Trustis board (?action=trustis, see utils/trustis.js), the admin panel
-    // (?action=admin, see utils/moderation.js) and the home page's Latest Update (?action=update, see
-    // utils/update.js) live here too to save Vercel functions.
+    // utils/rename.js), the Trustis board (?action=trustis, see utils/trustis.js), Daily Flappy's board
+    // (?action=flappy-daily, see utils/flappy-daily.js), the admin panel (?action=admin, see
+    // utils/moderation.js) and the home page's Latest Update (?action=update, see utils/update.js) live here
+    // too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
     }
@@ -18,6 +20,9 @@ export default async (req, res) => {
     }
     if (req.query.action === 'trustis') {
         return trustis(req, res);
+    }
+    if (req.query.action === 'flappy-daily') {
+        return flappyDaily(req, res);
     }
     if (req.query.action === 'admin') {
         return adminApi(req, res);

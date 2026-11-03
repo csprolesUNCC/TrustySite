@@ -11,7 +11,7 @@ test('every joke has a setup and punchline, 90 characters at most together', () 
   for (const { setup, punchline } of JOKES) {
     assert.equal(typeof setup, 'string');
     assert.equal(typeof punchline, 'string');
-    assert.ok(setup && punchline);
+    assert.ok(setup, 'a joke needs a setup (the punchline can be empty for a one-liner)');
     assert.ok(setup.length + punchline.length <= 90, `too long: "${setup} ${punchline}"`);
     assert.ok(!setups.has(setup), `told twice: "${setup}"`);
     setups.add(setup);

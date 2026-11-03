@@ -25,6 +25,13 @@ export const BOARDS = {
     format: (n) => fmt(n),
     unit: 'points',
   },
+  daily: {
+    url: '/api/leaderboard?action=flappy-daily',
+    label: 'Daily Flappy',
+    normalize: (e) => ({ name: e.name, score: e.score }),
+    format: (n) => fmt(n),
+    unit: 'points',
+  },
   draw: {
     url: '/api/draw-api?action=get_leaderboard',
     label: 'Draw Trusty',
@@ -41,9 +48,10 @@ export const BOARDS = {
   },
 };
 
-export async function fetchBoard(key) {
+// `query` adds to the board's URL (Daily Flappy takes &day=<n> for an earlier course).
+export async function fetchBoard(key, query = '') {
   const board = BOARDS[key];
-  const res = await fetch(board.url);
+  const res = await fetch(board.url + query);
   if (!res.ok) throw new Error(`Leaderboard request failed (${res.status})`);
   const data = await res.json();
   if (!Array.isArray(data)) throw new Error('Unexpected leaderboard response');
