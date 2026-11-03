@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -43,7 +42,7 @@
 
             <div class="grid" style="--grid-min: 290px">
                 <article class="card card-link">
-                    <div class="card-media"><img src="/images/media-tv.svg" alt="" width="400" height="300" loading="lazy" decoding="async"></div>
+                    <div class="card-media"><img src="/images/media-tv.svg" alt="" width="400" height="300" fetchpriority="high" decoding="async"></div>
                     <div class="card-body">
                         <ul class="tags"><li class="tag tag-gold">Live</li><li class="tag">3 channels</li></ul>
                         <h3 class="card-title"><a href="/pages/tv.html">Trusty TV</a></h3>
@@ -51,7 +50,7 @@
                     </div>
                 </article>
                 <article class="card card-link">
-                    <div class="card-media"><img src="/images/media-radio.svg" alt="" width="400" height="300" loading="lazy" decoding="async"></div>
+                    <div class="card-media"><img src="/images/media-radio.svg" alt="" width="400" height="300" decoding="async"></div>
                     <div class="card-body">
                         <ul class="tags"><li class="tag tag-new">New</li><li class="tag tag-gold">Live</li></ul>
                         <h3 class="card-title"><a href="/pages/radio.html">Trusty Radio</a></h3>

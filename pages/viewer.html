@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
@@ -40,7 +39,7 @@
                     id="viewer"
                     src="/models/horse_glb.glb"
                     alt="Trusty's 3D Model of World Domination"
-                    poster="/images/3dSample.jpg"
+                    poster="/images/3dSample.webp"
                     shadow-intensity="1.5"
                     exposure="1.2"
                     camera-controls
@@ -66,12 +65,14 @@
         const viewer = document.getElementById('viewer');
         const spin = document.getElementById('toggle-spin');
 
-        spin.addEventListener('click', () => {
-            const on = !viewer.autoRotate;
+        function setSpin(on) {
             viewer.autoRotate = on;
             spin.setAttribute('aria-pressed', String(on));
             spin.textContent = on ? 'Pause spin' : 'Resume spin';
-        });
+        }
+        spin.addEventListener('click', () => setSpin(!viewer.autoRotate));
+        // Viewers who've asked their device for less motion start with him standing still.
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) setSpin(false);
 
         document.getElementById('reset-view').addEventListener('click', () => {
             viewer.cameraOrbit = 'auto auto auto';

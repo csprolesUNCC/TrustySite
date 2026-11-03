@@ -24,9 +24,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -48,7 +47,7 @@
                     </div>
                 </div>
                 <figure class="hero-art">
-                    <button type="button" class="hero-neigh" id="hero-neigh" aria-label="Trusty da Horse: a smiling stick-figure horse with a round head and a very long back. Click him to hear him neigh."><img class="ink trusty-bob" src="/images/trusty.png" alt="" width="1536" height="1173" fetchpriority="high"></button>
+                    <button type="button" class="hero-neigh" id="hero-neigh" aria-label="Trusty da Horse: a smiling stick-figure horse with a round head and a very long back. Click him to hear him neigh."><img class="ink trusty-bob" src="/images/trusty.webp" alt="" width="1536" height="1173" fetchpriority="high"></button>
                     <!-- Filled in from scripts/jokes.js by the second script at the bottom -->
                     <figcaption class="joke" id="joke" hidden>
                         <span class="joke-label">Trusty's joke of the day</span>
@@ -101,7 +100,7 @@
 
             <div class="grid" style="--grid-min: 230px">
                 <article class="card card-link">
-                    <div class="card-media"><img src="/images/trustle_thumbnail.png" alt="" width="1200" height="900" loading="lazy" decoding="async"></div>
+                    <div class="card-media"><img src="/images/trustle_thumbnail.webp" alt="" width="800" height="600" loading="lazy" decoding="async"></div>
                     <div class="card-body">
                         <ul class="tags"><li class="tag tag-new">New</li><li class="tag tag-green">Daily</li></ul>
                         <h3 class="card-title"><a href="/pages/games/trustle.html">Trustle</a></h3>
@@ -109,7 +108,7 @@
                     </div>
                 </article>
                 <article class="card card-link">
-                    <div class="card-media"><img src="/images/trustis.png" alt="" width="1200" height="900" loading="lazy" decoding="async"></div>
+                    <div class="card-media"><img src="/images/trustis.webp" alt="" width="800" height="600" loading="lazy" decoding="async"></div>
                     <div class="card-body">
                         <ul class="tags"><li class="tag tag-new">New</li><li class="tag tag-gold">Leaderboard</li></ul>
                         <h3 class="card-title"><a href="/pages/games/trustis.html">Trustis</a></h3>
@@ -117,7 +116,7 @@
                     </div>
                 </article>
                 <article class="card card-link">
-                    <div class="card-media"><img src="/images/flappy_thumbnail.png" alt="" width="1200" height="900" loading="lazy" decoding="async"></div>
+                    <div class="card-media"><img src="/images/flappy_thumbnail.webp" alt="" width="800" height="600" loading="lazy" decoding="async"></div>
                     <div class="card-body">
                         <ul class="tags"><li class="tag tag-gold">Leaderboard</li></ul>
                         <h3 class="card-title"><a href="/pages/games/flappy.html">Flappy Trusty</a></h3>
@@ -125,7 +124,7 @@
                     </div>
                 </article>
                 <article class="card card-link">
-                    <div class="card-media"><img src="/images/draw_thumbnail.png" alt="" width="1200" height="900" loading="lazy" decoding="async"></div>
+                    <div class="card-media"><img src="/images/draw_thumbnail.webp" alt="" width="800" height="600" loading="lazy" decoding="async"></div>
                     <div class="card-body">
                         <ul class="tags"><li class="tag tag-gold">Leaderboard</li></ul>
                         <h3 class="card-title"><a href="/pages/games/draw.html">Draw Trusty</a></h3>
@@ -138,7 +137,7 @@
         <section class="section-tight container" aria-labelledby="comics-title">
             <div class="feature">
                 <figure class="feature-media polaroid taped">
-                    <img src="/images/comics/datractorcrew/s1/e1/p1.jpg" alt="Hand-drawn cover of Da Tractor Crew, Season 1, on lined notebook paper" width="1022" height="1330" loading="lazy" decoding="async">
+                    <img src="/images/comics/datractorcrew/s1/e1/cover.webp" alt="Hand-drawn cover of Da Tractor Crew, Season 1, on lined notebook paper" width="640" height="833" loading="lazy" decoding="async">
                     <figcaption>Season 1, Episode 1</figcaption>
                 </figure>
                 <div class="feature-copy">
@@ -166,7 +165,7 @@
                     </div>
                 </article>
                 <article class="card card-link teaser">
-                    <img class="teaser-avatar" src="/images/chat_pic.jpg" alt="" width="96" height="96" loading="lazy" decoding="async">
+                    <img class="teaser-avatar" src="/images/chat_pic-240.webp" alt="" width="96" height="96" loading="lazy" decoding="async">
                     <div>
                         <p class="speech">whaddup</p>
                         <h3 class="card-title"><a href="/pages/trustyGPT.html">TrustyGPT</a></h3>
@@ -174,7 +173,7 @@
                     </div>
                 </article>
                 <article class="card card-link teaser">
-                    <img class="teaser-thumb" src="/images/3dSample.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async">
+                    <img class="teaser-thumb" src="/images/3dSample-640.webp" alt="" width="640" height="360" loading="lazy" decoding="async">
                     <div>
                         <h3 class="card-title"><a href="/pages/viewer.html">Trusty in 3 Dimensions!</a></h3>
                         <p>Spin him, zoom in, or put him in your room with AR.</p>

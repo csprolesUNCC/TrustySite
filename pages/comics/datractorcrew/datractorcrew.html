@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -34,10 +33,11 @@
             <p class="lead">Where it all started! Straight from Mrs. Cabasa's 8th Grade Math Class.</p>
         </header>
 
-        <section class="section-tight container" aria-label="Seasons">
+        <section class="section-tight container" aria-labelledby="seasons-title">
+            <h2 class="sr-only" id="seasons-title">Seasons</h2>
             <div class="grid" style="--grid-min: 210px">
                 <article class="card card-link">
-                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s1/e1/p1.jpg" alt="" width="1022" height="1330" loading="lazy" decoding="async"></div>
+                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s1/e1/cover.webp" alt="" width="640" height="833" fetchpriority="high" decoding="async"></div>
                     <div class="card-body">
                         <h3 class="card-title"><a href="/pages/comics/datractorcrew/season1.html">Season 1</a></h3>
                         <p class="episode-meta">5 episodes</p>
@@ -52,14 +52,14 @@
                     </div>
                 </article>
                 <article class="card card-link">
-                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s3/e1/p1.jpg" alt="" width="1008" height="1330" loading="lazy" decoding="async"></div>
+                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s3/e1/cover.webp" alt="" width="640" height="844" decoding="async"></div>
                     <div class="card-body">
                         <h3 class="card-title"><a href="/pages/comics/datractorcrew/season3.html">Season 3</a></h3>
                         <p class="episode-meta">3 episodes</p>
                     </div>
                 </article>
                 <article class="card card-link">
-                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s4/e1/p1.jpg" alt="" width="1008" height="1330" loading="lazy" decoding="async"></div>
+                    <div class="card-media cover-media"><img src="/images/comics/datractorcrew/s4/e1/cover.webp" alt="" width="640" height="844" loading="lazy" decoding="async"></div>
                     <div class="card-body">
                         <h3 class="card-title"><a href="/pages/comics/datractorcrew/season4.html">Season 4</a></h3>
                         <p class="episode-meta">2 episodes</p>

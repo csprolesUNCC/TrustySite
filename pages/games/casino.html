@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <link rel="stylesheet" href="/styles/games.css">
     <script type="module" src="/scripts/site.js"></script>
@@ -42,12 +41,12 @@
             <section class="game-main" aria-label="Blackjack table">
                 <div class="casino">
                     <div class="table-row">
-                        <h2 class="hand-label"><img class="dealer-avatar" src="/images/trusty.png" alt="" width="64" height="50"> Dealer Trusty <span class="hand-value" id="dealer-value" aria-label="Dealer total"></span></h2>
-                        <div class="cards" id="dealer-cards" aria-label="Dealer's cards"></div>
+                        <h2 class="hand-label"><img class="dealer-avatar" src="/images/trusty-176.webp" alt="" width="64" height="50"> Dealer Trusty <span class="hand-value" id="dealer-value"></span></h2>
+                        <div class="cards" id="dealer-cards" role="group" aria-label="Dealer's cards"></div>
                     </div>
                     <p class="casino-status" id="status" role="status" aria-live="polite">Place your bet!</p>
                     <div class="table-row">
-                        <div class="hands" id="hands" aria-label="Your hands"></div>
+                        <div class="hands" id="hands" role="group" aria-label="Your hands"></div>
                         <h2 class="hand-label">You</h2>
                     </div>
                 </div>
@@ -248,7 +247,7 @@
             while (box.children.length > shown.length) box.lastElementChild.remove();
             while (box.children.length < shown.length) {
                 box.append(h('div', { class: 'hand' },
-                    h('div', { class: 'cards' }),
+                    h('div', { class: 'cards', role: 'group' }),
                     h('div', { class: 'hand-meta' },
                         h('span', { class: 'hand-value' }),
                         h('span', { class: 'hand-bet' }),

@@ -1,6 +1,6 @@
 // Login, register, forgot-password and reset-password forms. Each page includes only its own form.
 import { h, session } from '/scripts/site.js';
-import { usernameProblem } from '/scripts/username.js';
+import { usernameProblem, passwordProblem } from '/scripts/username.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -94,8 +94,7 @@ if (registerForm) {
   const username = $('username');
   const password = $('password');
   const confirm = $('confirm-password');
-  username.addEventListener('input', () => username.removeAttribute('aria-invalid'));
-  confirm.addEventListener('input', () => confirm.removeAttribute('aria-invalid'));
+  for (const input of [username, password, confirm]) input.addEventListener('input', () => input.removeAttribute('aria-invalid'));
 
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -104,6 +103,13 @@ if (registerForm) {
       username.setAttribute('aria-invalid', 'true');
       setStatus(status, problem, 'error');
       username.focus();
+      return;
+    }
+    const weak = passwordProblem(password.value);
+    if (weak) {
+      password.setAttribute('aria-invalid', 'true');
+      setStatus(status, weak, 'error');
+      password.focus();
       return;
     }
     if (password.value !== confirm.value) {
@@ -170,9 +176,16 @@ if (resetForm) {
     $('reset-missing').hidden = false;
   }
 
-  confirm.addEventListener('input', () => confirm.removeAttribute('aria-invalid'));
+  for (const input of [password, confirm]) input.addEventListener('input', () => input.removeAttribute('aria-invalid'));
   resetForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const weak = passwordProblem(password.value);
+    if (weak) {
+      password.setAttribute('aria-invalid', 'true');
+      setStatus(status, weak, 'error');
+      password.focus();
+      return;
+    }
     if (password.value !== confirm.value) {
       confirm.setAttribute('aria-invalid', 'true');
       setStatus(status, 'Passwords do not match.', 'error');
