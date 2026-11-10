@@ -1,0 +1,17 @@
+# Trusty Fever's online rooms (see worker.js). Deploy from this folder with `npm install`, then `npm run deploy`;
+# the secret goes in with `npx wrangler secret put FEVER_SECRET` (the same value as FEVER_SECRET on Vercel).
+name = "trusty-fever"
+main = "worker.js"
+compatibility_date = "2026-10-20"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "FeverRoom"
+
+# SQLite-backed Durable Objects are the kind the Workers Free plan allows.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FeverRoom"]
+
+[dev]
+port = 8790

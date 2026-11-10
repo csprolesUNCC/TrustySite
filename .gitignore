@@ -16,3 +16,8 @@
 # Logs and other temporary files
 npm-debug.log
 yarn-error.log
+
+# Trusty Fever's room server (realtime/): its own packages, wrangler's local state and local secrets
+/realtime/node_modules
+/realtime/.wrangler
+/realtime/.dev.vars

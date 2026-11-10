@@ -2,12 +2,17 @@
 // Update...) without MongoDB or any keys. For looking at the frontend and for tools/smoke.mjs; `vercel dev`
 // is still the way to run the real API.
 //   node tools/dev-server.mjs [port]        (npm run dev:mock)
-// Log in by setting the cookie mock=in (tools/smoke.mjs does) plus the site's usual localStorage flag.
+// Log in by setting the cookie mock=in (tools/smoke.mjs does) plus the site's usual localStorage flag; the cookie
+// mockuser=<name> picks who you are in Trusty Fever's online rooms (carson otherwise), which run right here (see
+// tools/local-rooms.mjs). To try the real room server instead, run `npm run dev` in realtime/ and start this with
+// FEVER_ROOMS_URL=ws://localhost:8790 and the FEVER_SECRET from realtime/.dev.vars.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { attachRooms, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
+import { signTicket } from '../utils/fever-ticket.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -21,9 +26,11 @@ const TYPES = {
 const NAMES = ['carson', 'luke', 'hayhound', 'neigh_sayer', 'stickfig', 'pencilpusher', 'margins', 'tractorfan', 'mane_event', 'gallop'];
 const board = (scoreKey, nameKey, top) => NAMES.map((name, i) => ({ [nameKey]: name, [scoreKey]: top - i * Math.round(top / 14) }));
 const loggedIn = (req) => /(?:^|;\s*)mock=in(?:;|$)/.test(req.headers.cookie || '');
+const mockUser = (req) => (/(?:^|;\s*)mockuser=([\w-]{1,32})(?:;|$)/.exec(req.headers.cookie || '') || [])[1] || 'carson';
 const today = () => new Date().toISOString().slice(0, 10);
+const FEVER_SECRET = process.env.FEVER_SECRET || 'pretend-api-secret-for-local-rooms-only';
 
-function api(req, url) {
+async function api(req, url) {
   const p = url.pathname;
   const action = url.searchParams.get('action');
   const me = loggedIn(req);
@@ -33,6 +40,13 @@ function api(req, url) {
   if (p === '/api/clicks') return me ? [200, { clicks: 12345, added: 5 }] : [401, { error: 'Authentication required' }];
   if (p === '/api/leaderboard') {
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
+    if (action === 'fever') {
+      const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
+      if (req.method === 'GET') return [200, { rooms }];
+      if (!me) return [401, { error: 'Authentication required' }];
+      const name = mockUser(req);
+      return [200, { rooms, ticket: await signTicket({ id: `mock-${name}`, name }, FEVER_SECRET) }];
+    }
     if (action === 'trustis') return [200, url.searchParams.get('personal') ? { highScore: 5000 } : board('score', 'name', 90000)];
     if (action === 'profile' && req.method === 'GET') {
       const u = url.searchParams.get('u') || 'carson';
@@ -70,8 +84,8 @@ export function startServer(port = 8787) {
     if (url.pathname.startsWith('/api/')) {
       let raw = '';
       req.on('data', (c) => { raw += c; });
-      req.on('end', () => {
-        const [status, body] = api(req, url);
+      req.on('end', async () => {
+        const [status, body] = await api(req, url);
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(body));
       });
@@ -86,7 +100,7 @@ export function startServer(port = 8787) {
     if (!file.startsWith(ROOT + path.sep) && file !== ROOT) { res.writeHead(403); res.end(); return; }
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
     let status = 200;
-    if (!fs.existsSync(file) || /(^|\/)(node_modules|\.git|api|utils|tests|tools)(\/|$)/.test(path.relative(ROOT, file))) {
+    if (!fs.existsSync(file) || /(^|\/)(node_modules|\.git|api|utils|tests|tools|realtime)(\/|$)/.test(path.relative(ROOT, file))) {
       status = 404;
       file = path.join(ROOT, '404.html');
     }
@@ -100,6 +114,7 @@ export function startServer(port = 8787) {
     res.writeHead(status, headers);
     res.end(req.method === 'HEAD' ? undefined : data);
   });
+  attachRooms(server, FEVER_SECRET);
   return new Promise((resolve) => server.listen(port, () => resolve(server)));
 }
 

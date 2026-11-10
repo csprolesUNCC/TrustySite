@@ -355,6 +355,23 @@ kbd {
 }
 .fever-final li { display: inline-flex; align-items: center; gap: 6px; }
 .fever-final .fever-swatch { width: 12px; height: 12px; border-width: 1.5px; }
+.fever-who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Online: a room's code, and the box for typing one in. */
+.fever-code { letter-spacing: .14em; }
+.fever-join { display: flex; gap: 8px; }
+.fever-join .input {
+  width: 6.6em;
+  min-height: 52px;
+  padding: 6px 10px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+@container (max-width: 440px) {
+  .fever-join .input { min-height: 38px; }
+}
 
 /* =========================================================================
    Trustis

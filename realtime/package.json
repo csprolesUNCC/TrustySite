@@ -1,0 +1,13 @@
+{
+  "name": "trusty-fever-rooms",
+  "private": true,
+  "type": "module",
+  "description": "Trusty Fever's online rooms: a Cloudflare Worker with one Durable Object per room.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.153.0"
+  }
+}

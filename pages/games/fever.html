@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Trusty Fever — Trusty da Horse</title>
-    <meta name="description" content="Trusty's take on Curve Fever: steer your line, cut everyone off, and be the last one drawing. Play friends on one keyboard or the computer.">
+    <meta name="description" content="Trusty's take on Curve Fever: steer your line, cut everyone off, and be the last one drawing. Play friends online, on one keyboard, or against the computer.">
     <link rel="canonical" href="https://trustydahorse.com/pages/games/fever.html">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
@@ -64,11 +64,42 @@
                         <div class="overlay-actions">
                             <button class="btn btn-lg" type="button" id="start-btn" disabled>Start</button>
                             <button class="btn btn-lg btn-outline" type="button" id="setup-btn">Game setup</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="online-btn" hidden>Play online</button>
+                        </div>
+                    </div>
+
+                    <div class="stage-overlay" id="overlay-online" hidden>
+                        <p class="overlay-kicker">Play online</p>
+                        <h2 class="overlay-title" id="online-title">Play with friends</h2>
+                        <p class="overlay-sub" id="online-sub"></p>
+                        <div class="overlay-actions" id="online-actions">
+                            <button class="btn btn-lg" type="button" id="make-btn">Make a room</button>
+                            <form class="fever-join" id="join-form" novalidate>
+                                <label class="sr-only" for="join-code">Room code</label>
+                                <input class="input" id="join-code" name="code" placeholder="CODE" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                                <button class="btn btn-lg btn-outline" type="submit">Join</button>
+                            </form>
+                        </div>
+                        <div class="overlay-actions" id="online-login" hidden>
+                            <a class="btn btn-lg" id="login-link" href="/pages/auth/login.html">Log in</a>
+                        </div>
+                        <button class="btn btn-sm btn-ghost" type="button" id="online-back">Back</button>
+                    </div>
+
+                    <div class="stage-overlay" id="overlay-room" hidden>
+                        <p class="overlay-kicker">Online room</p>
+                        <h2 class="overlay-title fever-code" id="room-code"></h2>
+                        <p class="overlay-sub" id="room-sub"></p>
+                        <div class="overlay-actions">
+                            <button class="btn btn-lg" type="button" id="room-start" hidden>Start</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="room-copy">Copy link</button>
+                            <button class="btn btn-lg btn-outline" type="button" id="room-leave">Leave</button>
                         </div>
                     </div>
 
                     <div class="stage-overlay" id="overlay-pause" hidden>
-                        <h2 class="overlay-title">Paused</h2>
+                        <h2 class="overlay-title" id="pause-title">Paused</h2>
+                        <p class="overlay-sub" id="pause-sub" hidden>Online games don’t stop: your line keeps going.</p>
                         <div class="overlay-actions">
                             <button class="btn btn-lg" type="button" id="resume-btn">Resume</button>
                             <button class="btn btn-lg btn-outline" type="button" id="quit-btn">End game</button>
@@ -81,6 +112,7 @@
                         <h2 class="overlay-title" id="over-title"></h2>
                         <ol class="fever-final" id="over-list"></ol>
                         <p class="overlay-sub" id="over-sub"></p>
+                        <p class="overlay-sub" id="over-wait" hidden></p>
                         <div class="overlay-actions">
                             <button class="btn btn-lg" type="button" id="again-btn">Play again</button>
                             <button class="btn btn-lg btn-outline" type="button" id="change-btn">Change setup</button>
@@ -105,7 +137,7 @@
                 <div class="panel" id="setup">
                     <h2 class="panel-title">Game setup</h2>
                     <div class="fever-setup">
-                        <div class="setup-row desktop-only">
+                        <div class="setup-row desktop-only" id="humans-row">
                             <span class="setup-label" id="humans-label">Players at this keyboard</span>
                             <div class="segmented compact" role="group" aria-labelledby="humans-label" data-setting="humans">
                                 <button type="button" data-value="1">1</button>
@@ -150,6 +182,7 @@
                         </div>
                     </div>
                     <p class="side-note" id="setup-note" hidden>Changes start with your next game.</p>
+                    <p class="side-note" id="setup-online-note" hidden></p>
                 </div>
 
                 <div class="panel">
@@ -158,6 +191,7 @@
                         <li><span class="keys">&#9999;&#65039;</span> Every line keeps moving. Steer left and right, and don't hit a wall or any line, even your own.</li>
                         <li><span class="keys">&#9986;&#65039;</span> Lines leave little gaps now and then. Squeeze through!</li>
                         <li><span class="keys">&#127942;</span> Whenever someone crashes, everyone still drawing gets a point. First to the target, at least 2 points ahead, wins.</li>
+                        <li><span class="keys">&#127760;</span> Play online: make a room, send your friends the link, and everyone steers their own line from their own device.</li>
                         <li class="desktop-only"><span class="keys"><kbd>Esc</kbd><kbd>P</kbd></span> Pause</li>
                     </ul>
                     <h3 class="fever-legend-title">Power-ups</h3>
@@ -171,14 +205,18 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { fmt, h } from '/scripts/site.js';
+        import { fmt, h, toast, session, loginHref } from '/scripts/site.js';
         import {
             setupCanvas, offscreen, drawGraphPaper, sound, bindMuteButton, bindFocusMode,
             isForeignKey, isActivationKey, fontsReady, bringIntoView,
         } from '/scripts/game-kit.js';
         import { createMatch, ARENA_W, ARENA_H, PLAYERS, POWERS } from '/scripts/fever-engine.js';
+        import { createMirror, applyStep } from '/scripts/fever-net.js';
+        import { roomsOpen, connect, newCode, roomLink, roomFromHash, ROOM_CODE } from '/scripts/fever-online.js';
 
         // The rules and computer players live in fever-engine.js; this page draws the game and reads the controls.
+        // Online games run on the room server (realtime/room.js): the page sends its steering there and draws the
+        // match from the steps that come back (fever-net.js turns them into the engine's own events).
         const MARGIN = 72;           // the notebook margin on the left, where the scores go
         const W = MARGIN + ARENA_W;
         const H = ARENA_H;
@@ -191,6 +229,11 @@
         const RECORD_KEY = 'trusty:fever:record';
         // The computers play behind the start screen.
         const DEMO_SETUP = { humans: 0, bots: 4, skill: 'normal', powerups: true, length: 5 };
+        // Online: steps kept back against network hiccups, and how far behind the page may fall before catching up.
+        const BUFFER = 2;
+        const BEHIND = 6;
+        const ROOM_TAKEN = 4003; // CLOSE.taken in realtime/room.js
+        const ORDINALS = ['', '1st', '2nd', '3rd', '4th', '5th', '6th'];
 
         // Each person at the keyboard gets a pair of keys (physical keys, so any layout works); the fourth
         // uses the mouse buttons. Playing alone, the arrows or A and D both work.
@@ -225,7 +268,9 @@
         const stage = $('stage');
         const { ctx, scale } = setupCanvas($('game'), W, H);
         const trails = offscreen(ARENA_W, ARENA_H, scale);
-        const overlays = { start: $('overlay-start'), pause: $('overlay-pause'), over: $('overlay-over') };
+        const overlays = {
+            start: $('overlay-start'), online: $('overlay-online'), room: $('overlay-room'), pause: $('overlay-pause'), over: $('overlay-over'),
+        };
         const touchFirst = matchMedia('(pointer: coarse)').matches;
         const sounds = {
             crash: sound('/sound/vineboom.m4a', { volume: 0.5 }),
@@ -234,8 +279,11 @@
             twentyOne: sound('/sound/21.mp3'),
         };
 
-        let state = 'loading'; // loading | intro | game | paused | over
-        let match = null;      // the game being played, or the computers' demo behind the start screen
+        let state = 'loading'; // loading | intro | room (an online room's lobby) | game | paused | over
+        let match = null;      // the game being played (online: a mirror of the server's), or the computers' demo
+        let net = null;        // the online room this page is in: { code, conn, room, status, queue, clock, turn }
+        let shown = null;      // which overlay is up
+        let menuOpen = false;  // online games can't pause, so Esc opens a menu while the game goes on
         let setup = loadSetup();
         let bg = null;
         let lastFrame = 0;
@@ -274,6 +322,10 @@
         const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
         const keysFor = (p, humans) => (humans === 1 ? SOLO_KEYS : KEYSETS[p.id - 1]);
         const keyChips = (k) => (k.mouse ? ['mouse buttons'] : k.label.split(' ').map((key) => h('kbd', null, key)));
+        const short = (name) => (name.length > 14 ? `${name.slice(0, 13)}…` : name);
+        const isHost = () => Boolean(net && net.room && net.room.host === net.room.you);
+        // Online, a room's people are the first players and the host's computers fill the rest (as realtime/room.js does).
+        const onlineBots = (people, bots) => Math.max(2 - people, Math.min(bots, 6 - people));
 
         function describe(s) {
             const target = s.length * (s.humans + s.bots - 1);
@@ -297,18 +349,42 @@
             return { players, target: s.length * (players.length - 1), humans: s.humans };
         }
 
+        // Who's in an online room, and the computers that will join them.
+        function roomLineup(room) {
+            const people = room.people.slice(0, 6);
+            const total = people.length + onlineBots(people.length, room.setup.bots);
+            const players = PLAYERS.slice(0, total).map((look, i) => ({
+                ...look, id: i + 1, name: people[i] ?? look.name, human: i < people.length,
+                you: people[i] === room.you, host: i < people.length && people[i] === room.host, score: 0, alive: true,
+            }));
+            return { online: true, players, target: room.setup.length * (players.length - 1), humans: people.length };
+        }
+
         function renderSetup() {
+            const room = net && net.room;
+            const s = room ? { ...room.setup, bots: onlineBots(room.people.length, room.setup.bots) } : setup;
+            const people = room ? Math.min(room.people.length, 6) : setup.humans;
+            const locked = Boolean(room) && (!isHost() || room.playing);
+            $('humans-row').hidden = Boolean(net);
             for (const group of document.querySelectorAll('[data-setting]')) {
                 const key = group.dataset.setting;
                 for (const btn of group.querySelectorAll('button')) {
                     const value = readValue(key, btn.dataset.value);
-                    btn.setAttribute('aria-pressed', String(value === setup[key]));
-                    if (key === 'bots') btn.disabled = setup.humans + value > 6 || setup.humans + value < 2;
+                    btn.setAttribute('aria-pressed', String(value === s[key]));
+                    btn.disabled = locked || (key === 'bots' && (people + value > 6 || people + value < 2));
                 }
+            }
+            $('setup-online-note').hidden = !room;
+            $('record').hidden = Boolean(net);
+            if (room) {
+                $('setup-online-note').textContent = isHost()
+                    ? 'You’re the host: everyone in the room plays with these.'
+                    : `${room.host ? short(room.host) : 'The host'} picks these for the room.`;
             }
             $('start-sub').textContent = describe(setup);
             $('start-keys').replaceChildren(...keysHint(setup));
             if (state === 'loading' || state === 'intro') renderScores(lineup(setup));
+            if (state === 'room' && room) renderScores(roomLineup(room));
         }
 
         for (const group of document.querySelectorAll('[data-setting]')) {
@@ -316,6 +392,14 @@
                 const btn = e.target.closest('button');
                 if (!btn || btn.disabled) return;
                 const key = group.dataset.setting;
+                if (net) {
+                    // The host's choice goes to the room, which tells everyone (this page included).
+                    if (!net.room || !isHost() || net.room.playing || key === 'humans') return;
+                    net.room.setup = { ...net.room.setup, [key]: readValue(key, btn.dataset.value) };
+                    net.conn.send({ t: 'setup', ...net.room.setup });
+                    renderSetup();
+                    return;
+                }
                 setup[key] = readValue(key, btn.dataset.value);
                 fixSetup(setup);
                 saveSetup();
@@ -325,6 +409,14 @@
         }
 
         /* ---------- Scores and record ---------- */
+
+        function whoLabel(p, m) {
+            if (m.online) {
+                if (p.you) return p.host ? 'you, host' : 'you';
+                return !p.human ? 'computer' : p.host ? 'host' : 'online';
+            }
+            return !p.human ? 'computer' : m.humans === 1 ? 'you' : keysFor(p, m.humans).label;
+        }
 
         function renderScores(m = match) {
             const lead = Math.max(...m.players.map((p) => p.score));
@@ -336,7 +428,7 @@
             h('span', { class: 'fever-swatch', style: { background: p.color } }),
             h('span', { class: 'fever-who' },
                 h('strong', null, p.name),
-                h('small', null, !p.human ? 'computer' : m.humans === 1 ? 'you' : keysFor(p, m.humans).label)),
+                h('small', null, whoLabel(p, m))),
             h('span', { class: 'fever-pts' }, fmt(p.score)))));
         }
 
@@ -543,7 +635,9 @@
                 ctx.restore();
                 drawFace(ctx, p.x, p.y, 11, p.color);
                 if (!match.demo) {
-                    const name = p.human && match.humans > 1 ? `${p.name} (${keysFor(p, match.humans).label})` : p.human ? `${p.name} (you)` : p.name;
+                    let name = p.name;
+                    if (match.online) name = p.you ? `${short(p.name)} (you)` : short(p.name);
+                    else if (p.human) name = match.humans > 1 ? `${p.name} (${keysFor(p, match.humans).label})` : `${p.name} (you)`;
                     ctx.textAlign = 'center';
                     outlinedText(name, p.x, p.y - (sin < -0.5 ? -34 : 20), `700 22px ${HAND}`, p.color);
                 }
@@ -563,7 +657,7 @@
             ctx.strokeStyle = p.color;
             ctx.stroke();
             ctx.restore();
-            if (p.human && (p.flip || p.square)) {
+            if ((match.online ? p.you : p.human) && (p.flip || p.square)) {
                 ctx.textAlign = 'center';
                 outlinedText(p.flip ? 'backwards!' : 'square!', p.x, p.y - p.r - 10, `700 18px ${HAND}`, p.color, 5);
             }
@@ -599,6 +693,15 @@
             } else if (fastForward()) {
                 ctx.textAlign = 'right';
                 outlinedText('fast-forward ⏩', ARENA_W - 16, ARENA_H - 16, `700 24px ${HAND}`, '#5a5d63', 6);
+            }
+            if (!match.online) return;
+            if (!match.you && match.phase !== 'over') {
+                ctx.textAlign = 'left';
+                outlinedText('watching: you’ll play in the next game', 16, ARENA_H - 16, `700 22px ${HAND}`, '#5a5d63', 6);
+            }
+            if (net && net.status) {
+                ctx.textAlign = 'center';
+                outlinedText(net.status, ARENA_W / 2, ARENA_H / 2, `30px ${MARKER}`, '#d6334b', 8);
             }
         }
 
@@ -653,10 +756,14 @@
         /* ---------- Game flow ---------- */
 
         function showOverlay(name) {
+            shown = name;
             for (const [key, el] of Object.entries(overlays)) el.hidden = key !== name;
         }
 
         const byId = (id) => match.players[id - 1];
+
+        // Whose crashes and power-ups make a sound: everyone at this keyboard, or online just you.
+        const mine = (p) => Boolean(p) && (match.online ? p.you : p.human);
 
         function handle(events) {
             const live = !match.demo;
@@ -674,31 +781,31 @@
                 } else if (e.type === 'erase') {
                     clearTrails();
                 } else if (e.type === 'crash') {
-                    if (live && byId(e.id).human) sounds.crash.play();
+                    if (live && mine(byId(e.id))) sounds.crash.play();
                     if (live) renderScores();
                 } else if (e.type === 'score') {
                     const now = performance.now();
                     for (const id of e.ids) {
                         const p = byId(id);
                         p.bumpAt = now;
-                        if (live && p.human && p.score === 21) sounds.twentyOne.play();
+                        if (live && mine(p) && p.score === 21) sounds.twentyOne.play();
                     }
                     if (live) renderScores();
                 } else if (e.type === 'pickup') {
                     const def = POWERS[e.kind];
                     const p = byId(e.id);
                     labels.push({ text: def.label, x: p.x, y: p.y, color: GROUP_STYLE[def.group].edge, born: performance.now() });
-                    if (live && p.human) sounds.power.play();
+                    if (live && mine(p)) sounds.power.play();
                 } else if (e.type === 'roundEnd') {
                     const winner = e.id ? byId(e.id) : null;
-                    const you = winner && winner.human && match.humans === 1;
+                    const you = winner && (match.online ? winner.you : winner.human && match.humans === 1);
                     banner = winner
                         ? { text: you ? 'You win the round!' : `${winner.name} wins the round!`, color: winner.color }
                         : { text: 'Nobody makes it!', color: INK };
                     if (live) {
                         renderScores();
                         announce(`${banner.text} ${match.players.map((p) => `${p.name} ${p.score}`).join(', ')}.`);
-                        if (winner && winner.human) sounds.win.play();
+                        if (mine(winner)) sounds.win.play();
                     }
                 } else if (e.type === 'gameOver') {
                     if (live) gameOverTimer = setTimeout(finishGame, 1400);
@@ -717,6 +824,7 @@
         function toIntro() {
             clearTimeout(gameOverTimer);
             state = 'intro';
+            menuOpen = false;
             releaseAll();
             startDemo();
             showOverlay('start');
@@ -729,6 +837,7 @@
             match = createMatch(setup);
             match.humans = setup.humans;
             state = 'game';
+            $('pad-pause').textContent = 'Pause';
             releaseAll();
             showOverlay(null);
             $('setup-note').hidden = true;
@@ -741,33 +850,47 @@
         function finishGame() {
             if (state !== 'game' || !match.champion) return;
             state = 'over';
+            menuOpen = false;
             overAt = performance.now();
             renderScores();
             const champ = match.champion;
             const ranked = [...match.players].sort((a, b) => b.score - a.score);
-            const solo = match.humans === 1;
-            $('over-title').textContent = champ.human && solo ? 'You win!' : `${champ.name} wins!`;
+            const solo = !match.online && match.humans === 1;
+            const youWon = match.online ? champ.you : champ.human && solo;
+            $('over-title').textContent = youWon ? 'You win!' : `${champ.name} wins!`;
             $('over-list').replaceChildren(...ranked.map((p) => h('li', null,
-                h('span', { class: 'fever-swatch', style: { background: p.color } }), `${p.name} ${fmt(p.score)}`)));
+                h('span', { class: 'fever-swatch', style: { background: p.color } }), `${short(p.name)} ${fmt(p.score)}`)));
             let sub = '';
-            if (solo) {
+            if (match.online) {
+                const place = ranked.findIndex((p) => p.you) + 1;
+                if (place) sub = champ.you ? 'You beat everyone!' : `You came ${ORDINALS[place]}.`;
+            } else if (solo) {
                 const record = loadRecord();
                 record.played += 1;
                 if (champ.human) record.won += 1;
                 try { localStorage.setItem(RECORD_KEY, JSON.stringify(record)); } catch { /* storage blocked */ }
                 renderRecord(record);
                 const place = ranked.findIndex((p) => p.human) + 1;
-                sub = champ.human ? 'You beat the computers!' : `You came ${['', '1st', '2nd', '3rd', '4th', '5th', '6th'][place]}. Better luck next time!`;
+                sub = champ.human ? 'You beat the computers!' : `You came ${ORDINALS[place]}. Better luck next time!`;
             }
             $('over-sub').textContent = sub;
             $('over-sub').hidden = !sub;
+            renderOverButtons();
             showOverlay('over');
-            $('again-btn').focus({ preventScroll: true });
+            ($('again-btn').hidden ? $('change-btn') : $('again-btn')).focus({ preventScroll: true });
             announce(`Game over. ${$('over-title').textContent}`);
         }
 
         function pause() {
             if (state !== 'game') return;
+            if (match.online) {
+                openMenu(!menuOpen);
+                return;
+            }
+            $('pause-title').textContent = 'Paused';
+            $('pause-sub').hidden = true;
+            $('resume-btn').textContent = 'Resume';
+            $('quit-btn').textContent = 'End game';
             state = 'paused';
             clearTimeout(gameOverTimer);
             releaseAll();
@@ -776,6 +899,10 @@
         }
 
         function resume() {
+            if (state === 'game' && menuOpen) {
+                openMenu(false);
+                return;
+            }
             if (state !== 'paused') return;
             state = 'game';
             lastFrame = 0;
@@ -799,7 +926,9 @@
         function frame(now) {
             const elapsed = lastFrame ? Math.min(now - lastFrame, 250) : 0;
             lastFrame = now;
-            if (state === 'game' || state === 'intro') {
+            if (match && match.online) {
+                if (state === 'game') playOnline(elapsed);
+            } else if (state === 'game' || state === 'intro' || state === 'room') {
                 stepClock += elapsed;
                 let steps = 0;
                 while (stepClock >= STEP_MS) {
@@ -813,10 +942,254 @@
             } else {
                 stepClock = 0;
             }
-            if (state === 'intro' && match.phase === 'over' && now > match.restartAt) startDemo();
+            if ((state === 'intro' || state === 'room') && match.demo && match.phase === 'over' && now > match.restartAt) startDemo();
             if (match && bg) draw(now);
             requestAnimationFrame(frame);
         }
+
+        /* ---------- Online ---------- */
+
+        // The steps the room sends, played at 60 a second. The page keeps whatever has arrived but not played yet
+        // in net.queue (a step or two, more after a hiccup) and catches up when it falls behind (or the
+        // computers are fast-forwarding).
+        function playOnline(elapsed) {
+            if (!net) return;
+            syncTurn();
+            const queue = net.queue;
+            net.clock += elapsed;
+            let n = Math.floor(net.clock / STEP_MS);
+            net.clock -= n * STEP_MS;
+            if (queue.length - n > BEHIND) n = queue.length - BUFFER;
+            n = Math.min(n, queue.length);
+            if (!queue.length) net.clock = 0; // nothing to play: don't save up time
+            for (let i = 0; i < n; i++) handle(applyStep(match, queue.shift()));
+        }
+
+        function startOnline() {
+            if (isHost() && !net.room.playing) net.conn.send({ t: 'start' });
+        }
+
+        // Online the game can't wait for you, so Esc (or the pad's Menu button) opens this over the game instead.
+        function openMenu(open) {
+            menuOpen = open;
+            if (!open) {
+                showOverlay(null);
+                stage.focus({ preventScroll: true });
+                return;
+            }
+            releaseAll();
+            $('pause-title').textContent = 'Menu';
+            $('pause-sub').hidden = false;
+            $('resume-btn').textContent = 'Back to the game';
+            $('quit-btn').textContent = 'Leave the room';
+            showOverlay('pause');
+            $('resume-btn').focus({ preventScroll: true });
+        }
+
+        function renderOverButtons() {
+            const online = Boolean(match && match.online);
+            const waiting = online && !isHost();
+            $('again-btn').hidden = waiting;
+            $('change-btn').textContent = online ? 'Back to the room' : 'Change setup';
+            $('over-wait').hidden = !waiting;
+            if (waiting) {
+                $('over-wait').textContent = net && net.room && net.room.host
+                    ? `Waiting for ${short(net.room.host)} to start the next game.`
+                    : 'Waiting for the next game.';
+            }
+        }
+
+        // Making or joining a room. `message` says why the page came back here (a room closed, a code was wrong...).
+        function showOnline(message = '', { login = false } = {}) {
+            clearTimeout(gameOverTimer);
+            if (state !== 'intro' || !match || !match.demo) {
+                state = 'intro';
+                menuOpen = false;
+                releaseAll();
+                startDemo();
+            }
+            const needLogin = login || !session.loggedIn;
+            $('online-actions').hidden = needLogin;
+            $('online-login').hidden = !needLogin;
+            $('login-link').href = loginHref();
+            $('online-title').textContent = needLogin ? 'Log in to play online' : 'Play with friends';
+            $('online-sub').textContent = message || (needLogin
+                ? 'Online games show your Trusty account’s name.'
+                : 'Make a room and send your friends the link, or type in the code of theirs.');
+            showOverlay('online');
+            (needLogin ? $('login-link') : $('make-btn')).focus({ preventScroll: true });
+        }
+
+        function openRoom(code, { make = false, tries = 0 } = {}) {
+            if (net) net.conn.leave();
+            const here = { code, conn: null, room: null, status: null, queue: [], clock: 0, turn: null };
+            net = here;
+            history.replaceState(null, '', `#room=${code}`);
+            here.conn = connect(code, {
+                make,
+                on: {
+                    room: (msg) => { if (net === here) onRoom(msg); },
+                    match: (msg) => { if (net === here) joinMatch(msg); },
+                    steps: (list) => { if (net === here) onSteps(list); },
+                    status: (text) => {
+                        if (net !== here) return;
+                        net.status = text;
+                        net.turn = null; // tell the room again once we're back
+                        if (state === 'room') renderRoom();
+                    },
+                    gone: (message, { code: why, login } = {}) => {
+                        if (net !== here) return;
+                        // Somebody already has that code: quietly try another.
+                        if (why === ROOM_TAKEN && make && tries < 3) {
+                            openRoom(newCode(), { make: true, tries: tries + 1 });
+                            return;
+                        }
+                        leaveRoom();
+                        showOnline(message, { login });
+                    },
+                },
+            });
+            showRoom();
+            announce(`Joining room ${code}.`);
+        }
+
+        function leaveRoom() {
+            if (net) net.conn.leave();
+            net = null;
+            if (roomFromHash()) history.replaceState(null, '', location.pathname + location.search);
+            renderSetup();
+        }
+
+        // The room's lobby, with the computers playing behind it.
+        function showRoom() {
+            clearTimeout(gameOverTimer);
+            state = 'room';
+            menuOpen = false;
+            releaseAll();
+            if (!match || !match.demo) startDemo();
+            showOverlay('room');
+            renderRoom();
+            renderSetup();
+            ($('room-start').hidden ? $('room-copy') : $('room-start')).focus({ preventScroll: true });
+        }
+
+        function renderRoom() {
+            if (!net) return;
+            const room = net.room;
+            $('room-code').textContent = net.code;
+            $('room-start').hidden = !isHost();
+            $('room-start').disabled = !room || room.playing;
+            let text = net.status || 'Getting in…';
+            if (room && !net.status) {
+                const others = room.people.filter((name) => name !== room.you).map(short).join(', ');
+                const who = others ? `With you: ${others}${others.endsWith('…') ? '' : '.'}` : 'Nobody else is here yet: send your friends the link!';
+                let next = `Waiting for ${room.host ? short(room.host) : 'the host'} to start.`;
+                if (room.playing) next = 'A game is on: you’ll see it in a moment.';
+                else if (isHost()) next = others.length ? 'Start when everyone’s in.' : 'Or start now against the computer.';
+                text = `${who} ${next}`;
+            }
+            $('room-sub').textContent = text;
+            if (state === 'room' && room) renderScores(roomLineup(room));
+        }
+
+        function onRoom(msg) {
+            const wasHost = isHost();
+            net.room = msg;
+            if (state === 'game' && match.online && !msg.playing) {
+                // Play out whatever is still queued: if that finishes the game, finishGame() takes it from there.
+                while (net.queue.length) handle(applyStep(match, net.queue.shift()));
+                if (!match.champion) {
+                    showRoom();
+                    toast('That game stopped.');
+                }
+            }
+            if (state === 'room') renderRoom();
+            if (state === 'over' && match.online) renderOverButtons();
+            renderSetup();
+            if (!wasHost && isHost()) announce('You’re the host of this room now.');
+        }
+
+        // A match starts, or this page joins one partway (after a lost connection, or to watch).
+        function joinMatch(msg) {
+            clearTimeout(gameOverTimer);
+            const { match: mirror, ink } = createMirror(msg.snap, msg.you);
+            match = mirror;
+            net.queue = [];
+            net.clock = 0;
+            net.turn = null;
+            clearTrails();
+            labels.length = 0;
+            banner = null;
+            handle(ink);
+            state = 'game';
+            menuOpen = false;
+            releaseAll();
+            showOverlay(null);
+            $('pad-pause').textContent = 'Menu';
+            renderScores();
+            renderSetup();
+            announce(mirror.you ? `Round ${mirror.round}. Get ready.` : 'Watching the game in this room. You’ll play in the next one.');
+            stage.focus({ preventScroll: true });
+            bringIntoView();
+        }
+
+        function onSteps(list) {
+            if (!match || !match.online) return;
+            for (const step of list) net.queue.push(step);
+            // A hidden tab doesn't draw frames, so keep up here instead of piling steps up.
+            if (net.queue.length > 240) while (net.queue.length > BUFFER) handle(applyStep(match, net.queue.shift()));
+        }
+
+        async function copyLink() {
+            const url = roomLink(net.code);
+            try {
+                if (touchFirst && navigator.share) {
+                    await navigator.share({ title: 'Trusty Fever', text: `Come play Trusty Fever with me! Room ${net.code}:`, url });
+                    return;
+                }
+                await navigator.clipboard.writeText(url);
+                toast('Link copied: send it to your friends!');
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // closed the share sheet
+                toast(`Send your friends this link: ${url}`, 'info', 8000);
+            }
+        }
+
+        // A room link (fever.html#room=CODE) opens that room.
+        async function checkHash() {
+            const code = roomFromHash();
+            if (!code || state === 'loading' || (net && net.code === code)) return;
+            if (!(await roomsOpen())) {
+                toast('Online Trusty Fever isn’t open right now.');
+                return;
+            }
+            if (!session.loggedIn) showOnline(`Log in to join room ${code}.`, { login: true });
+            else openRoom(code);
+        }
+
+        $('online-btn').addEventListener('click', () => showOnline());
+        $('online-back').addEventListener('click', toIntro);
+        $('make-btn').addEventListener('click', () => openRoom(newCode(), { make: true }));
+        $('join-code').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+        });
+        $('join-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = $('join-code').value.trim().toUpperCase();
+            if (!ROOM_CODE.test(code)) {
+                $('online-sub').textContent = 'Room codes are four letters, like KXQT.';
+                $('join-code').focus();
+                return;
+            }
+            openRoom(code);
+        });
+        $('room-start').addEventListener('click', startOnline);
+        $('room-copy').addEventListener('click', copyLink);
+        $('room-leave').addEventListener('click', () => {
+            leaveRoom();
+            toIntro();
+        });
+        window.addEventListener('hashchange', checkHash);
 
         /* ---------- Controls ---------- */
 
@@ -832,11 +1205,13 @@
             padPointers.clear();
             paintPad();
             mouse.left = mouse.right = false;
+            syncTurn();
         }
 
         const holding = (side) => [...pointers.values(), ...padPointers.values()].includes(side);
 
         function applyControls() {
+            if (match.online) return;
             for (const p of match.players) {
                 if (!p.human) continue;
                 const keys = keysFor(p, match.humans);
@@ -850,9 +1225,25 @@
             }
         }
 
+        // Online, this device steers one line with the solo keys, the board or the pad: the room hears of every change.
+        function syncTurn() {
+            if (!net || !match || !match.online || state !== 'game') return;
+            const left = SOLO_KEYS.left.some((code) => held.has(code)) || holding('left');
+            const right = SOLO_KEYS.right.some((code) => held.has(code)) || holding('right');
+            const turn = (right ? 1 : 0) - (left ? 1 : 0);
+            if (turn === net.turn) return;
+            net.turn = turn;
+            net.conn.send({ t: 'turn', v: turn });
+        }
+
+        // The line the board and the pad steer: player 1 at this keyboard, or online your own.
+        const steered = () => (match.online ? byId(match.you) : match.players[0]);
+
         // A fresh press also counts as one sharp turn, for "square turns".
         function tap(p, dir) {
-            if (state === 'game' && p && p.human) p.control.tap = dir;
+            if (state !== 'game' || !p || !p.human) return;
+            if (!match.online) p.control.tap = dir;
+            else if (p.you) net.conn.send({ t: 'tap', v: dir });
         }
 
         // A finger on the board or the pad is holding `side`. Sliding onto the other side counts as a
@@ -860,7 +1251,8 @@
         function hold(fingers, id, side) {
             if (fingers.get(id) === side) return;
             fingers.set(id, side);
-            tap(match.players[0], side === 'left' ? -1 : 1);
+            tap(steered(), side === 'left' ? -1 : 1);
+            syncTurn();
         }
 
         document.addEventListener('keydown', (e) => {
@@ -871,12 +1263,16 @@
                 return;
             }
             if (e.key === ' ' || e.key === 'Enter') {
-                if (state === 'intro' && !$('start-btn').disabled) {
+                if (state === 'intro' && shown === 'start' && !$('start-btn').disabled) {
                     e.preventDefault();
                     startGame();
+                } else if (state === 'room' && isHost()) {
+                    e.preventDefault();
+                    startOnline();
                 } else if (state === 'over' && performance.now() - overAt > 500) {
-                    e.preventDefault();
-                    startGame();
+                    if (!match.online || isHost()) e.preventDefault();
+                    if (!match.online) startGame();
+                    else startOnline();
                 } else if (state === 'game') {
                     e.preventDefault();
                     match.skipWait();
@@ -887,7 +1283,13 @@
             held.add(e.code);
             if (state !== 'game' && state !== 'paused') return;
             e.preventDefault();
+            syncTurn();
             if (e.repeat || state !== 'game') return;
+            if (match.online) {
+                if (SOLO_KEYS.left.includes(e.code)) tap(steered(), -1);
+                else if (SOLO_KEYS.right.includes(e.code)) tap(steered(), 1);
+                return;
+            }
             for (const p of match.players) {
                 if (!p.human) continue;
                 const keys = keysFor(p, match.humans);
@@ -896,13 +1298,21 @@
                 else if (keys.right.includes(e.code)) tap(p, 1);
             }
         });
-        document.addEventListener('keyup', (e) => held.delete(e.code));
+        document.addEventListener('keyup', (e) => {
+            held.delete(e.code);
+            syncTurn();
+        });
         window.addEventListener('blur', releaseAll);
-        document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+        // Online games keep going in a hidden tab (the line just goes straight); local ones pause.
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) return;
+            if (match && match.online) releaseAll();
+            else pause();
+        });
 
         // On the board: hold the left or right half to steer player 1. With four at the keyboard, the
         // mouse buttons steer player 4 instead.
-        const mousePlayer = () => state === 'game' && match.humans === 4;
+        const mousePlayer = () => state === 'game' && !match.online && match.humans === 4;
         const sideOf = (el, e) => {
             const r = el.getBoundingClientRect();
             return e.clientX < r.left + r.width / 2 ? 'left' : 'right';
@@ -937,6 +1347,7 @@
         const lift = (e) => {
             if (e.pointerType === 'mouse' && mousePlayer()) readMouse(e);
             pointers.delete(e.pointerId);
+            syncTurn();
         };
         stage.addEventListener('pointerup', lift);
         stage.addEventListener('pointercancel', lift);
@@ -964,7 +1375,10 @@
             hold(padPointers, e.pointerId, sideOf(padEl, e));
             paintPad();
         });
-        const liftPad = (e) => { if (padPointers.delete(e.pointerId)) paintPad(); };
+        const liftPad = (e) => {
+            if (padPointers.delete(e.pointerId)) paintPad();
+            syncTurn();
+        };
         padEl.addEventListener('pointerup', liftPad);
         padEl.addEventListener('pointercancel', liftPad);
         padEl.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -982,9 +1396,20 @@
         $('start-btn').addEventListener('click', startGame);
         $('setup-btn').addEventListener('click', showSetupPanel);
         $('resume-btn').addEventListener('click', resume);
-        $('quit-btn').addEventListener('click', toIntro);
-        $('again-btn').addEventListener('click', () => { if (performance.now() - overAt > 500) startGame(); });
+        $('quit-btn').addEventListener('click', () => {
+            if (match && match.online) leaveRoom();
+            toIntro();
+        });
+        $('again-btn').addEventListener('click', () => {
+            if (performance.now() - overAt <= 500) return;
+            if (match.online) startOnline();
+            else startGame();
+        });
         $('change-btn').addEventListener('click', () => {
+            if (match.online) {
+                showRoom();
+                return;
+            }
             toIntro();
             showSetupPanel();
         });
@@ -1006,12 +1431,14 @@
         renderSetup();
         renderRecord();
 
+        roomsOpen().then((open) => { $('online-btn').hidden = !open; });
         fontsReady.then(() => {
             bg = paintBackground();
             toIntro();
             $('start-title').textContent = 'Trusty Fever';
             $('start-btn').disabled = false;
             requestAnimationFrame(frame);
+            checkHash();
         });
     </script>
 </body>

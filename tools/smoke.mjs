@@ -1,6 +1,7 @@
 // Loads every page in a real browser against tools/dev-server.mjs, at phone and desktop widths, logged out
 // and logged in, and fails if any page throws, logs an error, requests a missing file, scrolls sideways, has a
-// broken image or link, or has an accessibility problem axe-core can find.
+// broken image or link, or has an accessibility problem axe-core can find. Then two people play Trusty Fever online
+// (the dev server runs the rooms) and every online overlay gets the same checks.
 //   npm run smoke   (needs Playwright: preinstalled in Claude Code cloud sessions, otherwise `npx playwright install chromium`
 //                    and `npm i -D playwright`)
 import { createRequire } from 'node:module';
@@ -29,6 +30,14 @@ const server = await startServer(PORT);
 const browser = await playwright.chromium.launch();
 const problems = [];
 const links = new Set();
+
+async function axeProblems(page) {
+  if (!axePath) return [];
+  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ path: axePath });
+  return page.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'] })).violations
+    .filter((v) => v.id !== 'region')
+    .map((v) => `a11y (${v.impact}) ${v.id}: ${v.nodes.slice(0, 2).map((n) => n.target.join(' ')).join(', ')}`));
+}
 
 for (const auth of ['out', 'in']) {
   for (const width of [375, 1280]) {
@@ -72,13 +81,7 @@ for (const auth of ['out', 'in']) {
         return out;
       });
       found.push(...checks);
-      if (axePath) {
-        await page.addScriptTag({ path: axePath });
-        const violations = await page.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'] })).violations
-          .filter((v) => v.id !== 'region')
-          .map((v) => `a11y (${v.impact}) ${v.id}: ${v.nodes.slice(0, 2).map((n) => n.target.join(' ')).join(', ')}`));
-        found.push(...violations);
-      }
+      found.push(...await axeProblems(page));
       const here = page.url().split('#')[0];
       for (const href of await page.$$eval('a[href]', (as) => as.map((a) => a.href))) {
         const target = href.split('#')[0];
@@ -91,6 +94,49 @@ for (const auth of ['out', 'in']) {
   }
 }
 
+// Trusty Fever online: carson makes a room, luke joins with the link, and they play for a few seconds.
+{
+  const found = [];
+  const people = [];
+  for (const name of ['carson', 'luke']) {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await context.addCookies([{ name: 'mock', value: 'in', url: BASE }, { name: 'mockuser', value: name, url: BASE }]);
+    await context.addInitScript((n) => { try { localStorage.setItem('isUserLoggedIn', 'true'); localStorage.setItem('username', n); } catch { /* */ } }, name);
+    const page = await context.newPage();
+    page.on('pageerror', (e) => found.push(`${name}'s page threw: ${e.message}`));
+    page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') found.push(`${name}'s console.${m.type()}: ${m.text().slice(0, 200)}`); });
+    people.push({ context, page });
+  }
+  const [host, guest] = people.map((p) => p.page);
+  const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
+  const scores = (page) => page.$eval('#scores', (el) => el.innerText);
+  try {
+    await host.goto(`${BASE}/pages/games/fever.html`, { waitUntil: 'networkidle' });
+    await host.click('#online-btn');
+    await check(host, 'make or join');
+    await host.click('#make-btn');
+    await host.waitForFunction(() => document.querySelector('#room-sub').textContent.includes('Nobody'), null, { timeout: 5000 });
+    const code = await host.$eval('#room-code', (el) => el.textContent);
+    await guest.goto(`${BASE}/pages/games/fever.html#room=${code}`, { waitUntil: 'networkidle' });
+    await host.waitForFunction(() => document.querySelector('#room-sub').textContent.includes('luke'), null, { timeout: 5000 });
+    await check(host, 'room, host');
+    await check(guest, 'room, guest');
+    await host.click('#room-start');
+    for (const page of [host, guest]) await page.waitForFunction(() => document.querySelector('#overlay-room').hidden, null, { timeout: 5000 });
+    await host.keyboard.down('ArrowLeft');
+    await host.waitForTimeout(3500);
+    await host.keyboard.up('ArrowLeft');
+    if (!(await scores(guest)).includes('carson')) found.push('luke doesn’t see carson in the game');
+    if ((await scores(host)).replace(/you|online/g, '') !== (await scores(guest)).replace(/you|online/g, '')) found.push('the two pages show different scores');
+    await host.keyboard.press('Escape');
+    await check(host, 'online menu');
+  } catch (e) {
+    found.push(`didn't get through a game: ${e.message.split('\n')[0]}`);
+  }
+  for (const p of people) await p.context.close();
+  if (found.length) problems.push(`Trusty Fever online\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
 for (const href of links) {
   const res = await fetch(href);
   if (res.status >= 400) problems.push(`broken link: ${href.replace(BASE, '')} (${res.status})`);
@@ -98,7 +144,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);
