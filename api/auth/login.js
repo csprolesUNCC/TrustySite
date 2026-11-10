@@ -4,7 +4,9 @@ import { authenticateUser, isAdmin, setAuthCookie, shouldRenew } from '../../uti
 import { copyName, currentUsername } from '../../utils/rename.js';
 import { countHit, overLimit, clientIp } from '../../utils/rate-limit.js';
 
-// Wrong passwords allowed per FAIL_WINDOW_MS, from one IP address and for one account (utils/rate-limit.js).
+// Wrong passwords allowed per FAIL_WINDOW_MS (utils/rate-limit.js): from one IP address, and for one account from
+// one IP address. The account count goes by IP too, so nobody can lock someone else out by typing wrong passwords
+// at their username.
 const FAIL_WINDOW_MS = 15 * 60 * 1000;
 const FAILS_PER_IP = 20;
 const FAILS_PER_ACCOUNT = 10;
@@ -60,8 +62,9 @@ export default async (req, res) => {
             return res.status(400).json({ message: 'Missing required fields.' });
         }
 
-        const ipKey = `login-ip:${clientIp(req)}`;
-        const accountKey = `login-account:${identifier.toLowerCase()}`;
+        const ip = clientIp(req);
+        const ipKey = `login-ip:${ip}`;
+        const accountKey = `login-account:${ip}:${identifier.toLowerCase()}`;
         const [ipBlocked, accountBlocked] = await Promise.all([
             overLimit(ipKey, FAILS_PER_IP, FAIL_WINDOW_MS),
             overLimit(accountKey, FAILS_PER_ACCOUNT, FAIL_WINDOW_MS),

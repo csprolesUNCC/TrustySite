@@ -34,7 +34,6 @@ function api(req, url) {
   if (p === '/api/leaderboard') {
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'trustis') return [200, url.searchParams.get('personal') ? { highScore: 5000 } : board('score', 'name', 90000)];
-    if (action === 'flappy-daily') return [200, url.searchParams.get('personal') ? { highScore: 4 } : board('score', 'name', 30)];
     if (action === 'profile' && req.method === 'GET') {
       const u = url.searchParams.get('u') || 'carson';
       return [200, {

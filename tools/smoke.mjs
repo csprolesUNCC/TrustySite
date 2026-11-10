@@ -43,6 +43,9 @@ for (const auth of ['out', 'in']) {
       page.on('pageerror', (e) => found.push(`threw: ${e.message}`));
       page.on('console', (m) => {
         if (m.type() !== 'error' && m.type() !== 'warning') return;
+        // Only our own code's messages: embeds (YouTube, the arcade games) log plenty of their own.
+        const from = m.location().url;
+        if (from && !from.startsWith(BASE)) return;
         const text = m.text();
         if (THIRD_PARTY.test(text) || /Failed to load resource|ERR_|GL Driver|WebGL/.test(text)) return;
         found.push(`console.${m.type()}: ${text.slice(0, 200)}`);
