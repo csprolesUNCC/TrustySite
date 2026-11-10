@@ -254,7 +254,7 @@
 
         async function loadArt() {
             const [classic, detailed, seahorse] = await Promise.all([
-                loadImage('/images/trusty-768.webp'), loadImage('/images/detailed_horse-768.webp'), loadImage('/images/seahorse-768.webp'),
+                loadImage('/images/trusty-v2-768.webp'), loadImage('/images/detailed_horse-768.webp'), loadImage('/images/seahorse-768.webp'),
             ]);
             const size = { width: HORSE_W * scale, height: HORSE_H * scale };
             sprites = {

@@ -388,7 +388,7 @@ class TrustyFooter extends HTMLElement {
         col('More', [['Leaderboards', '/pages/leaderboard.html'], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
         h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),
-        h('img', { class: 'footer-trusty ink', src: '/images/trusty-176.webp', alt: '', width: 88, height: 67, loading: 'lazy' }))));
+        h('img', { class: 'footer-trusty ink', src: '/images/trusty-v2-176.webp', alt: '', width: 88, height: 67, loading: 'lazy' }))));
   }
 }
 
