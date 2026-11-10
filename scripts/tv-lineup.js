@@ -18,6 +18,7 @@ export const LINEUP = [
   { title: 'Trusty Finds His Knife', link: 'https://youtu.be/acWwr3mZf6Y?si=1752VqCP99G9A2Vm', length: '2:38' },
   { title: 'How to Make Yourself Tasty', link: 'https://youtu.be/D_rinbKA44Q?si=hXh8_ueUWLynKNOB', length: '1:45' },
   { title: 'Trusty Plays Fortnite', link: 'https://youtu.be/Cv_ADrofdBk?si=8rXKmHtphrGrbItb', length: '9:13' },
+  { title: 'Mitosis', link: 'https://youtu.be/N3M5iA4ojy8?si=rEtZCxlko9jrRE7h', length: '3:18' },
 ];
 
 // Stallion News Network: QGHS news and announcements from the Digital Media and Marketing class
