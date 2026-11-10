@@ -1063,60 +1063,55 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
 .hero-title { margin: 0 0 .35em; font-size: clamp(2.6rem, 7vw, 5.2rem); }
 .hero-title .da { font-size: .6em; color: var(--red); vertical-align: .18em; margin: 0 .05em; }
 .hero-copy .lead { margin-bottom: 28px; }
-/* As wide as the drawing, so the joke bubble's percentages line up with it */
+/* As wide as the drawing, so the fact bubble's percentages line up with it */
 .hero-art { position: relative; display: flex; flex-direction: column; container-type: inline-size; justify-self: center; width: 100%; max-width: 520px; margin: 0; }
 .hero-art img { width: 100%; }
-/* Trusty's joke of the day (scripts/jokes.js): a speech bubble in the empty corner above his back, its tail
-   pointing at his head. It's sized with the drawing (cqi), so the longest joke still clears his back. */
-.joke {
-  position: absolute;
-  left: 41%;
-  right: 1%;
-  top: 2%;
+/* Trusty's fun fact of the day (scripts/facts.js): a speech bubble above him, its tail pointing down at his
+   head. Facts are up to 360 characters (MAX_LENGTH), too long for the empty corner beside his back. */
+.fact {
+  order: -1;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: .15em;
-  padding: .55em .8em .65em;
+  gap: .3em;
+  margin: 0 0 24px 6%;
+  padding: .7em .95em .8em;
   border: 2px solid var(--ink);
   border-radius: 18px 16px 20px 14px / 14px 20px 16px 18px;
   background: var(--card);
   box-shadow: var(--shadow-ink);
-  rotate: -2deg;
+  rotate: -1deg;
   font-family: var(--font-hand);
-  font-size: clamp(1rem, 4.6cqi, 1.5rem);
+  font-size: clamp(1.05rem, 4cqi, 1.25rem);
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1.2;
   overflow-wrap: break-word;
 }
-.joke[hidden] { display: none; }
+.fact[hidden] { display: none; }
 /* The tail: an ink triangle with a white one inside it, over the bubble's border */
-.joke::before, .joke::after {
+.fact::before, .fact::after {
   content: "";
   position: absolute;
-  top: 58%;
-  right: 100%;
-  width: 26px;
+  top: 100%;
+  left: 10%;
+  width: 20px;
   height: 22px;
-  clip-path: polygon(100% 0, 0 100%, 100% 70%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
   background: var(--ink);
 }
-.joke::after { margin-right: -3px; translate: 0 3px; width: 21px; height: 15px; background: var(--card); }
-.joke-label {
+.fact::after { translate: 3px -3px; width: 14px; height: 16px; background: var(--card); }
+.fact-label {
   font-family: var(--font-marker);
-  font-size: clamp(.68rem, 2.7cqi, .9rem);
+  font-size: clamp(.72rem, 2.6cqi, .85rem);
   font-weight: 400;
   color: var(--red);
   letter-spacing: .02em;
 }
-.joke-punchline { color: var(--blue); }
-.joke-punchline:empty { display: none; }
-/* When the drawing is too small for the bubble to fit beside his head, it sits above him instead, its
-   tail pointing down at his head */
-@container (max-width: 359px) {
-  .joke { position: relative; order: -1; left: auto; right: auto; top: auto; margin: 0 2% 22px 18%; font-size: 1.05rem; }
-  .joke-label { font-size: .7rem; }
-  .joke::before, .joke::after { top: 100%; right: auto; left: 12%; width: 20px; height: 22px; clip-path: polygon(0 0, 100% 0, 0 100%); }
-  .joke::after { margin: 0; translate: 3px -3px; width: 14px; height: 16px; }
+/* Phones: a smaller drawing and tighter text, so even the longest fact leaves the page title on the first screen */
+@media (max-width: 640px) {
+  .fact { margin: 0 0 18px 2%; font-size: 1rem; line-height: 1.15; }
+  .fact::before, .fact::after { left: 18%; }
+  .hero-art .hero-neigh { align-self: center; width: 80%; }
 }
 /* Stuck over the bottom edge of the sheet, below Trusty's back. It's in the flow and grows downward,
    so a long update pushes the page down instead of climbing up over Trusty. */
