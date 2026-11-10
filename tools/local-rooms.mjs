@@ -1,9 +1,18 @@
-// Trusty Fever's online rooms for tools/dev-server.mjs: the same Room (realtime/room.js) the Cloudflare
-// Worker runs, behind a tiny WebSocket server, so online play works locally with no Cloudflare account.
+// The online rooms for tools/dev-server.mjs: the same Trusty Fever rooms (realtime/room.js) and Trusty Blackjack
+// tables (realtime/table.js) the Cloudflare Worker runs, behind a tiny WebSocket server, so online play works
+// locally with no Cloudflare account. The clicks go through whatever bank the dev server hands over.
 //   ws://localhost:<port>/fever-rooms/room/<CODE>?v=<PROTOCOL>&ticket=...[&make=1]
+//   ws://localhost:<port>/fever-rooms/table/<CODE>?v=<TABLE_PROTOCOL>&ticket=...[&make=1]
 import crypto from 'node:crypto';
-import { Room, ROOM_CODE, CLOSE, versionProblem } from '../realtime/room.js';
+import { Room, ROOM_CODE, versionProblem as feverVersion } from '../realtime/room.js';
+import { Table, versionProblem as tableVersion } from '../realtime/table.js';
+import { CLOSE } from '../realtime/common.js';
 import { verifyTicket } from '../utils/fever-ticket.js';
+
+const KINDS = {
+  room: { version: feverVersion, open: (code, bank) => new Room(code, { bank }) },
+  table: { version: tableVersion, open: (code, bank) => new Table(code, { bank }) },
+};
 
 export const LOCAL_ROOMS_PATH = '/fever-rooms';
 
@@ -95,32 +104,37 @@ function accept(req, socket) {
   return { conn, on };
 }
 
-// Sends Trusty Fever room connections on `server` to local rooms. Tickets are checked with `secret`.
-export function attachRooms(server, secret) {
-  const rooms = new Map(); // code -> { room, timer, every }
+// Sends room and table connections on `server` to local ones. Tickets are checked with `secret`; bets go to `bank`.
+export function attachRooms(server, secret, bank) {
+  const rooms = new Map(); // "<kind>/<code>" -> { room, timer, every }
 
-  function run(entry, code, fn) {
-    fn();
+  function run(entry, key, fn) {
+    const result = fn();
+    schedule(entry, key);
+    if (result && typeof result.then === 'function') result.then(() => schedule(entry, key), (error) => console.error(error));
+  }
+
+  function schedule(entry, key) {
     const every = entry.room.tickEvery();
     if (every !== entry.every) {
       clearInterval(entry.timer);
       entry.every = every;
-      entry.timer = every ? setInterval(() => run(entry, code, () => entry.room.tick()), every) : null;
+      entry.timer = every ? setInterval(() => run(entry, key, () => entry.room.tick()), every) : null;
     }
-    if (!every && !entry.room.people.length) rooms.delete(code);
+    if (!every && !entry.room.people.length && rooms.get(key) === entry) rooms.delete(key);
   }
 
   server.on('upgrade', async (req, socket) => {
     const url = new URL(req.url, 'http://localhost');
-    const [, code] = url.pathname.match(new RegExp(`^${LOCAL_ROOMS_PATH}/room/([A-Z]{4})$`)) || [];
-    if (!code || !ROOM_CODE.test(code)) {
+    const [, kind, code] = url.pathname.match(new RegExp(`^${LOCAL_ROOMS_PATH}/(room|table)/([A-Z]{4})$`)) || [];
+    if (!kind || !ROOM_CODE.test(code)) {
       socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
       return;
     }
     const user = await verifyTicket(url.searchParams.get('ticket'), secret);
     const ws = accept(req, socket);
     if (!ws) return;
-    const outdated = versionProblem(url.searchParams.get('v'));
+    const outdated = KINDS[kind].version(url.searchParams.get('v'));
     if (outdated) {
       ws.conn.send(JSON.stringify({ t: 'error', message: outdated }));
       ws.conn.close(CLOSE.version, 'Outdated');
@@ -131,10 +145,11 @@ export function attachRooms(server, secret) {
       ws.conn.close(CLOSE.ticket, 'Bad ticket');
       return;
     }
-    if (!rooms.has(code)) rooms.set(code, { room: new Room(code), timer: null, every: 0 });
-    const entry = rooms.get(code);
-    ws.on.message = (text) => run(entry, code, () => entry.room.receive(ws.conn, text));
-    ws.on.close = () => run(entry, code, () => entry.room.leave(ws.conn));
-    run(entry, code, () => entry.room.join(ws.conn, user, { make: url.searchParams.get('make') === '1' }));
+    const key = `${kind}/${code}`;
+    if (!rooms.has(key)) rooms.set(key, { room: KINDS[kind].open(code, bank), timer: null, every: 0 });
+    const entry = rooms.get(key);
+    ws.on.message = (text) => run(entry, key, () => entry.room.receive(ws.conn, text));
+    ws.on.close = () => run(entry, key, () => entry.room.leave(ws.conn));
+    run(entry, key, () => entry.room.join(ws.conn, user, { make: url.searchParams.get('make') === '1' }));
   });
 }

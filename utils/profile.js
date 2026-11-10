@@ -6,6 +6,7 @@ import { nextRename } from './rename.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 import { puzzleNumber, cleanGame, statsFrom } from '../scripts/trustle.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
+import { monthOf } from './bank.js';
 
 // Profile pages (pages/profile.html), served from api/leaderboard.js as ?action=profile so they don't
 // take up another Vercel function.
@@ -46,7 +47,7 @@ async function getProfile(req, res) {
     const trustisCol = db.collection('trustis_scores');
     const best = { sort: { score: -1, timestamp: 1 } };
     const [clickDoc, flappyDoc, drawDoc, trustisDoc, trustleDoc, profileDoc] = await Promise.all([
-        clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1 } }),
+        clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1, 'bank.stats': 1 } }),
         flappyCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
         drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1 } }),
         trustisCol.findOne({ userId }, { ...best, projection: { score: 1, lines: 1, level: 1, timestamp: 1 } }),
@@ -81,6 +82,14 @@ async function getProfile(req, res) {
         if (Number(watched[key]) > 0) tv[key] = Number(watched[key]);
     }
 
+    // How betting clicks went this month (utils/bank.js keeps a running total per game), for games played.
+    const month = monthOf(new Date());
+    const stats = (clickDoc && clickDoc.bank && clickDoc.bank.stats) || {};
+    const bets = {};
+    for (const game of ['blackjack', 'fever']) {
+        if (stats[game] && Number.isFinite(stats[game][month])) bets[game] = stats[game][month];
+    }
+
     const me = authenticateUser(req);
     const isMe = Boolean(me && String(me.userId) === userId);
     return res.status(200).json({
@@ -91,6 +100,7 @@ async function getProfile(req, res) {
         rename: isMe ? { admin: isAdmin(account), next: nextRename(account) } : null,
         bio: profileDoc && typeof profileDoc.bio === 'string' ? profileDoc.bio : '',
         clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank } : null,
+        bets,
         flappy: hasFlappy ? { score: flappyDoc.score, rank: flappyRank } : null,
         draw: hasDraw ? {
             score: drawDoc.score,

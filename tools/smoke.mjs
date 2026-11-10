@@ -1,7 +1,8 @@
 // Loads every page in a real browser against tools/dev-server.mjs, at phone and desktop widths, logged out
 // and logged in, and fails if any page throws, logs an error, requests a missing file, scrolls sideways, has a
 // broken image or link, or has an accessibility problem axe-core can find. Then two people play Trusty Fever online
-// (the dev server runs the rooms) and every online overlay gets the same checks.
+// and a hand of Blackjack for clicks (the dev server runs the rooms, the tables and a pretend click bank), and every
+// online screen gets the same checks.
 //   npm run smoke   (needs Playwright: preinstalled in Claude Code cloud sessions, otherwise `npx playwright install chromium`
 //                    and `npm i -D playwright`)
 import { createRequire } from 'node:module';
@@ -94,9 +95,8 @@ for (const auth of ['out', 'in']) {
   }
 }
 
-// Trusty Fever online: carson makes a room, luke joins with the link, and they play for a few seconds.
-{
-  const found = [];
+// Two logged-in people (the dev server's pretend accounts), for the online games.
+async function twoPeople(found) {
   const people = [];
   for (const name of ['carson', 'luke']) {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -107,7 +107,13 @@ for (const auth of ['out', 'in']) {
     page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') found.push(`${name}'s console.${m.type()}: ${m.text().slice(0, 200)}`); });
     people.push({ context, page });
   }
-  const [host, guest] = people.map((p) => p.page);
+  return { pages: people.map((p) => p.page), close: () => Promise.all(people.map((p) => p.context.close())) };
+}
+
+// Trusty Fever online: carson makes a room with a stake, luke joins with the link, and they play for a few seconds.
+{
+  const found = [];
+  const { pages: [host, guest], close } = await twoPeople(found);
   const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
   const scores = (page) => page.$eval('#scores', (el) => el.innerText);
   try {
@@ -119,10 +125,13 @@ for (const auth of ['out', 'in']) {
     const code = await host.$eval('#room-code', (el) => el.textContent);
     await guest.goto(`${BASE}/pages/games/fever.html#room=${code}`, { waitUntil: 'networkidle' });
     await host.waitForFunction(() => document.querySelector('#room-sub').textContent.includes('luke'), null, { timeout: 5000 });
+    await host.click('[data-setting="stake"] [data-value="50"]');
+    await guest.waitForFunction(() => document.querySelector('#room-sub').textContent.includes('Stake: 50'), null, { timeout: 5000 });
     await check(host, 'room, host');
     await check(guest, 'room, guest');
     await host.click('#room-start');
     for (const page of [host, guest]) await page.waitForFunction(() => document.querySelector('#overlay-room').hidden, null, { timeout: 5000 });
+    if (!(await guest.$eval('#target', (el) => el.textContent)).includes('100-click pot')) found.push('luke doesn’t see the pot');
     await host.keyboard.down('ArrowLeft');
     await host.waitForTimeout(3500);
     await host.keyboard.up('ArrowLeft');
@@ -133,8 +142,48 @@ for (const auth of ['out', 'in']) {
   } catch (e) {
     found.push(`didn't get through a game: ${e.message.split('\n')[0]}`);
   }
-  for (const p of people) await p.context.close();
+  await close();
   if (found.length) problems.push(`Trusty Fever online\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
+// Trusty Blackjack for clicks: carson opens a table, luke sits down with the link, and they play a hand.
+{
+  const found = [];
+  const { pages: [host, guest], close } = await twoPeople(found);
+  const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
+  const status = (page) => page.$eval('#status-text', (el) => el.textContent);
+  try {
+    await host.goto(`${BASE}/pages/games/casino.html`, { waitUntil: 'networkidle' });
+    await host.click('[data-mode="online"]');
+    await check(host, 'table lobby');
+    await host.click('#open-table');
+    await host.waitForFunction(() => document.querySelector('#table-label').textContent.length === 4, null, { timeout: 5000 });
+    const code = await host.$eval('#table-label', (el) => el.textContent);
+    await guest.goto(`${BASE}/pages/games/casino.html#table=${code}`, { waitUntil: 'networkidle' });
+    await guest.waitForFunction(() => document.querySelectorAll('#table-people li').length === 2, null, { timeout: 5000 });
+    await host.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
+    await host.click('#deal-btn');
+    await guest.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
+    await guest.click('#deal-btn');
+    await host.waitForFunction(() => document.querySelector('#dealer-cards').children.length === 2, null, { timeout: 5000 });
+    await check(host, 'table, mid-hand');
+    // Whoever is asked: no insurance, and stand.
+    const done = /win|takes|Push/;
+    for (let i = 0; i < 60 && !done.test(await status(host)); i++) {
+      for (const page of [host, guest]) {
+        const now = await status(page);
+        if (/Insurance\?|Even money\?/.test(now)) await page.click('#no-insure-btn');
+        else if (/Your turn/.test(now)) await page.click('#stand-btn');
+      }
+      await host.waitForTimeout(250);
+    }
+    if (!done.test(await status(host))) found.push(`the hand never finished: "${await status(host)}"`);
+    await check(guest, 'table, after a hand');
+  } catch (e) {
+    found.push(`didn't get through a hand: ${e.message.split('\n')[0]}`);
+  }
+  await close();
+  if (found.length) problems.push(`Trusty Blackjack for clicks\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
 for (const href of links) {
@@ -144,7 +193,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, a hand of Blackjack for clicks${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

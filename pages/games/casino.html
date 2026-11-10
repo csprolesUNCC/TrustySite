@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Trusty Blackjack — Trusty da Horse</title>
-    <meta name="description" content="Beat the dealer! Play blackjack against Trusty da Horse at the horse casino.">
+    <meta name="description" content="Beat the dealer! Play blackjack against Trusty da Horse at the horse casino, for practice money or for your site clicks at a table with friends.">
     <link rel="canonical" href="https://trustydahorse.com/pages/games/casino.html">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
@@ -34,6 +34,12 @@
                     <p class="eyebrow">The horse casino</p>
                     <h1>Trusty Blackjack</h1>
                 </div>
+                <div class="game-actions" id="modes" hidden>
+                    <div class="segmented compact" role="group" aria-label="What to play for">
+                        <button type="button" data-mode="practice" aria-pressed="true">Practice</button>
+                        <button type="button" data-mode="online" aria-pressed="false">Play for clicks</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -44,10 +50,28 @@
                         <h2 class="hand-label"><img class="dealer-avatar" src="/images/trusty-v2-176.webp" alt="" width="64" height="50"> Dealer Trusty <span class="hand-value" id="dealer-value"></span></h2>
                         <div class="cards" id="dealer-cards" role="group" aria-label="Dealer's cards"></div>
                     </div>
-                    <p class="casino-status" id="status" role="status" aria-live="polite">Place your bet!</p>
+                    <p class="casino-status" id="status" role="status" aria-live="polite"><span id="status-text">Place your bet!</span> <span class="casino-timer" id="timer" aria-hidden="true"></span></p>
+                    <div class="others" id="others" role="group" aria-label="Other players" hidden></div>
                     <div class="table-row">
                         <div class="hands" id="hands" role="group" aria-label="Your hands"></div>
                         <h2 class="hand-label">You</h2>
+                    </div>
+
+                    <div class="casino-lobby" id="lobby" hidden>
+                        <p class="overlay-kicker">Play for clicks</p>
+                        <h2 class="overlay-title" id="lobby-title">Sit at a table</h2>
+                        <p class="lobby-sub" id="lobby-sub"></p>
+                        <div class="overlay-actions" id="lobby-actions">
+                            <button class="btn btn-lg btn-highlight" type="button" id="open-table">Open a table</button>
+                            <form class="room-join" id="join-table" novalidate>
+                                <label class="sr-only" for="table-code">Table code</label>
+                                <input class="input" id="table-code" name="code" placeholder="CODE" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                                <button class="btn btn-lg btn-outline" type="submit">Join</button>
+                            </form>
+                        </div>
+                        <div class="overlay-actions" id="lobby-login" hidden>
+                            <a class="btn btn-lg btn-highlight" id="lobby-login-link" href="/pages/auth/login.html">Log in</a>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -56,7 +80,7 @@
                 <div class="panel casino-controls" id="controls">
                     <div class="bankroll">
                         <div>
-                            <span class="stat-label">Bankroll</span>
+                            <span class="stat-label" id="bank-label">Bankroll</span>
                             <span class="bankroll-amount" id="bank">$100</span>
                         </div>
                         <div>
@@ -64,14 +88,22 @@
                             <span class="bankroll-amount" id="bet-display">$0</span>
                         </div>
                     </div>
+                    <p class="side-note casino-today" id="today" hidden></p>
 
                     <div class="bet-row" id="bet-row">
-                        <div class="chips" role="group" aria-label="Add chips to your bet">
+                        <div class="chips" id="practice-chips" role="group" aria-label="Add chips to your bet">
                             <button class="chip-btn" type="button" data-amount="5">$5</button>
                             <button class="chip-btn" type="button" data-amount="10">$10</button>
                             <button class="chip-btn" type="button" data-amount="25">$25</button>
                             <button class="chip-btn" type="button" data-amount="50">$50</button>
                             <button class="chip-btn" type="button" data-amount="all">All in</button>
+                        </div>
+                        <div class="chips" id="click-chips" role="group" aria-label="Add clicks to your bet" hidden>
+                            <button class="chip-btn" type="button" data-clicks="10">10</button>
+                            <button class="chip-btn" type="button" data-clicks="50">50</button>
+                            <button class="chip-btn" type="button" data-clicks="100">100</button>
+                            <button class="chip-btn" type="button" data-clicks="500">500</button>
+                            <button class="chip-btn" type="button" data-clicks="max">Max</button>
                         </div>
                         <label class="sr-only" for="bet-input">Bet amount</label>
                         <input class="input bet-input" id="bet-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Bet">
@@ -100,6 +132,14 @@
                         <button class="btn btn-sm" type="button" id="bailout-btn">Take a $100 bailout</button>
                     </div>
                 </div>
+                <div class="panel" id="table-panel" hidden>
+                    <h2 class="panel-title">Table <span class="table-code" id="table-label"></span></h2>
+                    <ul class="table-people" id="table-people"></ul>
+                    <div class="btn-row">
+                        <button class="btn btn-sm btn-outline" type="button" id="copy-table">Copy link</button>
+                        <button class="btn btn-sm btn-ghost" type="button" id="leave-table">Leave the table</button>
+                    </div>
+                </div>
                 <div class="panel">
                     <h2 class="panel-title">House rules</h2>
                     <ul class="how-to bullets">
@@ -120,7 +160,7 @@
                         <li><span class="keys"><kbd>Y</kbd><kbd>N</kbd></span> Insurance yes / no</li>
                     </ul>
                 </div>
-                <p class="side-note">Your bankroll is saved on this device. It's pretend money, and the games are probably rigged.</p>
+                <p class="side-note" id="money-note">Your bankroll is saved on this device. It's pretend money, and the games are probably rigged.</p>
             </aside>
         </div>
     </main>
@@ -128,22 +168,31 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt } from '/scripts/site.js';
+        import { h, fmt, toast, session, loginHref, announceBalance } from '/scripts/site.js';
         import { isForeignKey, isActivationKey } from '/scripts/game-kit.js';
+        import {
+            newShoe as shuffledShoe, cardValue, total, isNatural, describe, RESHUFFLE_BELOW, MAX_HANDS, DEALER_STANDS_ON, TABLE_PROTOCOL,
+        } from '/scripts/blackjack.js';
+        import { roomsOpen, connect, newCode, roomLink, roomFromHash, bankStatus, ROOM_CODE } from '/scripts/rooms.js';
+
+        // Two ways to play: Practice is this device against Trusty with pretend dollars (everything below
+        // "Practice"), and Play for clicks sits you at an online table (realtime/table.js) that deals the cards and
+        // bets your real site clicks through the click bank. The rules are scripts/blackjack.js either way.
 
         /* ---------- House rules (standard casino blackjack) ---------- */
         const BANK_KEY = 'trusty:blackjack-bank';
         const START_BANK = 100;
-        const DECKS = 6;
-        const RESHUFFLE_BELOW = (52 * DECKS) / 4;   // new shoe once three quarters have been dealt
-        const MAX_HANDS = 4;
-        const DEALER_STANDS_ON = 17;                // stands on soft 17 too
+        // Online: what each kind of finished hand pays back, as a multiple of its bet (as in scripts/blackjack.js).
+        const PAYS = { blackjack: 2.5, win: 2, push: 1, lose: 0, bust: 0 };
+        const TABLE_TAKEN = 4003; // CLOSE.taken in realtime/common.js
 
         const $ = (id) => document.getElementById(id);
-        const SUITS = ['♠', '♥', '♦', '♣'];
-        const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
         const RANK_NAMES = { A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' };
         const SUIT_NAMES = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
+        const short = (name) => (name.length > 14 ? `${name.slice(0, 13)}…` : name);
+
+        let mode = 'practice'; // practice | online
+        let net = null;        // the online table this page sits at (see Online, below)
 
         let bank = loadBank();
         let bet = 0;
@@ -172,42 +221,9 @@
             return `${n < 0 ? '−' : ''}$${fmt(Math.floor(cents / 100))}${change ? `.${String(change).padStart(2, '0')}` : ''}`;
         }
 
-        /* ---------- Cards ---------- */
-
-        function newShoe() {
-            shoe = [];
-            for (let d = 0; d < DECKS; d++) for (const suit of SUITS) for (const rank of RANKS) shoe.push({ rank, suit });
-            for (let i = shoe.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
-            }
-        }
-
+        function newShoe() { shoe = shuffledShoe(); }
         const draw = () => shoe.pop();
-        const cardValue = (card) => (card.rank === 'A' ? 11 : ['J', 'Q', 'K'].includes(card.rank) ? 10 : Number(card.rank));
-
-        // Best total, and whether an Ace is still being counted as 11.
-        function total(cards) {
-            let sum = 0;
-            let aces = 0;
-            for (const card of cards) {
-                sum += cardValue(card);
-                if (card.rank === 'A') aces++;
-            }
-            while (sum > 21 && aces > 0) { sum -= 10; aces--; }
-            return { value: sum, soft: aces > 0 };
-        }
-
-        const isNatural = (cards) => cards.length === 2 && total(cards).value === 21;
         const handIsBlackjack = (hand) => !hand.fromSplit && isNatural(hand.cards);
-
-        function describe(cards, fromSplit = false) {
-            if (!cards.length) return '';
-            const { value, soft } = total(cards);
-            if (!fromSplit && isNatural(cards)) return 'Blackjack';
-            if (soft && value < 21) return `${value - 10} / ${value}`;
-            return String(value);
-        }
 
         /* ---------- Rendering ---------- */
 
@@ -225,14 +241,19 @@
             h('span', { class: 'card-corner bottom', 'aria-hidden': 'true' }, h('span', null, card.rank), h('span', null, card.suit)));
         }
 
-        // Only touch cards that changed, so the deal animation plays once per new card.
-        function renderCards(container, cards, hiddenIndex = -1) {
+        // Only touch cards that changed, so the deal animation plays once per new card. `stagger` (ms) spaces out
+        // the animations of cards that arrive together (online, a whole deal comes at once).
+        function renderCards(container, cards, hiddenIndex = -1, stagger = 0) {
+            let fresh = 0;
             cards.forEach((card, i) => {
                 const hidden = i === hiddenIndex;
                 const key = hidden ? 'hidden' : card.rank + card.suit;
                 const existing = container.children[i];
-                if (!existing) container.append(cardEl(card, hidden));
-                else if (existing.dataset.key !== key) existing.replaceWith(cardEl(card, hidden));
+                if (existing && existing.dataset.key === key) return;
+                const el = cardEl(card, hidden);
+                if (stagger) el.style.animationDelay = `${fresh++ * stagger}ms`;
+                if (!existing) container.append(el);
+                else existing.replaceWith(el);
             });
             while (container.children.length > cards.length) container.lastElementChild.remove();
         }
@@ -241,9 +262,11 @@
         // Shown before the first deal, so the table already has room for your cards and doesn't grow when they come.
         const NO_HAND = { cards: [], bet: 0, fromSplit: false, result: null };
 
-        function renderHands() {
+        // Your hands. activeIndex: the one being played (outlined when there's more than one); plainBet: a bet that
+        // goes without saying (shown only when it's something else); betText: how a bet reads.
+        function renderHands(list, { activeIndex = -1, plainBet = -1, betText = money, stagger = 0 } = {}) {
             const box = $('hands');
-            const shown = hands.length ? hands : [NO_HAND];
+            const shown = list.length ? list : [NO_HAND];
             while (box.children.length > shown.length) box.lastElementChild.remove();
             while (box.children.length < shown.length) {
                 box.append(h('div', { class: 'hand' },
@@ -253,17 +276,17 @@
                         h('span', { class: 'hand-bet' }),
                         h('span', { class: 'hand-result' }))));
             }
-            const split = hands.length > 1;
+            const split = list.length > 1;
             box.classList.toggle('is-split', split);
             shown.forEach((hand, i) => {
                 const el = box.children[i];
                 const [cardsEl, meta] = el.children;
                 const [valueEl, betEl, resultEl] = meta.children;
-                renderCards(cardsEl, hand.cards);
+                renderCards(cardsEl, hand.cards, -1, stagger);
                 cardsEl.setAttribute('aria-label', split ? `Hand ${i + 1}` : 'Your cards');
-                el.classList.toggle('is-active', split && state === 'player' && i === active);
+                el.classList.toggle('is-active', split && i === activeIndex);
                 valueEl.textContent = describe(hand.cards, hand.fromSplit);
-                betEl.textContent = split || hand.bet !== lastBet ? money(hand.bet) : '';
+                betEl.textContent = hand.bet && (split || hand.bet !== plainBet) ? betText(hand.bet) : '';
                 betEl.hidden = !betEl.textContent;
                 resultEl.textContent = hand.result ? RESULT_TEXT[hand.result] : '';
                 resultEl.className = `hand-result${hand.result ? ` ${hand.result}` : ''}`;
@@ -271,49 +294,13 @@
             });
         }
 
-        const current = () => hands[active];
-
-        function canDouble() {
-            const hand = current();
-            return state === 'player' && !!hand && hand.cards.length === 2 && !hand.splitAces && bank >= hand.bet;
-        }
-
-        function canSplit() {
-            const hand = current();
-            return state === 'player' && !!hand && hand.cards.length === 2 && hands.length < MAX_HANDS && bank >= hand.bet
-                && cardValue(hand.cards[0]) === cardValue(hand.cards[1]) && !hand.splitAces;
-        }
-
         function render() {
-            renderCards($('dealer-cards'), dealer, holeHidden ? 1 : -1);
-            $('dealer-value').textContent = !dealer.length ? '' : holeHidden ? String(cardValue(dealer[0])) : describe(dealer);
-            renderHands();
-            $('bank').textContent = money(bank);
-            $('bet-display').textContent = money(state === 'betting' || state === 'settled' ? bet : hands.reduce((sum, hand) => sum + hand.bet, 0) + insurance);
-
-            const betting = state === 'betting' || state === 'settled';
-            const phase = betting ? 'bet' : state === 'insurance' ? 'insurance' : 'play';
-            $('controls').dataset.phase = phase;
-            $('deal-btn').disabled = !betting || bet < 1 || bet > bank;
-            $('hit-btn').disabled = state !== 'player';
-            $('stand-btn').disabled = state !== 'player';
-            $('double-btn').disabled = !canDouble();
-            $('split-btn').disabled = !canSplit();
-            for (const chip of document.querySelectorAll('.chip-btn')) chip.disabled = !betting || bank < 1;
-            $('bet-input').disabled = !betting;
-            $('clear-bet').disabled = !betting;
-            $('broke').hidden = !(betting && bank < 1);
-            $('insurance').hidden = state !== 'insurance';
-            if (document.activeElement !== $('bet-input')) $('bet-input').value = bet || '';
-
-            // When a round starts or ends, when the insurance question comes up, and when a split makes the table taller.
-            const height = casino.offsetHeight;
-            if (shownPhase && (phase !== shownPhase || (!betting && height !== tableHeight))) showTable();
-            shownPhase = phase;
-            tableHeight = height;
+            if (mode === 'online') renderOnline();
+            else renderPractice();
+            keepInView();
         }
 
-        function setStatus(text) { $('status').textContent = text; }
+        function setStatus(text) { $('status-text').textContent = text; }
 
         // On phones and tablets the controls sit under the table. When a round starts, scroll the table to the top of
         // the screen so the cards and the buttons are both on it, in the same spot every round (on a screen too short
@@ -332,31 +319,70 @@
             if (Math.abs(by) > 1) scrollBy({ top: by, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
         }
 
-        /* ---------- Betting ---------- */
+        // When a round starts or ends, when the insurance question comes up, and when a split makes the table taller.
+        function keepInView() {
+            const phase = $('controls').dataset.phase;
+            const height = casino.offsetHeight;
+            if (shownPhase && (phase !== shownPhase || (phase !== 'bet' && height !== tableHeight))) showTable();
+            shownPhase = phase;
+            tableHeight = height;
+        }
+
+        /* ---------- Practice ---------- */
+
+        const current = () => hands[active];
+
+        function canDouble() {
+            const hand = current();
+            return state === 'player' && !!hand && hand.cards.length === 2 && !hand.splitAces && bank >= hand.bet;
+        }
+
+        function canSplit() {
+            const hand = current();
+            return state === 'player' && !!hand && hand.cards.length === 2 && hands.length < MAX_HANDS && bank >= hand.bet
+                && cardValue(hand.cards[0]) === cardValue(hand.cards[1]) && !hand.splitAces;
+        }
+
+        function renderPractice() {
+            renderCards($('dealer-cards'), dealer, holeHidden ? 1 : -1);
+            $('dealer-value').textContent = !dealer.length ? '' : holeHidden ? String(cardValue(dealer[0])) : describe(dealer);
+            renderHands(hands, { activeIndex: state === 'player' ? active : -1, plainBet: lastBet });
+            $('bank-label').textContent = 'Bankroll';
+            $('bank').textContent = money(bank);
+            $('bet-display').textContent = money(state === 'betting' || state === 'settled' ? bet : hands.reduce((sum, hand) => sum + hand.bet, 0) + insurance);
+
+            const betting = state === 'betting' || state === 'settled';
+            const phase = betting ? 'bet' : state === 'insurance' ? 'insurance' : 'play';
+            $('controls').dataset.phase = phase;
+            $('deal-btn').textContent = 'Deal';
+            $('deal-btn').disabled = !betting || bet < 1 || bet > bank;
+            $('hit-btn').disabled = state !== 'player';
+            $('stand-btn').disabled = state !== 'player';
+            $('double-btn').disabled = !canDouble();
+            $('split-btn').disabled = !canSplit();
+            for (const chip of document.querySelectorAll('[data-amount]')) chip.disabled = !betting || bank < 1;
+            $('bet-input').disabled = !betting;
+            $('bet-input').step = '1';
+            $('clear-bet').disabled = !betting;
+            $('broke').hidden = !(betting && bank < 1);
+            $('insurance').hidden = state !== 'insurance';
+            if (document.activeElement !== $('bet-input')) $('bet-input').value = bet || '';
+        }
 
         function setBet(amount) {
             bet = Math.max(0, Math.min(Math.floor(Number(amount) || 0), Math.floor(bank)));
             render();
         }
 
-        for (const chip of document.querySelectorAll('.chip-btn')) {
+        for (const chip of document.querySelectorAll('[data-amount]')) {
             chip.addEventListener('click', () => setBet(chip.dataset.amount === 'all' ? bank : bet + Number(chip.dataset.amount)));
         }
-        $('bet-input').addEventListener('input', (e) => {
-            bet = Math.max(0, Math.min(Math.floor(Number(e.target.value) || 0), Math.floor(bank)));
-            render();
-        });
-        $('bet-input').addEventListener('blur', render);
-        $('bet-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); deal(); } });
-        $('clear-bet').addEventListener('click', () => setBet(0));
         $('bailout-btn').addEventListener('click', () => {
             bank = START_BANK;
             saveBank();
             setStatus('Trusty spotted you $100. Don’t tell anyone.');
             setBet(10);
         });
-
-        /* ---------- Round ---------- */
 
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -596,29 +622,421 @@
             render();
         }
 
-        $('deal-btn').addEventListener('click', deal);
-        $('hit-btn').addEventListener('click', hit);
-        $('stand-btn').addEventListener('click', stand);
-        $('double-btn').addEventListener('click', double);
-        $('split-btn').addEventListener('click', split);
-        $('insure-btn').addEventListener('click', () => decideInsurance(true));
-        $('no-insure-btn').addEventListener('click', () => decideInsurance(false));
+        /* ---------- Online ---------- */
+
+        // net: { code, conn, table (the last { t: 'table' } it sent), status (reconnecting), clicks and today (your
+        // clicks and today's result, from the bank), draft (the bet you're making), deadline (performance.now()
+        // when whoever is up runs out of time) }.
+
+        function onlineView() {
+            const table = net && net.table;
+            const round = table && table.round;
+            const seatIndex = round ? round.seats.findIndex((s) => s.you) : -1;
+            return {
+                table,
+                round,
+                seatIndex,
+                seat: seatIndex >= 0 ? round.seats[seatIndex] : null,
+                me: table ? table.people.find((p) => p.name === table.you) : null,
+                myTurn: Boolean(round) && round.phase === 'player' && round.turn === seatIndex && seatIndex >= 0,
+            };
+        }
+
+        const limits = () => (net && net.table && net.table.bets) || { min: 10, max: 500, step: 10 };
+        const clicksText = (n) => `${fmt(n)} clicks`;
+        // The biggest bet you can make: what you have, in tens, up to the table's limit.
+        const maxBet = () => {
+            const { max, step } = limits();
+            return Math.min(max, Math.floor((net && net.clicks != null ? net.clicks : max) / step) * step);
+        };
+        const splitAces = (hand) => hand.fromSplit && hand.cards[0] && hand.cards[0].rank === 'A';
+
+        function renderOnline() {
+            const { table, round, seat, me, myTurn } = onlineView();
+            $('lobby').hidden = Boolean(net);
+            $('table-panel').hidden = !net;
+            $('controls').hidden = !net; // nothing to bet on until you sit down
+
+            const shownDealer = round ? round.dealer : [];
+            renderCards($('dealer-cards'), shownDealer.map((c) => c || { rank: '', suit: '' }), shownDealer.indexOf(null), 140);
+            $('dealer-value').textContent = !shownDealer.length ? '' : shownDealer.includes(null) ? String(cardValue(shownDealer[0])) : describe(shownDealer);
+            renderHands(seat ? seat.hands : [], { activeIndex: myTurn ? round.active : -1, betText: clicksText, stagger: 140 });
+            renderOthers(round);
+            renderTablePeople(table);
+            setStatus(onlineStatus());
+            renderTimer();
+
+            // Controls
+            const hand = myTurn ? seat.hands[round.active] : null;
+            const betting = !table || table.phase === 'betting' || table.phase === 'over';
+            const placed = Boolean(me && me.bet);
+            const busy = Boolean(me && me.busy);
+            const insuring = Boolean(round) && round.phase === 'insurance' && Boolean(seat) && !seat.decided;
+            $('controls').dataset.phase = insuring ? 'insurance' : betting && !placed ? 'bet' : 'play';
+            $('bank-label').textContent = 'Your clicks';
+            $('bank').textContent = net && net.clicks != null ? fmt(net.clicks) : '…';
+            const inPlay = seat && round.phase !== 'over' ? seat.hands.reduce((sum, x) => sum + x.bet, 0) + seat.insurance : 0;
+            $('bet-display').textContent = fmt(placed ? me.bet : inPlay || (net ? net.draft : 0));
+            $('deal-btn').textContent = busy ? 'Placing…' : placed ? 'Bet placed' : 'Place bet';
+            $('deal-btn').disabled = !net || !table || !betting || placed || busy || net.draft < limits().min || net.draft > maxBet();
+            $('hit-btn').disabled = !myTurn || busy;
+            $('stand-btn').disabled = !myTurn || busy;
+            const afford = hand && net.clicks != null && net.clicks >= hand.bet;
+            $('double-btn').disabled = !hand || busy || !afford || hand.cards.length !== 2 || splitAces(hand);
+            $('split-btn').disabled = !hand || busy || !afford || hand.cards.length !== 2 || splitAces(hand)
+                || seat.hands.length >= MAX_HANDS || cardValue(hand.cards[0]) !== cardValue(hand.cards[1]);
+            for (const chip of document.querySelectorAll('[data-clicks]')) chip.disabled = !net || !betting || placed || busy;
+            $('bet-input').disabled = !net || !betting || placed || busy;
+            $('bet-input').step = String(limits().step);
+            $('clear-bet').disabled = !net || !betting || placed || busy;
+            $('broke').hidden = true;
+            $('insurance').hidden = !insuring;
+            if (insuring) {
+                const cost = seat.hands[0].bet / 2;
+                const even = isNatural(seat.hands[0].cards);
+                $('insurance-text').textContent = even
+                    ? 'You have blackjack and Trusty shows an Ace. Take even money?'
+                    : 'Trusty is showing an Ace. Want insurance against his blackjack?';
+                $('insure-btn').textContent = even ? `Even money (${clicksText(cost)})` : `Insure ${clicksText(cost)}`;
+                $('insure-btn').disabled = busy || net.clicks == null || net.clicks < cost;
+            }
+            if (net && document.activeElement !== $('bet-input')) $('bet-input').value = net.draft || '';
+            const today = net && net.today != null ? net.today : null;
+            $('today').hidden = today == null;
+            if (today != null) {
+                const { lossPerDay, winPerDay } = (net && net.limits) || { lossPerDay: 5000, winPerDay: 5000 };
+                $('today').textContent = `Today: ${today > 0 ? '+' : today < 0 ? '−' : ''}${fmt(Math.abs(today))} clicks. You can be up to ${fmt(winPerDay)} up or ${fmt(lossPerDay)} down a day.`;
+            }
+        }
+
+        // What happened to your clicks in a finished hand.
+        function resultText(seat, round) {
+            let staked = seat.insurance;
+            let back = round.dealerBlackjack ? seat.insurance * 3 : 0;
+            for (const hand of seat.hands) {
+                staked += hand.bet;
+                back += hand.bet * PAYS[hand.result];
+            }
+            const won = back - staked;
+            if (won > 0) return `You win ${clicksText(won)}!`;
+            if (won < 0) return `Trusty takes ${clicksText(-won)}.`;
+            return 'Push: you get your clicks back.';
+        }
+
+        function onlineStatus() {
+            const { table, round, seat, me, myTurn } = onlineView();
+            if (!net) return '';
+            if (net.status) return net.status;
+            if (!table) return 'Finding you a seat…';
+            const others = table.people.length > 1;
+            if (table.phase === 'betting' || table.phase === 'over') {
+                if (me && me.bet) return others ? 'Bet placed. Waiting for the others…' : 'Bet placed.';
+                if (round && round.phase === 'over' && seat && table.phase === 'over') return `${resultText(seat, round)} Bet again?`;
+                if (table.shuffled && !round) return 'Trusty shuffles the cards… Place your bet!';
+                return 'Place your bet!';
+            }
+            if (table.phase === 'insurance') {
+                if (seat && !seat.decided) return isNatural(seat.hands[0].cards) ? 'Even money?' : 'Insurance?';
+                return 'Waiting for the others to decide on insurance…';
+            }
+            if (table.phase === 'player') {
+                if (myTurn) {
+                    const lead = seat.hands.length > 1 ? `Hand ${round.active + 1}: ` : '';
+                    return `${lead}Your turn. Hit or stand?`;
+                }
+                return `${short(round.seats[round.turn].name)}’s turn…`;
+            }
+            return 'Trusty’s turn…';
+        }
+
+        // A countdown for whoever is up (and for bets), kept out of the status line so screen readers aren't read
+        // a number every second.
+        function renderTimer() {
+            const left = net && net.deadline ? Math.ceil((net.deadline - performance.now()) / 1000) : 0;
+            const show = mode === 'online' && left > 0 && net && net.table && net.table.phase !== 'dealer' && net.table.phase !== 'over';
+            $('timer').textContent = show ? `${left}s` : '';
+            $('timer').hidden = !show;
+        }
+
+        // Everyone else in the hand, smaller, above your cards.
+        function renderOthers(round) {
+            const box = $('others');
+            const seats = round ? round.seats.filter((s) => !s.you) : [];
+            box.hidden = !seats.length;
+            const kept = new Set();
+            for (const s of seats) {
+                let el = [...box.children].find((x) => x.dataset.seat === s.name);
+                if (!el) {
+                    el = h('div', { class: 'seat', dataset: { seat: s.name } },
+                        h('span', { class: 'seat-name' }),
+                        h('div', { class: 'seat-hands' }),
+                        h('span', { class: 'seat-meta' }));
+                }
+                box.append(el);
+                kept.add(el);
+                const [nameEl, handsEl, metaEl] = el.children;
+                nameEl.textContent = s.name;
+                el.classList.toggle('is-up', round.phase === 'player' && round.seats[round.turn] === s);
+                while (handsEl.children.length > s.hands.length) handsEl.lastElementChild.remove();
+                while (handsEl.children.length < s.hands.length) handsEl.append(h('div', { class: 'cards', role: 'group' }));
+                s.hands.forEach((hand, i) => {
+                    renderCards(handsEl.children[i], hand.cards, -1, 140);
+                    handsEl.children[i].setAttribute('aria-label', `${s.name}’s cards${s.hands.length > 1 ? `, hand ${i + 1}` : ''}`);
+                });
+                const totalBet = s.hands.reduce((sum, x) => sum + x.bet, 0);
+                const results = [...new Set(s.hands.map((x) => x.result).filter(Boolean))];
+                metaEl.replaceChildren(
+                    // (A blackjack says so in its result.)
+                    h('span', { class: 'seat-value' }, s.hands.length > 1 ? `${s.hands.length} hands` : describe(s.hands[0].cards, true)),
+                    h('span', { class: 'seat-bet' }, fmt(totalBet)),
+                    ...results.map((r) => h('span', { class: `hand-result ${r}` }, RESULT_TEXT[r])));
+            }
+            for (const el of [...box.children]) if (!kept.has(el)) el.remove();
+        }
+
+        function renderTablePeople(table) {
+            if (!net) return;
+            $('table-label').textContent = net.code;
+            if (!table) return;
+            $('table-people').replaceChildren(...table.people.map((p) => h('li', null,
+                h('strong', null, p.name === table.you ? `${short(p.name)} (you)` : short(p.name)),
+                h('span', null, p.busy ? 'betting…' : p.bet ? `bet ${fmt(p.bet)}` : ''))));
+        }
+
+        function setDraft(amount) {
+            if (!net) return;
+            const { step } = limits();
+            net.draft = Math.max(0, Math.min(Math.floor((Number(amount) || 0) / step) * step, maxBet()));
+            render();
+        }
+
+        for (const chip of document.querySelectorAll('[data-clicks]')) {
+            chip.addEventListener('click', () => setDraft(chip.dataset.clicks === 'max' ? maxBet() : net.draft + Number(chip.dataset.clicks)));
+        }
+
+        function sendBet() {
+            if (!net || $('deal-btn').disabled) return;
+            net.conn.send({ t: 'bet', amount: net.draft });
+        }
+
+        function sendMove(t) {
+            if (!net) return;
+            const button = { hit: 'hit-btn', stand: 'stand-btn', double: 'double-btn', split: 'split-btn' }[t];
+            if (!$(button).disabled) net.conn.send({ t });
+        }
+
+        function sendInsurance(take) {
+            if (net && !$('insurance').hidden) net.conn.send({ t: 'insure', take });
+        }
+
+        function onMessage(msg) {
+            if (msg.t === 'table') {
+                net.table = msg;
+                net.code = msg.code;
+                net.deadline = msg.left ? performance.now() + msg.left : 0;
+                render();
+            } else if (msg.t === 'bank') {
+                const before = net.clicks;
+                net.clicks = msg.clicks;
+                net.today = msg.net;
+                announceBalance(msg.clicks, before != null && msg.clicks > before ? msg.clicks - before : 0);
+                if (net.draft > maxBet()) net.draft = maxBet();
+                render();
+            } else if (msg.t === 'notice') {
+                toast(msg.message, 'info', 7000);
+            }
+        }
+
+        function showLobby(message = '', { login = false } = {}) {
+            const needLogin = login || !session.loggedIn;
+            $('lobby').hidden = false;
+            $('lobby-actions').hidden = needLogin;
+            $('lobby-login').hidden = !needLogin;
+            $('lobby-login-link').href = loginHref();
+            $('lobby-title').textContent = needLogin ? 'Log in to play for clicks' : 'Sit at a table';
+            $('lobby-sub').textContent = message || (needLogin
+                ? 'Your bets are your real Trusty clicks, so you need an account.'
+                : 'Bet your real clicks against Trusty, alone or with friends: open a table and send them the link, or type in the code of theirs.');
+            render();
+        }
+
+        function openTable(code, { make = false, tries = 0 } = {}) {
+            if (net) net.conn.leave();
+            const here = { code, conn: null, table: null, status: null, clicks: null, today: null, limits: null, draft: 10, deadline: 0 };
+            net = here;
+            history.replaceState(null, '', `#table=${code}`);
+            bankStatus().then((mine) => {
+                if (!mine || net !== here) return;
+                here.clicks = mine.clicks;
+                here.today = mine.net;
+                here.limits = mine.limits;
+                if (mine.refunded) toast(`${fmt(mine.refunded)} clicks from a hand that never finished came back to you.`, 'info', 7000);
+                render();
+            });
+            here.conn = connect({
+                kind: 'table',
+                code,
+                version: TABLE_PROTOCOL,
+                make,
+                on: {
+                    message: (msg) => { if (net === here) onMessage(msg); },
+                    status: (text) => {
+                        if (net !== here) return;
+                        net.status = text;
+                        render();
+                    },
+                    gone: (message, { code: why, login } = {}) => {
+                        if (net !== here) return;
+                        if (why === TABLE_TAKEN && make && tries < 3) {
+                            openTable(newCode(), { make: true, tries: tries + 1 });
+                            return;
+                        }
+                        leaveTable();
+                        showLobby(message, { login });
+                    },
+                },
+            });
+            render();
+        }
+
+        function leaveTable() {
+            if (net) net.conn.leave();
+            net = null;
+            if (roomFromHash('table')) history.replaceState(null, '', location.pathname + location.search);
+            $('others').replaceChildren();
+            $('hands').replaceChildren();
+            $('dealer-cards').replaceChildren();
+        }
+
+        async function copyLink() {
+            const url = roomLink(net.code, 'table');
+            try {
+                if (matchMedia('(pointer: coarse)').matches && navigator.share) {
+                    await navigator.share({ title: 'Trusty Blackjack', text: `Sit at my Trusty Blackjack table! Code ${net.code}:`, url });
+                    return;
+                }
+                await navigator.clipboard.writeText(url);
+                toast('Link copied: send it to your friends!');
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                toast(`Send your friends this link: ${url}`, 'info', 8000);
+            }
+        }
+
+        /* ---------- Switching ---------- */
+
+        // Practice and the online table share the felt and the controls; this swaps what's shown.
+        function setMode(next) {
+            if (next === 'practice' && net) leaveTable();
+            mode = next;
+            $('controls').hidden = false;
+            for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+            const online = mode === 'online';
+            $('practice-chips').hidden = online;
+            $('click-chips').hidden = !online;
+            $('money-note').textContent = online
+                ? 'Bets are your real site clicks, 10 to 500 a hand. Once you’re 5,000 up or down for the day, betting waits until midnight.'
+                : 'Your bankroll is saved on this device. It\'s pretend money, and the games are probably rigged.';
+            $('others').hidden = true;
+            $('timer').hidden = true;
+            $('today').hidden = true;
+            $('table-panel').hidden = true;
+            $('lobby').hidden = true;
+            $('hands').replaceChildren();
+            $('dealer-cards').replaceChildren();
+            if (online && !net) showLobby();
+            else if (!online) {
+                setStatus(state === 'betting' ? 'Place your bet!' : '');
+                render();
+            }
+        }
+
+        for (const b of document.querySelectorAll('[data-mode]')) b.addEventListener('click', () => { if (b.dataset.mode !== mode) setMode(b.dataset.mode); });
+
+        // A table link (casino.html#table=CODE) sits you at that table.
+        async function checkHash() {
+            const code = roomFromHash('table');
+            if (!code || (net && net.code === code)) return;
+            if (!(await roomsOpen())) {
+                toast('Playing for clicks isn’t open right now.');
+                return;
+            }
+            if (mode !== 'online') setMode('online');
+            if (!session.loggedIn) showLobby(`Log in to sit at table ${code}.`, { login: true });
+            else openTable(code);
+        }
+
+        /* ---------- Buttons and keys ---------- */
+
+        $('bet-input').addEventListener('input', (e) => {
+            if (mode === 'online') {
+                if (!net) return;
+                net.draft = Math.max(0, Math.min(Math.floor(Number(e.target.value) || 0), maxBet()));
+            } else {
+                bet = Math.max(0, Math.min(Math.floor(Number(e.target.value) || 0), Math.floor(bank)));
+            }
+            render();
+        });
+        // Online bets go up in tens: tidy a typed one up once you're done typing.
+        $('bet-input').addEventListener('blur', () => { if (mode === 'online') setDraft(net ? net.draft : 0); else render(); });
+        $('bet-input').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            if (mode === 'online') {
+                setDraft(net ? net.draft : 0);
+                sendBet();
+            } else deal();
+        });
+        $('clear-bet').addEventListener('click', () => (mode === 'online' ? setDraft(0) : setBet(0)));
+
+        $('deal-btn').addEventListener('click', () => (mode === 'online' ? sendBet() : deal()));
+        $('hit-btn').addEventListener('click', () => (mode === 'online' ? sendMove('hit') : hit()));
+        $('stand-btn').addEventListener('click', () => (mode === 'online' ? sendMove('stand') : stand()));
+        $('double-btn').addEventListener('click', () => (mode === 'online' ? sendMove('double') : double()));
+        $('split-btn').addEventListener('click', () => (mode === 'online' ? sendMove('split') : split()));
+        $('insure-btn').addEventListener('click', () => (mode === 'online' ? sendInsurance(true) : decideInsurance(true)));
+        $('no-insure-btn').addEventListener('click', () => (mode === 'online' ? sendInsurance(false) : decideInsurance(false)));
+        $('open-table').addEventListener('click', () => openTable(newCode(), { make: true }));
+        $('table-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+        $('join-table').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = $('table-code').value.trim().toUpperCase();
+            if (!ROOM_CODE.test(code)) {
+                $('lobby-sub').textContent = 'Table codes are four letters, like KXQT.';
+                $('table-code').focus();
+                return;
+            }
+            openTable(code);
+        });
+        $('copy-table').addEventListener('click', copyLink);
+        $('leave-table').addEventListener('click', () => {
+            leaveTable();
+            showLobby();
+        });
+        window.addEventListener('hashchange', checkHash);
 
         document.addEventListener('keydown', (e) => {
             if (isForeignKey(e) || isActivationKey(e)) return;
             const k = e.key.toLowerCase();
-            if (k === 'enter') deal();
-            else if (k === 'h') hit();
-            else if (k === 's') stand();
-            else if (k === 'd') double();
-            else if (k === 'p') split();
-            else if (k === 'y') decideInsurance(true);
-            else if (k === 'n') decideInsurance(false);
+            const online = mode === 'online';
+            if (k === 'enter') online ? sendBet() : deal();
+            else if (k === 'h') online ? sendMove('hit') : hit();
+            else if (k === 's') online ? sendMove('stand') : stand();
+            else if (k === 'd') online ? sendMove('double') : double();
+            else if (k === 'p') online ? sendMove('split') : split();
+            else if (k === 'y') online ? sendInsurance(true) : decideInsurance(true);
+            else if (k === 'n') online ? sendInsurance(false) : decideInsurance(false);
         });
+
+        setInterval(renderTimer, 250);
 
         newShoe();
         bet = Math.min(10, Math.floor(bank));
         render();
+        roomsOpen().then((open) => {
+            $('modes').hidden = !open;
+            if (open) checkHash();
+        });
     </script>
 </body>
 </html>

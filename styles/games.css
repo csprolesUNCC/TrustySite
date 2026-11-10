@@ -357,10 +357,10 @@ kbd {
 .fever-final .fever-swatch { width: 12px; height: 12px; border-width: 1.5px; }
 .fever-who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Online: a room's code, and the box for typing one in. */
+/* Online (Trusty Fever and Trusty Blackjack): a room's code, and the box for typing one in. */
 .fever-code { letter-spacing: .14em; }
-.fever-join { display: flex; gap: 8px; }
-.fever-join .input {
+.room-join { display: flex; gap: 8px; }
+.room-join .input {
   width: 6.6em;
   min-height: 52px;
   padding: 6px 10px;
@@ -370,7 +370,7 @@ kbd {
   text-transform: uppercase;
 }
 @container (max-width: 440px) {
-  .fever-join .input { min-height: 38px; }
+  .room-join .input { min-height: 38px; }
 }
 
 /* =========================================================================
@@ -666,6 +666,76 @@ kbd {
 .hands.is-split .card-face + .card-face { margin-left: -46px; }
 @media (max-width: 560px) {
   .hands.is-split .card-face + .card-face { margin-left: -38px; }
+}
+
+/* Playing for clicks (online tables): chips in tens, the lobby on the felt, everyone else's hands, a countdown */
+.chip-btn[data-clicks="10"] { --chip: #1f4fbf; }
+.chip-btn[data-clicks="50"] { --chip: #23824a; }
+.chip-btn[data-clicks="100"] { --chip: #1b1b1f; }
+.chip-btn[data-clicks="500"] { --chip: #d6334b; }
+.chip-btn[data-clicks="max"] { --chip: #8c6a00; font-size: .78rem; }
+.casino-today { margin: -4px 0 0; font-size: .85rem; }
+.casino-lobby {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border-radius: inherit;
+  background: rgba(23, 84, 52, .97);
+  color: #fff;
+  text-align: center;
+}
+.casino-lobby[hidden] { display: none; }
+.casino-lobby .overlay-kicker { color: var(--highlight); }
+.casino-lobby .overlay-title { color: #fff; }
+.lobby-sub { margin: 0; max-width: 36ch; font-weight: 600; color: rgba(255, 255, 255, .88); }
+.casino-timer {
+  display: inline-block;
+  min-width: 2.6em;
+  margin-left: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .3);
+  font-family: var(--font-body);
+  font-size: .6em;
+  font-weight: 800;
+  vertical-align: middle;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.casino-timer[hidden] { display: none; }
+.others { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 12px; margin-top: 8px; }
+.others[hidden] { display: none; }
+.seat { display: grid; justify-items: center; gap: 4px; min-width: 72px; padding: 6px 8px; border: 2px dashed transparent; border-radius: 12px; }
+.seat.is-up { border-color: var(--highlight); background: rgba(255, 255, 255, .08); }
+.seat-name { max-width: 8.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; font-size: .85rem; }
+.seat-hands { display: flex; gap: 6px; }
+.seat .cards { flex-wrap: nowrap; gap: 0; min-height: 50px; }
+.seat .card-face { width: 34px; height: 48px; padding: 2px 3px; border-width: 1.5px; border-radius: 6px; box-shadow: 0 3px 6px rgba(0, 0, 0, .25); }
+.seat .card-face + .card-face { margin-left: -14px; }
+.seat .card-pip, .seat .card-corner.bottom { display: none; }
+.seat .card-corner { font-size: .8rem; }
+.seat .card-corner span:last-child { font-size: .7rem; }
+.seat-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font-size: .75rem; font-weight: 800; }
+.seat-value { padding: 0 6px; border-radius: 999px; background: rgba(0, 0, 0, .28); }
+.seat-value:empty { display: none; }
+.seat-bet { color: rgba(255, 255, 255, .85); }
+.seat .hand-result { padding: 0 6px; font-size: .72rem; border-width: 1.5px; }
+.table-code { font-family: var(--font-marker); letter-spacing: .12em; }
+.table-people { display: grid; gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; }
+.table-people li { display: flex; justify-content: space-between; gap: 10px; font-size: .92rem; }
+.table-people li span { color: var(--pencil); font-weight: 700; }
+@media (max-width: 560px) {
+  .seat { min-width: 0; padding: 4px; }
+  .seat .card-face { width: 28px; height: 40px; }
+  .seat .card-face + .card-face { margin-left: -12px; }
+  .seat .cards { min-height: 42px; }
+  .casino-lobby { padding: 14px; gap: 8px; }
 }
 
 .insurance { display: grid; gap: 10px; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 12px; background: var(--note-yellow); box-shadow: 3px 3px 0 var(--ink); }

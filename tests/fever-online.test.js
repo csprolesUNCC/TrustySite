@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { createMatch } from '../scripts/fever-engine.js';
 import { createEncoder, createMirror, applyStep } from '../scripts/fever-net.js';
 import { Room, cleanSetup, versionProblem, CLOSE, IDLE_MS, MAX_PEOPLE, ROOM_CODE, CODE_LETTERS } from '../realtime/room.js';
+import { mockBank } from '../tools/mock-bank.mjs';
 import { PROTOCOL } from '../scripts/fever-net.js';
 import { signTicket, verifyTicket, TICKET_SECONDS } from '../utils/fever-ticket.js';
 import feverOnline from '../utils/fever-online.js';
@@ -128,7 +129,9 @@ function person(name) {
 
 function openRoom(...names) {
   let clock = 1000;
-  const room = new Room('BDFG', { clock: () => clock, random: seeded(9) });
+  let ids = 0;
+  const bank = mockBank({ startingClicks: 1000, delay: 0 });
+  const room = new Room('BDFG', { bank, clock: () => clock, random: seeded(9), newId: () => (++ids).toString(16).padStart(16, '0') });
   const people = names.map(person);
   for (const p of people) room.join(p.conn, p.user);
   const run = (ms) => {
@@ -138,7 +141,7 @@ function openRoom(...names) {
       room.tick();
     }
   };
-  return { room, people, run, now: () => clock };
+  return { room, people, run, bank, now: () => clock };
 }
 
 test('a page and a room server only talk if they speak the same version', () => {
@@ -175,7 +178,7 @@ test('the first one in hosts, and only the host changes the setup or starts', ()
   assert.equal(room.setup.bots, 1);
   assert.equal(room.playing, false);
   room.receive(carson.conn, JSON.stringify({ t: 'setup', bots: 3, skill: 'hard', powerups: false, length: 10 }));
-  assert.deepEqual(luke.conn.last('room').setup, { bots: 3, skill: 'hard', powerups: false, length: 10 });
+  assert.deepEqual(luke.conn.last('room').setup, { bots: 3, skill: 'hard', powerups: false, length: 10, stake: 0 });
   room.receive(carson.conn, JSON.stringify({ t: 'start' }));
   assert.equal(room.playing, true);
   assert.equal(carson.conn.last('match').you, 1);
@@ -296,6 +299,66 @@ test('rooms with nobody playing close after a while', () => {
   assert.equal(carson.conn.closed.code, CLOSE.idle);
   assert.equal(room.people.length, 0);
   assert.equal(room.tickEvery(), 0);
+});
+
+/* ---------- Stakes ---------- */
+
+const settled = () => new Promise((r) => setTimeout(r, 20));
+const clicks = (bank, p) => bank.account(p.user.id).clicks;
+
+test('a staked game: everyone pays in, and the best person takes the pot', async () => {
+  const { room, people: [carson, luke, hay], run, bank } = openRoom('carson', 'luke', 'hayhound');
+  room.receive(carson.conn, JSON.stringify({ t: 'setup', bots: 1, skill: 'easy', powerups: false, length: 5, stake: 100 }));
+  assert.equal(luke.conn.last('room').setup.stake, 100);
+  await room.receive(carson.conn, JSON.stringify({ t: 'start' }));
+  assert.equal(room.playing, true);
+  assert.deepEqual([carson, luke, hay].map((p) => clicks(bank, p)), [900, 900, 900]);
+  assert.deepEqual(luke.conn.last('match').pot, { amount: 100, total: 300 });
+  for (let t = 0; room.playing && t < 3600; t++) run(1000);
+  assert.equal(room.playing, false);
+  await settled();
+  const pot = carson.conn.last('pot');
+  assert.equal(pot.total, 300);
+  const total = [carson, luke, hay].reduce((sum, p) => sum + clicks(bank, p), 0);
+  assert.equal(total, 3000, 'no clicks made or lost: the pot just moved');
+  for (const w of pot.winners) assert.ok(['carson', 'luke', 'hayhound'].includes(w.name), 'a person, never a computer');
+  assert.ok(carson.conn.last('bank'), 'everyone hears their new total');
+});
+
+test('a stake someone can’t cover stops the game, and everyone else gets theirs back', async () => {
+  const { room, people: [carson, luke], bank } = openRoom('carson', 'luke');
+  bank.account(luke.user.id).clicks = 30;
+  room.receive(carson.conn, JSON.stringify({ t: 'setup', bots: 0, skill: 'easy', powerups: false, length: 5, stake: 50 }));
+  await room.receive(carson.conn, JSON.stringify({ t: 'start' }));
+  assert.equal(room.playing, false);
+  assert.match(luke.conn.last('notice').message, /only have 30/);
+  assert.match(carson.conn.last('notice').message, /luke couldn’t put in 50 clicks/);
+  await settled();
+  assert.equal(clicks(bank, carson), 1000);
+  assert.equal(clicks(bank, luke), 30);
+});
+
+test('a staked game everyone playing leaves is called off: stakes come back', async () => {
+  const { room, people: [carson, luke], bank } = openRoom('carson', 'luke');
+  room.receive(carson.conn, JSON.stringify({ t: 'setup', bots: 0, skill: 'easy', powerups: false, length: 5, stake: 500 }));
+  await room.receive(carson.conn, JSON.stringify({ t: 'start' }));
+  const late = person('hayhound');
+  room.join(late.conn, late.user);
+  room.leave(carson.conn);
+  room.leave(luke.conn);
+  await settled();
+  assert.deepEqual([clicks(bank, carson), clicks(bank, luke)], [1000, 1000]);
+  assert.equal(late.conn.last('pot').refund, true);
+});
+
+test('stakes need two people: alone, the host just plays', async () => {
+  const { room, people: [carson], bank } = openRoom('carson');
+  room.receive(carson.conn, JSON.stringify({ t: 'setup', bots: 1, skill: 'easy', powerups: false, length: 5, stake: 100 }));
+  room.receive(carson.conn, JSON.stringify({ t: 'start' }));
+  assert.equal(room.playing, true);
+  assert.equal(carson.conn.last('match').pot, null);
+  assert.equal(clicks(bank, carson), 1000);
+  assert.equal(cleanSetup({ bots: 1, skill: 'easy', powerups: false, length: 5, stake: 99 }), null, 'only the listed stakes');
 });
 
 /* ---------- Tickets ---------- */

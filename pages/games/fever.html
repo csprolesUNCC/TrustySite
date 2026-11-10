@@ -74,7 +74,7 @@
                         <p class="overlay-sub" id="online-sub"></p>
                         <div class="overlay-actions" id="online-actions">
                             <button class="btn btn-lg" type="button" id="make-btn">Make a room</button>
-                            <form class="fever-join" id="join-form" novalidate>
+                            <form class="room-join" id="join-form" novalidate>
                                 <label class="sr-only" for="join-code">Room code</label>
                                 <input class="input" id="join-code" name="code" placeholder="CODE" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
                                 <button class="btn btn-lg btn-outline" type="submit">Join</button>
@@ -112,6 +112,7 @@
                         <h2 class="overlay-title" id="over-title"></h2>
                         <ol class="fever-final" id="over-list"></ol>
                         <p class="overlay-sub" id="over-sub"></p>
+                        <p class="overlay-sub" id="over-pot" hidden></p>
                         <p class="overlay-sub" id="over-wait" hidden></p>
                         <div class="overlay-actions">
                             <button class="btn btn-lg" type="button" id="again-btn">Play again</button>
@@ -172,6 +173,16 @@
                                 <button type="button" data-value="off">Off</button>
                             </div>
                         </div>
+                        <div class="setup-row" id="stake-row" hidden>
+                            <span class="setup-label" id="stake-label">Stake: clicks each, best person takes the pot</span>
+                            <div class="segmented compact" role="group" aria-labelledby="stake-label" data-setting="stake">
+                                <button type="button" data-value="0">None</button>
+                                <button type="button" data-value="10">10</button>
+                                <button type="button" data-value="50">50</button>
+                                <button type="button" data-value="100">100</button>
+                                <button type="button" data-value="500">500</button>
+                            </div>
+                        </div>
                         <div class="setup-row">
                             <span class="setup-label" id="length-label">Game length</span>
                             <div class="segmented compact" role="group" aria-labelledby="length-label" data-setting="length">
@@ -205,14 +216,14 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { fmt, h, toast, session, loginHref } from '/scripts/site.js';
+        import { fmt, h, toast, session, loginHref, announceBalance } from '/scripts/site.js';
         import {
             setupCanvas, offscreen, drawGraphPaper, sound, bindMuteButton, bindFocusMode,
             isForeignKey, isActivationKey, fontsReady, bringIntoView,
         } from '/scripts/game-kit.js';
         import { createMatch, ARENA_W, ARENA_H, PLAYERS, POWERS } from '/scripts/fever-engine.js';
-        import { createMirror, applyStep } from '/scripts/fever-net.js';
-        import { roomsOpen, connect, newCode, roomLink, roomFromHash, ROOM_CODE } from '/scripts/fever-online.js';
+        import { createMirror, applyStep, PROTOCOL } from '/scripts/fever-net.js';
+        import { roomsOpen, connect, newCode, roomLink, roomFromHash, bankStatus, ROOM_CODE } from '/scripts/rooms.js';
 
         // The rules and computer players live in fever-engine.js; this page draws the game and reads the controls.
         // Online games run on the room server (realtime/room.js): the page sends its steering there and draws the
@@ -366,6 +377,7 @@
             const people = room ? Math.min(room.people.length, 6) : setup.humans;
             const locked = Boolean(room) && (!isHost() || room.playing);
             $('humans-row').hidden = Boolean(net);
+            $('stake-row').hidden = !net;
             for (const group of document.querySelectorAll('[data-setting]')) {
                 const key = group.dataset.setting;
                 for (const btn of group.querySelectorAll('button')) {
@@ -421,7 +433,7 @@
         function renderScores(m = match) {
             const lead = Math.max(...m.players.map((p) => p.score));
             const playing = state === 'game' || state === 'paused';
-            $('target').textContent = `first to ${m.target}`;
+            $('target').textContent = `first to ${m.target}${m.pot ? ` · ${fmt(m.pot.total)}-click pot` : ''}`;
             $('scores').replaceChildren(...m.players.map((p) => h('li', {
                 class: [lead > 0 && p.score === lead ? 'is-leader' : '', playing && !p.alive ? 'is-out' : ''].join(' ').trim() || null,
             },
@@ -992,6 +1004,9 @@
             $('again-btn').hidden = waiting;
             $('change-btn').textContent = online ? 'Back to the room' : 'Change setup';
             $('over-wait').hidden = !waiting;
+            const pot = online && net ? net.potText : '';
+            $('over-pot').textContent = pot || '';
+            $('over-pot').hidden = !pot;
             if (waiting) {
                 $('over-wait').textContent = net && net.room && net.room.host
                     ? `Waiting for ${short(net.room.host)} to start the next game.`
@@ -1022,15 +1037,21 @@
 
         function openRoom(code, { make = false, tries = 0 } = {}) {
             if (net) net.conn.leave();
-            const here = { code, conn: null, room: null, status: null, queue: [], clock: 0, turn: null };
+            const here = { code, conn: null, room: null, status: null, queue: [], clock: 0, turn: null, clicks: null, potText: '' };
             net = here;
+            bankStatus().then((mine) => {
+                if (!mine || net !== here) return;
+                here.clicks = mine.clicks;
+                if (state === 'room') renderRoom();
+            });
             history.replaceState(null, '', `#room=${code}`);
-            here.conn = connect(code, {
+            here.conn = connect({
+                kind: 'room',
+                code,
+                version: PROTOCOL,
                 make,
                 on: {
-                    room: (msg) => { if (net === here) onRoom(msg); },
-                    match: (msg) => { if (net === here) joinMatch(msg); },
-                    steps: (list) => { if (net === here) onSteps(list); },
+                    message: (msg) => { if (net === here) onMessage(msg); },
                     status: (text) => {
                         if (net !== here) return;
                         net.status = text;
@@ -1078,18 +1099,56 @@
             const room = net.room;
             $('room-code').textContent = net.code;
             $('room-start').hidden = !isHost();
-            $('room-start').disabled = !room || room.playing;
+            $('room-start').disabled = !room || room.playing || room.starting;
             let text = net.status || 'Getting in…';
             if (room && !net.status) {
                 const others = room.people.filter((name) => name !== room.you).map(short).join(', ');
                 const who = others ? `With you: ${others}${others.endsWith('…') ? '' : '.'}` : 'Nobody else is here yet: send your friends the link!';
                 let next = `Waiting for ${room.host ? short(room.host) : 'the host'} to start.`;
                 if (room.playing) next = 'A game is on: you’ll see it in a moment.';
-                else if (isHost()) next = others.length ? 'Start when everyone’s in.' : 'Or start now against the computer.';
-                text = `${who} ${next}`;
+                else if (room.starting) next = 'Collecting everyone’s stake…';
+                else if (isHost()) next = others ? 'Start when everyone’s in.' : 'Or start now against the computer.';
+                let stake = '';
+                if (room.setup.stake && !room.playing) {
+                    stake = others
+                        ? ` Stake: ${fmt(room.setup.stake)} clicks each, and the best person takes the pot.`
+                        : ' A stake needs at least two people.';
+                    if (others && net.clicks != null) stake += ` You have ${fmt(net.clicks)}.`;
+                }
+                text = `${who} ${next}${stake}`;
             }
             $('room-sub').textContent = text;
             if (state === 'room' && room) renderScores(roomLineup(room));
+        }
+
+        function onMessage(msg) {
+            if (msg.t === 'room') onRoom(msg);
+            else if (msg.t === 'match') joinMatch(msg);
+            else if (msg.t === 'steps') onSteps(msg.s);
+            else if (msg.t === 'pot') onPot(msg);
+            else if (msg.t === 'bank') onBank(msg);
+            else if (msg.t === 'notice') toast(msg.message, 'info', 7000);
+        }
+
+        // Your clicks changed (a stake went in, or a pot came out).
+        function onBank(msg) {
+            const before = net.clicks;
+            net.clicks = msg.clicks;
+            announceBalance(msg.clicks, before != null && msg.clicks > before ? msg.clicks - before : 0);
+            if (state === 'room') renderRoom();
+        }
+
+        function onPot(msg) {
+            const you = net.room && net.room.you;
+            const names = msg.winners.map((w) => (w.name === you ? 'you' : short(w.name)));
+            let text = `${names.join(' and ')} split the ${fmt(msg.total)}-click pot.`;
+            if (msg.refund) text = 'Everyone got their stake back.';
+            else if (names.length === 1) text = names[0] === 'you' ? `You take the ${fmt(msg.total)}-click pot!` : `${names[0]} takes the ${fmt(msg.total)}-click pot.`;
+            net.potText = text;
+            announce(text);
+            // The game-over screen says it (it shows a moment after the last round); otherwise pop it up.
+            if (state === 'over' || (state === 'game' && match.online && match.champion)) renderOverButtons();
+            else toast(text, 'info', 7000);
         }
 
         function onRoom(msg) {
@@ -1114,6 +1173,8 @@
             clearTimeout(gameOverTimer);
             const { match: mirror, ink } = createMirror(msg.snap, msg.you);
             match = mirror;
+            match.pot = msg.pot;
+            net.potText = '';
             net.queue = [];
             net.clock = 0;
             net.turn = null;

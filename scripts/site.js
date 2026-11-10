@@ -123,6 +123,11 @@ export function announceClicks(clicks, added) {
   document.dispatchEvent(new CustomEvent('trusty:clicks', { detail: { clicks, added } }));
 }
 
+// The click bank's word on your clicks after a bet (it can go down, unlike a click total), with what you won.
+export function announceBalance(clicks, won = 0) {
+  document.dispatchEvent(new CustomEvent('trusty:clicks', { detail: { clicks, added: won, exact: true } }));
+}
+
 export async function logout() {
   session.clear();
   try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* cookie expires anyway */ }
@@ -300,7 +305,11 @@ function setupClicker(button) {
   let inFlight = 0;
   let loaded = false;
   const render = () => { countEl.textContent = fmt(serverCount + inFlight); };
-  const accept = (data) => { serverCount = Math.max(serverCount, Number(data && data.clicks) || 0); };
+  // Click answers can arrive out of order, so a total only ever goes up; the bank's answers are exact.
+  const accept = (data) => {
+    const clicks = Number(data && data.clicks) || 0;
+    serverCount = data && data.exact ? clicks : Math.max(serverCount, clicks);
+  };
 
   const load = async () => {
     if (!session.loggedIn || loaded) return;

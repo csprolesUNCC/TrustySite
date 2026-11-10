@@ -1,27 +1,39 @@
-// Trusty Fever's online rooms, on Cloudflare: a Worker that checks each player's ticket, and one Durable
-// Object per room code, so everyone in a room reaches the same single place and the match can live in memory.
-// The rules are in realtime/room.js; this file only connects it to WebSockets and a timer.
-//   wss://<this worker>/room/<CODE>?v=<PROTOCOL>&ticket=<ticket>[&make=1]
+// The online rooms, on Cloudflare: a Worker that checks each player's ticket, and one Durable Object per code,
+// so everyone in a room reaches the same single place and the game can live in memory. Trusty Fever's rooms
+// are realtime/room.js and Trusty Blackjack's tables are realtime/table.js; this file only connects them to
+// WebSockets, a timer and the click bank (realtime/bank.js, which calls the site at SITE_URL).
+//   wss://<this worker>/room/<CODE>?v=<PROTOCOL>&ticket=<ticket>[&make=1]         Trusty Fever
+//   wss://<this worker>/table/<CODE>?v=<TABLE_PROTOCOL>&ticket=<ticket>[&make=1]  Trusty Blackjack
 // Deploy with `npm run deploy` in this folder (see "Trusty Fever online" in CLAUDE.md for the whole setup). The
-// deploy bundles its own copy of scripts/fever-engine.js and scripts/fever-net.js, so deploy again whenever
-// those or this folder change.
-import { Room, ROOM_CODE, CLOSE, versionProblem } from './room.js';
+// deploy bundles its own copy of the game files it imports (scripts/fever-engine.js, scripts/fever-net.js,
+// scripts/blackjack.js), so deploy again whenever those or this folder change.
+import { Room, ROOM_CODE, versionProblem as feverVersion } from './room.js';
+import { Table, versionProblem as tableVersion } from './table.js';
+import { CLOSE } from './common.js';
+import { bankClient } from './bank.js';
 import { verifyTicket } from '../utils/fever-ticket.js';
 
-export class FeverRoom {
-  constructor(ctx, env) {
+const KINDS = {
+  room: { binding: 'ROOMS', version: feverVersion, open: (code, bank) => new Room(code, { bank }) },
+  table: { binding: 'TABLES', version: tableVersion, open: (code, bank) => new Table(code, { bank }) },
+};
+
+class Host {
+  constructor(ctx, env, kind) {
     this.ctx = ctx;
     this.env = env;
+    this.kind = kind;
     this.room = null;
     this.timer = null;
     this.every = 0;
+    this.bank = bankClient({ siteUrl: env.SITE_URL || 'https://trustydahorse.com', secret: env.FEVER_SECRET });
   }
 
   // Only the Worker below calls this, after checking the ticket; it passes the player in X-Fever-User.
   async fetch(request) {
     const url = new URL(request.url);
     const user = JSON.parse(request.headers.get('X-Fever-User'));
-    this.room ??= new Room(url.searchParams.get('code'));
+    this.room ??= KINDS[this.kind].open(url.searchParams.get('code'), this.bank);
     const [client, socket] = Object.values(new WebSocketPair());
     socket.accept();
     const conn = {
@@ -42,15 +54,37 @@ export class FeverRoom {
     return new Response(null, { status: 101, webSocket: client });
   }
 
+  // Runs something in the room, then ticks as often as the room now wants. Some things wait on the bank (they
+  // return a promise), and may want different ticks once it answers.
   run(fn) {
-    fn();
-    // Tick as often as the room wants: every few ms during a match, now and then in the lobby, never when
-    // it's empty, so an empty room can be put away.
+    const result = fn();
+    this.schedule();
+    if (result && typeof result.then === 'function') {
+      result.then(() => this.schedule(), (error) => {
+        console.error(error);
+        this.schedule();
+      });
+    }
+  }
+
+  schedule() {
     const every = this.room.tickEvery();
     if (every === this.every) return;
     clearInterval(this.timer);
     this.every = every;
     this.timer = every ? setInterval(() => this.run(() => this.room.tick()), every) : null;
+  }
+}
+
+export class FeverRoom extends Host {
+  constructor(ctx, env) {
+    super(ctx, env, 'room');
+  }
+}
+
+export class BlackjackTable extends Host {
+  constructor(ctx, env) {
+    super(ctx, env, 'table');
   }
 }
 
@@ -66,21 +100,21 @@ function refuse(code, message) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const [, code] = url.pathname.match(/^\/room\/([A-Z]{4})$/) || [];
-    if (!code || !ROOM_CODE.test(code)) {
+    const [, kind, code] = url.pathname.match(/^\/(room|table)\/([A-Z]{4})$/) || [];
+    if (!kind || !ROOM_CODE.test(code)) {
       return url.pathname === '/'
-        ? new Response('Trusty Fever rooms are open.\n')
+        ? new Response('Trusty’s online rooms are open.\n')
         : new Response('Not found\n', { status: 404 });
     }
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket\n', { status: 426 });
-    const outdated = versionProblem(url.searchParams.get('v'));
+    const outdated = KINDS[kind].version(url.searchParams.get('v'));
     if (outdated) return refuse(CLOSE.version, outdated);
     const user = await verifyTicket(url.searchParams.get('ticket'), env.FEVER_SECRET);
     if (!user) return refuse(CLOSE.ticket, 'Couldn’t check who you are. Try again.');
     const headers = new Headers(request.headers);
     headers.set('X-Fever-User', JSON.stringify(user));
-    const room = env.ROOMS.get(env.ROOMS.idFromName(code));
+    const rooms = env[KINDS[kind].binding];
     const make = url.searchParams.get('make') === '1' ? '&make=1' : '';
-    return room.fetch(`https://room/?code=${code}${make}`, { headers });
+    return rooms.get(rooms.idFromName(code)).fetch(`https://room/?code=${code}${make}`, { headers });
   },
 };

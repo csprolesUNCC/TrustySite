@@ -3,16 +3,20 @@
 // is still the way to run the real API.
 //   node tools/dev-server.mjs [port]        (npm run dev:mock)
 // Log in by setting the cookie mock=in (tools/smoke.mjs does) plus the site's usual localStorage flag; the cookie
-// mockuser=<name> picks who you are in Trusty Fever's online rooms (carson otherwise), which run right here (see
-// tools/local-rooms.mjs). To try the real room server instead, run `npm run dev` in realtime/ and start this with
-// FEVER_ROOMS_URL=ws://localhost:8790 and the FEVER_SECRET from realtime/.dev.vars.
+// mockuser=<name> picks who you are in the online rooms and at the Blackjack tables (carson otherwise), which
+// run right here (tools/local-rooms.mjs) with a pretend click bank that forgets everything on restart
+// (tools/mock-bank.mjs; everyone starts with 12,345 clicks). To try the real room server instead, run
+// `npm run dev` in realtime/ and start this with FEVER_ROOMS_URL=ws://localhost:8790 and the FEVER_SECRET from
+// realtime/.dev.vars: the room server then sends its bets here (SITE_URL, see realtime/package.json).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { attachRooms, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
+import { mockBank } from './mock-bank.mjs';
 import { signTicket } from '../utils/fever-ticket.js';
+import { signedOp } from '../utils/bank-rules.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -29,23 +33,38 @@ const loggedIn = (req) => /(?:^|;\s*)mock=in(?:;|$)/.test(req.headers.cookie || 
 const mockUser = (req) => (/(?:^|;\s*)mockuser=([\w-]{1,32})(?:;|$)/.exec(req.headers.cookie || '') || [])[1] || 'carson';
 const today = () => new Date().toISOString().slice(0, 10);
 const FEVER_SECRET = process.env.FEVER_SECRET || 'pretend-api-secret-for-local-rooms-only';
+const bank = mockBank();
+const accountOf = (req) => `mock-${mockUser(req)}`;
 
-async function api(req, url) {
+async function api(req, url, body) {
   const p = url.pathname;
   const action = url.searchParams.get('action');
   const me = loggedIn(req);
   if (p === '/api/auth/login') return me ? [200, { isLoggedIn: true, username: 'carson', isAdmin: true }] : [401, { isLoggedIn: false }];
   if (p === '/api/auth/logout') return [200, { message: 'Logged out' }];
   if (p.startsWith('/api/auth/')) return [400, { message: 'The pretend API doesn’t do accounts.' }];
-  if (p === '/api/clicks') return me ? [200, { clicks: 12345, added: 5 }] : [401, { error: 'Authentication required' }];
+  if (p === '/api/clicks') {
+    if (!me) return [401, { error: 'Authentication required' }];
+    const account = bank.account(accountOf(req));
+    if (req.method === 'POST') account.clicks += url.searchParams.get('action') === 'tv' ? 5 : 1;
+    return [200, { clicks: account.clicks, added: 5 }];
+  }
   if (p === '/api/leaderboard') {
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
       if (req.method === 'GET') return [200, { rooms }];
       if (!me) return [401, { error: 'Authentication required' }];
-      const name = mockUser(req);
-      return [200, { rooms, ticket: await signTicket({ id: `mock-${name}`, name }, FEVER_SECRET) }];
+      return [200, { rooms, ticket: await signTicket({ id: accountOf(req), name: mockUser(req) }, FEVER_SECRET) }];
+    }
+    if (action === 'bank') {
+      if (req.method === 'GET') return me ? [200, bank.status(accountOf(req))] : [401, { error: 'Authentication required' }];
+      // Bets from the real room server (realtime/, under `npm run dev`), signed like the real ones.
+      const op = await signedOp(body, FEVER_SECRET);
+      if (!op) return [403, { error: 'Not a request from the room server' }];
+      if (op.op === 'stake') return [200, await bank.stake(op)];
+      if (op.op === 'settle') return [200, await bank.settle(op.bets)];
+      return [200, await bank.pot(op)];
     }
     if (action === 'trustis') return [200, url.searchParams.get('personal') ? { highScore: 5000 } : board('score', 'name', 90000)];
     if (action === 'profile' && req.method === 'GET') {
@@ -55,6 +74,7 @@ async function api(req, url) {
         bio: 'Professional Trusty enjoyer.', clicks: { total: 12345, rank: 3 }, flappy: { score: 42, rank: 2 }, draw: null,
         trustis: { score: 90000, rank: 1, lines: 120, level: 13 },
         trustle: { played: 20, won: 18, streak: 4, best: 9, dist: [0, 2, 5, 6, 4, 1] }, tv: { trusty: 3600, snn: 600 },
+        bets: Object.fromEntries(Object.entries(bank.status(`mock-${u}`).month).filter(([, n]) => n)),
       }];
     }
     if (action === 'admin') {
@@ -85,7 +105,9 @@ export function startServer(port = 8787) {
       let raw = '';
       req.on('data', (c) => { raw += c; });
       req.on('end', async () => {
-        const [status, body] = await api(req, url);
+        let parsed = null;
+        try { parsed = raw ? JSON.parse(raw) : null; } catch { /* not JSON */ }
+        const [status, body] = await api(req, url, parsed);
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(body));
       });
@@ -114,7 +136,7 @@ export function startServer(port = 8787) {
     res.writeHead(status, headers);
     res.end(req.method === 'HEAD' ? undefined : data);
   });
-  attachRooms(server, FEVER_SECRET);
+  attachRooms(server, FEVER_SECRET, bank);
   return new Promise((resolve) => server.listen(port, () => resolve(server)));
 }
 

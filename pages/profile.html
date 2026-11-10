@@ -194,11 +194,16 @@
         const emptyLine = (text) => h('p', { class: 'profile-stat-empty' }, text);
         const value = (text) => h('p', { class: 'profile-stat-value' }, text);
 
+        // Plus how betting clicks went this month, at Blackjack tables and on Fever pots.
         function clicksCard() {
             const c = profile.clicks;
+            const bets = profile.bets || {};
+            const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;
+            const played = [['blackjack', 'Blackjack'], ['fever', 'Fever pots']].filter(([game]) => typeof bets[game] === 'number');
             return statCard('Trusty clicks', 'is-clicks',
                 c ? [value(fmt(c.total)), rankLine(c.rank, '/pages/leaderboard.html')]
-                  : emptyLine(profile.isMe ? 'No clicks yet. Trusty’s up in the header, waiting.' : 'No clicks yet.'));
+                  : emptyLine(profile.isMe ? 'No clicks yet. Trusty’s up in the header, waiting.' : 'No clicks yet.'),
+                played.length ? h('p', { class: 'profile-stat-detail' }, `This month: ${played.map(([game, name]) => `${name} ${signed(bets[game])}`).join(' · ')}`) : null);
         }
 
         function flappyCard() {
