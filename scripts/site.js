@@ -6,7 +6,7 @@ const LS_ADMIN = 'trusty:admin';
 // Device keys that remember by username whose data they hold (Trustle's games), so a rename moves them along
 // instead of looking like someone else logged in.
 const LS_NAME_KEYS = ['trusty:trustle:owner'];
-const FACE = '/images/mobile-icon.png';
+const FACE = '/images/mobile-icon-96.webp';
 const ADMIN_PAGE = '/pages/admin.html';
 const CLICK_LIMIT = 3; // header clicker: clicks per second
 
@@ -388,7 +388,7 @@ class TrustyFooter extends HTMLElement {
         col('More', [['Leaderboards', '/pages/leaderboard.html'], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
         h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),
-        h('img', { class: 'footer-trusty ink', src: '/images/trusty.png', alt: '', width: 88, height: 67, loading: 'lazy' }))));
+        h('img', { class: 'footer-trusty ink', src: '/images/trusty-176.webp', alt: '', width: 88, height: 67, loading: 'lazy' }))));
   }
 }
 

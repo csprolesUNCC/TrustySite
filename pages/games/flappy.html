@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <link rel="stylesheet" href="/styles/games.css">
     <script type="module" src="/scripts/site.js"></script>
@@ -255,7 +254,7 @@
 
         async function loadArt() {
             const [classic, detailed, seahorse] = await Promise.all([
-                loadImage('/images/trusty.png'), loadImage('/images/detailed_horse.jpg'), loadImage('/images/seahorse.jpg'),
+                loadImage('/images/trusty-768.webp'), loadImage('/images/detailed_horse-768.webp'), loadImage('/images/seahorse-768.webp'),
             ]);
             const size = { width: HORSE_W * scale, height: HORSE_H * scale };
             sprites = {

@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -42,6 +41,7 @@
             </div>
 
             <div class="lb-panel" role="tabpanel" id="panel-clicks" aria-labelledby="tab-clicks" data-board="clicks">
+                <h2 class="sr-only">Top Clickers</h2>
                 <div class="lb-side">
                     <div data-podium></div>
                     <div class="sticky-note lb-note">
@@ -56,6 +56,7 @@
             </div>
 
             <div class="lb-panel" role="tabpanel" id="panel-flappy" aria-labelledby="tab-flappy" data-board="flappy" hidden>
+                <h2 class="sr-only">Flappy Trusty</h2>
                 <div class="lb-side">
                     <div data-podium></div>
                     <div class="sticky-note blue lb-note">
@@ -71,6 +72,7 @@
             </div>
 
             <div class="lb-panel" role="tabpanel" id="panel-draw" aria-labelledby="tab-draw" data-board="draw" hidden>
+                <h2 class="sr-only">Draw Trusty</h2>
                 <div class="lb-side">
                     <div data-podium></div>
                     <div class="sticky-note pink lb-note">
@@ -86,6 +88,7 @@
             </div>
 
             <div class="lb-panel" role="tabpanel" id="panel-trustis" aria-labelledby="tab-trustis" data-board="trustis" hidden>
+                <h2 class="sr-only">Trustis</h2>
                 <div class="lb-side">
                     <div data-podium></div>
                     <div class="sticky-note green lb-note">
@@ -113,16 +116,25 @@
         const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.board, p]));
         const loaded = new Set();
 
-        function meNote(key, entries) {
+        // The clicks board only sends the top MAX_ROWS, so further down your rank comes from your profile.
+        async function clicksRank() {
+            try {
+                const res = await fetch(`/api/leaderboard?action=profile&u=${encodeURIComponent(session.username)}`);
+                const data = res.ok ? await res.json() : null;
+                return data && data.clicks ? data.clicks : null;
+            } catch { return null; }
+        }
+
+        async function meNote(key, entries) {
             const board = BOARDS[key];
             if (!session.loggedIn) return null;
             const index = entries.findIndex((e) => e.name === session.username);
-            if (index === -1) {
-                return key === 'clicks'
-                    ? 'You haven’t clicked Trusty yet. He’s up in the header, waiting.'
-                    : 'You’re not on this board yet. Go set a high score!';
-            }
-            return `You’re #${index + 1} with ${board.format(entries[index].score)}${key === 'clicks' ? ' clicks' : ''}.`;
+            if (index !== -1) return `You’re #${index + 1} with ${board.format(entries[index].score)}${key === 'clicks' ? ' clicks' : ''}.`;
+            if (key !== 'clicks') return 'You’re not on this board yet. Go set a high score!';
+            const mine = entries.length >= MAX_ROWS ? await clicksRank() : null;
+            return mine
+                ? `You’re #${mine.rank} with ${board.format(mine.total)} clicks. Keep going!`
+                : 'You haven’t clicked Trusty yet. He’s up in the header, waiting.';
         }
 
         async function load(key) {
@@ -138,7 +150,7 @@
                 if (rest.length) renderList(list, rest, { key, startRank: 4 });
                 else renderStatus(list, entries.length ? 'That’s everyone so far.' : 'No scores yet. Be the first!');
                 await sessionReady;
-                const note = meNote(key, entries);
+                const note = await meNote(key, entries);
                 if (note) panel.querySelector('[data-me-note]').textContent = note;
             } catch (err) {
                 loaded.delete(key);

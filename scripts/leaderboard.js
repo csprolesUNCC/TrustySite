@@ -111,7 +111,7 @@ export function renderStatus(list, message, tone) {
   list.replaceChildren(h('li', { class: tone === 'error' ? 'board-error' : 'board-empty' }, message));
 }
 
-export function renderSkeleton(list, rows = 6) {
+export function renderSkeleton(list, rows = 7) {
   list.replaceChildren(...Array.from({ length: rows }, () => h('li', { class: 'skeleton-row', 'aria-hidden': 'true' })));
 }
 

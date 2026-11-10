@@ -1,6 +1,9 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 
+// Far past anything a person can reach (a pencil every ~1.5 seconds is ~2,400 an hour).
+const MAX_SCORE = 100000;
+
 export default async (req, res) => {
     const { method } = req;
     const { action } = req.query;
@@ -14,8 +17,9 @@ export default async (req, res) => {
             const user = authenticateUser(req);
             if (!user) return res.status(401).json({ error: 'Auth required' });
 
-            const { score } = req.body;
-            if (typeof score !== 'number' || score < 0) {
+            // The score comes from the browser, so all this can check is that it's a believable whole number.
+            const score = req.body?.score;
+            if (!Number.isSafeInteger(score) || score < 0 || score > MAX_SCORE) {
                 return res.status(400).json({ error: 'Invalid score' });
             }
 

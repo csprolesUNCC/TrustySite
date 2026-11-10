@@ -15,9 +15,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -35,7 +34,7 @@
 
         <section class="section-tight container" aria-label="Comic series">
             <article class="card card-link series">
-                <div class="card-media"><img src="/images/comics/datractorcrew/s1/e1/p1.jpg" alt="" width="1022" height="1330" decoding="async" style="object-position: top center"></div>
+                <div class="card-media"><img src="/images/comics/datractorcrew/s1/e1/cover.webp" alt="" width="640" height="833" fetchpriority="high" decoding="async" style="object-position: top center"></div>
                 <div class="card-body">
                     <p class="eyebrow">Where it all started!</p>
                     <h2 class="card-title"><a href="/pages/comics/datractorcrew/datractorcrew.html">Da Tractor Crew</a></h2>

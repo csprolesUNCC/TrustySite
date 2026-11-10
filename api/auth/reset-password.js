@@ -1,21 +1,29 @@
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '../../utils/connect.js';
+import { hashResetToken, RESET_TOKEN } from '../../utils/reset-token.js';
+import { passwordProblem } from '../../scripts/username.js';
 
 export default async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
     try {
-        const { db } = await connectToDatabase();
-        const { token, newPassword } = req.body;
+        const token = req.body?.token;
+        const newPassword = req.body?.newPassword;
 
-        if (!token || !newPassword) {
-            return res.status(400).json({ message: 'Missing token or password.' });
+        // The token goes into a database query, so it must be exactly what request-reset.js hands out: a
+        // plain string of 64 hex digits. Anything else (like {"$ne": null}) could match someone else's reset.
+        if (typeof token !== 'string' || !RESET_TOKEN.test(token) || typeof newPassword !== 'string') {
+            return res.status(400).json({ message: 'Invalid or expired token.' });
         }
+        const problem = passwordProblem(newPassword);
+        if (problem) return res.status(400).json({ message: problem });
 
+        const { db } = await connectToDatabase();
         const usersCollection = db.collection('users');
 
         const user = await usersCollection.findOne({
-            resetToken: token,
+            // resetToken: links emailed before tokens were stored hashed (they last an hour)
+            $or: [{ resetTokenHash: hashResetToken(token) }, { resetToken: token }],
             resetTokenExpiry: { $gt: Date.now() }
         });
 
@@ -27,9 +35,10 @@ export default async (req, res) => {
 
         await usersCollection.updateOne(
             { _id: user._id },
-            { 
+            {
                 $set: { password: hashedPassword },
-                $unset: { resetToken: "", resetTokenExpiry: "" }
+                // resetToken: the plain tokens stored before they were hashed
+                $unset: { resetTokenHash: '', resetToken: '', resetTokenExpiry: '' }
             }
         );
 

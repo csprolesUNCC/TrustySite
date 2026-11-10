@@ -14,9 +14,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <link rel="stylesheet" href="/styles/profile.css">
     <script type="module" src="/scripts/site.js"></script>
@@ -27,14 +26,14 @@
     <trusty-header></trusty-header>
 
     <main id="main">
-        <div class="container section" id="state-loading">
+        <div class="container section page-state" id="state-loading">
             <p class="muted" role="status">Flipping to the right page…</p>
         </div>
 
         <!-- No such user, no user picked while logged out, or the request failed -->
-        <div class="container notfound" id="state-message" hidden>
+        <div class="container notfound page-state" id="state-message" hidden>
             <div class="sheet notfound-sheet">
-                <img class="ink" src="/images/seahorse.jpg" alt="" width="1536" height="1173">
+                <img class="ink" src="/images/seahorse-768.webp" alt="" width="768" height="587">
                 <div>
                     <p class="eyebrow" id="message-eyebrow"></p>
                     <h1 id="message-title"></h1>

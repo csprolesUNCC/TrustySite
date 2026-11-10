@@ -10,9 +10,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Permanent+Marker&display=swap">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
     <script type="module" src="/scripts/site.js"></script>
     <script type="module" src="/scripts/auth.js"></script>
@@ -42,9 +41,10 @@
                 <div class="field">
                     <label for="password">Password</label>
                     <div class="password-wrap">
-                        <input type="password" id="password" name="password" autocomplete="new-password" required>
+                        <input type="password" id="password" name="password" autocomplete="new-password" minlength="8" aria-describedby="password-hint" required>
                         <button type="button" class="password-toggle" aria-pressed="false" aria-controls="password">Show</button>
                     </div>
+                    <span class="hint" id="password-hint">At least 8 characters.</span>
                 </div>
                 <div class="field">
                     <label for="confirm-password">Confirm password</label>
