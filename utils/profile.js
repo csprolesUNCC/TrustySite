@@ -6,6 +6,7 @@ import { nextRename } from './rename.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 import { puzzleNumber, cleanGame, statsFrom } from '../scripts/trustle.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
+import { dayOf, dailyStatus } from '../scripts/milestones.js';
 import { monthOf } from './bank.js';
 
 // Profile pages (pages/profile.html), served from api/leaderboard.js as ?action=profile so they don't
@@ -47,7 +48,7 @@ async function getProfile(req, res) {
     const trustisCol = db.collection('trustis_scores');
     const best = { sort: { score: -1, timestamp: 1 } };
     const [clickDoc, flappyDoc, drawDoc, trustisDoc, trustleDoc, profileDoc] = await Promise.all([
-        clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1, 'bank.stats': 1 } }),
+        clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1, 'bank.stats': 1, daily: 1 } }),
         flappyCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
         drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1 } }),
         trustisCol.findOne({ userId }, { ...best, projection: { score: 1, lines: 1, level: 1, timestamp: 1 } }),
@@ -99,7 +100,8 @@ async function getProfile(req, res) {
         // Admin accounts can't change their username; `next` is when everyone else can again (null: now).
         rename: isMe ? { admin: isAdmin(account), next: nextRename(account) } : null,
         bio: profileDoc && typeof profileDoc.bio === 'string' ? profileDoc.bio : '',
-        clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank } : null,
+        // `streak`: days in a row they've collected the header clicker's daily bonus (api/clicks.js), 0 once one's missed.
+        clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank, streak: dailyStatus(clickDoc.daily, dayOf(new Date())).streak } : null,
         bets,
         flappy: hasFlappy ? { score: flappyDoc.score, rank: flappyRank } : null,
         draw: hasDraw ? {
