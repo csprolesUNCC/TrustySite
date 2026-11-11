@@ -119,7 +119,8 @@
 
     <script type="module">
         import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref } from '/scripts/site.js';
-        import { safeDrawing, openDrawing } from '/scripts/leaderboard.js';
+        import { safeDrawing, openDrawing, rankBadge } from '/scripts/leaderboard.js';
+        import { nextRank, rankProgress } from '/scripts/milestones.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
         import { usernameProblem } from '/scripts/username.js';
 
@@ -194,15 +195,27 @@
         const emptyLine = (text) => h('p', { class: 'profile-stat-empty' }, text);
         const value = (text) => h('p', { class: 'profile-stat-value' }, text);
 
-        // Plus how betting clicks went this month, at Blackjack tables and on Fever pots.
+        // Their click rank, how far it is to the next one and a bar filling up toward it (scripts/milestones.js).
+        function clickRank(total) {
+            const next = nextRank(total);
+            const left = next ? next.at - total : 0;
+            return h('div', { class: 'profile-click-rank' },
+                rankBadge(total),
+                h('p', { class: 'profile-stat-detail' }, next ? `${fmt(left)} ${left === 1 ? 'click' : 'clicks'} to ${next.name}` : 'The top rank!'),
+                h('span', { class: 'profile-rank-bar', style: `--w: ${Math.round(rankProgress(total) * 100)}%`, 'aria-hidden': 'true' }));
+        }
+
+        // Plus their click rank, their daily bonus streak, and how betting clicks went this month, at Blackjack
+        // tables and on Fever pots.
         function clicksCard() {
             const c = profile.clicks;
             const bets = profile.bets || {};
             const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;
             const played = [['blackjack', 'Blackjack'], ['fever', 'Fever pots']].filter(([game]) => typeof bets[game] === 'number');
             return statCard('Trusty clicks', 'is-clicks',
-                c ? [value(fmt(c.total)), rankLine(c.rank, '/pages/leaderboard.html')]
+                c ? [value(fmt(c.total)), clickRank(c.total), rankLine(c.rank, '/pages/leaderboard.html')]
                   : emptyLine(profile.isMe ? 'No clicks yet. Trusty’s up in the header, waiting.' : 'No clicks yet.'),
+                c && c.streak > 0 ? h('p', { class: 'profile-stat-detail' }, `Daily bonus streak: ${fmt(c.streak)} ${c.streak === 1 ? 'day' : 'days'}`) : null,
                 played.length ? h('p', { class: 'profile-stat-detail' }, `This month: ${played.map(([game, name]) => `${name} ${signed(bets[game])}`).join(' · ')}`) : null);
         }
 

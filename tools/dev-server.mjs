@@ -18,6 +18,7 @@ import { mockBank } from './mock-bank.mjs';
 import { signTicket } from '../utils/fever-ticket.js';
 import { signedOp } from '../utils/bank-rules.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
+import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -67,8 +68,18 @@ async function api(req, url, body) {
   if (p === '/api/clicks') {
     if (!me) return [401, { error: 'Authentication required' }];
     const account = bank.account(accountOf(req));
-    if (req.method === 'POST') account.clicks += url.searchParams.get('action') === 'tv' ? 5 : 1;
-    return [200, { clicks: account.clicks, added: 5 }];
+    if (req.method !== 'POST') return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()) }];
+    if (action === 'tv') {
+      account.clicks += 5;
+      return [200, { clicks: account.clicks, added: 5 }];
+    }
+    // A click, and the daily bonus with the day's first one, as api/clicks.js pays it.
+    account.clicks += 1;
+    const claim = dailyClaim(account.daily, dayOf());
+    if (!claim) return [200, { clicks: account.clicks }];
+    account.daily = { day: dayOf(), streak: claim.streak };
+    account.clicks += claim.added;
+    return [200, { clicks: account.clicks, daily: claim }];
   }
   if (p === '/api/leaderboard') {
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
@@ -92,7 +103,7 @@ async function api(req, url, body) {
       const u = url.searchParams.get('u') || 'carson';
       return [200, {
         username: u, memberSince: '2025-11-20T00:00:00Z', isMe: me && u === 'carson', rename: me && u === 'carson' ? { admin: true, next: null } : null,
-        bio: 'Professional Trusty enjoyer.', clicks: { total: 12345, rank: 3 }, flappy: { score: 42, rank: 2 }, draw: null,
+        bio: 'Professional Trusty enjoyer.', clicks: { total: 12345, rank: 3, streak: 4 }, flappy: { score: 42, rank: 2 }, draw: null,
         trustis: { score: 90000, rank: 1, lines: 120, level: 13 },
         trustle: { played: 20, won: 18, streak: 4, best: 9, dist: [0, 2, 5, 6, 4, 1] }, tv: { trusty: 3600, snn: 600 },
         bets: Object.fromEntries(Object.entries(bank.status(`mock-${u}`).month).filter(([, n]) => n)),

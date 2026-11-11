@@ -658,6 +658,33 @@ button.board-thumb { cursor: zoom-in; }
 .board-thumb-empty { display: block; border-style: dashed; border-color: var(--pencil-light); background: var(--paper); }
 .podium-thumb.board-thumb-empty { cursor: default; }
 .board-empty, .board-error { padding: 20px 8px; text-align: center; color: var(--pencil); }
+/* The clicks board puts each player's click rank under their name */
+.board-who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.board-who .board-name { max-width: 100%; line-height: 1.35; }
+
+/* Click ranks (scripts/milestones.js), on the clicks board, profiles and the list of ranks: the higher the rank,
+   the brighter the badge. */
+.rank-badge {
+  display: inline-block;
+  max-width: 100%;
+  height: 20px;
+  padding: 0 7px;
+  overflow: hidden;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--note-green);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: .72rem;
+  font-weight: 750;
+  line-height: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank-badge[data-level="4"], .rank-badge[data-level="5"], .rank-badge[data-level="6"] { background: var(--note-blue); }
+.rank-badge[data-level="7"], .rank-badge[data-level="8"] { background: var(--note-pink); }
+.rank-badge[data-level="9"], .rank-badge[data-level="10"] { background: var(--highlight); }
+.rank-badge[data-level="11"] { background: var(--ink); color: var(--gold); }
 
 .skeleton-row {
   height: 44px;
@@ -917,7 +944,7 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   align-items: center;
   gap: 8px;
   height: 40px;
-  padding: 0 12px 0 4px;
+  padding: 0 12px 0 2px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: var(--card);
@@ -931,11 +958,90 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   user-select: none;
   transition: transform .1s, box-shadow .1s;
 }
-.clicker img { width: 30px; height: 30px; transition: transform .12s; }
+/* Trusty sits in a ring that fills up toward the next click rank (scripts/milestones.js; site.js sets --progress).
+   With the ring the face takes the same room it took alone. */
+.clicker-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-right: -2px;
+}
+.clicker-face::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold) calc(var(--progress, 0) * 100%), var(--rule-faint) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+}
+.clicker img { position: relative; width: 26px; height: 26px; transition: transform .12s; }
 .clicker:hover img { transform: rotate(-8deg); }
 .clicker:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
 .clicker:active img { transform: scale(.85); }
 .clicker-label { font-family: var(--font-body); font-size: .72rem; font-weight: 700; color: var(--pencil); text-transform: uppercase; letter-spacing: .04em; }
+/* A new rank: Trusty spins and the whole ring goes gold for a moment */
+.clicker.is-ranking-up .clicker-face { animation: rank-up 1.1s var(--ease-out); }
+.clicker.is-ranking-up .clicker-face::before { background: var(--gold); }
+@keyframes rank-up {
+  30% { transform: scale(1.3) rotate(-24deg); }
+  60% { transform: scale(1.12) rotate(14deg); }
+}
+/* Today's bonus, waiting for the day's first click */
+.clicker-daily {
+  position: absolute;
+  top: -10px;
+  left: 22px;
+  padding: 0 5px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--highlight);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: daily-bob 1.6s ease-in-out infinite;
+}
+@keyframes daily-bob { 50% { transform: translateY(-2px) rotate(-6deg); } }
+/* A sticky note that drops down from the clicker for a rank up or the daily bonus. It's lined up with the
+   clicker's right edge, so on phones it reaches back over the page instead of off the side of the screen. */
+.clicker-note {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -6px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 220px;
+  padding: 10px 14px 12px;
+  border-radius: 2px 2px 4px 2px;
+  background: var(--note-yellow);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .06), 0 14px 22px -12px rgba(0, 0, 0, .35);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: .85rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+  transform: rotate(-2deg);
+  pointer-events: none;
+  animation: note-in .45s var(--ease-out);
+  transition: opacity .3s;
+}
+.clicker-note.is-leaving { opacity: 0; }
+.clicker-note-title { font-family: var(--font-marker); font-size: .8rem; letter-spacing: .03em; color: var(--blue); text-transform: uppercase; }
+.clicker-note-big { font-family: var(--font-hand); font-size: 1.7rem; font-weight: 700; line-height: 1.05; }
+@keyframes note-in { from { opacity: 0; transform: translateY(-10px) rotate(-7deg); } }
+.menu-open .clicker-note { display: none; }
 .plus-one {
   position: absolute;
   left: 18px;
@@ -1491,11 +1597,18 @@ dialog.reader::backdrop { background: #1e1f23; }
 .lb-panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(20px, 4vw, 48px); align-items: start; }
 .lb-panel .panel { padding: 8px 10px; }
 .lb-side { display: flex; flex-direction: column; gap: 20px; }
-/* The podium fills in once the board loads: hold its height (taller with drawings) so the note under it stays put. */
+/* The podium fills in once the board loads: hold its height (taller with drawings, or click ranks) so the note
+   under it stays put. */
 .lb-side [data-podium]:empty { min-height: 187px; }
+.lb-panel[data-board="clicks"] [data-podium]:empty { min-height: 209px; }
 .lb-panel[data-board="draw"] [data-podium]:empty { min-height: 291px; }
 .lb-note { font-size: .98rem; }
 .lb-note p { margin: 0 0 10px; }
+/* Every click rank, folded up in the clicks board's note */
+.rank-list summary { width: fit-content; font-weight: 750; cursor: pointer; }
+.rank-table { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 14px; margin: 10px 0 0; }
+.rank-table dt { min-width: 0; }
+.rank-table dd { margin: 0; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
 
 .podium {
   display: grid;
@@ -1512,6 +1625,7 @@ dialog.reader::backdrop { background: #1e1f23; }
 .podium-spot.place-2 { order: 1; }
 .podium-spot.place-3 { order: 3; }
 .podium-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 750; }
+.podium-spot .rank-badge { flex: none; margin-top: 2px; }
 .podium-score { font-family: var(--font-marker); font-size: 1.3rem; line-height: 1.2; }
 .podium-block {
   display: grid;
