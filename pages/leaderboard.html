@@ -47,6 +47,24 @@
                     <div class="sticky-note lb-note">
                         <h3>How to climb</h3>
                         <p data-me-note>Every click on Trusty in the header counts. Log in and start clicking!</p>
+                        <!-- DAILY and RANKS in scripts/milestones.js (tests/milestones.test.js checks they match) -->
+                        <p id="daily-rule">Your first click each day also earns a bonus: +25 clicks, plus 5 more for every day in a row, up to +100.</p>
+                        <details class="rank-list">
+                            <summary>See every click rank</summary>
+                            <dl class="rank-table" id="rank-table">
+                                <dt><span class="rank-badge" data-level="1">Foal</span></dt><dd>100</dd>
+                                <dt><span class="rank-badge" data-level="2">Pony</span></dt><dd>500</dd>
+                                <dt><span class="rank-badge" data-level="3">Trotter</span></dt><dd>1,000</dd>
+                                <dt><span class="rank-badge" data-level="4">Stallion</span></dt><dd>5,000</dd>
+                                <dt><span class="rank-badge" data-level="5">Racehorse</span></dt><dd>10,000</dd>
+                                <dt><span class="rank-badge" data-level="6">Derby Winner</span></dt><dd>25,000</dd>
+                                <dt><span class="rank-badge" data-level="7">Trusty’s Best Friend</span></dt><dd>50,000</dd>
+                                <dt><span class="rank-badge" data-level="8">Legend of the Notebook</span></dt><dd>100,000</dd>
+                                <dt><span class="rank-badge" data-level="9">Triple Crown</span></dt><dd>250,000</dd>
+                                <dt><span class="rank-badge" data-level="10">Pegasus</span></dt><dd>500,000</dd>
+                                <dt><span class="rank-badge" data-level="11">Trusty Himself</span></dt><dd>1,000,000</dd>
+                            </dl>
+                        </details>
                     </div>
                 </div>
                 <div class="panel">
@@ -110,6 +128,7 @@
     <script type="module">
         import { h, session, sessionReady } from '/scripts/site.js';
         import { BOARDS, fetchBoard, renderList, renderPodium, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
+        import { rankFor } from '/scripts/milestones.js';
 
         const MAX_ROWS = 50;
         const tabs = [...document.querySelectorAll('[role="tab"]')];
@@ -125,15 +144,26 @@
             } catch { return null; }
         }
 
+        // Your click rank (scripts/milestones.js), after your place on the clicks board.
+        function rankNote(clicks) {
+            const rank = rankFor(clicks);
+            return rank ? ` Your rank: ${rank.name}.` : '';
+        }
+
         async function meNote(key, entries) {
             const board = BOARDS[key];
             if (!session.loggedIn) return null;
             const index = entries.findIndex((e) => e.name === session.username);
-            if (index !== -1) return `You’re #${index + 1} with ${board.format(entries[index].score)}${key === 'clicks' ? ' clicks' : ''}.`;
+            if (index !== -1) {
+                const score = entries[index].score;
+                return key === 'clicks'
+                    ? `You’re #${index + 1} with ${board.format(score)} clicks.${rankNote(score)}`
+                    : `You’re #${index + 1} with ${board.format(score)}.`;
+            }
             if (key !== 'clicks') return 'You’re not on this board yet. Go set a high score!';
             const mine = entries.length >= MAX_ROWS ? await clicksRank() : null;
             return mine
-                ? `You’re #${mine.rank} with ${board.format(mine.total)} clicks. Keep going!`
+                ? `You’re #${mine.rank} with ${board.format(mine.total)} clicks.${rankNote(mine.total)} Keep going!`
                 : 'You haven’t clicked Trusty yet. He’s up in the header, waiting.';
         }
 

@@ -1,6 +1,7 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
+import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
 // The server allows a little slack so network jitter doesn't reject honest clicks.
@@ -17,6 +18,25 @@ const TV_SLACK_MS = 500;
 // (`tvSeconds.<channel key>`), which the profile page uses to pick a favorite channel.
 const TV_CHANNELS = new Set(CHANNELS.map((c) => c.key));
 
+// The first click of each day (from midnight Eastern) also pays the daily bonus, which grows with every day in a
+// row (dailyClaim() in scripts/milestones.js). The account's `daily` ({ day, streak }) says which day was last
+// paid, and the bonus only goes in if that's still the day this click read, so two clicks at once can't both
+// collect it. Returns { clicks, daily: { streak, added } }, or null if there's nothing to pay.
+async function payDaily(collection, userId, last, today) {
+    const claim = dailyClaim(last, today);
+    if (!claim) return null;
+    const result = await collection.findOneAndUpdate(
+        { userId, 'daily.day': last && typeof last.day === 'string' ? last.day : { $exists: false } },
+        {
+            $inc: { clicks: claim.added },
+            $set: { daily: { day: today, streak: claim.streak } }
+        },
+        { returnDocument: 'after', projection: { clicks: 1 } }
+    );
+    const doc = result && 'value' in result ? result.value : result;
+    return doc ? { clicks: doc.clicks, daily: claim } : null;
+}
+
 export default async (req, res) => {
     const user = authenticateUser(req);
     if (!user) {
@@ -28,9 +48,11 @@ export default async (req, res) => {
         const collection = db.collection('click_game');
 
         if (req.method === 'GET') {
-            const userData = await collection.findOne({ userId: user.userId });
-            return res.status(200).json({ 
-                clicks: userData ? userData.clicks : 0 
+            const userData = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, daily: 1 } });
+            return res.status(200).json({
+                clicks: userData ? userData.clicks : 0,
+                // Whether today's bonus is still waiting for a click (the header clicker shows it).
+                daily: dailyStatus(userData && userData.daily, dayOf(new Date()))
             });
         }
 
@@ -68,6 +90,7 @@ export default async (req, res) => {
 
         if (req.method === 'POST') {
             const now = new Date();
+            const today = dayOf(now);
             const cutoff = new Date(now.getTime() - WINDOW_MS + JITTER_MS);
             // `recent` keeps the times of the last MAX_CLICKS clicks, newest first. A click only
             // counts if the oldest of those is outside the window (or there aren't that many yet).
@@ -78,21 +101,28 @@ export default async (req, res) => {
                     $set: { username: user.username, lastClicked: now },
                     $push: { recent: { $each: [now], $position: 0, $slice: MAX_CLICKS } }
                 },
-                { returnDocument: 'after' }
+                { returnDocument: 'after', projection: { clicks: 1, daily: 1 } }
             );
             const doc = result && 'value' in result ? result.value : result;
             if (doc) {
-                return res.status(200).json({ clicks: doc.clicks });
+                // The click already counted, so a problem with the bonus doesn't fail it: the next click tries again.
+                const bonus = await payDaily(collection, user.userId, doc.daily, today).catch((error) => {
+                    console.error('Daily bonus error:', error);
+                    return null;
+                });
+                return res.status(200).json(bonus || { clicks: doc.clicks });
             }
 
-            // No match: either this is the user's first click ever, or they're clicking too fast.
+            // No match: either this is the user's first click ever (which gets the first day's bonus too),
+            // or they're clicking too fast.
+            const first = dailyClaim(null, today);
             const inserted = await collection.updateOne(
                 { userId: user.userId },
-                { $setOnInsert: { clicks: 1, username: user.username, lastClicked: now, recent: [now] } },
+                { $setOnInsert: { clicks: 1 + first.added, username: user.username, lastClicked: now, recent: [now], daily: { day: today, streak: first.streak } } },
                 { upsert: true }
             );
             if (inserted.upsertedCount) {
-                return res.status(200).json({ clicks: 1 });
+                return res.status(200).json({ clicks: 1 + first.added, daily: first });
             }
             return res.status(429).json({ error: `Slow down! Max ${MAX_CLICKS} clicks per second.` });
         }

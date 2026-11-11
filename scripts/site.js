@@ -1,14 +1,19 @@
 // Shared chrome (header/footer), session state, and small DOM helpers for every page.
+import { rankFor, nextRank, rankProgress, dailyBonus, dayOf } from '/scripts/milestones.js';
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
 const LS_ADMIN = 'trusty:admin';
-// Device keys that remember by username whose data they hold (Trustle's games), so a rename moves them along
-// instead of looking like someone else logged in.
-const LS_NAME_KEYS = ['trusty:trustle:owner'];
+// The highest click rank the header clicker has shown on this device (its `at`), and whose it is.
+const LS_RANK = 'trusty:rank';
+const LS_RANK_OWNER = 'trusty:rank:owner';
+// Device keys that remember by username whose data they hold (Trustle's games, the click rank shown), so a
+// rename moves them along instead of looking like someone else logged in.
+const LS_NAME_KEYS = ['trusty:trustle:owner', LS_RANK_OWNER];
 const FACE = '/images/icons/mobile-icon-96.webp';
 const ADMIN_PAGE = '/pages/admin.html';
 const CLICK_LIMIT = 3; // header clicker: clicks per second
+const NOTE_MS = 4500; // how long a rank up or daily bonus note stays under the clicker
 
 function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
 function lsSet(key, value) { try { localStorage.setItem(key, value); } catch { /* storage blocked */ } }
@@ -221,9 +226,11 @@ class TrustyHeader extends HTMLElement {
     this.dataset.ready = '1';
 
     const clicker = h('button', { type: 'button', class: 'clicker', hidden: true, title: 'Click Trusty! Every click counts on the leaderboard.' },
-      h('img', { class: 'ink', src: FACE, alt: 'Click Trusty', width: 30, height: 30 }),
+      h('span', { class: 'clicker-face' }, h('img', { class: 'ink', src: FACE, alt: 'Click Trusty', width: 26, height: 26 })),
       h('span', { class: 'clicker-count' }, '0'),
       h('span', { class: 'clicker-label' }, 'clicks'));
+    // Says rank ups and the daily bonus out loud: the notes that show them under the clicker are only decoration.
+    const clickerNews = h('span', { class: 'sr-only', role: 'status' });
 
     const toggle = h('button', { type: 'button', class: 'menu-toggle', 'aria-expanded': 'false', 'aria-controls': 'mobile-menu', 'aria-label': 'Open menu' });
     toggle.innerHTML = ICON_MENU;
@@ -242,7 +249,7 @@ class TrustyHeader extends HTMLElement {
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('nav', { class: 'site-nav', 'aria-label': 'Main' }, navList({ dropdowns: true })),
-          h('div', { class: 'header-actions' }, clicker, desktopAccount, toggle)),
+          h('div', { class: 'header-actions' }, clicker, clickerNews, desktopAccount, toggle)),
         menu));
 
     const renderAccount = () => {
@@ -255,7 +262,7 @@ class TrustyHeader extends HTMLElement {
 
     setupMenu(toggle, menu);
     this.querySelectorAll('.nav-drop').forEach(setupDropdown);
-    setupClicker(clicker);
+    setupClicker(clicker, clickerNews);
   }
 }
 
@@ -298,17 +305,143 @@ function setupMenu(toggle, menu) {
   window.addEventListener('resize', () => { if (!menu.hidden && getComputedStyle(toggle).display === 'none') setOpen(false); });
 }
 
-function setupClicker(button) {
+const clicksWord = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
+
+// The clicker's tooltip: the player's click rank, how far the next one is, and the daily bonus while it waits.
+function clickerTitle(count, daily) {
+  const rank = rankFor(count);
+  const next = nextRank(count);
+  return [
+    'Click Trusty!',
+    rank ? `Rank: ${rank.name}.` : null,
+    next ? `${clicksWord(next.at - count)} to ${next.name}.` : 'That’s the top rank!',
+    daily && daily.ready ? `Today’s first click earns a +${fmt(daily.next)} bonus.` : null,
+  ].filter(Boolean).join(' ');
+}
+
+// The highest click rank (its `at`) this device has shown the logged-in player, or null if it never has. Kept
+// in memory too, for when storage is blocked.
+let rankShown = null;
+function shownRank() {
+  if (lsGet(LS_RANK_OWNER) === session.username) {
+    const at = Number(lsGet(LS_RANK));
+    if (Number.isFinite(at)) return at;
+  }
+  return rankShown && rankShown.name === session.username ? rankShown.at : null;
+}
+function rememberRank(at) {
+  rankShown = { name: session.username, at };
+  lsSet(LS_RANK_OWNER, session.username);
+  lsSet(LS_RANK, String(at));
+}
+
+function setupClicker(button, news) {
   const countEl = button.querySelector('.clicker-count');
+  const face = button.querySelector('.clicker-face');
+  const dailyBadge = h('span', { class: 'clicker-daily', 'aria-hidden': 'true', hidden: true });
+  button.append(dailyBadge);
   // Shown count = highest total the server has reported + clicks whose POST hasn't answered yet.
   let serverCount = 0;
   let inFlight = 0;
   let loaded = false;
-  const render = () => { countEl.textContent = fmt(serverCount + inFlight); };
+  // The daily bonus as GET /api/clicks last told it ({ ready, streak, next }), and the day that was.
+  let daily = null;
+  let dailyDay = null;
+  const render = () => {
+    const count = serverCount + inFlight;
+    countEl.textContent = fmt(count);
+    // The ring around Trusty fills up toward the next click rank (scripts/milestones.js).
+    face.style.setProperty('--progress', rankProgress(count).toFixed(3));
+    button.title = clickerTitle(count, daily);
+    const ready = Boolean(daily && daily.ready);
+    dailyBadge.hidden = !ready;
+    dailyBadge.textContent = ready ? `+${fmt(daily.next)}` : '';
+  };
   // Click answers can arrive out of order, so a total only ever goes up; the bank's answers are exact.
   const accept = (data) => {
     const clicks = Number(data && data.clicks) || 0;
     serverCount = data && data.exact ? clicks : Math.max(serverCount, clicks);
+  };
+
+  // +1 for a click, +N for clicks earned another way, or "Slow down!", floating up off Trusty.
+  const floatUp = (text, className = 'plus-one') => {
+    const el = h('span', { class: className, 'aria-hidden': 'true' }, text);
+    el.addEventListener('animationend', () => el.remove());
+    button.append(el);
+    return el;
+  };
+
+  // Rank ups and the daily bonus get a sticky note under the clicker for a few seconds, one at a time.
+  const notes = [];
+  let noting = false;
+  const sentence = (text) => (/[.!?]$/.test(text) ? text : `${text}.`);
+  const nextNote = () => {
+    const next = notes.shift();
+    noting = Boolean(next);
+    if (!next) return;
+    const [title, big, small] = next;
+    news.textContent = next.map(sentence).join(' ');
+    const note = h('span', { class: 'clicker-note', 'aria-hidden': 'true' },
+      h('span', { class: 'clicker-note-title' }, title),
+      h('span', { class: 'clicker-note-big' }, big),
+      small);
+    button.append(note);
+    setTimeout(() => {
+      note.classList.add('is-leaving');
+      setTimeout(() => { note.remove(); nextNote(); }, 300);
+    }, NOTE_MS);
+  };
+  const showNote = (title, big, small) => {
+    notes.push([title, big, small]);
+    if (!noting) nextNote();
+  };
+
+  // Reaching a new click rank gets a note and a spin, once per rank: winning back clicks lost on a bet doesn't
+  // count again. The first time this device sees a player, the note just says which rank they're at.
+  let spinTimer;
+  const checkRank = () => {
+    if (!session.loggedIn) return;
+    const rank = rankFor(serverCount);
+    const at = rank ? rank.at : 0;
+    const before = shownRank();
+    if (before !== null && at <= before) return;
+    rememberRank(at);
+    if (!rank) return;
+    const next = nextRank(serverCount);
+    if (before === null) {
+      showNote('Your click rank', rank.name, next ? `${clicksWord(next.at - serverCount)} to ${next.name}` : 'That’s the top rank!');
+      return;
+    }
+    showNote('Rank up!', rank.name, next ? `Next: ${next.name} at ${fmt(next.at)} clicks` : 'That’s the top rank!');
+    button.classList.add('is-ranking-up');
+    clearTimeout(spinTimer);
+    spinTimer = setTimeout(() => button.classList.remove('is-ranking-up'), 1200);
+  };
+
+  // The day's first click came back with the daily bonus (api/clicks.js pays it).
+  const gotDaily = (bonus) => {
+    const added = Number(bonus.added) || 0;
+    const streak = Number(bonus.streak) || 1;
+    if (added <= 0) return;
+    daily = { ready: false, streak, next: dailyBonus(streak + 1) };
+    floatUp(`+${fmt(added)}`);
+    showNote('Daily bonus!', `+${clicksWord(added)}`,
+      streak > 1 ? `${fmt(streak)} days in a row. Tomorrow: +${fmt(dailyBonus(streak + 1))}` : `Come back tomorrow for +${fmt(dailyBonus(2))}`);
+  };
+
+  const refresh = async () => {
+    try {
+      const res = await fetch('/api/clicks');
+      if (res.ok) {
+        const data = await res.json();
+        accept(data);
+        const d = data && data.daily;
+        daily = d && typeof d.ready === 'boolean' ? { ready: d.ready, streak: Number(d.streak) || 0, next: Number(d.next) || 0 } : null;
+        dailyDay = dayOf();
+        checkRank();
+      }
+    } catch { /* leave the counter at its last value */ }
+    render();
   };
 
   const load = async () => {
@@ -316,11 +449,7 @@ function setupClicker(button) {
     loaded = true;
     const { loggedIn } = await sessionReady;
     if (!loggedIn) { loaded = false; return; }
-    try {
-      const res = await fetch('/api/clicks');
-      if (res.ok) accept(await res.json());
-    } catch { /* leave the counter at its last value */ }
-    render();
+    await refresh();
   };
 
   // At most CLICK_LIMIT clicks per second (api/clicks.js enforces the same limit).
@@ -337,24 +466,28 @@ function setupClicker(button) {
   button.addEventListener('click', async () => {
     if (tooFast()) {
       if (!slowNote) {
-        slowNote = h('span', { class: 'plus-one slow-down', 'aria-hidden': 'true' }, 'Slow down!');
-        slowNote.addEventListener('animationend', () => { slowNote.remove(); slowNote = null; });
-        button.append(slowNote);
+        slowNote = floatUp('Slow down!', 'plus-one slow-down');
+        slowNote.addEventListener('animationend', () => { slowNote = null; });
       }
       return;
     }
     inFlight += 1;
     render();
-    const plus = h('span', { class: 'plus-one', 'aria-hidden': 'true' }, '+1');
-    button.append(plus);
-    plus.addEventListener('animationend', () => plus.remove());
+    floatUp('+1');
     try {
       const res = await fetch('/api/clicks', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       if (res.status === 401) {
         sessionExpired();
         return;
       }
-      if (res.ok) accept(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        accept(data);
+        // Only the day's first click pays the bonus, so any other click means it's been paid (in another tab, say).
+        if (data && data.daily) gotDaily(data.daily);
+        else if (daily && daily.ready) daily = { ...daily, ready: false };
+        checkRank();
+      }
     } catch { /* the click didn't land; drop it from the optimistic count */ }
     finally {
       inFlight -= 1;
@@ -365,11 +498,15 @@ function setupClicker(button) {
   // Clicks earned elsewhere on the page (watching Trusty TV, finishing a Trustle) float up as +N like a click does.
   document.addEventListener('trusty:clicks', (e) => {
     accept(e.detail);
+    checkRank();
     render();
     if (button.hidden || !(e.detail.added > 0)) return;
-    const plus = h('span', { class: 'plus-one', 'aria-hidden': 'true' }, `+${e.detail.added}`);
-    button.append(plus);
-    plus.addEventListener('animationend', () => plus.remove());
+    floatUp(`+${e.detail.added}`);
+  });
+
+  // A page left open past midnight Eastern looks for the new day's bonus when it's looked at again.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && loaded && session.loggedIn && dailyDay && dailyDay !== dayOf()) refresh();
   });
 
   load();

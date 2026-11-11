@@ -2,6 +2,7 @@
 // is built with DOM APIs (never innerHTML) and drawings must be PNG data URLs.
 import { h, fmt, session, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
 import { referenceCanvas } from '/scripts/draw-reference.js';
+import { rankFor, rankLevel } from '/scripts/milestones.js';
 
 const PNG_PREFIX = 'data:image/png;base64,';
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
@@ -68,6 +69,12 @@ function nameTag(entry, className) {
     : h('span', { class: className, title: entry.name }, entry.name);
 }
 
+// A player's click rank (scripts/milestones.js) as a badge, or nothing before the first one.
+export function rankBadge(clicks) {
+  const rank = rankFor(clicks);
+  return rank ? h('span', { class: 'rank-badge', title: rank.name, dataset: { level: rankLevel(rank) } }, rank.name) : null;
+}
+
 function drawingThumb(entry, className) {
   if (!entry.drawing) return h('span', { class: `${className} board-thumb-empty`, 'aria-hidden': 'true' });
   return h('button', {
@@ -88,7 +95,7 @@ export function renderList(list, entries, { key, startRank = 1 }) {
     },
     h('span', { class: 'board-rank' }, rank),
     key === 'draw' ? drawingThumb(entry, 'board-thumb') : null,
-    nameTag(entry, 'board-name'),
+    key === 'clicks' ? h('span', { class: 'board-who' }, nameTag(entry, 'board-name'), rankBadge(entry.score)) : nameTag(entry, 'board-name'),
     h('span', { class: 'board-score' }, board.format(entry.score)));
   }));
 }
@@ -103,6 +110,7 @@ export function renderPodium(container, entries, { key }) {
     entries.slice(0, 3).map((entry, i) => h('li', { class: `podium-spot place-${i + 1}${isMe(entry) ? ' is-me' : ''}` },
       key === 'draw' ? drawingThumb(entry, 'podium-thumb') : null,
       nameTag(entry, 'podium-name'),
+      key === 'clicks' ? rankBadge(entry.score) : null,
       h('span', { class: 'podium-score' }, board.format(entry.score)),
       h('span', { class: 'podium-block', 'aria-label': `Rank ${i + 1}` }, i + 1)))));
 }
