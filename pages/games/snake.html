@@ -11,10 +11,10 @@
     <meta property="og:site_name" content="Trusty da Horse">
     <meta property="og:title" content="Trusty Snake">
     <meta property="og:description" content="How long can you make him????">
-    <meta property="og:image" content="https://trustydahorse.com/images/snake_thumbnail.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <meta property="og:image" content="https://trustydahorse.com/images/thumbnails/snake.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
@@ -95,8 +95,8 @@
                 <div class="panel">
                     <h2 class="panel-title">Pick Trusty's snack</h2>
                     <div class="segmented" role="group" aria-label="Food">
-                        <button type="button" data-food="/images/orange.jpg" aria-pressed="true"><img src="/images/orange.jpg" alt="" width="26" height="26">Orange</button>
-                        <button type="button" data-food="/images/bigmac.jpg" aria-pressed="false"><img src="/images/bigmac.jpg" alt="" width="26" height="26">Big Mac</button>
+                        <button type="button" data-food="/images/sprites/orange.jpg" aria-pressed="true"><img src="/images/sprites/orange.jpg" alt="" width="26" height="26">Orange</button>
+                        <button type="button" data-food="/images/sprites/bigmac.jpg" aria-pressed="false"><img src="/images/sprites/bigmac.jpg" alt="" width="26" height="26">Big Mac</button>
                     </div>
                 </div>
 
@@ -405,8 +405,8 @@
 
         (async () => {
             const [head, body, tail, corner, orange] = await Promise.all([
-                loadImage('/images/snakehead.jpg'), loadImage('/images/snakebody.jpg'), loadImage('/images/snaketail.jpg'),
-                loadImage('/images/snakecorner.jpg'), loadImage('/images/orange.jpg'), fontsReady,
+                loadImage('/images/sprites/snakehead.jpg'), loadImage('/images/sprites/snakebody.jpg'), loadImage('/images/sprites/snaketail.jpg'),
+                loadImage('/images/sprites/snakecorner.jpg'), loadImage('/images/sprites/orange.jpg'), fontsReady,
             ]);
             const px = CELL * scale;
             sprites = {

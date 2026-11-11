@@ -17,5 +17,21 @@
       "source": "/pages/games/embed/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
+  ],
+  "redirects": [
+    { "source": "/images/trusty.png", "destination": "/images/trusty/trusty.png", "permanent": true },
+    { "source": "/images/chat_pic.jpg", "destination": "/images/trusty/chat_pic.jpg", "permanent": true },
+    { "source": "/images/3dSample.jpg", "destination": "/images/trusty/3dSample.jpg", "permanent": true },
+    { "source": "/images/blackjack_thumbnail.png", "destination": "/images/thumbnails/blackjack.png", "permanent": true },
+    { "source": "/images/crazycattle.png", "destination": "/images/thumbnails/crazycattle.png", "permanent": true },
+    { "source": "/images/draw_thumbnail.png", "destination": "/images/thumbnails/draw.png", "permanent": true },
+    { "source": "/images/driving_thumbnail.png", "destination": "/images/thumbnails/driving.png", "permanent": true },
+    { "source": "/images/fever_thumbnail.png", "destination": "/images/thumbnails/fever.png", "permanent": true },
+    { "source": "/images/flappy_thumbnail.png", "destination": "/images/thumbnails/flappy.png", "permanent": true },
+    { "source": "/images/football_thumbnail.png", "destination": "/images/thumbnails/football.png", "permanent": true },
+    { "source": "/images/gta.jpg", "destination": "/images/thumbnails/gta.jpg", "permanent": true },
+    { "source": "/images/snake_thumbnail.png", "destination": "/images/thumbnails/snake.png", "permanent": true },
+    { "source": "/images/trustis.png", "destination": "/images/thumbnails/trustis.png", "permanent": true },
+    { "source": "/images/trustle_thumbnail.png", "destination": "/images/thumbnails/trustle.png", "permanent": true }
   ]
 }

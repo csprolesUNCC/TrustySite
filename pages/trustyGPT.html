@@ -11,10 +11,10 @@
     <meta property="og:site_name" content="Trusty da Horse">
     <meta property="og:title" content="TrustyGPT: your favorite AI horse!">
     <meta property="og:description" content="The experimental AI assistant here to help take over the world.">
-    <meta property="og:image" content="https://trustydahorse.com/images/chat_pic.jpg">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/mobile-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon-16x16.png">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty/chat_pic.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
@@ -28,7 +28,7 @@
     <main id="main">
         <div class="container chat-layout">
             <aside class="chat-intro">
-                <img class="chat-hero-avatar" src="/images/chat_pic-240.webp" alt="" width="120" height="120">
+                <img class="chat-hero-avatar" src="/images/trusty/chat_pic-240.webp" alt="" width="120" height="120">
                 <p class="eyebrow">Your favorite AI horse!</p>
                 <h1>TrustyGPT</h1>
                 <p class="lead">TrustyGPT is the experimental AI assistant whose primary purpose is to assist in criminal activity and help take over the world!</p>
@@ -37,7 +37,7 @@
 
             <section class="chat-card" aria-label="Chat with TrustyGPT">
                 <div class="chat-head">
-                    <img src="/images/chat_pic-240.webp" alt="" width="40" height="40">
+                    <img src="/images/trusty/chat_pic-240.webp" alt="" width="40" height="40">
                     <div class="chat-head-text">
                         <div class="chat-head-title">TrustyGPT</div>
                         <div class="chat-status" id="chat-status">Online</div>
@@ -121,7 +121,7 @@
 
         function addMessage(role, content, { error = false } = {}) {
             const row = h('div', { class: `msg msg-${role}${error ? ' msg-error' : ''}` },
-                role === 'bot' ? h('img', { class: 'msg-avatar', src: '/images/chat_pic-240.webp', alt: '' }) : null,
+                role === 'bot' ? h('img', { class: 'msg-avatar', src: '/images/trusty/chat_pic-240.webp', alt: '' }) : null,
                 h('div', { class: 'msg-bubble' }, content));
             log.append(row);
             log.scrollTop = log.scrollHeight;

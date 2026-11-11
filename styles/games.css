@@ -590,7 +590,7 @@ kbd {
 .card-pip { position: absolute; inset: 0; display: grid; place-items: center; font-size: 2.4rem; pointer-events: none; }
 .card-back {
   background:
-    url("/images/mobile-icon.png") center / 46px no-repeat,
+    url("/images/icons/mobile-icon.png") center / 46px no-repeat,
     repeating-linear-gradient(45deg, #fff 0 8px, #f2ecdd 8px 16px);
   background-blend-mode: multiply;
 }
