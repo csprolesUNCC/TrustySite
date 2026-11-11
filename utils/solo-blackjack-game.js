@@ -7,7 +7,9 @@ import {
 // The solo Trusty Blackjack game itself (utils/solo-blackjack.js serves it), with no database here, so
 // tools/dev-server.mjs and the tests play exactly the same game with games kept in memory (memoryGames()).
 
-export const STALE_HAND_MS = 60 * 60 * 1000; // well before the bank gives open bets back (STALE_MS, 2 hours)
+// A hand left alone this long is stood and settled on the next visit. The bank never gives solo bets back by
+// itself (refundStale() skips them), so walking away from a bad hand doesn't get the bet back.
+export const STALE_HAND_MS = 60 * 60 * 1000;
 const MOVES = ['deal', 'insure', 'hit', 'stand', 'double', 'split'];
 
 const fresh = () => ({ v: 0, shoe: null, round: null, hand: 0, shuffled: false, at: null, settled: true });
@@ -80,7 +82,7 @@ export async function play(deps, userId, move) {
   let staked = null;
   const charge = async (amount) => {
     const id = deps.newId();
-    const answer = await deps.bank.stake({ userId, betId: id, amount, game: 'blackjack' });
+    const answer = await deps.bank.stake({ userId, betId: id, amount, game: 'blackjack', solo: true });
     if (!answer.ok) return answer.error;
     staked = { id, amount };
     bank = { clicks: answer.clicks, net: answer.net };

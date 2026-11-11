@@ -14,7 +14,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
   };
   const fmt = (n) => new Intl.NumberFormat('en-US').format(n);
 
-  async function stake({ userId, betId, amount, game }) {
+  async function stake({ userId, betId, amount, game, solo = false }) {
     await later();
     const a = account(userId);
     if (a.open.has(betId)) return { ok: true, clicks: a.clicks, net: a.net };
@@ -24,7 +24,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     if (a.net - amount < -LIMITS.lossPerDay) return { ok: false, error: `That could put you more than ${fmt(LIMITS.lossPerDay)} clicks down today, the daily limit. Bet less, or come back after midnight.` };
     a.clicks -= amount;
     a.net -= amount;
-    a.open.set(betId, { amount, game });
+    a.open.set(betId, { amount, game, solo: solo === true });
     return { ok: true, clicks: a.clicks, net: a.net };
   }
 

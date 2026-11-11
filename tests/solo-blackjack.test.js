@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { MongoClient } from 'mongodb';
 import { play, cleanMove, memoryGames, STALE_HAND_MS } from '../utils/solo-blackjack-game.js';
 import soloApi, { mongoGames } from '../utils/solo-blackjack.js';
-import { stake, settle } from '../utils/bank.js';
+import { stake, settle, refundStale } from '../utils/bank.js';
 import { mockBank } from '../tools/mock-bank.mjs';
 
 const card = (text) => ({ rank: text.slice(0, -1), suit: text.slice(-1) });
@@ -156,6 +156,7 @@ test('a payout that didn’t get through is paid on the next visit, once', async
 test('a hand left alone is stood and settled', async () => {
   const g = game(['10♠', '10♣', '9♥', '7♦']);
   await g.move({ do: 'deal', amount: 100 });
+  assert.equal([...g.bank.account(ME).open.values()][0].solo, true, 'marked so the bank never hands it back');
   g.wait(STALE_HAND_MS - 1000);
   assert.equal((await g.look()).round.phase, 'player');
   g.wait(2000);
@@ -211,6 +212,7 @@ test('with MongoDB: a hand, and two tabs at once', { skip: uri ? false : 'set BA
     const both = await Promise.all([play(deps, ME, { do: 'deal', amount: 100 }), play(deps, ME, { do: 'deal', amount: 100 })]);
     assert.equal(both.filter((x) => x.error).length, 1, JSON.stringify(both.map((x) => x.error)));
     let shown = both.find((x) => !x.error);
+    assert.equal(await refundStale(clicks, ME, new Date(Date.now() + 5 * 3600e3)), 0, 'walking away doesn’t get the bet back');
     const doc = await db.collection('blackjack_solo').findOne({ _id: ME });
     assert.equal(doc.round.shoe, undefined, 'the shoe is stored once');
     for (let i = 0; shown.round.phase !== 'over' && i < 10; i++) {

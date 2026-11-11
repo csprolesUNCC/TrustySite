@@ -36,7 +36,9 @@ async function rollover(col, userId, today) {
   await col.updateOne({ userId, 'bank.day': { $ne: today } }, { $set: { 'bank.day': today, 'bank.net': 0 } });
 }
 
-export async function stake(col, { userId, betId, amount, game }, now = new Date()) {
+// solo: a bet from Trusty Blackjack on your own (utils/solo-blackjack.js), which settles its own abandoned hands, so
+// refundStale() leaves it alone: otherwise walking away from a bad hand for 2 hours would get the bet back.
+export async function stake(col, { userId, betId, amount, game, solo = false }, now = new Date()) {
   const today = dayOf(now);
   await rollover(col, userId, today);
   const done = unwrap(await col.findOneAndUpdate(
@@ -49,7 +51,7 @@ export async function stake(col, { userId, betId, amount, game }, now = new Date
     },
     {
       $inc: { clicks: -amount, 'bank.net': -amount },
-      $set: { [`bank.open.${betId}`]: { amount, game, day: today, at: now } },
+      $set: { [`bank.open.${betId}`]: { amount, game, day: today, at: now, ...(solo === true ? { solo: true } : {}) } },
     },
     { returnDocument: 'after', projection: { clicks: 1, 'bank.net': 1 } },
   ));
@@ -141,7 +143,8 @@ export async function settlePot(col, pots, { potId, stakes, winners }, now = new
   return { ok: true, total: record.total, payouts: record.payouts.map(({ userId, payout }) => ({ userId, payout })), balances };
 }
 
-// Gives back bets left open for STALE_MS: their table or room went away before paying out.
+// Gives back bets left open for STALE_MS: their table or room went away before paying out. Solo Blackjack bets
+// are never given back here: that game stands and settles a hand left alone itself.
 export async function refundStale(col, userId, now = new Date()) {
   const doc = await col.findOne({ userId }, { projection: { 'bank.open': 1 } });
   const open = doc && doc.bank && doc.bank.open;
@@ -149,7 +152,7 @@ export async function refundStale(col, userId, now = new Date()) {
   const today = dayOf(now);
   let back = 0;
   for (const [betId, bet] of Object.entries(open)) {
-    if (!isBetId(betId) || now - new Date(bet.at) < STALE_MS) continue;
+    if (!isBetId(betId) || bet.solo || now - new Date(bet.at) < STALE_MS) continue;
     const result = await col.updateOne(
       { userId, [`bank.open.${betId}.at`]: bet.at },
       { $unset: { [`bank.open.${betId}`]: '' }, $inc: { clicks: bet.amount, 'bank.net': bet.day === today ? bet.amount : 0 } },
