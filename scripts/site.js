@@ -118,7 +118,7 @@ export function sessionRenamed(username) {
   publishSession();
 }
 
-// Pages that hand out clicks (Trusty TV) report the new total so the header clicker keeps up.
+// Pages that hand out clicks (Trusty TV, Trustle) report the new total so the header clicker keeps up.
 export function announceClicks(clicks, added) {
   document.dispatchEvent(new CustomEvent('trusty:clicks', { detail: { clicks, added } }));
 }
@@ -362,7 +362,7 @@ function setupClicker(button) {
     }
   });
 
-  // Clicks earned elsewhere on the page (watching Trusty TV) float up as +N like a click does.
+  // Clicks earned elsewhere on the page (watching Trusty TV, finishing a Trustle) float up as +N like a click does.
   document.addEventListener('trusty:clicks', (e) => {
     accept(e.detail);
     render();
