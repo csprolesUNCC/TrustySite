@@ -119,6 +119,8 @@ async function twoPeople(found) {
   try {
     await host.goto(`${BASE}/pages/games/fever.html`, { waitUntil: 'networkidle' });
     await host.click('#online-btn');
+    // The overlay fades in: check its colors once it's all the way in, not halfway.
+    await host.waitForFunction(() => getComputedStyle(document.querySelector('#overlay-online')).opacity === '1', null, { timeout: 5000 });
     await check(host, 'make or join');
     await host.click('#make-btn');
     await host.waitForFunction(() => document.querySelector('#room-sub').textContent.includes('Nobody'), null, { timeout: 5000 });
