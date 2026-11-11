@@ -206,6 +206,28 @@ export function historyFromLegacy(s) {
   return history;
 }
 
+/* ---------- Clicks for playing (shared by the page and api/trustle-api.js) ---------- */
+
+// A finished game earns clicks for the player's Trusty clicker: REWARDS[i] for getting it in i + 1 guesses,
+// LOSS_REWARD for running out. The words are all in trustle-words.js, so anyone could send a winning game:
+// that's why it's a couple hundred clicks a day at most.
+export const REWARDS = [200, 100, 50, 35, 25, 15];
+export const LOSS_REWARD = 5;
+
+// Clicks a game of puzzle `n` earns: none while it's still being played, or for a day rebuilt from the old
+// stats (legacy), which only roughly matches its puzzle.
+export function rewardFor(n, game) {
+  if (!game || game.legacy) return 0;
+  const { done, won, tries } = outcome(n, game);
+  if (!done) return 0;
+  return won ? REWARDS[tries - 1] : LOSS_REWARD;
+}
+
+// Whether puzzle `n` can still be paid for when today's puzzle is `today`: within a day of it, so a game
+// finished just after midnight (or on a clock that's a little off) still counts, but nobody can collect for
+// old puzzles later. The API pays each puzzle once per account.
+export const rewardable = (n, today) => Math.abs(n - today) <= 1;
+
 const SQUARES ={ correct: '🟩', present: '🟨', absent: '⬜' };
 
 export function shareText({ n, guesses, answer, won, url }) {

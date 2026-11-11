@@ -908,6 +908,7 @@ kbd {
   font-size: clamp(1rem, 5cqi, 1.5rem);
   line-height: 1;
 }
+.trustle-reward { margin: 0; font-family: var(--font-hand); font-size: 1.45rem; font-weight: 700; line-height: 1.2; }
 .trustle-result-actions { justify-content: center; margin: 16px 0 12px; }
 .trustle-next { margin: 0; font-weight: 650; color: var(--ink-soft); }
 .trustle-next strong { font-family: var(--font-marker); font-weight: 400; font-size: 1.2rem; font-variant-numeric: tabular-nums; }

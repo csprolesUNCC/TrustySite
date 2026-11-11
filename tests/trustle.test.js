@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   puzzleNumber, puzzleStart, puzzleWord, grade, letterStates, cleanGame, outcome, mergeGame, statsFrom, shareText, MAX_GUESSES,
+  REWARDS, LOSS_REWARD, rewardFor, rewardable,
 } from '../scripts/trustle.js';
 import { FIRST_DAY, WORDS, PLACES } from '../scripts/trustle-words.js';
 
@@ -96,6 +97,39 @@ test('outcome(), mergeGame() and statsFrom() agree on a history', () => {
   // A game that carries on from the other device's wins; a real game beats a rebuilt one.
   assert.deepEqual(mergeGame({ guesses: [miss(5)] }, { guesses: [miss(5), word(5)] }), { guesses: [miss(5), word(5)] });
   assert.deepEqual(mergeGame({ legacy: true, won: true, tries: 2 }, { guesses: [word(1)] }), { guesses: [word(1)] });
+});
+
+test('rewardFor() pays more for fewer guesses, a little for running out, and nothing for unfinished or rebuilt games', () => {
+  assert.deepEqual(REWARDS, [200, 100, 50, 35, 25, 15]);
+  assert.equal(LOSS_REWARD, 5);
+  const n = 3;
+  const answer = puzzleWord(n).word;
+  const miss = 'Z'.repeat(answer.length);
+  for (let tries = 1; tries <= MAX_GUESSES; tries++) {
+    assert.equal(rewardFor(n, { guesses: [...Array(tries - 1).fill(miss), answer] }), REWARDS[tries - 1], `got it in ${tries}`);
+  }
+  assert.equal(rewardFor(n, { guesses: Array(MAX_GUESSES).fill(miss) }), LOSS_REWARD, 'out of guesses');
+  assert.equal(rewardFor(n, { guesses: [miss] }), 0, 'still playing');
+  assert.equal(rewardFor(n, { guesses: [] }), 0);
+  assert.equal(rewardFor(n, { legacy: true, won: true, tries: 1 }), 0, 'rebuilt from the old stats');
+  assert.equal(rewardFor(n, null), 0);
+});
+
+test('only puzzles within a day of today’s pay', () => {
+  const today = 200;
+  assert.ok(rewardable(today, today));
+  assert.ok(rewardable(today - 1, today), 'finished just after midnight');
+  assert.ok(rewardable(today + 1, today), 'a clock that’s a little ahead');
+  assert.ok(!rewardable(today - 2, today), 'old puzzles can’t be collected later');
+  assert.ok(!rewardable(today + 2, today));
+});
+
+test('the Trustle page lists the same rewards', () => {
+  const html = fs.readFileSync(new URL('pages/games/trustle.html', root), 'utf8');
+  const table = /<dl[^>]* id="reward-table"[^>]*>([\s\S]*?)<\/dl>/.exec(html);
+  assert.ok(table, 'pages/games/trustle.html has no reward table (id="reward-table")');
+  const listed = [...table[1].matchAll(/<dd>([\d,]+)<\/dd>/g)].map((m) => Number(m[1].replace(/,/g, '')));
+  assert.deepEqual(listed, [...REWARDS, LOSS_REWARD]);
 });
 
 test('shareText() has the puzzle number, score and one row per guess', () => {

@@ -17,6 +17,7 @@ import { attachRooms, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
 import { mockBank } from './mock-bank.mjs';
 import { signTicket } from '../utils/fever-ticket.js';
 import { signedOp } from '../utils/bank-rules.js';
+import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -35,6 +36,26 @@ const today = () => new Date().toISOString().slice(0, 10);
 const FEVER_SECRET = process.env.FEVER_SECRET || 'pretend-api-secret-for-local-rooms-only';
 const bank = mockBank();
 const accountOf = (req) => `mock-${mockUser(req)}`;
+
+// Trustle's clicks, paid like api/trustle-api.js pays them (once a puzzle, within a day of today's) into the
+// pretend bank. It keeps no games, so only the ones a page sends can pay.
+const trustlePaid = new Map();
+function trustleSync(userId, body) {
+  const sent = body && typeof body.games === 'object' && body.games ? body.games : {};
+  if (!trustlePaid.has(userId)) trustlePaid.set(userId, {});
+  const rewards = trustlePaid.get(userId);
+  const account = bank.account(userId);
+  let added = 0;
+  for (const [key, game] of Object.entries(sent)) {
+    const n = Number(key);
+    const clicks = rewardable(n, puzzleNumber()) && !rewards[n] ? rewardFor(n, cleanGame(n, game)) : 0;
+    if (!clicks) continue;
+    rewards[n] = clicks;
+    account.clicks += clicks;
+    added += clicks;
+  }
+  return { games: {}, rewards, added, clicks: account.clicks };
+}
 
 async function api(req, url, body) {
   const p = url.pathname;
@@ -92,7 +113,10 @@ async function api(req, url, body) {
     if (action === 'get_leaderboard') return [200, board('score', 'name', 92).map((e, i) => ({ ...e, drawing: null, id: `${i}`.padStart(24, '0'), at: new Date().toISOString() }))];
     return [200, { message: 'Score saved!', score: 50 }];
   }
-  if (p === '/api/trustle-api') return [200, req.method === 'GET' ? { players: 40, dist: [1, 4, 10, 12, 8, 3], lost: 2 } : { games: {} }];
+  if (p === '/api/trustle-api') {
+    if (req.method === 'GET') return [200, { players: 40, dist: [1, 4, 10, 12, 8, 3], lost: 2 }];
+    return [200, me ? trustleSync(accountOf(req), body) : { games: {} }];
+  }
   if (p === '/api/gemini') return [200, { reply: 'whaddup. (This is the pretend API: run `vercel dev` to talk to the real Trusty.)' }];
   return [404, { error: 'Not found' }];
 }
