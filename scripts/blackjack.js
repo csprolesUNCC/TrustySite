@@ -1,8 +1,8 @@
 // Trusty Blackjack's rules, with no drawing or timing code. The room server (realtime/table.js) deals the online
-// tables with them, and pages/games/casino.html's practice game uses the same card maths. House rules: six
-// decks, a new shoe once three quarters are dealt, Trusty stands on all 17s and peeks for blackjack with an Ace
-// or a 10 showing, blackjack pays 3 to 2, double on any two cards (after a split too), split pairs into up to
-// four hands (split Aces get one card each), insurance pays 2 to 1.
+// tables with them, and utils/solo-blackjack.js deals the solo game (one player, on the site's API). House
+// rules: six decks, a new shoe once three quarters are dealt, Trusty stands on all 17s and peeks for blackjack
+// with an Ace or a 10 showing, blackjack pays 3 to 2, double on any two cards (after a split too), split pairs
+// into up to four hands (split Aces get one card each), insurance pays 2 to 1.
 //
 // A round is plain data that the functions below change. Every bet in it is a stake { id, amount }, so the
 // table can tell the bank exactly what each one paid (payouts()).
@@ -16,6 +16,10 @@ export const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q
 // Bump this whenever a table message (realtime/table.js) changes shape: a page and a room server that don't
 // match then refuse each other with "reload".
 export const TABLE_PROTOCOL = 1;
+// Bets go up in tens, so 3:2 and insurance always come out in whole clicks. The click bank caps any bet at 500
+// too. Online tables and the solo game (utils/solo-blackjack.js) both take these.
+export const BETS = { min: 10, max: 500, step: 10 };
+export const isBet = (amount) => Number.isInteger(amount) && amount >= BETS.min && amount <= BETS.max && amount % BETS.step === 0;
 
 // What each kind of finished hand gives back, as a multiple of what was bet on it.
 const PAYS = { blackjack: 2.5, win: 2, push: 1, lose: 0, bust: 0 };

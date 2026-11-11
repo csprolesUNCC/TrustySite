@@ -146,16 +146,27 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Fever online\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
-// Trusty Blackjack for clicks: carson opens a table, luke sits down with the link, and they play a hand.
+// Trusty Blackjack for clicks: carson plays a hand on his own, then opens a table, luke sits down with the link,
+// and they play a hand.
 {
   const found = [];
   const { pages: [host, guest], close } = await twoPeople(found);
   const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
   const status = (page) => page.$eval('#status-text', (el) => el.textContent);
   try {
+    // On your own first: the site's API deals, no table needed.
     await host.goto(`${BASE}/pages/games/casino.html`, { waitUntil: 'networkidle' });
-    await host.click('[data-mode="online"]');
-    await check(host, 'table lobby');
+    await host.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
+    const soloDone = /win|takes|Push/;
+    await host.click('#deal-btn');
+    for (let i = 0; i < 40 && !soloDone.test(await status(host)); i++) {
+      const now = await status(host);
+      if (/Insurance\?|Even money\?/.test(now) && !(await host.$eval('#no-insure-btn', (b) => b.disabled))) await host.click('#no-insure-btn');
+      else if (/Hit/.test(now) && !(await host.$eval('#stand-btn', (b) => b.disabled))) await host.click('#stand-btn');
+      await host.waitForTimeout(250);
+    }
+    if (!soloDone.test(await status(host))) found.push(`the solo hand never finished: "${await status(host)}"`);
+    await check(host, 'solo, after a hand');
     await host.click('#open-table');
     await host.waitForFunction(() => document.querySelector('#table-label').textContent.length === 4, null, { timeout: 5000 });
     const code = await host.$eval('#table-label', (el) => el.textContent);
@@ -193,7 +204,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, a hand of Blackjack for clicks${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table)${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

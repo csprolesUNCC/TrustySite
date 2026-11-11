@@ -17,6 +17,7 @@ import { attachRooms, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
 import { mockBank } from './mock-bank.mjs';
 import { signTicket } from '../utils/fever-ticket.js';
 import { signedOp } from '../utils/bank-rules.js';
+import { play as soloPlay, cleanMove, memoryGames, defaults as soloDefaults } from '../utils/solo-blackjack-game.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -36,6 +37,9 @@ const today = () => new Date().toISOString().slice(0, 10);
 const FEVER_SECRET = process.env.FEVER_SECRET || 'pretend-api-secret-for-local-rooms-only';
 const bank = mockBank();
 const accountOf = (req) => `mock-${mockUser(req)}`;
+// Trusty Blackjack for one player (utils/solo-blackjack.js, the real game), kept in memory and betting the
+// pretend bank.
+const solo = { ...soloDefaults, ...memoryGames(), bank };
 
 // Trustle's clicks, paid like api/trustle-api.js pays them (once a puzzle, within a day of today's) into the
 // pretend bank. It keeps no games, so only the ones a page sends can pay.
@@ -86,6 +90,17 @@ async function api(req, url, body) {
       if (op.op === 'stake') return [200, await bank.stake(op)];
       if (op.op === 'settle') return [200, await bank.settle(op.bets)];
       return [200, await bank.pot(op)];
+    }
+    if (action === 'blackjack') {
+      if (!me) return [401, { error: 'Authentication required' }];
+      const move = req.method === 'POST' ? cleanMove(body) : null;
+      if (req.method === 'POST' && !move) return [400, { error: 'That’s not a move.' }];
+      const game = await soloPlay(solo, accountOf(req), move);
+      if (!move) {
+        const mine = bank.status(accountOf(req));
+        Object.assign(game, { bank: { clicks: mine.clicks, net: mine.net }, limits: mine.limits, refunded: 0 });
+      }
+      return [200, game];
     }
     if (action === 'trustis') return [200, url.searchParams.get('personal') ? { highScore: 5000 } : board('score', 'name', 90000)];
     if (action === 'profile' && req.method === 'GET') {

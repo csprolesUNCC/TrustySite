@@ -13,14 +13,13 @@
 // says no, { t: 'pong' }, and { t: 'error', message } before the table closes their connection.
 import {
   newShoe, deal, insure, insuranceCost, hit, stand, double, split, canDouble, canSplit, raiseCost, dealerStep,
-  payouts, view, RESHUFFLE_BELOW, TABLE_PROTOCOL,
+  payouts, view, isBet, BETS, RESHUFFLE_BELOW, TABLE_PROTOCOL,
 } from '../scripts/blackjack.js';
 import { CLOSE, send, refuse, flooding, parse, randomId } from './common.js';
 import { noBank } from './bank.js';
 
 export const MAX_SEATS = 5;
-// Bets go up in tens, so 3:2 and insurance always come out in whole clicks. The bank caps any bet at 500 too.
-export const BETS = { min: 10, max: 500, step: 10 };
+export { BETS };
 export const TIMES = {
   betting: 12000,         // once someone has bet, how long everyone else gets
   insurance: 12000,
@@ -121,7 +120,7 @@ export class Table {
 
   async bet(person, amount) {
     if (!(this.phase === 'betting' || this.phase === 'over') || person.bet || person.busy) return;
-    if (!Number.isInteger(amount) || amount < BETS.min || amount > BETS.max || amount % BETS.step) return;
+    if (!isBet(amount)) return;
     const stake = { id: this.newId(), amount };
     if (!(await this.charge(person, stake))) return;
     if (!this.people.includes(person)) {

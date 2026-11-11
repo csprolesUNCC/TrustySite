@@ -608,7 +608,6 @@ kbd {
 .casino-controls { display: grid; gap: 14px; }
 .game-side .chips { gap: 6px; }
 .game-side .chip-btn { width: 48px; height: 48px; font-size: .88rem; }
-.game-side .chip-btn[data-amount="all"] { font-size: .66rem; }
 .bankroll { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; }
 .bankroll-amount { font-family: var(--font-marker); font-size: clamp(1.6rem, 4vw, 2.2rem); line-height: 1; }
 .bet-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -630,11 +629,6 @@ kbd {
 }
 .chip-btn:active { transform: translateY(2px); }
 .chip-btn:disabled { opacity: .4; cursor: not-allowed; }
-.chip-btn[data-amount="5"] { --chip: #d6334b; }
-.chip-btn[data-amount="10"] { --chip: #1f4fbf; }
-.chip-btn[data-amount="25"] { --chip: #23824a; }
-.chip-btn[data-amount="50"] { --chip: #1b1b1f; }
-.chip-btn[data-amount="all"] { --chip: #8c6a00; font-size: .72rem; } /* dark gold: white text needs 4.5:1 */
 .bet-input { width: 7.5em; }
 .action-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .action-row #deal-btn { grid-column: 1 / -1; }
@@ -668,12 +662,13 @@ kbd {
   .hands.is-split .card-face + .card-face { margin-left: -38px; }
 }
 
-/* Playing for clicks (online tables): chips in tens, the lobby on the felt, everyone else's hands, a countdown */
+/* Playing for clicks: chips in tens, the log-in note on the felt, tables with friends (everyone else's hands, a
+   countdown) */
 .chip-btn[data-clicks="10"] { --chip: #1f4fbf; }
 .chip-btn[data-clicks="50"] { --chip: #23824a; }
 .chip-btn[data-clicks="100"] { --chip: #1b1b1f; }
 .chip-btn[data-clicks="500"] { --chip: #d6334b; }
-.chip-btn[data-clicks="max"] { --chip: #8c6a00; font-size: .78rem; }
+.chip-btn[data-clicks="max"] { --chip: #8c6a00; font-size: .78rem; } /* dark gold: white text needs 4.5:1 */
 .casino-today { margin: -4px 0 0; font-size: .85rem; }
 .casino-lobby {
   position: absolute;
@@ -727,6 +722,9 @@ kbd {
 .seat-bet { color: rgba(255, 255, 255, .85); }
 .seat .hand-result { padding: 0 6px; font-size: .72rem; border-width: 1.5px; }
 .table-code { font-family: var(--font-marker); letter-spacing: .12em; }
+.friends .side-note { margin: 0 0 12px; }
+.friends-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.friends .room-join .input { min-height: 36px; }
 .table-people { display: grid; gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; }
 .table-people li { display: flex; justify-content: space-between; gap: 10px; font-size: .92rem; }
 .table-people li span { color: var(--pencil); font-weight: 700; }

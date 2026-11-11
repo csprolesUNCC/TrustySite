@@ -6,13 +6,15 @@ import latestUpdate from '../utils/update.js';
 import rename from '../utils/rename.js';
 import feverOnline from '../utils/fever-online.js';
 import bank from '../utils/bank.js';
+import soloBlackjack from '../utils/solo-blackjack.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), changing your username (?action=rename, see
     // utils/rename.js), the Trustis board (?action=trustis, see utils/trustis.js), the admin panel
     // (?action=admin, see utils/moderation.js), the home page's Latest Update (?action=update, see
-    // utils/update.js), tickets into the online rooms (?action=fever, see utils/fever-online.js) and the click
-    // bank for betting clicks there (?action=bank, see utils/bank.js) live here too to save Vercel functions.
+    // utils/update.js), tickets into the online rooms (?action=fever, see utils/fever-online.js), the click
+    // bank for betting clicks there (?action=bank, see utils/bank.js) and Trusty Blackjack for one player
+    // (?action=blackjack, see utils/solo-blackjack.js) live here too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
     }
@@ -33,6 +35,9 @@ export default async (req, res) => {
     }
     if (req.query.action === 'bank') {
         return bank(req, res);
+    }
+    if (req.query.action === 'blackjack') {
+        return soloBlackjack(req, res);
     }
 
     if (req.method !== 'GET') {

@@ -131,7 +131,7 @@ export const WORDS = [
   { word: 'RECESS' },
   { word: 'TASTY', see: 'tv' },
   { word: 'HOOVES' },
-  { word: 'BAILOUT', see: 'casino' },
+  { word: 'BAILOUT' },
   { word: 'SKETCH' },
   { word: 'FARM' },
   { word: 'CLOUDY', see: 'weather' },
