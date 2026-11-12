@@ -309,6 +309,8 @@ kbd {
 /* Holding a side must never turn into a scroll, or the browser cancels the press mid-turn. */
 .fever-pad { align-items: center; gap: 12px; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .fever-pad .fever-steer { width: 112px; }
+/* Only the side the finger is on now looks pressed: :active stays on the button a slide started from. */
+.fever-pad .fever-steer:active:not(.is-pressed) { transform: none; box-shadow: 3px 3px 0 var(--ink); background: #fff; }
 .fever-pad .pad-word { width: auto; padding: 0 16px; font-size: .9rem; }
 
 .fever-target { font-family: var(--font-hand); font-weight: 700; font-size: 1.25rem; color: var(--red); }
