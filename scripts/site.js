@@ -152,10 +152,13 @@ export function loginHref() {
 const NAV = [
   { href: '/pages/comics.html', label: 'Comics', section: '/pages/comics' },
   { href: '/pages/games.html', label: 'Games', section: '/pages/games', items: [
+    { href: '/pages/games/fever.html', label: 'Trusty Fever' },
     { href: '/pages/games/trustle.html', label: 'Trustle' },
     { href: '/pages/games/flappy.html', label: 'Flappy Trusty' },
     { href: '/pages/games/trustis.html', label: 'Trustis' },
     { href: '/pages/games/draw.html', label: 'Draw Trusty' },
+    { href: '/pages/games/snake.html', label: 'Trusty Snake' },
+    { href: '/pages/games/casino.html', label: 'Trusty Blackjack' },
     { href: '/pages/leaderboard.html', label: 'Leaderboards' },
   ] },
   { href: '/pages/media.html', label: 'Trusty Media', items: [
