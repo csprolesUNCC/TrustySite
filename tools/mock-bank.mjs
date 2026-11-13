@@ -69,5 +69,12 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     return { clicks: a.clicks, net: a.net, refunded: 0, limits: LIMITS, month: { ...a.month } };
   }
 
-  return { stake, settle, pot, status, account };
+  // The house's side of everyone's bets (utils/house.js does the same from the real bank's stats).
+  function house() {
+    const games = {};
+    for (const a of accounts.values()) for (const [game, n] of Object.entries(a.month)) games[game] = (games[game] || 0) - n;
+    return { total: Object.values(games).reduce((x, y) => x + y, 0), games };
+  }
+
+  return { stake, settle, pot, status, account, house };
 }

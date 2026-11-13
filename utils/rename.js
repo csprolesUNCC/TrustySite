@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { isHouse } from './house.js';
 import { connectToDatabase } from './db.js';
 import connectToUsersDatabase from './connect.js';
 import { authenticateUser, isAdmin, setAuthCookie } from './auth.js';
@@ -74,6 +75,7 @@ export default async function rename(req, res) {
     const user = authenticateUser(req);
     if (!user) return res.status(401).json({ error: 'Authentication required' });
     if (isAdmin(user)) return res.status(403).json({ error: 'Admin accounts keep their username: the admin panel goes by it.' });
+    if (isHouse(user.username)) return res.status(403).json({ error: 'Trusty keeps his name: his casino winnings go by it.' });
 
     const sent = req.body && req.body.username;
     const username = typeof sent === 'string' ? sent.trim() : '';
@@ -86,13 +88,14 @@ export default async function rename(req, res) {
         const _id = new ObjectId(String(user.userId));
         const account = await accounts.findOne({ _id }, { projection: { username: 1, usernameChangedAt: 1 } });
         if (!account) return res.status(401).json({ error: 'Authentication required' });
+        if (isHouse(account.username)) return res.status(403).json({ error: 'Trusty keeps his name: his casino winnings go by it.' });
         if (account.username === username) return res.status(400).json({ error: 'That’s already your username.' });
         const next = nextRename(account);
         if (next) {
             return res.status(429).json({ error: `You can only change your username once every ${RENAME_DAYS} days.`, nextRename: next });
         }
 
-        const taken = isAdmin({ username }) || await accounts.findOne(
+        const taken = isAdmin({ username }) || isHouse(username) || await accounts.findOne(
             { username, _id: { $ne: _id } },
             { collation: CASE_INSENSITIVE, projection: { _id: 1 } }
         );

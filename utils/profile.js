@@ -8,11 +8,13 @@ import { puzzleNumber, cleanGame, statsFrom } from '../scripts/trustle.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
 import { dayOf, dailyStatus } from '../scripts/milestones.js';
 import { monthOf } from './bank.js';
+import { isHouse, houseWinnings } from './house.js';
 
 // Profile pages (pages/profile.html), served from api/leaderboard.js as ?action=profile so they don't
 // take up another Vercel function.
 //   GET ?u=<username>: anyone can see a profile. The stats come from the game data the site already
-//     keeps; only the bio is written by the user. Never returns an email. Your own profile also says
+//     keeps; only the bio is written by the user. Never returns an email. Trusty's own account (utils/house.js)
+//     also gets `house: { total, games }`, what he's won from everyone at the casino. Your own profile also says
 //     whether you can change your username yet (`rename`, see utils/rename.js).
 //   POST { bio }: saves the logged-in user's own bio (in the `profiles` collection of the game db).
 
@@ -91,18 +93,22 @@ async function getProfile(req, res) {
         if (stats[game] && Number.isFinite(stats[game][month])) bets[game] = stats[game][month];
     }
 
+    // Trusty's own account also has the house's casino winnings (utils/house.js).
+    const house = isHouse(account.username) ? await houseWinnings(clicksCol) : null;
+
     const me = authenticateUser(req);
     const isMe = Boolean(me && String(me.userId) === userId);
     return res.status(200).json({
         username: account.username,
         memberSince: account.createdAt || account._id.getTimestamp(),
         isMe,
-        // Admin accounts can't change their username; `next` is when everyone else can again (null: now).
-        rename: isMe ? { admin: isAdmin(account), next: nextRename(account) } : null,
+        // Admin accounts and Trusty's can't change their username; `next` is when everyone else can again (null: now).
+        rename: isMe ? { admin: isAdmin(account), house: isHouse(account.username), next: nextRename(account) } : null,
         bio: profileDoc && typeof profileDoc.bio === 'string' ? profileDoc.bio : '',
         // `streak`: days in a row they've collected the header clicker's daily bonus (api/clicks.js), 0 once one's missed.
         clicks: hasClicks ? { total: clickDoc.clicks, rank: clickRank, streak: dailyStatus(clickDoc.daily, dayOf(new Date())).streak } : null,
         bets,
+        house,
         flappy: hasFlappy ? { score: flappyDoc.score, rank: flappyRank } : null,
         draw: hasDraw ? {
             score: drawDoc.score,

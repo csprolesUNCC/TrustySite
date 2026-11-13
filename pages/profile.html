@@ -205,12 +205,32 @@
                 h('span', { class: 'profile-rank-bar', style: `--w: ${Math.round(rankProgress(total) * 100)}%`, 'aria-hidden': 'true' }));
         }
 
+        const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;
+        const GAME_NAMES = { blackjack: 'Blackjack', craps: 'Craps', fever: 'Fever pots' };
+
+        // Trusty's own profile: his click total is the house's net at the casino (utils/house.js), everything players
+        // have lost minus everything they've won, plus any clicks of his own.
+        function houseCard() {
+            const { total, games } = profile.house;
+            const own = profile.clicks ? profile.clicks.total : 0;
+            const all = total + own;
+            const played = Object.keys(GAME_NAMES).filter((game) => games[game]);
+            return statCard('Trusty clicks', 'is-clicks',
+                value(all < 0 ? signed(all) : fmt(all)),
+                all > 0 ? clickRank(all) : null,
+                h('p', { class: 'profile-stat-detail' }, total >= 0
+                    ? `${fmt(total)} won off players at the casino. The house always wins.`
+                    : `Down ${fmt(-total)} at the casino. The players are winning… for now.`),
+                played.length ? h('p', { class: 'profile-stat-detail' }, played.map((game) => `${GAME_NAMES[game]} ${signed(games[game])}`).join(' · ')) : null,
+                own ? h('p', { class: 'profile-stat-detail' }, `Plus ${fmt(own)} from clicking himself.`) : null);
+        }
+
         // Plus their click rank, their daily bonus streak, and how betting clicks went this month, at Blackjack,
         // Craps and on Fever pots.
         function clicksCard() {
+            if (profile.house) return houseCard();
             const c = profile.clicks;
             const bets = profile.bets || {};
-            const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;
             const played = [['blackjack', 'Blackjack'], ['craps', 'Craps'], ['fever', 'Fever pots']].filter(([game]) => typeof bets[game] === 'number');
             return statCard('Trusty clicks', 'is-clicks',
                 c ? [value(fmt(c.total)), clickRank(c.total), rankLine(c.rank, '/pages/leaderboard.html')]
@@ -362,8 +382,10 @@
             if (!rename) return;
             const next = rename.next ? new Date(rename.next) : null;
             const waiting = Boolean(next) && !Number.isNaN(next.getTime());
-            $('rename-open').hidden = Boolean(rename.admin) || waiting;
-            $('rename-note').textContent = rename.admin
+            $('rename-open').hidden = Boolean(rename.admin || rename.house) || waiting;
+            $('rename-note').textContent = rename.house
+                ? 'Trusty keeps his name, since his casino winnings go by it.'
+                : rename.admin
                 ? 'Admin accounts keep their username, since the admin panel goes by it.'
                 : waiting ? `You can change your username again on ${joinedFormat.format(next)}.` : '';
         }
