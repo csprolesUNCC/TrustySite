@@ -61,12 +61,12 @@
                     <p class="casino-status" id="status" role="status" aria-live="polite">Come-out roll!</p>
 
                     <div class="craps-spots" id="spots" role="group" aria-label="Bets">
-                        <button class="spot spot-pass" type="button" data-spot="pass"><span class="spot-name">Pass Line</span><span class="spot-pays">Pays 1 to 1</span><span class="spot-chip" aria-hidden="true"></span></button>
-                        <button class="spot" type="button" data-spot="dontPass"><span class="spot-name">Don’t Pass</span><span class="spot-pays">Pays 1 to 1 · 12 pushes</span><span class="spot-chip" aria-hidden="true"></span></button>
-                        <button class="spot" type="button" data-spot="odds"><span class="spot-name">Odds</span><span class="spot-pays" id="odds-pays">Behind the line, after a point</span><span class="spot-chip" aria-hidden="true"></span></button>
-                        <button class="spot spot-field" type="button" data-spot="field"><span class="spot-name">Field <span class="field-nums">2 · 3 · 4 · 9 · 10 · 11 · 12</span></span><span class="spot-pays">1 to 1 · 2 pays double · 12 pays triple</span><span class="spot-chip" aria-hidden="true"></span></button>
-                        <button class="spot" type="button" data-spot="seven"><span class="spot-name">Any Seven</span><span class="spot-pays">Pays 4 to 1</span><span class="spot-chip" aria-hidden="true"></span></button>
-                        <button class="spot" type="button" data-spot="craps"><span class="spot-name">Any Craps</span><span class="spot-pays">2, 3 or 12 · pays 7 to 1</span><span class="spot-chip" aria-hidden="true"></span></button>
+                        <button class="spot spot-pass" type="button" data-spot="pass"><span class="spot-name">Pass Line</span><span class="spot-pays">Pays 1 to 1</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
+                        <button class="spot" type="button" data-spot="dontPass"><span class="spot-name">Don’t Pass</span><span class="spot-pays">Pays 1 to 1 · 12 pushes</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
+                        <button class="spot" type="button" data-spot="odds"><span class="spot-name">Odds</span><span class="spot-pays" id="odds-pays">Behind the line, after a point</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
+                        <button class="spot spot-field" type="button" data-spot="field"><span class="spot-name">Field <span class="field-nums">2 · 3 · 4 · 9 · 10 · 11 · 12</span></span><span class="spot-pays">1 to 1 · 2 pays double · 12 pays triple</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
+                        <button class="spot" type="button" data-spot="seven"><span class="spot-name">Any Seven</span><span class="spot-pays">Pays 4 to 1</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
+                        <button class="spot" type="button" data-spot="craps"><span class="spot-name">Any Craps</span><span class="spot-pays">2, 3 or 12 · pays 7 to 1</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
                     </div>
 
                     <div class="roll-history">
@@ -155,7 +155,6 @@
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const clicksText = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-        const PAYS = { pass: 'pays 1 to 1', dontPass: 'pays 1 to 1', odds: 'pays true odds', field: 'pays 1 to 1, double on 2, triple on 12', seven: 'pays 4 to 1', craps: 'pays 7 to 1' };
         const ODDS_PAYS = { 4: '2 to 1', 10: '2 to 1', 5: '3 to 2', 9: '3 to 2', 6: '6 to 5', 8: '6 to 5' };
         const POINT_WORDS = { 6: 'Six', 9: 'Nine' };
 
@@ -284,12 +283,13 @@
                 const closed = !state.game || Boolean(spotProblem(spot));
                 el.classList.toggle('is-closed', closed);
                 el.disabled = state.busy || !session.loggedIn;
-                const bits = [`${NAMES[spot]}, ${PAYS[spot]}`];
+                const bits = [];
                 if (down) bits.push(`${clicksText(down)} riding`);
                 if (adding) bits.push(`${clicksText(adding)} for the next roll`);
                 if (decided && !down && !adding) bits.push(decided.result === 'win' ? `won ${clicksText(decided.payout - decided.amount)}` : decided.result === 'push' ? 'pushed' : 'lost');
                 bits.push(closed ? 'not open now' : `add ${state.chip}`);
-                el.setAttribute('aria-label', bits.join('. '));
+                // Read after the spot's visible name and pays line, so what you hear starts with what you see.
+                el.querySelector('.spot-state').textContent = `. ${bits.join('. ')}`;
             }
             const { point } = table();
             $('odds-pays').textContent = point != null ? `Pays ${ODDS_PAYS[point]} on ${point} · up to 2× the line` : 'Behind the line, after a point';
