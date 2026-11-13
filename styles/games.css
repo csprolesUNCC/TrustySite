@@ -304,11 +304,27 @@ kbd {
 @media (pointer: coarse) {
   .fever-stage { --stage-room: 110px; }
 }
+/* On phones the board is only about 200–270px tall: the overlays tighten up there, and anything still
+   too tall (bigger text in Safari, a long game-over list) scrolls instead of being cut off top and bottom. */
+.fever-stage .stage-overlay { justify-content: safe center; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+@container (max-width: 480px) {
+  .fever-stage .stage-overlay { gap: 4px; padding: 10px 12px; }
+  .fever-stage .overlay-sub { line-height: 1.3; }
+  .fever-stage .overlay-actions { gap: 8px; }
+  /* The page's own heading already says it. */
+  .fever-stage #overlay-start .overlay-kicker { display: none; }
+}
+@container (max-width: 380px) {
+  .fever-stage .overlay-title { font-size: 1.35rem; }
+  .fever-stage .overlay-actions .btn { min-height: 34px; padding: .35em .8em; font-size: .85rem; }
+}
 /* The computers play behind the start screen, so let them show through. */
 .fever-stage #overlay-start { background: rgba(251, 248, 240, .78); }
 /* Holding a side must never turn into a scroll, or the browser cancels the press mid-turn. */
 .fever-pad { align-items: center; gap: 12px; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .fever-pad .fever-steer { width: 112px; }
+/* Only the side the finger is on now looks pressed: :active stays on the button a slide started from. */
+.fever-pad .fever-steer:active:not(.is-pressed) { transform: none; box-shadow: 3px 3px 0 var(--ink); background: #fff; }
 .fever-pad .pad-word { width: auto; padding: 0 16px; font-size: .9rem; }
 
 .fever-target { font-family: var(--font-hand); font-weight: 700; font-size: 1.25rem; color: var(--red); }

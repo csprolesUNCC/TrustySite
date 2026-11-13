@@ -122,9 +122,9 @@
                 </div>
 
                 <div class="touch-pad fever-pad" id="pad">
-                    <button class="pad-btn fever-steer" type="button" data-steer="left" aria-label="Steer left">&#9664;</button>
+                    <button class="pad-btn fever-steer" type="button" data-steer="left" aria-label="Steer left">&#9664;&#xFE0E;</button>
                     <button class="pad-btn pad-word" type="button" id="pad-pause">Pause</button>
-                    <button class="pad-btn fever-steer" type="button" data-steer="right" aria-label="Steer right">&#9654;</button>
+                    <button class="pad-btn fever-steer" type="button" data-steer="right" aria-label="Steer right">&#9654;&#xFE0E;</button>
                 </div>
             </section>
 
@@ -1443,6 +1443,15 @@
         padEl.addEventListener('pointerup', liftPad);
         padEl.addEventListener('pointercancel', liftPad);
         padEl.addEventListener('contextmenu', (e) => e.preventDefault());
+        // iOS Safari ignores preventDefault on pointerdown: only a cancelled touchstart stops a held
+        // finger from starting a text selection (the blue highlight and magnifier) or a callout, which
+        // also steals the touch and cancels the turn. Pause still needs its click, so it's left alone.
+        padEl.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('#pad-pause')) e.preventDefault();
+        }, { passive: false });
+        stage.addEventListener('touchstart', (e) => {
+            if (state === 'game' && !e.target.closest('button, a')) e.preventDefault();
+        }, { passive: false });
         $('pad-pause').addEventListener('click', () => {
             if (state === 'game') pause();
             else if (state === 'paused') resume();
