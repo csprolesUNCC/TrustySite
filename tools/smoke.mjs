@@ -155,10 +155,16 @@ async function twoPeople(found) {
   const { pages: [host, guest], close } = await twoPeople(found);
   const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
   const status = (page) => page.$eval('#status-text', (el) => el.textContent);
+  // The bet starts at 0: put a 10 chip down, then wait for Deal.
+  const bet10 = async (page) => {
+    await page.waitForFunction(() => !document.querySelector('.chip-btn[data-clicks="10"]').disabled, null, { timeout: 5000 });
+    await page.click('.chip-btn[data-clicks="10"]');
+    await page.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
+  };
   try {
     // On your own first: the site's API deals, no table needed.
     await host.goto(`${BASE}/pages/games/casino.html`, { waitUntil: 'networkidle' });
-    await host.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
+    await bet10(host);
     const soloDone = /win|takes|Push/;
     await host.click('#deal-btn');
     for (let i = 0; i < 40 && !soloDone.test(await status(host)); i++) {
@@ -176,7 +182,7 @@ async function twoPeople(found) {
     await guest.waitForFunction(() => document.querySelectorAll('#table-people li').length === 2, null, { timeout: 5000 });
     await host.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
     await host.click('#deal-btn');
-    await guest.waitForFunction(() => !document.querySelector('#deal-btn').disabled, null, { timeout: 5000 });
+    await bet10(guest);
     await guest.click('#deal-btn');
     await host.waitForFunction(() => document.querySelector('#dealer-cards').children.length === 2, null, { timeout: 5000 });
     await check(host, 'table, mid-hand');

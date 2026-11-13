@@ -182,7 +182,7 @@
         let net = null;     // the online table this page sits at (see Tables, below)
         let tablesOpen = false;
         // Your clicks and today's result (from the bank), the limits, and the bet you're making.
-        const wallet = { clicks: null, today: null, limits: null, draft: BETS.min };
+        const wallet = { clicks: null, today: null, limits: null, draft: 0 };
         // solo.game: the API's last answer; busy: a move is on its way; reveal: what's shown while Trusty turns
         // his cards over one at a time.
         const solo = { game: null, busy: false, reveal: null, failed: false };
@@ -556,6 +556,12 @@
             };
         }
 
+        // How long Trusty waits (ms) before turning his hole card over: after the card that ended your turn has
+        // landed (a hit to 21, a double, a bust), after you stand, or after a deal that ends the hand at once
+        // (a blackjack); then between each card he draws, so you can count along.
+        const REVEAL = { afterCard: 1000, afterStand: 500, afterDeal: 1200, perCard: 850 };
+        const cardsIn = (round) => round.seats.reduce((n, s) => n + s.hands.reduce((m, x) => m + x.cards.length, 0), 0);
+
         // The API plays Trusty's whole turn at once; show it a card at a time, then the results and the clicks.
         async function showSolo(before, next) {
             const r = next.round;
@@ -564,10 +570,11 @@
             solo.game = next;
             if (r && r.phase === 'over' && (wasLive || !sameHand)) {
                 const start = wasLive ? before.round.dealer.filter(Boolean).length : 1;
+                const first = !wasLive ? REVEAL.afterDeal : cardsIn(r) > cardsIn(before.round) ? REVEAL.afterCard : REVEAL.afterStand;
                 for (let k = start; k <= r.dealer.length; k++) {
                     solo.reveal = partial(r, k);
                     render();
-                    await sleep(k === start ? (sameHand ? 250 : 700) : 550);
+                    await sleep(k === start ? first : REVEAL.perCard);
                 }
                 solo.reveal = null;
             }
