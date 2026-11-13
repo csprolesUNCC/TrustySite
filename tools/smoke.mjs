@@ -261,8 +261,10 @@ async function twoPeople(found) {
     await check(guest, 'table, bets down');
     await host.click('[data-spot="field"]');
     await host.click('#roll-btn');
-    await guest.waitForFunction(() => /roll:/.test(document.querySelector('#status-text').textContent), null, { timeout: 5000 });
-    if (!/carson’s roll/.test(await guest.$eval('#status-text', (el) => el.textContent))) found.push('luke wasn’t told who rolled');
+    // The roll is in the last rolls once the dice have stopped tumbling.
+    await guest.waitForFunction(() => document.querySelector('#history').children.length === 1 && !/Rolling/.test(document.querySelector('#status-text').textContent), null, { timeout: 5000 });
+    const told = await guest.$eval('#status-text', (el) => el.textContent);
+    if (!/carson’s roll/.test(told)) found.push(`luke wasn’t told who rolled: "${told}"`);
     await check(host, 'table, after a roll');
   } catch (e) {
     found.push(`didn't get through a roll: ${e.message.split('\n')[0]}`);
