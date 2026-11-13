@@ -1,4 +1,4 @@
-import { SPOTS, BETS, ODDS_TIMES, isBet, canBet, oddsMax, newTable, roll } from '../scripts/craps.js';
+import { SPOTS, BETS, ODDS_TIMES, newTable, roll, cleanBets, betProblem } from '../scripts/craps.js';
 import { memoryGames, defaults } from './solo-store.js';
 
 // The Trusty Craps game itself (utils/solo-craps.js serves it), with no database here, so tools/dev-server.mjs and
@@ -18,14 +18,8 @@ const fresh = () => ({ v: 0, table: newTable(), rolls: 0, history: [], last: nul
 // roll with only what's already on the table).
 export function cleanMove(body) {
   if (!body || typeof body !== 'object' || body.do !== 'roll') return null;
-  const sent = body.bets == null ? {} : body.bets;
-  if (typeof sent !== 'object' || Array.isArray(sent)) return null;
-  const bets = {};
-  for (const [spot, amount] of Object.entries(sent)) {
-    if (!SPOTS.includes(spot) || !isBet(amount)) return null;
-    bets[spot] = amount;
-  }
-  return { do: 'roll', bets };
+  const bets = cleanBets(body.bets);
+  return bets && { do: 'roll', bets };
 }
 
 function reply(doc, extra = {}) {
@@ -55,19 +49,6 @@ async function settlePending(deps, userId, doc) {
   return (answer && answer.balances && answer.balances[userId]) || null;
 }
 
-// Why these new bets can't go down now, or null.
-function betProblem(table, bets) {
-  for (const [spot, amount] of Object.entries(bets)) {
-    if (!canBet(table, spot)) {
-      if (spot === 'odds') return table.point == null ? 'Odds go behind the Pass Line once there’s a point.' : !table.bets.pass ? 'Odds need a Pass Line bet.' : 'Your Odds are already down.';
-      return 'Line bets go down on the come-out roll, before there’s a point.';
-    }
-    if (spot === 'odds' && amount > oddsMax(table.bets.pass.amount)) return `Odds can be up to ${ODDS_TIMES} times your Pass Line bet.`;
-  }
-  if (!Object.keys(bets).length && !Object.keys(table.bets).length) return 'Put a bet down first.';
-  return null;
-}
-
 const die = (random) => 1 + Math.floor(random() * 6);
 
 // deps: { load(userId), save(userId, doc, v) (false if the stored version isn't v any more), bank: { stake,
@@ -79,7 +60,8 @@ export async function play(deps, userId, move) {
   if (!move) return reply(doc, { bank });
 
   const no = (error) => reply(doc, { bank, error });
-  const problem = betProblem(doc.table, move.bets);
+  const problem = betProblem(doc.table, move.bets)
+    || (!Object.keys(move.bets).length && !Object.keys(doc.table.bets).length ? 'Put a bet down first.' : null);
   if (problem) return no(problem);
 
   // Stake every new bet, or none.

@@ -870,6 +870,9 @@ kbd {
 .spot:disabled { cursor: default; }
 .spot.is-closed { border-style: dashed; border-color: rgba(255, 255, 255, .45); }
 .spot.is-closed .spot-name, .spot.is-closed .spot-pays { opacity: .7; }
+/* A bet riding on a spot that can't take another: it's live, not closed */
+.spot.is-closed.is-down { border-style: solid; border-color: rgba(255, 255, 255, .8); }
+.spot.is-closed.is-down .spot-name, .spot.is-closed.is-down .spot-pays { opacity: 1; }
 .spot-name { font-family: var(--font-marker); font-size: 1.15rem; line-height: 1.15; }
 .field-nums { margin-left: 6px; font-family: var(--font-body); font-size: .8rem; font-weight: 800; letter-spacing: .02em; color: var(--highlight); }
 .spot-pays { font-size: .8rem; font-weight: 700; color: rgba(255, 255, 255, .88); }
@@ -906,6 +909,7 @@ kbd {
 .roll-history li.is-seven { background: var(--red); color: #fff; }
 
 .craps-chips { display: grid; gap: 8px; }
+.craps-table-note { margin: 0 0 12px; }
 .chip-btn[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink), 0 0 0 6px var(--highlight), 2px 3px 0 6px var(--ink); }
 .craps-controls .action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .craps-controls .action-row #roll-btn { grid-column: 1 / -1; }

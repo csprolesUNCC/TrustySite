@@ -1,7 +1,7 @@
 // Loads every page in a real browser against tools/dev-server.mjs, at phone and desktop widths, logged out
 // and logged in, and fails if any page throws, logs an error, requests a missing file, scrolls sideways, has a
 // broken image or link, or has an accessibility problem axe-core can find. Then two people play Trusty Fever online
-// and a hand of Blackjack for clicks, and one plays Craps (the dev server runs the rooms, the tables and a pretend
+// and a hand of Blackjack for clicks and roll Craps at a table, and one plays Craps alone (the dev server runs the rooms, the tables and a pretend
 // click bank), and every online screen gets the same checks.
 //   npm run smoke   (needs Playwright: preinstalled in Claude Code cloud sessions, otherwise `npx playwright install chromium`
 //                    and `npm i -D playwright`)
@@ -242,6 +242,35 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Craps for clicks\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
+// A Trusty Craps table with friends: carson opens one, luke sits down with the link and bets, and carson shoots.
+{
+  const found = [];
+  const { pages: [host, guest], close } = await twoPeople(found);
+  const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
+  try {
+    await host.goto(`${BASE}/pages/games/craps.html`, { waitUntil: 'networkidle' });
+    await host.waitForFunction(() => !document.querySelector('#friends-panel').hidden, null, { timeout: 5000 });
+    await host.click('#open-table');
+    await host.waitForFunction(() => document.querySelector('#table-label').textContent.length === 4, null, { timeout: 5000 });
+    const code = await host.$eval('#table-label', (el) => el.textContent);
+    await guest.goto(`${BASE}/pages/games/craps.html#table=${code}`, { waitUntil: 'networkidle' });
+    await guest.waitForFunction(() => document.querySelectorAll('#table-people li').length === 2, null, { timeout: 5000 });
+    await guest.click('[data-spot="field"]');
+    await guest.click('#roll-btn');
+    await host.waitForFunction(() => /bet/.test(document.querySelector('#table-people').textContent), null, { timeout: 5000 });
+    await check(guest, 'table, bets down');
+    await host.click('[data-spot="field"]');
+    await host.click('#roll-btn');
+    await guest.waitForFunction(() => /roll:/.test(document.querySelector('#status-text').textContent), null, { timeout: 5000 });
+    if (!/carson’s roll/.test(await guest.$eval('#status-text', (el) => el.textContent))) found.push('luke wasn’t told who rolled');
+    await check(host, 'table, after a roll');
+  } catch (e) {
+    found.push(`didn't get through a roll: ${e.message.split('\n')[0]}`);
+  }
+  await close();
+  if (found.length) problems.push(`Trusty Craps table\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
 for (const href of links) {
   const res = await fetch(href);
   if (res.status >= 400) problems.push(`broken link: ${href.replace(BASE, '')} (${res.status})`);
@@ -249,7 +278,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table)${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

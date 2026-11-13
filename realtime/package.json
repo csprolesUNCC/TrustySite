@@ -2,7 +2,7 @@
   "name": "trusty-fever-rooms",
   "private": true,
   "type": "module",
-  "description": "Trusty's online rooms (Trusty Fever and Trusty Blackjack): a Cloudflare Worker with one Durable Object per room.",
+  "description": "Trusty's online rooms (Trusty Fever, Trusty Blackjack and Trusty Craps): a Cloudflare Worker with one Durable Object per room.",
   "scripts": {
     "dev": "wrangler dev --var SITE_URL:http://localhost:8787",
     "deploy": "wrangler deploy"

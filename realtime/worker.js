@@ -1,14 +1,17 @@
 // The online rooms, on Cloudflare: a Worker that checks each player's ticket, and one Durable Object per code,
 // so everyone in a room reaches the same single place and the game can live in memory. Trusty Fever's rooms
-// are realtime/room.js and Trusty Blackjack's tables are realtime/table.js; this file only connects them to
-// WebSockets, a timer and the click bank (realtime/bank.js, which calls the site at SITE_URL).
+// are realtime/room.js, Trusty Blackjack's tables realtime/table.js and Trusty Craps' tables
+// realtime/craps-table.js; this file only connects them to WebSockets, a timer and the click bank
+// (realtime/bank.js, which calls the site at SITE_URL).
 //   wss://<this worker>/room/<CODE>?v=<PROTOCOL>&ticket=<ticket>[&make=1]         Trusty Fever
 //   wss://<this worker>/table/<CODE>?v=<TABLE_PROTOCOL>&ticket=<ticket>[&make=1]  Trusty Blackjack
+//   wss://<this worker>/craps/<CODE>?v=<CRAPS_PROTOCOL>&ticket=<ticket>[&make=1]  Trusty Craps
 // Deploy with `npm run deploy` in this folder (see "Trusty Fever online" in CLAUDE.md for the whole setup). The
 // deploy bundles its own copy of the game files it imports (scripts/fever-engine.js, scripts/fever-net.js,
-// scripts/blackjack.js), so deploy again whenever those or this folder change.
+// scripts/blackjack.js, scripts/craps.js), so deploy again whenever those or this folder change.
 import { Room, ROOM_CODE, versionProblem as feverVersion } from './room.js';
 import { Table, versionProblem as tableVersion } from './table.js';
+import { CrapsTable as Craps, versionProblem as crapsVersion } from './craps-table.js';
 import { CLOSE } from './common.js';
 import { bankClient } from './bank.js';
 import { verifyTicket } from '../utils/fever-ticket.js';
@@ -16,6 +19,7 @@ import { verifyTicket } from '../utils/fever-ticket.js';
 const KINDS = {
   room: { binding: 'ROOMS', version: feverVersion, open: (code, bank) => new Room(code, { bank }) },
   table: { binding: 'TABLES', version: tableVersion, open: (code, bank) => new Table(code, { bank }) },
+  craps: { binding: 'CRAPS', version: crapsVersion, open: (code, bank) => new Craps(code, { bank }) },
 };
 
 class Host {
@@ -88,6 +92,12 @@ export class BlackjackTable extends Host {
   }
 }
 
+export class CrapsTable extends Host {
+  constructor(ctx, env) {
+    super(ctx, env, 'craps');
+  }
+}
+
 // A WebSocket that only says why it can't stay: browsers can't read the status of a refused connection.
 function refuse(code, message) {
   const [client, socket] = Object.values(new WebSocketPair());
@@ -100,7 +110,7 @@ function refuse(code, message) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const [, kind, code] = url.pathname.match(/^\/(room|table)\/([A-Z]{4})$/) || [];
+    const [, kind, code] = url.pathname.match(/^\/(room|table|craps)\/([A-Z]{4})$/) || [];
     if (!kind || !ROOM_CODE.test(code)) {
       return url.pathname === '/'
         ? new Response('Trusty’s online rooms are open.\n')

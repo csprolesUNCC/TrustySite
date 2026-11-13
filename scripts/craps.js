@@ -1,5 +1,6 @@
-// Trusty Craps rules: pure functions, no DOM, shared by the page (pages/games/craps.html, to label and check bets)
-// and the server game (utils/solo-craps-game.js, which rolls the dice). All plain data, so the tests can pick the
+// Trusty Craps rules: pure functions, no DOM, shared by the page (pages/games/craps.html, to label and check bets),
+// the game on your own (utils/solo-craps-game.js) and the online tables (realtime/craps-table.js), which roll the
+// dice. All plain data, so the tests can pick the
 // dice.
 //
 // The table: Pass Line and Don't Pass on the come-out roll, Odds behind the Pass Line once there's a point, and
@@ -21,6 +22,34 @@ const ODDS_PAY = { 4: [2, 1], 10: [2, 1], 5: [3, 2], 9: [3, 2], 6: [6, 5], 8: [6
 export const MAX_RETURN = 8;
 
 export const newTable = () => ({ point: null, bets: {} });
+// Bump whenever a message between pages/games/craps.html and the online tables (realtime/craps-table.js) changes
+// shape: a page and a table that don't match then refuse each other with "reload".
+export const CRAPS_PROTOCOL = 1;
+
+// New bets from a request or a message, { [spot]: amount }, or null if anything in it isn't a bet.
+export function cleanBets(sent) {
+  if (sent == null) return {};
+  if (typeof sent !== 'object' || Array.isArray(sent)) return null;
+  const bets = {};
+  for (const [spot, amount] of Object.entries(sent)) {
+    if (!SPOTS.includes(spot) || !isBet(amount)) return null;
+    bets[spot] = amount;
+  }
+  return bets;
+}
+
+// Why these new bets can't go down on this table now, or null. (Each spot takes one bet until it's decided.)
+export function betProblem(table, bets) {
+  for (const [spot, amount] of Object.entries(bets)) {
+    if (table.bets[spot]) return spot === 'odds' ? 'Your Odds are already down.' : `You already have a bet on ${NAMES[spot]}.`;
+    if (!canBet(table, spot)) {
+      if (spot === 'odds') return table.point == null ? 'Odds go behind the Pass Line once there’s a point.' : 'Odds need a Pass Line bet.';
+      return 'Line bets go down on the come-out roll, before there’s a point.';
+    }
+    if (spot === 'odds' && amount > oddsMax(table.bets.pass.amount)) return `Odds can be up to ${ODDS_TIMES} times your Pass Line bet.`;
+  }
+  return null;
+}
 
 // Whether a bet can go on this spot now (amount aside from the odds limit, which oddsMax() gives).
 export function canBet(table, spot) {
@@ -60,6 +89,13 @@ function outcome(spot, sum, point) {
   return null;
 }
 
+// Where the point goes after this roll.
+export function nextPoint(point, dice) {
+  const sum = dice[0] + dice[1];
+  if (point == null) return POINTS.includes(sum) ? sum : null;
+  return sum === point || sum === 7 ? null : point;
+}
+
 // Rolls `dice` ([1-6, 1-6]) on the table (changing it) and returns what was decided:
 // [{ spot, id, amount, result, payout }], payout being the clicks paid back (0 for a loss).
 export function roll(table, dice) {
@@ -75,8 +111,7 @@ export function roll(table, dice) {
     decided.push({ spot, id: bet.id, amount: bet.amount, result, payout });
     delete table.bets[spot];
   }
-  if (point == null) table.point = POINTS.includes(sum) ? sum : null;
-  else if (sum === point || sum === 7) table.point = null;
+  table.point = nextPoint(point, dice);
   return decided;
 }
 

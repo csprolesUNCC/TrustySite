@@ -1,4 +1,5 @@
-// What Trusty Fever's rooms (realtime/room.js) and Trusty Blackjack's tables (realtime/table.js) share.
+// What Trusty Fever's rooms (realtime/room.js) and the casino's tables (realtime/table.js, realtime/craps-table.js)
+// share.
 
 // Why the room server closed a connection (4001 is the worker's: the ticket didn't check out).
 export const CLOSE = { ticket: 4001, full: 4002, taken: 4003, replaced: 4004, idle: 4005, version: 4006, flood: 4007 };

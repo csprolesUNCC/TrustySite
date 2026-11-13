@@ -58,7 +58,7 @@
                         <li data-point="10">10</li>
                     </ol>
 
-                    <p class="casino-status" id="status" role="status" aria-live="polite">Come-out roll!</p>
+                    <p class="casino-status" id="status" role="status" aria-live="polite"><span id="status-text">Come-out roll!</span> <span class="casino-timer" id="timer" aria-hidden="true" hidden></span></p>
 
                     <div class="craps-spots" id="spots" role="group" aria-label="Bets">
                         <button class="spot spot-pass" type="button" data-spot="pass"><span class="spot-name">Pass Line</span><span class="spot-pays">Pays 1 to 1</span><span class="spot-chip" aria-hidden="true"></span><span class="sr-only spot-state"></span></button>
@@ -115,6 +115,27 @@
                         <button class="btn btn-ghost" type="button" id="clear-btn" disabled>Clear</button>
                     </div>
                 </div>
+                <div class="panel friends" id="friends-panel" hidden>
+                    <h2 class="panel-title">Play with friends</h2>
+                    <p class="side-note">Open a table and send them the link, or type in the code of theirs. Up to six of you on the same dice, taking turns to shoot.</p>
+                    <div class="friends-actions">
+                        <button class="btn btn-sm btn-highlight" type="button" id="open-table">Open a table</button>
+                        <form class="room-join" id="join-table" novalidate>
+                            <label class="sr-only" for="table-code">Table code</label>
+                            <input class="input" id="table-code" name="code" placeholder="CODE" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                            <button class="btn btn-sm btn-outline" type="submit">Join</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="panel" id="table-panel" hidden>
+                    <h2 class="panel-title">Table <span class="table-code" id="table-label"></span></h2>
+                    <ul class="table-people" id="table-people"></ul>
+                    <p class="side-note craps-table-note">The shooter rolls; the dice pass on when they seven out, or if they don’t roll within 20 seconds. Your bets stay on the table until the dice decide them, even if you get up.</p>
+                    <div class="btn-row">
+                        <button class="btn btn-sm btn-outline" type="button" id="copy-table">Copy link</button>
+                        <button class="btn btn-sm btn-ghost" type="button" id="leave-table">Leave the table</button>
+                    </div>
+                </div>
                 <div class="panel">
                     <h2 class="panel-title">House rules</h2>
                     <ul class="how-to bullets">
@@ -127,7 +148,7 @@
                 <div class="panel desktop-only">
                     <h2 class="panel-title">Shortcuts</h2>
                     <ul class="how-to">
-                        <li><span class="keys"><kbd>R</kbd><kbd>Enter</kbd></span> Roll</li>
+                        <li><span class="keys"><kbd>R</kbd><kbd>Enter</kbd></span> Roll (at a table: put your bets down, or roll if you’re shooting)</li>
                         <li><span class="keys"><kbd>1</kbd>–<kbd>4</kbd></span> Pick a chip</li>
                         <li><span class="keys"><kbd>A</kbd></span> Same bets again</li>
                         <li><span class="keys"><kbd>C</kbd></span> Clear new bets</li>
@@ -143,25 +164,37 @@
     <script type="module">
         import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
         import { isForeignKey, isActivationKey } from '/scripts/game-kit.js';
-        import { SPOTS, NAMES, BETS, canBet, oddsMax, callOut } from '/scripts/craps.js';
+        import { NAMES, BETS, canBet, oddsMax, callOut, CRAPS_PROTOCOL } from '/scripts/craps.js';
+        import { roomsOpen, connect, newCode, roomLink, roomFromHash, bankStatus, ROOM_CODE } from '/scripts/rooms.js';
 
-        // Every roll is for your real site clicks: the site's API (?action=craps, utils/solo-craps.js) stakes the new
-        // bets at the click bank, rolls the dice and pays out what they decide. The page only picks bets and draws
-        // what it's told: dice rolled in the browser could be rigged.
+        // Every roll is for your real site clicks, two ways: on your own (solo), where the site's API
+        // (?action=craps, utils/solo-craps.js) stakes your new bets, rolls the dice and pays out, or at an online
+        // table with friends (realtime/craps-table.js, through the room server), where everyone bets on the same
+        // dice and takes turns to shoot. Either way the dice are rolled on a server, where nobody can rig them, and
+        // bets go through the click bank. The page only picks bets and draws what it's told.
 
         const API = '/api/leaderboard?action=craps';
         const ROLL_MS = 700; // the dice tumble at least this long
+        const TABLE_TAKEN = 4003; // CLOSE.taken in realtime/common.js
         const $ = (id) => document.getElementById(id);
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const clicksText = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
+        const short = (name) => (name.length > 14 ? `${name.slice(0, 13)}…` : name);
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
         const ODDS_PAYS = { 4: '2 to 1', 10: '2 to 1', 5: '3 to 2', 9: '3 to 2', 6: '6 to 5', 8: '6 to 5' };
         const POINT_WORDS = { 6: 'Six', 9: 'Nine' };
 
-        // game: the API's last answer. draft: new bets for the next roll, { [spot]: amount }. again: the last roll's
-        // new bets. fresh: show the last roll's result (until you start betting again).
+        // game: what's on the table, in the solo API's shape ({ table: { point, bets: yours }, last, history, rolls,
+        // bets }), whichever way you're playing. draft: new bets for the next roll, { [spot]: amount }. again: the
+        // last bets you put down. fresh: show the last roll's result (until you start betting again).
         const state = { game: null, failed: false, busy: false, rolling: false, draft: {}, again: {}, chip: 10, fresh: false };
         const wallet = { clicks: null, today: null, limits: null };
+        let mode = 'solo'; // solo | table
+        // The online table this page sits at: { code, conn, msg (the last { t: 'craps' }), latest (one that came
+        // while the dice tumbled), status (reconnecting), deadline (performance.now() when the dice roll
+        // themselves), ready (when the shooter can roll), animating }.
+        let net = null;
+        let tablesOpen = false;
 
         /* ---------- Dice ---------- */
 
@@ -178,7 +211,7 @@
             $('dice').setAttribute('aria-label', dice ? `Dice: ${dice[0]} and ${dice[1]}, ${dice[0] + dice[1]}` : 'No roll yet');
         }
 
-        // The dice tumble, showing random faces, until `done` settles.
+        // The dice tumble, showing random faces, until `done` settles (and for at least ROLL_MS).
         async function tumble(done) {
             const box = $('dice');
             box.classList.add('is-rolling');
@@ -195,6 +228,7 @@
 
         /* ---------- What's on the table ---------- */
 
+        const atTable = () => mode === 'table';
         const table = () => (state.game ? state.game.table : { point: null, bets: {} });
         const onTable = (spot) => table().bets[spot] || 0;
         const draftTotal = () => Object.values(state.draft).reduce((a, b) => a + b, 0);
@@ -203,9 +237,14 @@
         const free = () => (wallet.clicks == null ? 0 : wallet.clicks - draftTotal());
         // The most that can go on this spot now (on the table plus this roll's new bet).
         const spotMax = (spot) => (spot === 'odds' ? oddsMax(onTable('pass')) : limits().max);
+        // At a table: you, as the table sees you.
+        const me = () => (net && net.msg ? net.msg.people.find((p) => p.name === net.msg.you) : null);
+        const shooting = () => Boolean(net && net.msg && net.msg.youShoot);
+        const busy = () => state.busy || state.rolling || Boolean(atTable() && me() && me().busy);
 
         // Why a chip can't go on this spot now, or null.
         function spotProblem(spot) {
+            if (atTable() && onTable(spot)) return `You already have a bet on ${NAMES[spot]}. It stays until the dice decide it.`;
             if (!canBet(table(), spot)) {
                 if (spot === 'odds') return table().point == null ? 'Odds go behind the Pass Line once there’s a point.' : !onTable('pass') ? 'Odds need a Pass Line bet from the come-out roll.' : 'Your Odds are already down.';
                 return 'Line bets go down on the come-out roll. This one rides until the point is decided.';
@@ -214,7 +253,7 @@
         }
 
         function addChip(spot) {
-            if (state.busy || !state.game) return;
+            if (busy() || !state.game) return;
             const problem = spotProblem(spot);
             if (problem) return toast(problem, 'info', 5000);
             const now = state.draft[spot] || 0;
@@ -226,7 +265,7 @@
             render();
         }
 
-        // The last roll's new bets, where they can still go.
+        // The last bets you put down, where they can still go.
         function againBets() {
             const bets = {};
             let total = 0;
@@ -238,9 +277,14 @@
             return total && total <= (wallet.clicks || 0) ? bets : null;
         }
 
+        // After the table changes under a bet you haven't put down yet (someone rolled), drop what can't go there now.
+        function pruneDraft() {
+            for (const spot of Object.keys(state.draft)) if (spotProblem(spot)) delete state.draft[spot];
+        }
+
         /* ---------- Rendering ---------- */
 
-        // What the last roll did to your clicks, in words ('' when it decided nothing).
+        // What the last roll did to your clicks, in words ('' when it decided nothing of yours).
         function lastResult(last) {
             if (!last || !last.decided.length) return '';
             const won = last.decided.filter((d) => d.result === 'win').reduce((sum, d) => sum + d.payout - d.amount, 0);
@@ -253,13 +297,24 @@
 
         function statusText() {
             if (!session.loggedIn) return 'Log in to play for clicks.';
-            if (state.failed) return 'Trusty dropped the dice. Reload to try again.';
+            if (atTable()) {
+                if (net.status) return net.status;
+                if (!net.msg) return 'Finding you a seat…';
+            } else if (state.failed) {
+                return 'Trusty dropped the dice. Reload to try again.';
+            }
             if (!state.game) return 'Pulling up to the table…';
             if (state.rolling) return 'Rolling…';
             const { point } = table();
             const last = state.game.last;
             if (state.fresh && last) {
-                return `${callOut(last.dice, last.point)}${lastResult(last)}`;
+                const who = !atTable() ? '' : last.auto ? 'Time’s up, the dice rolled: ' : last.by === net.msg.you ? 'Your roll: ' : `${short(last.by || 'Someone')}’s roll: `;
+                return `${who}${callOut(last.dice, last.point)}${lastResult(last)}`;
+            }
+            if (atTable()) {
+                const lead = shooting() ? 'Your dice! ' : `${short(net.msg.shooter || 'Someone')} is shooting. `;
+                if (point == null) return `${lead}Come-out roll: bet the Pass Line or Don’t Pass.`;
+                return `${lead}The point is ${point}.`;
             }
             if (point == null) return 'Come-out roll! Bet the Pass Line or Don’t Pass, then roll.';
             return `The point is ${point}. Roll a ${point} before a 7!`;
@@ -282,7 +337,7 @@
                 el.classList.toggle('is-new', Boolean(adding));
                 const closed = !state.game || Boolean(spotProblem(spot));
                 el.classList.toggle('is-closed', closed);
-                el.disabled = state.busy || !session.loggedIn;
+                el.disabled = busy() || !session.loggedIn;
                 const bits = [];
                 if (down) bits.push(`${clicksText(down)} riding`);
                 if (adding) bits.push(`${clicksText(adding)} for the next roll`);
@@ -312,24 +367,64 @@
             $('history').replaceChildren(...list.map((n) => h('li', { class: n === 7 ? 'is-seven' : '' }, String(n))));
         }
 
+        function renderTablePeople() {
+            if (!atTable()) return;
+            $('table-label').textContent = net.code;
+            const msg = net.msg;
+            if (!msg) return;
+            $('table-people').replaceChildren(...msg.people.map((p) => h('li', null,
+                h('strong', null, `${short(p.name)}${p.name === msg.you ? ' (you)' : ''}`),
+                h('span', null, [p.shooter && 'shooting', p.busy ? 'betting…' : p.onTable ? `${fmt(p.onTable)} bet` : ''].filter(Boolean).join(' · ')))));
+        }
+
+        // A countdown to the dice rolling themselves, kept out of the status line so screen readers aren't read a
+        // number every second.
+        function renderTimer() {
+            const left = atTable() && net.deadline && !state.rolling ? Math.ceil((net.deadline - performance.now()) / 1000) : 0;
+            $('timer').textContent = left > 0 ? `${left}s` : '';
+            $('timer').hidden = !(left > 0);
+        }
+
+        // The main button: Roll on your own and when you're shooting; Place bets at a table when you're not.
+        function renderRollButton() {
+            const b = busy();
+            const draft = draftTotal() > 0;
+            if (!atTable()) {
+                $('roll-btn').disabled = b || !state.game || !(draft || tableTotal() > 0);
+                $('roll-btn').textContent = state.rolling ? 'Rolling…' : 'Roll';
+                return;
+            }
+            const msg = net.msg;
+            if (shooting()) {
+                const wait = net.ready > performance.now();
+                $('roll-btn').disabled = b || !msg || wait || !(draft || msg.anyBets);
+                $('roll-btn').textContent = state.rolling ? 'Rolling…' : draft ? 'Bet and roll' : 'Roll';
+            } else {
+                $('roll-btn').disabled = b || !msg || !draft;
+                $('roll-btn').textContent = me() && me().busy ? 'Placing…' : 'Place bets';
+            }
+        }
+
         function render() {
-            const busy = state.busy;
-            $('status').textContent = statusText();
+            const b = busy();
+            $('friends-panel').hidden = !(tablesOpen && session.loggedIn && !atTable());
+            $('table-panel').hidden = !atTable();
+            $('status-text').textContent = statusText();
             renderSpots();
             renderPoint();
             renderHistory();
+            renderTablePeople();
+            renderTimer();
+            renderRollButton();
             if (!state.rolling) drawDice(state.game && state.game.last ? state.game.last.dice : null);
             $('bank').textContent = wallet.clicks != null ? fmt(wallet.clicks) : '…';
             $('on-table').textContent = fmt(tableTotal() + draftTotal());
             for (const chip of document.querySelectorAll('[data-clicks]')) {
                 chip.setAttribute('aria-pressed', String(Number(chip.dataset.clicks) === state.chip));
-                chip.disabled = busy;
+                chip.disabled = b;
             }
-            const anything = draftTotal() > 0 || tableTotal() > 0;
-            $('roll-btn').disabled = busy || !state.game || !anything;
-            $('roll-btn').textContent = state.rolling ? 'Rolling…' : 'Roll';
-            $('clear-btn').disabled = busy || !draftTotal();
-            $('again-btn').disabled = busy || !state.game || draftTotal() > 0 || !againBets();
+            $('clear-btn').disabled = b || !draftTotal();
+            $('again-btn').disabled = b || !state.game || draftTotal() > 0 || !againBets() || (atTable() && shooting() && net.ready > performance.now());
             $('today').hidden = wallet.today == null;
             if (wallet.today != null) {
                 const { lossPerDay, winPerDay } = wallet.limits || { lossPerDay: 5000, winPerDay: 5000 };
@@ -338,7 +433,7 @@
             }
         }
 
-        /* ---------- Your clicks and the API ---------- */
+        /* ---------- Your clicks ---------- */
 
         function setWallet(mine) {
             if (!mine || typeof mine.clicks !== 'number') return;
@@ -347,6 +442,8 @@
             if (typeof mine.net === 'number') wallet.today = mine.net;
             announceBalance(mine.clicks, before != null && mine.clicks > before ? mine.clicks - before : 0);
         }
+
+        /* ---------- Solo ---------- */
 
         async function request(move) {
             const res = await fetch(API, move
@@ -361,10 +458,10 @@
         }
 
         async function load() {
-            if (!session.loggedIn) return;
+            if (!session.loggedIn || atTable()) return;
             try {
                 const game = await request(null);
-                if (!game) return;
+                if (!game || atTable()) return;
                 state.game = game;
                 state.failed = false;
                 wallet.limits = game.limits || wallet.limits;
@@ -387,15 +484,14 @@
             if (Math.abs(by) > 1) scrollBy({ top: by, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
         }
 
-        async function rollDice(bets = state.draft) {
-            if (state.busy || !state.game || $('roll-btn').disabled && bets === state.draft) return;
+        async function soloRoll(bets) {
             state.busy = true;
             state.rolling = true;
             render();
             showTable();
             try {
                 const next = await tumble(request({ do: 'roll', bets }));
-                if (!next) return;
+                if (!next || atTable()) return;
                 const rolled = next.rolls !== state.game.rolls;
                 state.game = next;
                 if (rolled) {
@@ -414,14 +510,162 @@
             }
         }
 
+        /* ---------- Tables ---------- */
+
+        // A { t: 'craps' } message as the solo API's shape.
+        const gameFrom = (msg) => ({ table: { point: msg.point, bets: msg.mine }, last: msg.last, history: msg.history, rolls: msg.rolls, bets: msg.bets });
+
+        function apply(msg) {
+            const rolled = Boolean(net.msg) && msg.rolls !== net.msg.rolls;
+            net.msg = msg;
+            net.code = msg.code;
+            net.deadline = msg.left ? performance.now() + msg.left : 0;
+            net.ready = performance.now() + msg.wait;
+            state.game = gameFrom(msg);
+            if (rolled) state.fresh = true;
+            pruneDraft();
+            render();
+            if (rolled) showTable();
+        }
+
+        // A new roll tumbles the dice first; anything that comes in meanwhile waits for it.
+        function onCraps(msg) {
+            net.latest = msg;
+            if (net.animating) return;
+            if (net.msg && msg.rolls !== net.msg.rolls && !reduceMotion.matches) {
+                const here = net;
+                here.animating = true;
+                state.rolling = true;
+                render();
+                tumble(null).then(() => {
+                    if (net !== here) return;
+                    here.animating = false;
+                    state.rolling = false;
+                    apply(here.latest);
+                });
+                return;
+            }
+            apply(msg);
+        }
+
+        function onMessage(msg) {
+            if (msg.t === 'craps') onCraps(msg);
+            else if (msg.t === 'bank') {
+                setWallet(msg);
+                render();
+            } else if (msg.t === 'notice') {
+                toast(msg.message, 'info', 7000);
+            }
+        }
+
+        function tableBet(bets, roll) {
+            if (!net || !net.msg) return;
+            if (Object.keys(bets).length) state.again = { ...bets };
+            state.draft = {};
+            state.fresh = false;
+            net.conn.send({ t: 'bet', bets, roll });
+            render();
+        }
+
+        function openTable(code, { make = false, tries = 0 } = {}) {
+            if (net) net.conn.leave();
+            mode = 'table';
+            Object.assign(state, { game: null, draft: {}, fresh: false, rolling: false, busy: false });
+            const here = { code, conn: null, msg: null, latest: null, status: null, deadline: 0, ready: 0, animating: false };
+            net = here;
+            history.replaceState(null, '', `#table=${code}`);
+            bankStatus().then((mine) => {
+                if (!mine || net !== here) return;
+                wallet.limits = mine.limits;
+                setWallet(mine);
+                render();
+            });
+            here.conn = connect({
+                kind: 'craps',
+                code,
+                version: CRAPS_PROTOCOL,
+                make,
+                on: {
+                    message: (msg) => { if (net === here) onMessage(msg); },
+                    status: (text) => {
+                        if (net !== here) return;
+                        net.status = text;
+                        render();
+                    },
+                    gone: (message, { code: why, login } = {}) => {
+                        if (net !== here) return;
+                        if (why === TABLE_TAKEN && make && tries < 3) {
+                            openTable(newCode(), { make: true, tries: tries + 1 });
+                            return;
+                        }
+                        leaveTable();
+                        if (login) sessionExpired();
+                        else if (message) toast(message, 'info', 7000);
+                    },
+                },
+            });
+            render();
+        }
+
+        // Back to playing on your own (where anything you left on your own table is still riding).
+        function leaveTable() {
+            if (net) net.conn.leave();
+            net = null;
+            if (roomFromHash('table')) history.replaceState(null, '', location.pathname + location.search);
+            mode = 'solo';
+            Object.assign(state, { game: null, draft: {}, fresh: false, rolling: false, busy: false });
+            load();
+            render();
+        }
+
+        async function copyLink() {
+            const url = roomLink(net.code, 'table');
+            try {
+                if (matchMedia('(pointer: coarse)').matches && navigator.share) {
+                    await navigator.share({ title: 'Trusty Craps', text: `Roll with me at Trusty Craps! Table ${net.code}:`, url });
+                    return;
+                }
+                await navigator.clipboard.writeText(url);
+                toast('Link copied: send it to your friends!');
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                toast(`Send your friends this link: ${url}`, 'info', 8000);
+            }
+        }
+
+        // A table link (craps.html#table=CODE) sits you at that table.
+        async function checkHash() {
+            const code = roomFromHash('table');
+            if (!code || (net && net.code === code)) return;
+            if (!(await roomsOpen())) {
+                toast('Tables with friends aren’t open right now, but you can still play on your own.', 'info', 6000);
+                return;
+            }
+            if (!session.loggedIn) {
+                document.querySelector('.lobby-sub').textContent = `Log in to sit at table ${code}. Your bets are your real Trusty clicks.`;
+                $('lobby-login-link').href = loginHref();
+                return;
+            }
+            openTable(code);
+        }
+
+        /* ---------- Buttons and keys ---------- */
+
+        function rollOrPlace() {
+            if ($('roll-btn').disabled) return;
+            if (atTable()) tableBet(state.draft, shooting());
+            else soloRoll(state.draft);
+        }
+
         function sameAgain() {
             const bets = againBets();
             if (!bets || $('again-btn').disabled) return;
-            rollDice(bets);
+            if (atTable()) tableBet(bets, shooting());
+            else soloRoll(bets);
         }
 
         function clearDraft() {
-            if (state.busy) return;
+            if (busy()) return;
             state.draft = {};
             render();
         }
@@ -431,23 +675,43 @@
             render();
         }
 
-        /* ---------- Buttons and keys ---------- */
-
         for (const el of $('spots').children) el.addEventListener('click', () => addChip(el.dataset.spot));
         for (const chip of document.querySelectorAll('[data-clicks]')) chip.addEventListener('click', () => pickChip(Number(chip.dataset.clicks)));
-        $('roll-btn').addEventListener('click', () => rollDice());
+        $('roll-btn').addEventListener('click', rollOrPlace);
         $('again-btn').addEventListener('click', sameAgain);
         $('clear-btn').addEventListener('click', clearDraft);
+        $('open-table').addEventListener('click', () => openTable(newCode(), { make: true }));
+        $('table-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+        $('join-table').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = $('table-code').value.trim().toUpperCase();
+            if (!ROOM_CODE.test(code)) {
+                toast('Table codes are four letters, like KXQT.');
+                $('table-code').focus();
+                return;
+            }
+            openTable(code);
+        });
+        $('copy-table').addEventListener('click', copyLink);
+        $('leave-table').addEventListener('click', leaveTable);
+        window.addEventListener('hashchange', checkHash);
 
         const CHIPS = [10, 50, 100, 500];
         document.addEventListener('keydown', (e) => {
             if (isForeignKey(e) || isActivationKey(e) || !session.loggedIn) return;
             const k = e.key.toLowerCase();
-            if (k === 'r' || k === 'enter') rollDice();
+            if (k === 'r' || k === 'enter') rollOrPlace();
             else if (k === 'a') sameAgain();
             else if (k === 'c') clearDraft();
             else if (/^[1-4]$/.test(k)) pickChip(CHIPS[Number(k) - 1]);
         });
+
+        // At a table, the countdown and the shooter's wait between rolls tick on.
+        setInterval(() => {
+            if (!atTable()) return;
+            renderTimer();
+            renderRollButton();
+        }, 250);
 
         // Logging out elsewhere (or a 401) puts the page back to "log in to play".
         let wasIn = session.loggedIn;
@@ -455,6 +719,7 @@
             if (loggedIn === wasIn) return;
             wasIn = loggedIn;
             if (!loggedIn) {
+                if (net) leaveTable();
                 state.game = null;
                 state.draft = {};
                 Object.assign(wallet, { clicks: null, today: null });
@@ -466,7 +731,14 @@
 
         $('lobby-login-link').href = loginHref();
         render();
-        sessionReady.then(load);
+        sessionReady.then(() => {
+            if (!roomFromHash('table') || !session.loggedIn) load();
+            roomsOpen().then((open) => {
+                tablesOpen = open;
+                render();
+                checkHash();
+            });
+        });
     </script>
 </body>
 </html>

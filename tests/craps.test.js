@@ -160,7 +160,7 @@ test('a game: the point, the odds, and the payout', async () => {
   assert.equal(g.open(), 1, 'the Pass Line rides');
 
   shown = await g.roll({ pass: 10 });
-  assert.match(shown.error, /come-out/);
+  assert.match(shown.error, /already have a bet on Pass Line/);
   assert.equal(g.clicks(), 890, 'nothing staked, nothing rolled');
   shown = await g.roll({ odds: 300 });
   assert.match(shown.error, /2 times/);

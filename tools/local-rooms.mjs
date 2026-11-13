@@ -1,17 +1,20 @@
-// The online rooms for tools/dev-server.mjs: the same Trusty Fever rooms (realtime/room.js) and Trusty Blackjack
-// tables (realtime/table.js) the Cloudflare Worker runs, behind a tiny WebSocket server, so online play works
+// The online rooms for tools/dev-server.mjs: the same Trusty Fever rooms (realtime/room.js), Trusty Blackjack
+// tables (realtime/table.js) and Trusty Craps tables (realtime/craps-table.js) the Cloudflare Worker runs, behind a tiny WebSocket server, so online play works
 // locally with no Cloudflare account. The clicks go through whatever bank the dev server hands over.
 //   ws://localhost:<port>/fever-rooms/room/<CODE>?v=<PROTOCOL>&ticket=...[&make=1]
 //   ws://localhost:<port>/fever-rooms/table/<CODE>?v=<TABLE_PROTOCOL>&ticket=...[&make=1]
+//   ws://localhost:<port>/fever-rooms/craps/<CODE>?v=<CRAPS_PROTOCOL>&ticket=...[&make=1]
 import crypto from 'node:crypto';
 import { Room, ROOM_CODE, versionProblem as feverVersion } from '../realtime/room.js';
 import { Table, versionProblem as tableVersion } from '../realtime/table.js';
+import { CrapsTable, versionProblem as crapsVersion } from '../realtime/craps-table.js';
 import { CLOSE } from '../realtime/common.js';
 import { verifyTicket } from '../utils/fever-ticket.js';
 
 const KINDS = {
   room: { version: feverVersion, open: (code, bank) => new Room(code, { bank }) },
   table: { version: tableVersion, open: (code, bank) => new Table(code, { bank }) },
+  craps: { version: crapsVersion, open: (code, bank) => new CrapsTable(code, { bank }) },
 };
 
 export const LOCAL_ROOMS_PATH = '/fever-rooms';
@@ -126,7 +129,7 @@ export function attachRooms(server, secret, bank) {
 
   server.on('upgrade', async (req, socket) => {
     const url = new URL(req.url, 'http://localhost');
-    const [, kind, code] = url.pathname.match(new RegExp(`^${LOCAL_ROOMS_PATH}/(room|table)/([A-Z]{4})$`)) || [];
+    const [, kind, code] = url.pathname.match(new RegExp(`^${LOCAL_ROOMS_PATH}/(room|table|craps)/([A-Z]{4})$`)) || [];
     if (!kind || !ROOM_CODE.test(code)) {
       socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
       return;

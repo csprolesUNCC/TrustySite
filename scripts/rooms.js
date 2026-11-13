@@ -1,6 +1,6 @@
 // The online rooms, the page's side of the connection: whether they're open, tickets, and keeping a WebSocket
-// to a Trusty Fever room (realtime/room.js) or a Trusty Blackjack table (realtime/table.js) going through
-// hiccups. pages/games/fever.html and pages/games/casino.html do the rest. Also the click bank's GET, for the
+// to a Trusty Fever room (realtime/room.js) or a Trusty Blackjack or Craps table (realtime/table.js,
+// realtime/craps-table.js) going through hiccups. pages/games/fever.html, casino.html and craps.html do the rest. Also the click bank's GET, for the
 // player's own clicks and limits (utils/bank.js).
 import { sessionExpired } from './site.js';
 import { CODE_LETTERS, ROOM_CODE } from './fever-net.js';
@@ -46,7 +46,7 @@ export async function bankStatus() {
   }
 }
 
-// Joins room or table `code` of `kind` ('room' or 'table'), speaking protocol `version` (make: opening it, so
+// Joins room or table `code` of `kind` ('room', 'table' or 'craps'), speaking protocol `version` (make: opening it, so
 // it has to be empty), and calls on.message(msg) for what it says, on.status(text, or null once connected
 // again) and, when it's gone for good, on.gone(message, { code, login }). Returns { send(message), leave() }.
 export function connect({ kind, code, version, make = false, on }) {
