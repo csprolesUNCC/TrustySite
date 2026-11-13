@@ -783,6 +783,158 @@ kbd {
 }
 
 /* =========================================================================
+   Craps (the felt, chips and controls are Blackjack's above)
+   ========================================================================= */
+.craps-top { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.dice { display: flex; gap: 14px; }
+.die {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  width: 64px;
+  height: 64px;
+  padding: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 14px 11px 15px 12px;
+  background: #fff;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .3), inset -3px -4px 0 rgba(0, 0, 0, .08);
+}
+.pip { width: 11px; height: 11px; place-self: center; border-radius: 50%; background: var(--ink); }
+.die[data-face="1"] .pip { width: 14px; height: 14px; background: var(--red); }
+.dice.is-rolling .die { animation: tumble .28s ease-in-out infinite alternate; }
+.dice.is-rolling .die + .die { animation-delay: -.14s; }
+@keyframes tumble { from { transform: translateY(-6px) rotate(-14deg); } to { transform: translateY(4px) rotate(16deg); } }
+
+/* The point: the number boxes along the top of the table, with the puck on the point (Off on the come-out) */
+.point-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: clamp(14px, 3vw, 22px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.point-row li {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  max-width: 76px;
+  min-height: 48px;
+  border: 2px solid rgba(255, 255, 255, .55);
+  border-radius: 8px;
+  font-family: var(--font-marker);
+  font-size: 1.15rem;
+}
+.point-row li.is-point { border-color: var(--highlight); background: rgba(255, 255, 255, .12); }
+.point-row .puck-off { flex: 0 0 auto; border: 0; }
+.point-row .puck-off[hidden] { display: none; }
+.puck {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.puck.is-on { position: absolute; top: -14px; right: -10px; width: 30px; height: 30px; background: #fff; color: var(--ink); font-size: .62rem; }
+
+/* The bets */
+.craps-spots { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+.spot-pass, .spot-field { grid-column: 1 / -1; }
+.spot {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px 64px 8px 14px;
+  border: 2px solid rgba(255, 255, 255, .8);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.spot:hover:not(:disabled) { background: rgba(255, 255, 255, .14); }
+.spot:focus-visible { outline: 3px solid var(--highlight); outline-offset: 2px; }
+.spot:disabled { cursor: default; }
+.spot.is-closed { border-style: dashed; border-color: rgba(255, 255, 255, .45); }
+.spot.is-closed .spot-name, .spot.is-closed .spot-pays { opacity: .7; }
+.spot-name { font-family: var(--font-marker); font-size: 1.15rem; line-height: 1.15; }
+.field-nums { margin-left: 6px; font-family: var(--font-body); font-size: .8rem; font-weight: 800; letter-spacing: .02em; color: var(--highlight); }
+.spot-pays { font-size: .8rem; font-weight: 700; color: rgba(255, 255, 255, .88); }
+.spot-chip {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 6px;
+  border: 3px dashed #fff;
+  border-radius: 999px;
+  background: var(--blue);
+  box-shadow: 0 0 0 2px var(--ink);
+  font-family: var(--font-marker);
+  font-size: .82rem;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+.spot-chip[hidden] { display: none; }
+.spot.is-new .spot-chip { background: #8c6a00; }
+.spot[data-result="win"] { border-color: var(--highlight); background: rgba(255, 228, 92, .18); }
+.spot[data-result="win"] .spot-chip { background: var(--highlight); color: var(--ink); border-color: var(--ink); }
+.spot[data-result="lose"] .spot-chip { background: var(--red); }
+.spot[data-result="push"] .spot-chip { background: #fff; color: var(--ink); border-color: var(--ink); }
+
+.roll-history { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; min-height: 30px; margin-top: 12px; }
+.roll-history .stat-label { flex: none; color: rgba(255, 255, 255, .8); }
+.roll-history ol { display: flex; gap: 5px; margin: 0; padding: 0; overflow: hidden; list-style: none; }
+.roll-history li { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: rgba(0, 0, 0, .28); font-size: .8rem; font-weight: 800; }
+.roll-history li:first-child { background: #fff; color: var(--ink); }
+.roll-history li.is-seven { background: var(--red); color: #fff; }
+
+.craps-chips { display: grid; gap: 8px; }
+.chip-btn[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink), 0 0 0 6px var(--highlight), 2px 3px 0 6px var(--ink); }
+.craps-controls .action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.craps-controls .action-row #roll-btn { grid-column: 1 / -1; }
+@media (max-width: 960px) {
+  .craps-controls .action-row { order: -1; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+  .craps-controls .action-row #roll-btn { grid-column: auto; }
+  .craps-controls .craps-chips { order: -2; }
+  .craps-controls .chips { justify-content: center; }
+  .craps-controls #chip-label { text-align: center; }
+}
+@media (max-width: 560px) {
+  .die { width: 50px; height: 50px; padding: 7px; border-radius: 11px 9px 12px 10px; }
+  .pip { width: 9px; height: 9px; }
+  .die[data-face="1"] .pip { width: 11px; height: 11px; }
+  .dice { gap: 10px; }
+  .point-row { gap: 4px; margin-top: 12px; }
+  .point-row li { min-height: 40px; font-size: .95rem; }
+  .puck { width: 34px; height: 34px; font-size: .64rem; }
+  .puck.is-on { top: -12px; right: -8px; width: 26px; height: 26px; font-size: .55rem; }
+  .craps-spots { gap: 6px; }
+  .spot { min-height: 56px; padding: 6px 52px 6px 10px; }
+  .spot-name { font-size: 1rem; }
+  .field-nums { display: block; margin: 0; font-size: .72rem; }
+  .spot-pays { font-size: .72rem; }
+  .spot-chip { right: 6px; min-width: 38px; height: 38px; font-size: .72rem; border-width: 2px; }
+  .roll-history { margin-top: 8px; }
+}
+
+/* =========================================================================
    Trustle
    ========================================================================= */
 .trustle {

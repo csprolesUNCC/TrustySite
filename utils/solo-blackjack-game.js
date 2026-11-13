@@ -1,4 +1,4 @@
-import { randomBytes, randomInt } from 'node:crypto';
+import { memoryGames, defaults } from './solo-store.js';
 import {
   newShoe, deal, insure, insuranceCost, hit, stand, double, split, canDouble, canSplit, raiseCost, dealerStep,
   payouts, view, isBet, BETS, RESHUFFLE_BELOW,
@@ -133,24 +133,5 @@ export async function play(deps, userId, move) {
   return reply(doc, { bank });
 }
 
-// Games kept in memory, for the tests and tools/dev-server.mjs. The real ones are in MongoDB (mongoGames() in
-// utils/solo-blackjack.js); both store copies, so a game only changes when it's saved.
-export function memoryGames() {
-  const games = new Map();
-  return {
-    games,
-    async load(userId) { return games.has(userId) ? structuredClone(games.get(userId)) : null; },
-    async save(userId, doc, v) {
-      if ((games.has(userId) ? games.get(userId).v : 0) !== v) return false;
-      games.set(userId, structuredClone(doc));
-      return true;
-    },
-  };
-}
-
-// Real randomness: nobody sees the shoe, but there's no point making it guessable either.
-export const defaults = {
-  now: Date.now,
-  random: () => randomInt(2 ** 32) / 2 ** 32,
-  newId: () => randomBytes(8).toString('hex'),
-};
+// Games in memory (tests, tools/dev-server.mjs) and real randomness: see utils/solo-store.js.
+export { memoryGames, defaults };

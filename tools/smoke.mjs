@@ -1,8 +1,8 @@
 // Loads every page in a real browser against tools/dev-server.mjs, at phone and desktop widths, logged out
 // and logged in, and fails if any page throws, logs an error, requests a missing file, scrolls sideways, has a
 // broken image or link, or has an accessibility problem axe-core can find. Then two people play Trusty Fever online
-// and a hand of Blackjack for clicks (the dev server runs the rooms, the tables and a pretend click bank), and every
-// online screen gets the same checks.
+// and a hand of Blackjack for clicks, and one plays Craps (the dev server runs the rooms, the tables and a pretend
+// click bank), and every online screen gets the same checks.
 //   npm run smoke   (needs Playwright: preinstalled in Claude Code cloud sessions, otherwise `npx playwright install chromium`
 //                    and `npm i -D playwright`)
 import { createRequire } from 'node:module';
@@ -205,6 +205,43 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Blackjack for clicks\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
+// Trusty Craps for clicks: carson bets the Pass Line and the Field and rolls until the Pass Line is decided, at
+// phone and desktop widths.
+{
+  const found = [];
+  const { pages: [player], close } = await twoPeople(found);
+  const check = async (what) => found.push(...(await axeProblems(player)).map((v) => `${what}: ${v}`));
+  const rolls = () => player.$eval('#history', (el) => el.children.length);
+  try {
+    for (const width of [375, 1280]) {
+      await player.setViewportSize({ width, height: 800 });
+      await player.goto(`${BASE}/pages/games/craps.html`, { waitUntil: 'networkidle' });
+      await player.waitForFunction(() => document.querySelector('#bank').textContent !== '…', null, { timeout: 5000 });
+      await check(`${width}px, before a roll`);
+      const passDown = await player.$eval('[data-spot="pass"]', (el) => el.classList.contains('is-down'));
+      if (!passDown) await player.click('[data-spot="pass"]');
+      await player.click('[data-spot="field"]');
+      for (let i = 0; i < 40; i++) {
+        const before = await rolls();
+        await player.waitForFunction(() => !document.querySelector('#roll-btn').disabled, null, { timeout: 5000 });
+        await player.click('#roll-btn');
+        await player.waitForFunction((n) => document.querySelector('#history').children.length !== n || document.querySelector('#history').children.length === 12, before, { timeout: 5000 });
+        await player.waitForFunction(() => document.querySelector('#roll-btn').textContent === 'Roll', null, { timeout: 5000 });
+        if (!(await player.$eval('[data-spot="pass"]', (el) => el.classList.contains('is-down')))) break;
+      }
+      if (await player.$eval('[data-spot="pass"]', (el) => el.classList.contains('is-down'))) found.push(`${width}px: the Pass Line never got decided`);
+      if (!/win|takes|back|natural|craps|out|point/i.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px: no word on the roll`);
+      await check(`${width}px, after rolling`);
+      const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      if (wide) found.push(`${width}px: scrolls sideways`);
+    }
+  } catch (e) {
+    found.push(`didn't get through a game: ${e.message.split('\n')[0]}`);
+  }
+  await close();
+  if (found.length) problems.push(`Trusty Craps for clicks\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
 for (const href of links) {
   const res = await fetch(href);
   if (res.status >= 400) problems.push(`broken link: ${href.replace(BASE, '')} (${res.status})`);
@@ -212,7 +249,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table)${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="game-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Craps — Trusty da Horse</title>
+    <meta name="description" content="Roll the dice at the horse casino! Bet your site clicks on the Pass Line, Don't Pass, the Field and more at Trusty Craps.">
+    <link rel="canonical" href="https://trustydahorse.com/pages/games/craps.html">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Craps">
+    <meta property="og:description" content="Roll the dice at the horse casino! Bet your clicks on the Pass Line.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/casino.html">The Casino</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">The horse casino</p>
+                    <h1>Trusty Craps</h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="container game-layout">
+            <section class="game-main" aria-label="Craps table">
+                <div class="casino craps">
+                    <div class="craps-top">
+                        <h2 class="hand-label"><img class="dealer-avatar" src="/images/trusty/trusty-v2-176.webp" alt="" width="64" height="50"> Trusty’s dice</h2>
+                        <div class="dice" id="dice" role="img" aria-label="No roll yet">
+                            <div class="die" aria-hidden="true"></div>
+                            <div class="die" aria-hidden="true"></div>
+                        </div>
+                    </div>
+
+                    <ol class="point-row" id="point-row" aria-label="The point">
+                        <li class="puck-off" id="puck-off"><span class="puck">Off</span></li>
+                        <li data-point="4">4</li>
+                        <li data-point="5">5</li>
+                        <li data-point="6">Six</li>
+                        <li data-point="8">8</li>
+                        <li data-point="9">Nine</li>
+                        <li data-point="10">10</li>
+                    </ol>
+
+                    <p class="casino-status" id="status" role="status" aria-live="polite">Come-out roll!</p>
+
+                    <div class="craps-spots" id="spots" role="group" aria-label="Bets">
+                        <button class="spot spot-pass" type="button" data-spot="pass"><span class="spot-name">Pass Line</span><span class="spot-pays">Pays 1 to 1</span><span class="spot-chip" aria-hidden="true"></span></button>
+                        <button class="spot" type="button" data-spot="dontPass"><span class="spot-name">Don’t Pass</span><span class="spot-pays">Pays 1 to 1 · 12 pushes</span><span class="spot-chip" aria-hidden="true"></span></button>
+                        <button class="spot" type="button" data-spot="odds"><span class="spot-name">Odds</span><span class="spot-pays" id="odds-pays">Behind the line, after a point</span><span class="spot-chip" aria-hidden="true"></span></button>
+                        <button class="spot spot-field" type="button" data-spot="field"><span class="spot-name">Field <span class="field-nums">2 · 3 · 4 · 9 · 10 · 11 · 12</span></span><span class="spot-pays">1 to 1 · 2 pays double · 12 pays triple</span><span class="spot-chip" aria-hidden="true"></span></button>
+                        <button class="spot" type="button" data-spot="seven"><span class="spot-name">Any Seven</span><span class="spot-pays">Pays 4 to 1</span><span class="spot-chip" aria-hidden="true"></span></button>
+                        <button class="spot" type="button" data-spot="craps"><span class="spot-name">Any Craps</span><span class="spot-pays">2, 3 or 12 · pays 7 to 1</span><span class="spot-chip" aria-hidden="true"></span></button>
+                    </div>
+
+                    <div class="roll-history">
+                        <span class="stat-label">Last rolls</span>
+                        <ol id="history" aria-label="Last rolls, newest first"></ol>
+                    </div>
+
+                    <div class="casino-lobby" id="lobby" data-auth-show="out">
+                        <p class="overlay-kicker">Play for clicks</p>
+                        <h2 class="overlay-title">Log in to play</h2>
+                        <p class="lobby-sub">Your bets are your real Trusty clicks, so you need an account.</p>
+                        <div class="overlay-actions">
+                            <a class="btn btn-lg btn-highlight" id="lobby-login-link" href="/pages/auth/login.html">Log in</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="game-side">
+                <div class="panel casino-controls craps-controls" id="controls" data-auth-show="in">
+                    <div class="bankroll">
+                        <div>
+                            <span class="stat-label">Your clicks</span>
+                            <span class="bankroll-amount" id="bank">…</span>
+                        </div>
+                        <div>
+                            <span class="stat-label">On the table</span>
+                            <span class="bankroll-amount" id="on-table">0</span>
+                        </div>
+                    </div>
+                    <p class="side-note casino-today" id="today" hidden></p>
+
+                    <div class="craps-chips">
+                        <span class="stat-label" id="chip-label">Chip: tap a bet on the table to put it down</span>
+                        <div class="chips" role="group" aria-labelledby="chip-label">
+                            <button class="chip-btn" type="button" data-clicks="10" aria-pressed="true">10</button>
+                            <button class="chip-btn" type="button" data-clicks="50" aria-pressed="false">50</button>
+                            <button class="chip-btn" type="button" data-clicks="100" aria-pressed="false">100</button>
+                            <button class="chip-btn" type="button" data-clicks="500" aria-pressed="false">500</button>
+                        </div>
+                    </div>
+
+                    <div class="action-row">
+                        <button class="btn btn-highlight" type="button" id="roll-btn" disabled>Roll</button>
+                        <button class="btn btn-outline" type="button" id="again-btn" disabled>Same bets</button>
+                        <button class="btn btn-ghost" type="button" id="clear-btn" disabled>Clear</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">House rules</h2>
+                    <ul class="how-to bullets">
+                        <li><span class="keys">&#9856;</span> On the come-out roll, the Pass Line wins on 7 or 11 and loses on 2, 3 or 12. Any other number becomes the point.</li>
+                        <li><span class="keys">&#9857;</span> Then keep rolling: the point again wins the Pass Line, a 7 first loses it. Don’t Pass is the other way round (and a 12 on the come-out is a push).</li>
+                        <li><span class="keys">&#9858;</span> Once there’s a point, put Odds behind your Pass Line, up to twice it. They pay true odds: 2 to 1 on 4 and 10, 3 to 2 on 5 and 9, 6 to 5 on 6 and 8.</li>
+                        <li><span class="keys">&#9859;</span> Field, Any Seven and Any Craps are one-roll bets: they win or lose on the next roll.</li>
+                    </ul>
+                </div>
+                <div class="panel desktop-only">
+                    <h2 class="panel-title">Shortcuts</h2>
+                    <ul class="how-to">
+                        <li><span class="keys"><kbd>R</kbd><kbd>Enter</kbd></span> Roll</li>
+                        <li><span class="keys"><kbd>1</kbd>–<kbd>4</kbd></span> Pick a chip</li>
+                        <li><span class="keys"><kbd>A</kbd></span> Same bets again</li>
+                        <li><span class="keys"><kbd>C</kbd></span> Clear new bets</li>
+                    </ul>
+                </div>
+                <p class="side-note">Bets are your real site clicks, 10 to 500 a spot. Once you’re 5,000 up or down for the day, betting waits until midnight.</p>
+            </aside>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
+        import { isForeignKey, isActivationKey } from '/scripts/game-kit.js';
+        import { SPOTS, NAMES, BETS, canBet, oddsMax, callOut } from '/scripts/craps.js';
+
+        // Every roll is for your real site clicks: the site's API (?action=craps, utils/solo-craps.js) stakes the new
+        // bets at the click bank, rolls the dice and pays out what they decide. The page only picks bets and draws
+        // what it's told: dice rolled in the browser could be rigged.
+
+        const API = '/api/leaderboard?action=craps';
+        const ROLL_MS = 700; // the dice tumble at least this long
+        const $ = (id) => document.getElementById(id);
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const clicksText = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        const PAYS = { pass: 'pays 1 to 1', dontPass: 'pays 1 to 1', odds: 'pays true odds', field: 'pays 1 to 1, double on 2, triple on 12', seven: 'pays 4 to 1', craps: 'pays 7 to 1' };
+        const ODDS_PAYS = { 4: '2 to 1', 10: '2 to 1', 5: '3 to 2', 9: '3 to 2', 6: '6 to 5', 8: '6 to 5' };
+        const POINT_WORDS = { 6: 'Six', 9: 'Nine' };
+
+        // game: the API's last answer. draft: new bets for the next roll, { [spot]: amount }. again: the last roll's
+        // new bets. fresh: show the last roll's result (until you start betting again).
+        const state = { game: null, failed: false, busy: false, rolling: false, draft: {}, again: {}, chip: 10, fresh: false };
+        const wallet = { clicks: null, today: null, limits: null };
+
+        /* ---------- Dice ---------- */
+
+        // Which of the 3 x 3 spots (1-9, row by row) have a pip on each face.
+        const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
+        function drawDie(el, face) {
+            el.dataset.face = face || '';
+            el.replaceChildren(...(PIPS[face] || []).map((n) => h('span', { class: 'pip', style: { gridRow: String(Math.ceil(n / 3)), gridColumn: String(((n - 1) % 3) + 1) } })));
+        }
+        function drawDice(dice) {
+            const els = $('dice').children;
+            drawDie(els[0], dice && dice[0]);
+            drawDie(els[1], dice && dice[1]);
+            $('dice').setAttribute('aria-label', dice ? `Dice: ${dice[0]} and ${dice[1]}, ${dice[0] + dice[1]}` : 'No roll yet');
+        }
+
+        // The dice tumble, showing random faces, until `done` settles.
+        async function tumble(done) {
+            const box = $('dice');
+            box.classList.add('is-rolling');
+            const face = () => 1 + Math.floor(Math.random() * 6);
+            const spin = reduceMotion.matches ? null : setInterval(() => drawDice([face(), face()]), 90);
+            try {
+                const [result] = await Promise.all([done, sleep(reduceMotion.matches ? 0 : ROLL_MS)]);
+                return result;
+            } finally {
+                clearInterval(spin);
+                box.classList.remove('is-rolling');
+            }
+        }
+
+        /* ---------- What's on the table ---------- */
+
+        const table = () => (state.game ? state.game.table : { point: null, bets: {} });
+        const onTable = (spot) => table().bets[spot] || 0;
+        const draftTotal = () => Object.values(state.draft).reduce((a, b) => a + b, 0);
+        const tableTotal = () => Object.values(table().bets).reduce((a, b) => a + b, 0);
+        const limits = () => (state.game && state.game.bets) || BETS;
+        const free = () => (wallet.clicks == null ? 0 : wallet.clicks - draftTotal());
+        // The most that can go on this spot now (on the table plus this roll's new bet).
+        const spotMax = (spot) => (spot === 'odds' ? oddsMax(onTable('pass')) : limits().max);
+
+        // Why a chip can't go on this spot now, or null.
+        function spotProblem(spot) {
+            if (!canBet(table(), spot)) {
+                if (spot === 'odds') return table().point == null ? 'Odds go behind the Pass Line once there’s a point.' : !onTable('pass') ? 'Odds need a Pass Line bet from the come-out roll.' : 'Your Odds are already down.';
+                return 'Line bets go down on the come-out roll. This one rides until the point is decided.';
+            }
+            return null;
+        }
+
+        function addChip(spot) {
+            if (state.busy || !state.game) return;
+            const problem = spotProblem(spot);
+            if (problem) return toast(problem, 'info', 5000);
+            const now = state.draft[spot] || 0;
+            const room = Math.min(spotMax(spot) - now, free());
+            const add = Math.min(state.chip, Math.floor(room / limits().step) * limits().step);
+            if (add <= 0) return toast(free() < limits().step ? 'That’s all your clicks on the table.' : `That’s the most you can bet on ${NAMES[spot]}.`, 'info', 4000);
+            state.draft = { ...state.draft, [spot]: now + add };
+            state.fresh = false;
+            render();
+        }
+
+        // The last roll's new bets, where they can still go.
+        function againBets() {
+            const bets = {};
+            let total = 0;
+            for (const [spot, amount] of Object.entries(state.again)) {
+                if (spotProblem(spot) || amount > spotMax(spot)) continue;
+                bets[spot] = amount;
+                total += amount;
+            }
+            return total && total <= (wallet.clicks || 0) ? bets : null;
+        }
+
+        /* ---------- Rendering ---------- */
+
+        // What the last roll did to your clicks, in words ('' when it decided nothing).
+        function lastResult(last) {
+            if (!last || !last.decided.length) return '';
+            const won = last.decided.filter((d) => d.result === 'win').reduce((sum, d) => sum + d.payout - d.amount, 0);
+            const lost = last.decided.filter((d) => d.result === 'lose').reduce((sum, d) => sum + d.amount, 0);
+            if (won && lost) return ` You win ${clicksText(won)} and lose ${clicksText(lost)}.`;
+            if (won) return ` You win ${clicksText(won)}!`;
+            if (lost) return ` Trusty takes ${clicksText(lost)}.`;
+            return ' You get your clicks back.';
+        }
+
+        function statusText() {
+            if (!session.loggedIn) return 'Log in to play for clicks.';
+            if (state.failed) return 'Trusty dropped the dice. Reload to try again.';
+            if (!state.game) return 'Pulling up to the table…';
+            if (state.rolling) return 'Rolling…';
+            const { point } = table();
+            const last = state.game.last;
+            if (state.fresh && last) {
+                return `${callOut(last.dice, last.point)}${lastResult(last)}`;
+            }
+            if (point == null) return 'Come-out roll! Bet the Pass Line or Don’t Pass, then roll.';
+            return `The point is ${point}. Roll a ${point} before a 7!`;
+        }
+
+        function renderSpots() {
+            const last = state.fresh && state.game && state.game.last;
+            for (const el of $('spots').children) {
+                const spot = el.dataset.spot;
+                const down = onTable(spot);
+                const adding = state.draft[spot] || 0;
+                const decided = last && last.decided.find((d) => d.spot === spot);
+                const chip = el.querySelector('.spot-chip');
+                chip.textContent = decided && !down && !adding
+                    ? (decided.result === 'win' ? `+${fmt(decided.payout - decided.amount)}` : decided.result === 'push' ? 'Push' : `−${fmt(decided.amount)}`)
+                    : down && adding ? `${fmt(down)} +${fmt(adding)}` : down || adding ? fmt(down + adding) : '';
+                chip.hidden = !chip.textContent;
+                el.dataset.result = decided && !down && !adding ? decided.result : '';
+                el.classList.toggle('is-down', Boolean(down));
+                el.classList.toggle('is-new', Boolean(adding));
+                const closed = !state.game || Boolean(spotProblem(spot));
+                el.classList.toggle('is-closed', closed);
+                el.disabled = state.busy || !session.loggedIn;
+                const bits = [`${NAMES[spot]}, ${PAYS[spot]}`];
+                if (down) bits.push(`${clicksText(down)} riding`);
+                if (adding) bits.push(`${clicksText(adding)} for the next roll`);
+                if (decided && !down && !adding) bits.push(decided.result === 'win' ? `won ${clicksText(decided.payout - decided.amount)}` : decided.result === 'push' ? 'pushed' : 'lost');
+                bits.push(closed ? 'not open now' : `add ${state.chip}`);
+                el.setAttribute('aria-label', bits.join('. '));
+            }
+            const { point } = table();
+            $('odds-pays').textContent = point != null ? `Pays ${ODDS_PAYS[point]} on ${point} · up to 2× the line` : 'Behind the line, after a point';
+        }
+
+        function renderPoint() {
+            const { point } = table();
+            for (const li of $('point-row').children) {
+                if (!li.dataset.point) continue;
+                const on = Number(li.dataset.point) === point;
+                li.classList.toggle('is-point', on);
+                li.replaceChildren(POINT_WORDS[li.dataset.point] || li.dataset.point, ...(on ? [h('span', { class: 'puck is-on' }, 'On')] : []));
+            }
+            $('puck-off').hidden = point != null;
+            $('point-row').setAttribute('aria-label', point == null ? 'No point: come-out roll' : `The point is ${point}`);
+        }
+
+        function renderHistory() {
+            const list = state.game ? [...state.game.history].reverse().slice(0, 12) : [];
+            $('history').replaceChildren(...list.map((n) => h('li', { class: n === 7 ? 'is-seven' : '' }, String(n))));
+        }
+
+        function render() {
+            const busy = state.busy;
+            $('status').textContent = statusText();
+            renderSpots();
+            renderPoint();
+            renderHistory();
+            if (!state.rolling) drawDice(state.game && state.game.last ? state.game.last.dice : null);
+            $('bank').textContent = wallet.clicks != null ? fmt(wallet.clicks) : '…';
+            $('on-table').textContent = fmt(tableTotal() + draftTotal());
+            for (const chip of document.querySelectorAll('[data-clicks]')) {
+                chip.setAttribute('aria-pressed', String(Number(chip.dataset.clicks) === state.chip));
+                chip.disabled = busy;
+            }
+            const anything = draftTotal() > 0 || tableTotal() > 0;
+            $('roll-btn').disabled = busy || !state.game || !anything;
+            $('roll-btn').textContent = state.rolling ? 'Rolling…' : 'Roll';
+            $('clear-btn').disabled = busy || !draftTotal();
+            $('again-btn').disabled = busy || !state.game || draftTotal() > 0 || !againBets();
+            $('today').hidden = wallet.today == null;
+            if (wallet.today != null) {
+                const { lossPerDay, winPerDay } = wallet.limits || { lossPerDay: 5000, winPerDay: 5000 };
+                const today = wallet.today;
+                $('today').textContent = `Today: ${today > 0 ? '+' : today < 0 ? '−' : ''}${fmt(Math.abs(today))} clicks. You can be up to ${fmt(winPerDay)} up or ${fmt(lossPerDay)} down a day.`;
+            }
+        }
+
+        /* ---------- Your clicks and the API ---------- */
+
+        function setWallet(mine) {
+            if (!mine || typeof mine.clicks !== 'number') return;
+            const before = wallet.clicks;
+            wallet.clicks = mine.clicks;
+            if (typeof mine.net === 'number') wallet.today = mine.net;
+            announceBalance(mine.clicks, before != null && mine.clicks > before ? mine.clicks - before : 0);
+        }
+
+        async function request(move) {
+            const res = await fetch(API, move
+                ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(move), credentials: 'same-origin' }
+                : { credentials: 'same-origin' });
+            if (res.status === 401) {
+                sessionExpired();
+                return null;
+            }
+            if (!res.ok) throw new Error(`Craps API: ${res.status}`);
+            return res.json();
+        }
+
+        async function load() {
+            if (!session.loggedIn) return;
+            try {
+                const game = await request(null);
+                if (!game) return;
+                state.game = game;
+                state.failed = false;
+                wallet.limits = game.limits || wallet.limits;
+                setWallet(game.bank);
+                if (game.refunded) toast(`${fmt(game.refunded)} clicks from a game that never finished came back to you.`, 'info', 7000);
+            } catch {
+                state.failed = true;
+            }
+            render();
+        }
+
+        // On phones and tablets the controls sit under the table: after a roll, keep the dice and the Roll button
+        // on screen together.
+        const stacked = matchMedia('(max-width: 960px)');
+        function showTable() {
+            if (!stacked.matches) return;
+            const top = document.querySelector('.casino').getBoundingClientRect().top - 12;
+            const bottom = $('roll-btn').getBoundingClientRect().bottom + 12;
+            const by = bottom - top <= innerHeight ? top : bottom - innerHeight;
+            if (Math.abs(by) > 1) scrollBy({ top: by, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+        }
+
+        async function rollDice(bets = state.draft) {
+            if (state.busy || !state.game || $('roll-btn').disabled && bets === state.draft) return;
+            state.busy = true;
+            state.rolling = true;
+            render();
+            showTable();
+            try {
+                const next = await tumble(request({ do: 'roll', bets }));
+                if (!next) return;
+                const rolled = next.rolls !== state.game.rolls;
+                state.game = next;
+                if (rolled) {
+                    state.again = { ...bets };
+                    state.draft = {};
+                    state.fresh = true;
+                }
+                setWallet(next.bank);
+                if (next.error) toast(next.error, 'info', 7000);
+            } catch {
+                toast('Trusty dropped the dice. Try that again.', 'error', 5000);
+            } finally {
+                state.busy = false;
+                state.rolling = false;
+                render();
+            }
+        }
+
+        function sameAgain() {
+            const bets = againBets();
+            if (!bets || $('again-btn').disabled) return;
+            rollDice(bets);
+        }
+
+        function clearDraft() {
+            if (state.busy) return;
+            state.draft = {};
+            render();
+        }
+
+        function pickChip(value) {
+            state.chip = value;
+            render();
+        }
+
+        /* ---------- Buttons and keys ---------- */
+
+        for (const el of $('spots').children) el.addEventListener('click', () => addChip(el.dataset.spot));
+        for (const chip of document.querySelectorAll('[data-clicks]')) chip.addEventListener('click', () => pickChip(Number(chip.dataset.clicks)));
+        $('roll-btn').addEventListener('click', () => rollDice());
+        $('again-btn').addEventListener('click', sameAgain);
+        $('clear-btn').addEventListener('click', clearDraft);
+
+        const CHIPS = [10, 50, 100, 500];
+        document.addEventListener('keydown', (e) => {
+            if (isForeignKey(e) || isActivationKey(e) || !session.loggedIn) return;
+            const k = e.key.toLowerCase();
+            if (k === 'r' || k === 'enter') rollDice();
+            else if (k === 'a') sameAgain();
+            else if (k === 'c') clearDraft();
+            else if (/^[1-4]$/.test(k)) pickChip(CHIPS[Number(k) - 1]);
+        });
+
+        // Logging out elsewhere (or a 401) puts the page back to "log in to play".
+        let wasIn = session.loggedIn;
+        onSession(({ loggedIn }) => {
+            if (loggedIn === wasIn) return;
+            wasIn = loggedIn;
+            if (!loggedIn) {
+                state.game = null;
+                state.draft = {};
+                Object.assign(wallet, { clicks: null, today: null });
+            } else {
+                load();
+            }
+            render();
+        });
+
+        $('lobby-login-link').href = loginHref();
+        render();
+        sessionReady.then(load);
+    </script>
+</body>
+</html>

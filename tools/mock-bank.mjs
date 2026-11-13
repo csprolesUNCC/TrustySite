@@ -2,14 +2,14 @@
 // tools/dev-server.mjs runs and for the tests. Same answers and limits as the real one; nothing is saved, and
 // everyone starts with `startingClicks` (the pretend API's header clicker says 12,345 too).
 
-import { LIMITS } from '../utils/bank-rules.js';
+import { LIMITS, GAMES, maxPayout } from '../utils/bank-rules.js';
 
 export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
   const accounts = new Map();
   const pots = new Map();
   const later = () => new Promise((r) => setTimeout(r, delay)); // the real bank is a request away
   const account = (userId) => {
-    if (!accounts.has(userId)) accounts.set(userId, { clicks: startingClicks, net: 0, open: new Map(), month: { blackjack: 0, fever: 0 } });
+    if (!accounts.has(userId)) accounts.set(userId, { clicks: startingClicks, net: 0, open: new Map(), month: Object.fromEntries(GAMES.map((g) => [g, 0])) });
     return accounts.get(userId);
   };
   const fmt = (n) => new Intl.NumberFormat('en-US').format(n);
@@ -44,7 +44,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     const balances = {};
     for (const { userId, betId, payout } of bets) {
       const bet = account(userId).open.get(betId);
-      if (bet && payout <= (bet.game === 'blackjack' ? bet.amount * 3 : bet.amount)) close(userId, betId, payout, balances);
+      if (bet && payout <= maxPayout(bet)) close(userId, betId, payout, balances);
     }
     return { ok: true, balances };
   }

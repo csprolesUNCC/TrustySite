@@ -1,8 +1,9 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
-import { LIMITS, STALE_MS, GAMES, isBetId, signedOp } from './bank-rules.js';
+import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout } from './bank-rules.js';
 
-// The click bank: betting site clicks at Trusty Blackjack's online tables and on online Trusty Fever games,
+// The click bank: betting site clicks at Trusty Blackjack (on your own and at the online tables), Trusty Craps and
+// on online Trusty Fever games,
 // served from api/leaderboard.js as ?action=bank so it doesn't take up another Vercel function. Clicks live in
 // `click_game` (one document per account: the header clicker's total), and every bet and every payout is one
 // atomic update of that document, so two tabs or a retried request can never spend the same clicks twice or be
@@ -36,8 +37,9 @@ async function rollover(col, userId, today) {
   await col.updateOne({ userId, 'bank.day': { $ne: today } }, { $set: { 'bank.day': today, 'bank.net': 0 } });
 }
 
-// solo: a bet from Trusty Blackjack on your own (utils/solo-blackjack.js), which settles its own abandoned hands, so
-// refundStale() leaves it alone: otherwise walking away from a bad hand for 2 hours would get the bet back.
+// solo: a bet from a one-player game on the site's API (Blackjack on your own, Craps), which looks after its own
+// open bets, so refundStale() leaves it alone: otherwise walking away from a bad hand for 2 hours would get the bet
+// back.
 export async function stake(col, { userId, betId, amount, game, solo = false }, now = new Date()) {
   const today = dayOf(now);
   await rollover(col, userId, today);
@@ -91,13 +93,13 @@ async function openBet(col, userId, betId) {
   return doc ? doc.bank.open[betId] : null;
 }
 
-// Blackjack pays at most 3 times a bet (insurance); anything else settled this way is a refund at most.
+// A payout over maxPayout() (3 times a Blackjack bet, 8 times a Craps one, a refund otherwise) is refused.
 export async function settle(col, bets, now = new Date()) {
   const balances = {};
   for (const { userId, betId, payout } of bets) {
     const bet = await openBet(col, userId, betId);
     if (!bet) continue; // already settled (a retry), or given back
-    if (payout > (bet.game === 'blackjack' ? bet.amount * 3 : bet.amount)) {
+    if (payout > maxPayout(bet)) {
       console.error(`Bank: refused to pay ${payout} on a ${bet.amount}-click ${bet.game} bet.`);
       continue;
     }
@@ -143,8 +145,9 @@ export async function settlePot(col, pots, { potId, stakes, winners }, now = new
   return { ok: true, total: record.total, payouts: record.payouts.map(({ userId, payout }) => ({ userId, payout })), balances };
 }
 
-// Gives back bets left open for STALE_MS: their table or room went away before paying out. Solo Blackjack bets
-// are never given back here: that game stands and settles a hand left alone itself.
+// Gives back bets left open for STALE_MS: their table or room went away before paying out. Solo bets are never
+// given back here: solo Blackjack stands and settles a hand left alone itself, and a Craps bet stays on the table
+// until its player rolls again.
 export async function refundStale(col, userId, now = new Date()) {
   const doc = await col.findOne({ userId }, { projection: { 'bank.open': 1 } });
   const open = doc && doc.bank && doc.bank.open;

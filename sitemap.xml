@@ -47,7 +47,7 @@
 
     <url>
         <loc>https://trustydahorse.com/pages/games.html</loc>
-        <lastmod>2026-09-26</lastmod>
+        <lastmod>2026-11-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -89,7 +89,13 @@
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/games/casino.html</loc>
-        <lastmod>2026-11-11</lastmod>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/games/craps.html</loc>
+        <lastmod>2026-11-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
@@ -140,6 +146,12 @@
         <loc>https://trustydahorse.com/pages/radio.html</loc>
         <lastmod>2026-10-18</lastmod>
         <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://trustydahorse.com/pages/casino.html</loc>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
