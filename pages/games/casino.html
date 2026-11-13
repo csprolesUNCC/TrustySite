@@ -155,7 +155,7 @@
     <script type="module">
         import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
         import { isForeignKey, isActivationKey } from '/scripts/game-kit.js';
-        import { cardValue, isNatural, describe, MAX_HANDS, BETS, TABLE_PROTOCOL } from '/scripts/blackjack.js';
+        import { cardValue, isNatural, describe, MAX_HANDS, BETS, REVEAL, TABLE_PROTOCOL } from '/scripts/blackjack.js';
         import { roomsOpen, connect, newCode, roomLink, roomFromHash, bankStatus, ROOM_CODE } from '/scripts/rooms.js';
 
         // Every hand is for your real site clicks, two ways: on your own (solo), where the site's API deals each
@@ -556,10 +556,6 @@
             };
         }
 
-        // How long Trusty waits (ms) before turning his hole card over: after the card that ended your turn has
-        // landed (a hit to 21, a double, a bust), after you stand, or after a deal that ends the hand at once
-        // (a blackjack); then between each card he draws, so you can count along.
-        const REVEAL = { afterCard: 1000, afterStand: 500, afterDeal: 1200, perCard: 850 };
         const cardsIn = (round) => round.seats.reduce((n, s) => n + s.hands.reduce((m, x) => m + x.cards.length, 0), 0);
 
         // The API plays Trusty's whole turn at once; show it a card at a time, then the results and the clicks.

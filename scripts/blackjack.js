@@ -19,6 +19,10 @@ export const TABLE_PROTOCOL = 1;
 // Bets go up in tens, so 3:2 and insurance always come out in whole clicks. The click bank caps any bet at 500
 // too. Online tables and the solo game (utils/solo-blackjack.js) both take these.
 export const BETS = { min: 10, max: 500, step: 10 };
+// How long (ms) Trusty waits before turning his hole card over, by what ended the players' turn: a card (a hit
+// to 21, a double, a bust, a split), a stand, or the deal itself (a blackjack); then between the cards he draws,
+// so everyone can count along. The solo game (in the page) and the tables both go by these.
+export const REVEAL = { afterCard: 1000, afterStand: 500, afterDeal: 1200, perCard: 850 };
 export const isBet = (amount) => Number.isInteger(amount) && amount >= BETS.min && amount <= BETS.max && amount % BETS.step === 0;
 
 // What each kind of finished hand gives back, as a multiple of what was bet on it.

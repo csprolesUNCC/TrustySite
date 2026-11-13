@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Table, TIMES, MAX_SEATS, versionProblem } from '../realtime/table.js';
 import { CLOSE } from '../realtime/common.js';
-import { TABLE_PROTOCOL } from '../scripts/blackjack.js';
+import { TABLE_PROTOCOL, REVEAL } from '../scripts/blackjack.js';
 import { mockBank } from '../tools/mock-bank.mjs';
 
 const card = (text) => ({ rank: text.slice(0, -1), suit: text.slice(-1) });
@@ -44,6 +44,27 @@ function openTable(names, { clicks = 1000 } = {}) {
 test('a page and a table only talk if they speak the same version', () => {
   assert.equal(versionProblem(String(TABLE_PROTOCOL)), null);
   assert.match(versionProblem('0'), /reload/);
+});
+
+test('Trusty waits before turning his hole card over, then draws a card at a time', async () => {
+  const { table, people: [carson], run } = openTable(['carson']);
+  // carson 15 hits a 6 for 21 (which stands by itself); Trusty's 15 draws a 3.
+  table.shoe = rigged('10♠', '10♦', '5♣', '5♥', '6♠', '3♣');
+  await carson.say(table, { t: 'bet', amount: 100 });
+  await carson.say(table, { t: 'hit' });
+  assert.equal(table.phase, 'dealer');
+  const dealer = () => carson.last('table').round.dealer;
+  assert.equal(dealer()[1], null, 'not the moment the 21 lands');
+  run(REVEAL.afterCard - 100);
+  assert.equal(dealer()[1], null, 'still down just before the pause is up');
+  run(100);
+  assert.deepEqual(dealer().map((c) => c.rank), ['10', '5'], 'turned over on its own, before any draw');
+  run(TIMES.dealer - 100);
+  assert.equal(dealer().length, 2);
+  run(100);
+  assert.equal(dealer().length, 3);
+  run(TIMES.dealer);
+  assert.equal(table.phase, 'over');
 });
 
 test('everyone bets, the hand is dealt at once, and the winners get paid', async () => {

@@ -13,7 +13,7 @@
 // says no, { t: 'pong' }, and { t: 'error', message } before the table closes their connection.
 import {
   newShoe, deal, insure, insuranceCost, hit, stand, double, split, canDouble, canSplit, raiseCost, dealerStep,
-  payouts, view, isBet, BETS, RESHUFFLE_BELOW, TABLE_PROTOCOL,
+  payouts, view, isBet, BETS, REVEAL, RESHUFFLE_BELOW, TABLE_PROTOCOL,
 } from '../scripts/blackjack.js';
 import { CLOSE, send, refuse, flooding, parse, randomId } from './common.js';
 import { noBank } from './bank.js';
@@ -24,7 +24,7 @@ export const TIMES = {
   betting: 12000,         // once someone has bet, how long everyone else gets
   insurance: 12000,
   turn: 25000,            // for each hand
-  dealer: 700,            // between Trusty's cards
+  dealer: REVEAL.perCard, // between Trusty's cards (and before his hole card: REVEAL, by what ended the turn)
   results: 3500,          // before the next hand can start
   idle: 10 * 60 * 1000,   // no bet for this long and you're up from the table
 };
@@ -162,7 +162,7 @@ export class Table {
     if (!r || r.phase !== 'player' || r.seats[r.turn].id !== person.id || person.busy) return;
     if (action === 'hit') hit(r);
     else stand(r);
-    this.advance();
+    this.advance(action === 'hit' ? 'afterCard' : 'afterStand');
     this.sendAll();
   }
 
@@ -175,7 +175,7 @@ export class Table {
     const stake = { id: this.newId(), amount: raiseCost(r) };
     if (!(await this.charge(person, stake))) return;
     const same = this.round === r && r.phase === 'player' && `${r.turn}:${r.active}:${r.seats[r.turn].hands.length}` === spot;
-    if (same && (action === 'double' ? double(r, stake) : split(r, stake))) this.advance();
+    if (same && (action === 'double' ? double(r, stake) : split(r, stake))) this.advance('afterCard');
     else this.refund(person.id, stake);
     this.sendAll();
   }
@@ -191,12 +191,13 @@ export class Table {
     this.round = deal(this.shoe, players.map((p) => ({ id: p.id, stake: p.bet })));
     for (const p of players) p.bet = null;
     this.stage = '';
-    this.advance();
+    this.advance('afterDeal');
   }
 
   // After anything happens in a hand: decide for whoever got up, give whoever is up their time, and settle
-  // the hand once it's over.
-  advance() {
+  // the hand once it's over. `ended`: what just happened (a REVEAL key), for how long Trusty waits if it ended
+  // the players' turn. He keeps his hole card down meanwhile and turns it over as a step of its own.
+  advance(ended = 'afterStand') {
     const r = this.round;
     const here = (id) => this.people.some((p) => p.id === id);
     if (r.phase === 'insurance') r.seats.forEach((s, i) => { if (!s.decided && !here(s.id)) insure(r, i, null); });
@@ -209,7 +210,8 @@ export class Table {
     const stage = `${this.hands}:${r.phase}:${r.turn}:${r.active}`;
     if (stage === this.stage) return;
     this.stage = stage;
-    this.deadline = this.clock() + (r.phase === 'insurance' ? TIMES.insurance : r.phase === 'player' ? TIMES.turn : TIMES.dealer);
+    if (r.phase === 'dealer') r.holeHidden = true;
+    this.deadline = this.clock() + (r.phase === 'insurance' ? TIMES.insurance : r.phase === 'player' ? TIMES.turn : REVEAL[ended]);
   }
 
   timeUp(now) {
@@ -236,8 +238,14 @@ export class Table {
       }
       if (!this.deadline) this.advance();
     } else if (this.phase === 'dealer') {
-      if (dealerStep(r)) this.deadline = now + TIMES.dealer;
-      else this.advance();
+      if (r.holeHidden) {
+        r.holeHidden = false;
+        this.deadline = now + TIMES.dealer;
+      } else if (dealerStep(r)) {
+        this.deadline = now + TIMES.dealer;
+      } else {
+        this.advance();
+      }
     }
     this.sendAll();
   }
