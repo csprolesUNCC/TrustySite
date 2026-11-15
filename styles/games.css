@@ -1330,6 +1330,27 @@ kbd {
 .cine-lantern::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 2px; height: 40vh; margin-left: -1px; background: #ffd65a; }
 .cine-lantern::after { content: ""; position: absolute; left: 50%; top: 100%; width: 4px; height: 22px; margin-left: -2px; background: #ffd65a; }
 @keyframes cine-lantern-drop { from { translate: 0 -40vh; } }
+/* Strings of firecrackers down each side, going off from the bottom up */
+.cine-crackers { position: absolute; top: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 6vh; }
+.cine-crackers::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: #ffd65a; }
+.cine-crackers-left { left: clamp(6px, 2.5vw, 34px); }
+.cine-crackers-right { right: clamp(6px, 2.5vw, 34px); }
+.cine-crackers span {
+  position: relative;
+  width: clamp(12px, 2.2vw, 20px);
+  height: clamp(22px, 4.6vh, 40px);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  background: linear-gradient(180deg, #ffd65a 0 14%, #e0242f 14% 86%, #ffd65a 86%);
+  animation: cine-crack .32s ease-out forwards;
+  animation-delay: calc(.6s + var(--i) * .23s);
+}
+.cine-crackers span:nth-child(odd) { transform: rotate(-24deg); }
+.cine-crackers span:nth-child(even) { transform: rotate(24deg); }
+@keyframes cine-crack {
+  30% { scale: 2.4; background: #fff; border-color: #ffe45c; box-shadow: 0 0 34px 12px #ffe45c; }
+  to { scale: 3; opacity: 0; }
+}
 @media (max-height: 560px) {
   .cine-coin, .cine-trusty { display: none; }
 }

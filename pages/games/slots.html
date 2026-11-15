@@ -456,7 +456,7 @@
             for (let i = 0; i < count; i++) {
                 const r = 9 + Math.random() * 9;
                 coins.push(rain
-                    ? { x: Math.random() * canvas.width, y: -r - Math.random() * canvas.height * 1.2, vx: Math.random() * 2 - 1, vy: 3 + Math.random() * 4, r, turn: Math.random() * 6, holed }
+                    ? { x: Math.random() * canvas.width, y: -r - Math.random() * canvas.height * 1.2, vx: Math.random() * 2 - 1, vy: 3 + Math.random() * 4, r, turn: Math.random() * 6, holed, envelope: holed && i % 4 === 0 }
                     : { x: from.left + from.width / 2, y: from.top + from.height / 2, vx: Math.random() * 16 - 8, vy: -5 - Math.random() * 11, r, turn: Math.random() * 6, holed });
             }
             animate();
@@ -490,11 +490,159 @@
             tone(180 + Math.random() * 120, 0, 0.3, 'sawtooth', 0.03);
             animate();
         }
+        // A Chinese dragon, the kind that dances at New Year, flying across the whole screen: a head with horns
+        // and whiskers and a long body that ripples behind it. from: -1 comes in from the right.
+        let dragons = [];
+        function dragon({ from = 1, height = 0.3, delay = 0 } = {}) {
+            if (reduceMotion.matches) return;
+            later(() => {
+                fitCanvas();
+                const size = Math.max(15, Math.min(42, canvas.width / 24));
+                const length = DRAGON_SEGMENTS * size * 0.9;
+                dragons.push({
+                    from, size,
+                    x: from > 0 ? -size * 2 : canvas.width + size * 2,
+                    y: canvas.height * height,
+                    amp: Math.min(canvas.height * 0.09, size * 2.6),
+                    wave: (Math.PI * 2) / Math.max(260, canvas.width * 0.42),
+                    speed: (canvas.width + length + size * 4) / (60 * 3.4),
+                    gone: from > 0 ? canvas.width + length + size * 2 : -length - size * 2,
+                });
+                drums();
+                animate();
+            }, delay);
+        }
+        const DRAGON_SEGMENTS = 26;
+        function drawDragon(d) {
+            const { size: r, from } = d;
+            const gap = r * 0.9;
+            const at = (i) => {
+                const x = d.x - from * i * gap;
+                return { x, y: d.y + Math.sin(x * d.wave) * d.amp + Math.sin(i * 0.6 + d.x * 0.02) * r * 0.18 };
+            };
+            // The tail's tuft, then the body from the tail up, so each piece overlaps the one behind it.
+            const tail = at(DRAGON_SEGMENTS);
+            ctx.fillStyle = '#ffd65a';
+            ctx.beginPath();
+            ctx.moveTo(tail.x, tail.y - r * 0.5);
+            ctx.lineTo(tail.x - from * r * 1.8, tail.y);
+            ctx.lineTo(tail.x, tail.y + r * 0.5);
+            ctx.fill();
+            for (let i = DRAGON_SEGMENTS; i >= 1; i--) {
+                const p = at(i);
+                const rr = r * (1 - i / (DRAGON_SEGMENTS + 8)) * 0.82;
+                ctx.fillStyle = '#ffd65a';
+                ctx.beginPath();
+                ctx.moveTo(p.x - rr * 0.55, p.y - rr * 0.7);
+                ctx.lineTo(p.x - from * rr * 0.3, p.y - rr * 1.75);
+                ctx.lineTo(p.x + rr * 0.55, p.y - rr * 0.7);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
+                ctx.fillStyle = i % 2 ? '#e0242f' : '#b3121f';
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#ffd65a';
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(p.x, p.y + rr * 0.15, rr * 0.5, 0.15 * Math.PI, 0.85 * Math.PI);
+                ctx.strokeStyle = '#ffe9a8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            const head = at(0);
+            ctx.save();
+            ctx.translate(head.x, head.y);
+            ctx.scale(from, 1);
+            ctx.rotate(Math.cos(d.x * d.wave) * 0.35);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            // The mane, behind the head
+            ctx.fillStyle = '#ffb92e';
+            for (let i = 0; i < 5; i++) {
+                const a = Math.PI * (0.62 + i * 0.19);
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(a - 0.2) * r, Math.sin(a - 0.2) * r);
+                ctx.lineTo(Math.cos(a) * r * 2.1, Math.sin(a) * r * 2.1);
+                ctx.lineTo(Math.cos(a + 0.2) * r, Math.sin(a + 0.2) * r);
+                ctx.fill();
+            }
+            // Horns
+            ctx.strokeStyle = '#ffd65a';
+            ctx.lineWidth = Math.max(3, r * 0.16);
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.1, -r * 0.9); ctx.lineTo(-r * 0.75, -r * 2); ctx.moveTo(-r * 0.45, -r * 1.5); ctx.lineTo(-r * 0.05, -r * 1.95);
+            ctx.moveTo(r * 0.35, -r * 0.95); ctx.lineTo(r * 0.1, -r * 1.75);
+            ctx.stroke();
+            // The head and the snout
+            ctx.fillStyle = '#e0242f';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(r * 1.05, r * 0.3, r * 0.85, r * 0.55, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // The mouth, with a tooth, and the nostril
+            ctx.beginPath();
+            ctx.moveTo(r * 0.45, r * 0.55); ctx.quadraticCurveTo(r * 1.1, r * 0.75, r * 1.8, r * 0.4);
+            ctx.strokeStyle = '#3a0308';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(r * 1.2, r * 0.66); ctx.lineTo(r * 1.32, r * 0.95); ctx.lineTo(r * 1.45, r * 0.6);
+            ctx.fill();
+            ctx.fillStyle = '#3a0308';
+            ctx.beginPath();
+            ctx.arc(r * 1.6, r * 0.1, r * 0.09, 0, Math.PI * 2);
+            ctx.fill();
+            // The eye and its brow
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(r * 0.3, -r * 0.3, r * 0.34, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#1b1b1f';
+            ctx.beginPath();
+            ctx.arc(r * 0.4, -r * 0.27, r * 0.16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffd65a';
+            ctx.lineWidth = Math.max(3, r * 0.14);
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.15, -r * 0.6); ctx.lineTo(r * 0.75, -r * 0.72);
+            ctx.stroke();
+            // Whiskers, trailing back
+            ctx.lineWidth = Math.max(2, r * 0.09);
+            const sway = Math.sin(d.x * 0.04) * r * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(r * 1.7, r * 0.2); ctx.bezierCurveTo(r * 2.6, -r * 0.5, r * 1.2, -r * 1.5 + sway, -r * 0.2, -r * 2.5 + sway);
+            ctx.moveTo(r * 1.6, r * 0.6); ctx.bezierCurveTo(r * 2.4, r * 1.4, r * 0.8, r * 1.9 + sway, -r * 0.6, r * 2.3 + sway);
+            ctx.stroke();
+            ctx.restore();
+        }
+        // The drums and cymbals of a dragon dance: dong, dong, dong-dong, chiang.
+        function drums() {
+            const beat = [0, 0.34, 0.68, 0.85, 1.02, 1.36, 1.7, 1.87, 2.04, 2.38];
+            beat.forEach((t, i) => {
+                tone(i % 5 === 4 ? 72 : 92, t, 0.26, 'sine', 0.22);
+                if (i % 5 === 4) for (const f of [3100, 4300, 5200]) tone(f, t, 0.3, 'square', 0.012);
+            });
+        }
+        // A string of firecrackers going off.
+        const crackle = (count, delay = 0) => { for (let i = 0; i < count; i++) later(() => tone(500 + Math.random() * 1400, 0, 0.045, 'square', 0.05), delay + i * 115 + Math.random() * 60); };
+
         const fireworks = (theme, count, every) => { for (let i = 0; i < count; i++) later(() => firework(theme), i * every + Math.random() * every * 0.5); };
         function drawFx() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             coins = coins.filter((c) => c.y < canvas.height + 40 || c.vy < 0);
             sparks = sparks.filter((s) => s.life > 0);
+            dragons = dragons.filter((d) => (d.from > 0 ? d.x < d.gone : d.x > d.gone));
+            for (const d of dragons) {
+                d.x += d.from * d.speed;
+                drawDragon(d);
+            }
             for (const s of sparks) {
                 s.vx *= 0.975;
                 s.vy = s.vy * 0.975 + 0.05;
@@ -516,6 +664,21 @@
                 const w = Math.max(0.12, Math.abs(Math.cos(c.turn))); // a coin turning in the air
                 ctx.save();
                 ctx.translate(c.x, c.y);
+                if (c.envelope) {
+                    // A red envelope (the lucky money kind), tumbling
+                    ctx.rotate(c.turn * 0.35);
+                    ctx.fillStyle = '#d6202b';
+                    ctx.strokeStyle = '#ffd65a';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(-c.r * 0.75, -c.r * 1.1, c.r * 1.5, c.r * 2.2);
+                    ctx.strokeRect(-c.r * 0.75, -c.r * 1.1, c.r * 1.5, c.r * 2.2);
+                    ctx.fillStyle = '#ffd65a';
+                    ctx.beginPath();
+                    ctx.arc(0, -c.r * 0.2, c.r * 0.38, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                    continue;
+                }
                 ctx.scale(w, 1);
                 ctx.beginPath();
                 ctx.arc(0, 0, c.r, 0, Math.PI * 2);
@@ -535,7 +698,7 @@
                 }
                 ctx.restore();
             }
-            raf = coins.length || sparks.length ? requestAnimationFrame(drawFx) : 0;
+            raf = coins.length || sparks.length || dragons.length ? requestAnimationFrame(drawFx) : 0;
             if (!raf) ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -623,6 +786,9 @@
         const trustyCard = () => h('div', { class: 'cine-trusty' }, h('img', { src: '/images/trusty/trusty-v2-768.webp', alt: '', width: 768, height: 593 }));
         // Trusty's face on a big coin, turning.
         const bigCoin = () => h('div', { class: 'cine-coin' }, h('img', { src: '/images/icons/mobile-icon-96.webp', alt: '', width: 96, height: 96 }));
+        // Strings of firecrackers down both sides of the screen, going off from the bottom up.
+        const crackers = () => ['left', 'right'].map((side) => h('div', { class: `cine-crackers cine-crackers-${side}` },
+            Array.from({ length: 12 }, (_, i) => h('span', { style: `--i: ${11 - i}` }))));
         const lanterns = () => h('div', { class: 'cine-lanterns' }, Array.from({ length: 5 }, (_, i) => h('span', { class: 'cine-lantern', style: `--i: ${i}` })));
 
         // The Hay Day's big wins.
@@ -666,9 +832,12 @@
                 sub: 'clicks',
                 extra: meaning,
                 ms: jackpot ? 7500 : 4800,
-                decor: [lanterns(), ...(jackpot ? [trustyCard()] : [])],
+                decor: [lanterns(), ...crackers(), ...(jackpot ? [trustyCard()] : [])],
                 start() {
                     gong();
+                    crackle(24, 500);
+                    dragon({ height: 0.24, delay: 600 });
+                    if (jackpot) dragon({ from: -1, height: 0.74, delay: 3000 });
                     fanfare('golden', tier, 0.2);
                     say(spoken);
                     later(() => glyphs(jackpot ? 34 : 18), 1500);
@@ -694,10 +863,12 @@
                 cjk: true,
                 sub: `Golden Horse · ${BONUS.spins} free spins`,
                 extra: '馬年大吉 · Good luck in the Year of the Horse!',
-                ms: 4200,
-                decor: [lanterns()],
+                ms: 5200,
+                decor: [lanterns(), ...crackers()],
                 start() {
                     gong();
+                    crackle(24, 500);
+                    dragon({ height: 0.27, delay: 500 });
                     fanfare('golden', 'big', 0.3);
                     later(() => say(spoken), 500);
                     later(() => glyphs(20), 1400);
@@ -722,11 +893,14 @@
                 sub: won ? 'clicks' : 'Nothing this time.',
                 extra: meaning,
                 ms: won ? (big ? 6500 : 5000) : 3200,
-                decor: [lanterns(), ...(big ? [trustyCard()] : [])],
+                decor: [lanterns(), ...(won ? crackers() : []), ...(big ? [trustyCard()] : [])],
                 start() {
                     say(spoken);
                     if (!won) return;
                     gong();
+                    crackle(24, 500);
+                    dragon({ from: -1, height: big ? 0.2 : 0.26, delay: 700 });
+                    if (big) dragon({ height: 0.76, delay: 2800 });
                     fanfare('golden', big ? 'jackpot' : 'big', 0.2);
                     later(() => glyphs(big ? 34 : 16), 1500);
                     fountain(big ? 90 : 40);
