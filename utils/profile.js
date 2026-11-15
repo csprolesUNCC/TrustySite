@@ -89,7 +89,7 @@ async function getProfile(req, res) {
     const month = monthOf(new Date());
     const stats = (clickDoc && clickDoc.bank && clickDoc.bank.stats) || {};
     const bets = {};
-    for (const game of ['blackjack', 'craps', 'fever']) {
+    for (const game of ['blackjack', 'craps', 'slots', 'fever']) {
         if (stats[game] && Number.isFinite(stats[game][month])) bets[game] = stats[game][month];
     }
 

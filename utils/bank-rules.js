@@ -7,11 +7,12 @@ export const LIMITS = { maxStake: 500, lossPerDay: 5000, winPerDay: 5000 };
 export const STALE_MS = 2 * 60 * 60 * 1000;
 export const FRESH_MS = 60 * 1000;
 const BET_ID = /^[0-9a-f]{16}$/;
-export const GAMES = ['blackjack', 'fever', 'craps'];
-const ROOM_GAMES = ['blackjack', 'fever', 'craps']; // what the room server can bet on
+export const GAMES = ['blackjack', 'fever', 'craps', 'slots'];
+const ROOM_GAMES = ['blackjack', 'fever', 'craps']; // what the room server can bet on (Slots only spin on the site's API)
 // The most one settled bet can pay back, as a multiple of what was bet: Blackjack's insurance pays 2 to 1 (3x),
-// Craps' Any Craps 7 to 1 (8x, MAX_RETURN in scripts/craps.js). Anything else is a refund at most.
-export const MAX_RETURN = { blackjack: 3, craps: 8 };
+// Craps' Any Craps 7 to 1 (8x, MAX_RETURN in scripts/craps.js), the Slots' biggest jackpot 88 times the bet
+// (MAX_RETURN in scripts/slots.js). Anything else is a refund at most.
+export const MAX_RETURN = { blackjack: 3, craps: 8, slots: 88 };
 export const maxPayout = (bet) => bet.amount * (MAX_RETURN[bet.game] || 1);
 const MAX_BETS = 64;
 

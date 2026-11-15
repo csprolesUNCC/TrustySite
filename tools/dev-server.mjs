@@ -19,6 +19,7 @@ import { signTicket } from '../utils/fever-ticket.js';
 import { signedOp } from '../utils/bank-rules.js';
 import { play as soloPlay, cleanMove, memoryGames, defaults as soloDefaults } from '../utils/solo-blackjack-game.js';
 import { play as crapsPlay, cleanMove as crapsMove } from '../utils/solo-craps-game.js';
+import { play as slotsPlay, cleanMove as slotsMove } from '../utils/solo-slots-game.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
 import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 import { isHouse } from '../utils/house.js';
@@ -45,6 +46,8 @@ const accountOf = (req) => `mock-${mockUser(req)}`;
 const solo = { ...soloDefaults, ...memoryGames(), bank };
 // Trusty Craps (utils/solo-craps.js, the real game), the same way.
 const craps = { ...soloDefaults, ...memoryGames(), bank };
+// Trusty Slots (utils/solo-slots.js, the real game), the same way.
+const slots = { ...soloDefaults, ...memoryGames(), bank };
 
 // Trustle's clicks, paid like api/trustle-api.js pays them (once a puzzle, within a day of today's) into the
 // pretend bank. It keeps no games, so only the ones a page sends can pay.
@@ -122,6 +125,17 @@ async function api(req, url, body) {
       const move = req.method === 'POST' ? crapsMove(body) : null;
       if (req.method === 'POST' && !move) return [400, { error: 'That’s not a bet.' }];
       const game = await crapsPlay(craps, accountOf(req), move);
+      if (!move) {
+        const mine = bank.status(accountOf(req));
+        Object.assign(game, { bank: { clicks: mine.clicks, net: mine.net }, limits: mine.limits, refunded: 0 });
+      }
+      return [200, game];
+    }
+    if (action === 'slots') {
+      if (!me) return [401, { error: 'Authentication required' }];
+      const move = req.method === 'POST' ? slotsMove(body) : null;
+      if (req.method === 'POST' && !move) return [400, { error: 'That’s not a spin.' }];
+      const game = await slotsPlay(slots, accountOf(req), move);
       if (!move) {
         const mine = bank.status(accountOf(req));
         Object.assign(game, { bank: { clicks: mine.clicks, net: mine.net }, limits: mine.limits, refunded: 0 });

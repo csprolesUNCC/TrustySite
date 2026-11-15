@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en" class="game-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Slots — Trusty da Horse</title>
+    <meta name="description" content="Spin the reels at the horse casino! Bet your site clicks on Trusty’s Hay Day or the Golden Horse, the Year of the Horse slot machine.">
+    <link rel="canonical" href="https://trustydahorse.com/pages/games/slots.html">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Slots">
+    <meta property="og:description" content="Spin the reels at the horse casino! Three in a row pays, and the Golden Horse pays 88 times your bet.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <!-- The Hay Day's symbols, drawn once here and used on the reels and in the paytable -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+        <symbol id="sym-hay" viewBox="0 0 64 64">
+            <path d="M14 20 l-3 -8 M24 19 l-1 -9 M34 19 l2 -9 M44 19 l4 -8 M52 22 l6 -6" fill="none" stroke="#b98a12" stroke-width="3" stroke-linecap="round"/>
+            <rect x="7" y="19" width="50" height="33" rx="7" fill="#f2c94c" stroke="#1b1b1f" stroke-width="3"/>
+            <path d="M13 28 h10 M30 26 h12 M46 30 h6 M12 38 h8 M27 36 h9 M42 40 h10 M16 46 h9 M33 45 h8" fill="none" stroke="#b98a12" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M23 19 v33 M41 19 v33" fill="none" stroke="#8a4b1c" stroke-width="4"/>
+        </symbol>
+        <symbol id="sym-carrot" viewBox="0 0 64 64">
+            <path d="M41 21 L44 5 M43 22 L57 9 M45 25 L61 22" fill="none" stroke="#1b1b1f" stroke-width="8" stroke-linecap="round"/>
+            <path d="M41 21 L44 5 M43 22 L57 9 M45 25 L61 22" fill="none" stroke="#2f9e57" stroke-width="4" stroke-linecap="round"/>
+            <path d="M33 14 Q47 14 51 31 L13 55 Q7 54 9 48 Z" fill="#f2792b" stroke="#1b1b1f" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M30 24 l6 4 M24 33 l6 4 M18 42 l5 4" fill="none" stroke="#b9500f" stroke-width="2.5" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="sym-apple" viewBox="0 0 64 64">
+            <path d="M32 23 C24 13 7 18 9 35 C11 51 24 60 32 54 C40 60 53 51 55 35 C57 18 40 13 32 23 Z" fill="#d6334b" stroke="#1b1b1f" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M17 32 q1 -8 8 -9" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>
+            <path d="M32 23 Q31 13 36 8" fill="none" stroke="#1b1b1f" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M36 13 Q45 5 52 11 Q44 19 36 13 Z" fill="#2f9e57" stroke="#1b1b1f" stroke-width="2.5" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="sym-pencil" viewBox="0 0 64 64">
+            <g transform="rotate(-45 32 32)" stroke="#1b1b1f" stroke-width="3" stroke-linejoin="round">
+                <rect x="4" y="25" width="10" height="14" rx="3" fill="#f08ca0"/>
+                <rect x="14" y="25" width="5" height="14" fill="#b9c0cc"/>
+                <rect x="19" y="25" width="27" height="14" fill="#ffd23f"/>
+                <path d="M46 25 L61 32 L46 39 Z" fill="#f2ddb0"/>
+                <path d="M55 29.2 L61 32 L55 34.8 Z" fill="#1b1b1f"/>
+            </g>
+        </symbol>
+        <symbol id="sym-shoe" viewBox="0 0 64 64">
+            <path d="M17 53 V29 a15 15 0 0 1 30 0 V53" fill="none" stroke="#1b1b1f" stroke-width="16" stroke-linecap="round"/>
+            <path d="M17 53 V29 a15 15 0 0 1 30 0 V53" fill="none" stroke="#c3cad6" stroke-width="10" stroke-linecap="round"/>
+            <g fill="#1b1b1f"><circle cx="17" cy="46" r="2"/><circle cx="17" cy="35" r="2"/><circle cx="21" cy="21" r="2"/><circle cx="32" cy="14.5" r="2"/><circle cx="43" cy="21" r="2"/><circle cx="47" cy="35" r="2"/><circle cx="47" cy="46" r="2"/></g>
+        </symbol>
+        <symbol id="sym-seven" viewBox="0 0 64 64">
+            <path d="M13 10 H52 L31 56 H17 L35 22 H13 Z" fill="#d6334b" stroke="#1b1b1f" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M17 14 h28" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" stroke-linecap="round"/>
+        </symbol>
+    </svg>
+
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/casino.html">The Casino</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">The horse casino</p>
+                    <h1>Trusty Slots</h1>
+                </div>
+                <div class="game-actions">
+                    <button class="btn btn-outline btn-sm mute-btn" type="button" id="mute-btn" aria-pressed="false">
+                        <svg class="icon icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9c1.2 1.6 1.2 4.4 0 6M18.5 6.5c2.5 3 2.5 8 0 11"/></svg>
+                        <svg class="icon icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+                        Mute
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container game-layout">
+            <section class="game-main" aria-label="Slot machine">
+                <div class="slots-picker" role="group" aria-label="Machine">
+                    <button type="button" data-machine="hay" aria-pressed="true">Trusty’s Hay Day</button>
+                    <button type="button" data-machine="golden" aria-pressed="false"><span class="cjk" lang="zh-Hant">金馬</span> Golden Horse</button>
+                </div>
+
+                <div class="slots" id="cabinet" data-theme="hay">
+                    <div class="slots-lights" aria-hidden="true"></div>
+                    <div class="slots-sign">
+                        <span class="lantern lantern-left" aria-hidden="true"></span>
+                        <span class="lantern lantern-right" aria-hidden="true"></span>
+                        <h2 class="slots-name" id="machine-name">Trusty’s Hay Day</h2>
+                        <p class="slots-tagline" id="machine-tagline">Three in a row across the middle pays.</p>
+                    </div>
+
+                    <div class="slots-window">
+                        <div class="reels" id="reels" role="img" aria-label="The reels">
+                            <div class="reel"><div class="reel-strip"></div></div>
+                            <div class="reel"><div class="reel-strip"></div></div>
+                            <div class="reel"><div class="reel-strip"></div></div>
+                        </div>
+                        <span class="payline" aria-hidden="true"></span>
+                        <div class="slots-shout" id="shout" aria-hidden="true" hidden></div>
+                    </div>
+
+                    <p class="casino-status" id="status" role="status" aria-live="polite">Pick your bet and spin!</p>
+
+                    <div class="slots-meters">
+                        <div class="slots-meter"><span class="stat-label" id="bet-meter-label">Bet</span><output id="bet-meter" aria-labelledby="bet-meter-label">10</output></div>
+                        <div class="slots-meter" id="win-box"><span class="stat-label" id="win-meter-label">Win</span><output id="win-meter" aria-labelledby="win-meter-label" aria-live="off">0</output></div>
+                    </div>
+                    <div class="slots-lights" aria-hidden="true" style="margin-top: 10px"></div>
+
+                    <div class="casino-lobby" id="lobby" data-auth-show="out">
+                        <p class="overlay-kicker">Play for clicks</p>
+                        <h2 class="overlay-title">Log in to play</h2>
+                        <p class="lobby-sub">Your bets are your real Trusty clicks, so you need an account.</p>
+                        <div class="overlay-actions">
+                            <a class="btn btn-lg btn-highlight" id="lobby-login-link" href="/pages/auth/login.html">Log in</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="game-side">
+                <div class="panel casino-controls slots-controls" id="controls" data-auth-show="in">
+                    <div class="bankroll">
+                        <div>
+                            <span class="stat-label">Your clicks</span>
+                            <span class="bankroll-amount" id="bank">…</span>
+                        </div>
+                        <div>
+                            <span class="stat-label">Spins</span>
+                            <span class="bankroll-amount" id="spins">0</span>
+                        </div>
+                    </div>
+                    <p class="side-note casino-today" id="today" hidden></p>
+
+                    <div class="slots-bet">
+                        <span class="stat-label" id="bet-label">Bet a spin</span>
+                        <div class="chips" role="group" aria-labelledby="bet-label">
+                            <button class="chip-btn" type="button" data-clicks="10" aria-pressed="true">10</button>
+                            <button class="chip-btn" type="button" data-clicks="20" aria-pressed="false">20</button>
+                            <button class="chip-btn" type="button" data-clicks="50" aria-pressed="false">50</button>
+                            <button class="chip-btn" type="button" data-clicks="100" aria-pressed="false">100</button>
+                        </div>
+                    </div>
+
+                    <div class="slots-actions">
+                        <button class="btn btn-highlight spin-btn" type="button" id="spin-btn" disabled>Spin</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">What it pays</h2>
+                    <ul class="paytable" id="paytable"></ul>
+                    <p class="side-note">Times your bet, for the three symbols across the middle. “Any two” can be anywhere on the line.</p>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">House rules</h2>
+                    <ul class="how-to bullets">
+                        <li><span class="keys">&#9733;</span> Pick a machine and a bet, then spin. Only the middle row counts.</li>
+                        <li><span class="keys">&#9733;</span> Every spin is decided on Trusty’s server the moment you press the button. The reels just show you what happened.</li>
+                        <li><span class="keys">&#9733;</span> <span id="odds">The house always wins: each machine pays back a little less than is bet.</span></li>
+                    </ul>
+                </div>
+                <div class="panel desktop-only">
+                    <h2 class="panel-title">Shortcuts</h2>
+                    <ul class="how-to">
+                        <li><span class="keys"><kbd>Space</kbd><kbd>Enter</kbd></span> Spin</li>
+                        <li><span class="keys"><kbd>1</kbd>–<kbd>4</kbd></span> Pick a bet</li>
+                        <li><span class="keys"><kbd>M</kbd></span> The other machine</li>
+                    </ul>
+                </div>
+                <p class="side-note">Bets are your real site clicks, 10 to 100 a spin. Once you’re 5,000 up or down for the day, betting waits until midnight.</p>
+            </aside>
+        </div>
+    </main>
+
+    <div class="slots-fx" aria-hidden="true">
+        <canvas id="coins" width="1" height="1"></canvas>
+        <div id="glyphs"></div>
+    </div>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
+        import { isForeignKey, isActivationKey, mute, sound, bindMuteButton } from '/scripts/game-kit.js';
+        import { MACHINES, MACHINE_KEYS, CHIPS, isMachine, isStops, symbolAt, lineOf, tierOf, rtp } from '/scripts/slots.js';
+
+        // Every spin is for your real site clicks. The site's API (?action=slots, utils/solo-slots.js) takes the
+        // bet, decides where the reels stop and pays out, all on the server where nobody can rig it; this page
+        // only picks a machine and a bet and puts on the show: the reels, the lights, the coins, and on the Golden
+        // Horse the characters and the voice. The machines and what they pay are scripts/slots.js.
+
+        const API = '/api/leaderboard?action=slots';
+        const SPIN_MS = 750; // the reels spin at least this long before the first one stops
+        const STOP_GAP_MS = 320; // then one stops after the other
+        const START = [0, 1, 2]; // what the reels show before your first spin (not a winner on any machine)
+        const $ = (id) => document.getElementById(id);
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const pick = (list) => list[Math.floor(Math.random() * list.length)];
+        const clicksText = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        const cabinet = $('cabinet');
+        const strips = [...document.querySelectorAll('.reel-strip')];
+
+        // machine: the one on screen. last: the last spin, as the API gave it (shown on the reels when it was on
+        // this machine). spins: how many the account has made (a spin that happened changes it).
+        const state = { machine: 'hay', bet: 10, last: null, spins: 0, busy: false, failed: false, lines: null };
+        const wallet = { clicks: null, today: null, limits: null };
+
+        /* ---------- Symbols ---------- */
+
+        const SVG = 'http://www.w3.org/2000/svg';
+        function symbolEl(machine, key, cls = 'sym') {
+            if (machine.chars) return h('span', { class: `${cls} tile tile-${key} cjk`, lang: 'zh-Hant' }, machine.chars[key]);
+            if (key === 'trusty') return h('span', { class: `${cls} sym-face` }, h('img', { src: '/images/icons/mobile-icon-96.webp', alt: '', width: 96, height: 96 }));
+            const svg = document.createElementNS(SVG, 'svg');
+            svg.setAttribute('class', cls);
+            svg.setAttribute('viewBox', '0 0 64 64');
+            const use = document.createElementNS(SVG, 'use');
+            use.setAttribute('href', `#sym-${key}`);
+            svg.append(use);
+            return svg;
+        }
+        const cell = (machine, key) => h('div', { class: 'cell' }, symbolEl(machine, key));
+
+        /* ---------- Reels ---------- */
+
+        // Stopped reels: the symbol above each stop, the stop itself (on the payline) and the one below.
+        function showStops(machine, stops) {
+            strips.forEach((strip, i) => {
+                strip.classList.remove('is-loop');
+                strip.style.animationDelay = '';
+                strip.replaceChildren(...[-1, 0, 1].map((offset) => cell(machine, symbolAt(machine, stops[i], offset))));
+            });
+            $('reels').setAttribute('aria-label', `On the line: ${lineOf(machine, stops).map((key) => machine.symbols[key]).join(', ')}`);
+        }
+
+        // A spinning reel: the whole strip twice over, sliding down and starting again halfway.
+        function loop(strip, machine) {
+            strip.replaceChildren(...[...machine.strip, ...machine.strip].map((key) => cell(machine, key)));
+            strip.style.setProperty('--loop', `${(machine.strip.length * 0.028).toFixed(2)}s`);
+            strip.style.animationDelay = `-${Math.random().toFixed(2)}s`;
+            strip.classList.add('is-loop');
+        }
+
+        // A reel coming to rest on its stop: the last few symbols slide in, with a little bounce.
+        async function land(strip, machine, stop) {
+            const keys = [];
+            for (let offset = -1; offset <= 7; offset++) keys.push(symbolAt(machine, stop, offset));
+            strip.classList.remove('is-loop');
+            strip.style.animationDelay = '';
+            strip.replaceChildren(...keys.map((key) => cell(machine, key)));
+            thunk();
+            if (!strip.animate) return;
+            try {
+                await strip.animate(
+                    [{ transform: 'translateY(-66.667%)' }, { transform: 'translateY(2.4%)', offset: 0.78 }, { transform: 'translateY(0)' }],
+                    { duration: 430, easing: 'ease-out' },
+                ).finished;
+            } catch { /* cancelled: the reel's where it should be anyway */ }
+        }
+
+        function restoreReels() {
+            const machine = MACHINES[state.machine];
+            const mine = state.last && state.last.machine === state.machine && isStops(machine, state.last.stops);
+            showStops(machine, mine ? state.last.stops : START);
+        }
+
+        /* ---------- Sound ---------- */
+
+        let audio = null;
+        function tone(freq, when = 0, length = 0.14, type = 'triangle', volume = 0.06) {
+            if (mute.on) return;
+            try {
+                audio ||= new (window.AudioContext || window.webkitAudioContext)();
+                if (audio.state === 'suspended') audio.resume();
+                const at = audio.currentTime + when;
+                const osc = audio.createOscillator();
+                const gain = audio.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(volume, at);
+                gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+                osc.connect(gain).connect(audio.destination);
+                osc.start(at);
+                osc.stop(at + length + 0.03);
+            } catch { /* no sound on this device */ }
+        }
+        const thunk = () => tone(105, 0, 0.1, 'square', 0.05);
+        const gong = () => { tone(98, 0, 2.4, 'sine', 0.2); tone(147, 0, 1.9, 'sine', 0.09); tone(196.5, 0.01, 1.4, 'triangle', 0.04); };
+        // The Hay Day plays a major chord up; the Golden Horse runs up a pentatonic scale.
+        const NOTES = { hay: [523, 659, 784, 1047, 1319, 1568], golden: [523, 587, 659, 784, 880, 1047, 1175, 1319] };
+        function fanfare(theme, tier) {
+            const notes = NOTES[theme];
+            const count = tier === 'win' ? 4 : tier === 'big' ? notes.length : notes.length * 2;
+            for (let i = 0; i < count; i++) {
+                tone(notes[i % notes.length] * (i >= notes.length ? 2 : 1), i * 0.085, 0.24, theme === 'golden' ? 'triangle' : 'square', theme === 'golden' ? 0.08 : 0.04);
+            }
+        }
+        const neigh = sound('/sound/horse.m4a', { volume: 0.7 });
+        const boom = sound('/sound/vineboom.m4a', { volume: 0.7 });
+
+        // The Golden Horse's voice: the device's own Mandarin voice, when it has one (most phones and browsers do).
+        const speech = 'speechSynthesis' in window ? window.speechSynthesis : null;
+        const mandarin = () => {
+            const voices = speech.getVoices().filter((v) => /^(zh|cmn)/i.test(v.lang) && !/HK|MO|yue/i.test(v.lang));
+            return voices.find((v) => /CN|Hans|cmn/i.test(v.lang)) || voices[0] || null;
+        };
+        if (speech) speech.getVoices(); // some browsers only load the list once it's asked for
+        function say(text) {
+            if (!speech || mute.on) return;
+            try {
+                const voice = mandarin();
+                if (!voice && speech.getVoices().length) return; // this device has voices, but none that speak Mandarin
+                const line = new SpeechSynthesisUtterance(text);
+                line.lang = voice ? voice.lang : 'zh-CN';
+                if (voice) line.voice = voice;
+                line.rate = 0.95;
+                line.pitch = 1.15;
+                speech.cancel();
+                speech.speak(line);
+            } catch { /* no voice on this device */ }
+        }
+
+        /* ---------- The show ---------- */
+
+        // What the Golden Horse says: [on screen, said out loud (simplified characters, which every Mandarin voice
+        // reads), how it's pronounced and what it means].
+        const ZH = {
+            welcome: [['歡迎光臨', '欢迎光临', 'Huānyíng guānglín · Welcome!']],
+            win: [
+                ['恭喜發財', '恭喜发财', 'Gōngxǐ fācái · Wishing you riches!'],
+                ['好運來', '好运来', 'Hǎo yùn lái · Here comes the luck!'],
+                ['發發發', '发发发', 'Fā fā fā · Rich, rich, rich!'],
+            ],
+            big: [
+                ['大吉大利', '大吉大利', 'Dàjí dàlì · Great luck, great fortune!'],
+                ['財源滾滾', '财源滚滚', 'Cáiyuán gǔngǔn · The money rolls in!'],
+            ],
+            jackpot: [['馬到成功', '马到成功！恭喜发财！', 'Mǎ dào chénggōng · The horse arrives, and so does success!']],
+            lose: [
+                ['再來一次', '再来一次', 'Zài lái yí cì · One more time!'],
+                ['加油', '加油', 'Jiāyóu · Keep going!'],
+            ],
+        };
+        const GLYPHS = ['福', '發', '馬', '金', '囍', '龍', '財', '吉', '旺'];
+        const LOSSES = [
+            'Nothing. Trusty thanks you for the clicks.',
+            'No luck. The house is a horse, and the horse always wins.',
+            'Not this time.',
+            'So close. (It wasn’t.)',
+            'Nothing on the line.',
+            'The reels say no.',
+        ];
+
+        let timers = [];
+        const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+        function clearShow() {
+            for (const t of timers) clearTimeout(t);
+            timers = [];
+            cabinet.classList.remove('is-winning', 'is-big', 'is-jackpot');
+            $('shout').hidden = true;
+            $('win-box').classList.remove('is-up');
+            countTo = null;
+        }
+
+        // Big words over the reels, a character at a time.
+        function shout(big, sub, { cjk = false, ms = 1600 } = {}) {
+            const letters = [...big].map((ch, i) => h('span', { style: `--i: ${i}` }, ch === ' ' ? ' ' : ch));
+            $('shout').replaceChildren(
+                h('div', { class: `shout-big${cjk ? ' cjk' : ''}`, lang: cjk ? 'zh-Hant' : null }, letters),
+                sub ? h('p', { class: 'shout-sub' }, sub) : null,
+            );
+            $('shout').hidden = false;
+            later(() => { $('shout').hidden = true; }, ms);
+        }
+
+        // Characters floating up the whole screen.
+        function glyphs(count) {
+            if (reduceMotion.matches) return;
+            for (let i = 0; i < count; i++) {
+                const time = 2.2 + Math.random() * 2;
+                const delay = Math.random() * Math.min(2.5, count * 0.06);
+                const el = h('span', {
+                    class: 'glyph cjk',
+                    lang: 'zh-Hant',
+                    style: `--x: ${(Math.random() * 92).toFixed(1)}%; --size: ${(2 + Math.random() * 4).toFixed(1)}rem; --time: ${time.toFixed(2)}s; --delay: ${delay.toFixed(2)}s; --r0: ${Math.round(Math.random() * 50 - 25)}deg; --r1: ${Math.round(Math.random() * 50 - 25)}deg`,
+                }, pick(GLYPHS));
+                $('glyphs').append(el);
+                setTimeout(() => el.remove(), (time + delay) * 1000 + 100);
+            }
+        }
+
+        // Coins: a burst out of the machine for a win, a rain down the whole screen for a big one. The Golden
+        // Horse's have a square hole in the middle.
+        const canvas = $('coins');
+        const ctx = canvas.getContext('2d');
+        let coins = [];
+        let raf = 0;
+        function throwCoins(count, rain) {
+            if (reduceMotion.matches) return;
+            if (canvas.width !== innerWidth || canvas.height !== innerHeight) {
+                canvas.width = innerWidth;
+                canvas.height = innerHeight;
+            }
+            const from = document.querySelector('.slots-window').getBoundingClientRect();
+            const holed = state.machine === 'golden';
+            for (let i = 0; i < count; i++) {
+                const r = 9 + Math.random() * 9;
+                coins.push(rain
+                    ? { x: Math.random() * canvas.width, y: -r - Math.random() * canvas.height * 1.2, vx: Math.random() * 2 - 1, vy: 3 + Math.random() * 4, r, turn: Math.random() * 6, holed }
+                    : { x: from.left + from.width / 2, y: from.top + from.height / 2, vx: Math.random() * 16 - 8, vy: -5 - Math.random() * 11, r, turn: Math.random() * 6, holed });
+            }
+            if (!raf) raf = requestAnimationFrame(drawCoins);
+        }
+        function drawCoins() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            coins = coins.filter((c) => c.y < canvas.height + 40);
+            for (const c of coins) {
+                c.vy += 0.32;
+                c.x += c.vx;
+                c.y += c.vy;
+                c.turn += 0.22;
+                const w = Math.max(0.12, Math.abs(Math.cos(c.turn))); // a coin turning in the air
+                ctx.save();
+                ctx.translate(c.x, c.y);
+                ctx.scale(w, 1);
+                ctx.beginPath();
+                ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffd23f';
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#9a6a00';
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(0, 0, c.r * 0.68, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fff3b0';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                if (c.holed) {
+                    ctx.fillStyle = '#7a0812';
+                    ctx.fillRect(-c.r * 0.3, -c.r * 0.3, c.r * 0.6, c.r * 0.6);
+                }
+                ctx.restore();
+            }
+            raf = coins.length ? requestAnimationFrame(drawCoins) : 0;
+            if (!raf) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // The win meter counting up, with a tick for the coins going in.
+        let countTo = null;
+        function countUp(total) {
+            const meter = $('win-meter');
+            if (reduceMotion.matches) { meter.textContent = fmt(total); return; }
+            const length = Math.min(2200, 500 + total * 1.2);
+            const start = performance.now();
+            const mine = countTo = {};
+            let ticked = 0;
+            $('win-box').classList.add('is-up');
+            const step = (now) => {
+                if (countTo !== mine) return;
+                const t = Math.min(1, (now - start) / length);
+                meter.textContent = fmt(Math.round(total * t));
+                if (now - ticked > 70 && t < 1) { ticked = now; tone(1568 + 400 * t, 0, 0.05, 'square', 0.025); }
+                if (t < 1) requestAnimationFrame(step);
+                else $('win-box').classList.remove('is-up');
+            };
+            requestAnimationFrame(step);
+        }
+
+        function setStatus(...parts) {
+            $('status').replaceChildren(...parts);
+        }
+
+        // After the reels stop: light up what won and make a fuss about it, as big as the win.
+        function celebrate(spin) {
+            const machine = MACHINES[spin.machine];
+            const golden = spin.machine === 'golden';
+            const tier = tierOf(machine, spin);
+            if (!tier) {
+                $('win-meter').textContent = '0';
+                // Every so often the Golden Horse tells you to try again.
+                if (golden && Math.random() < 0.2) {
+                    const [text, spoken, meaning] = pick(ZH.lose);
+                    setStatus(h('span', { class: 'cjk', lang: 'zh-Hant' }, text), ` ${meaning}`);
+                    say(spoken);
+                    glyphs(3);
+                } else {
+                    setStatus(pick(LOSSES));
+                }
+                return;
+            }
+
+            const name = machine.symbols[spin.symbol];
+            setStatus(`${spin.kind === 'three' ? 'Three' : 'Two'} ${name}${golden ? ' tiles' : spin.symbol === 'hay' ? '' : 's'}: you win ${clicksText(spin.payout)}!`);
+            strips.forEach((strip, i) => {
+                if (spin.line[i] === spin.symbol && strip.children[1]) strip.children[1].classList.add('is-win');
+            });
+            cabinet.classList.add('is-winning');
+            if (tier === 'big') cabinet.classList.add('is-big');
+            if (tier === 'jackpot') cabinet.classList.add('is-jackpot');
+            countUp(spin.payout);
+            fanfare(spin.machine, tier);
+
+            const hold = { win: 1700, big: 3200, jackpot: 5600 }[tier];
+            if (golden) {
+                const [text, spoken, meaning] = pick(ZH[tier]);
+                shout(text, meaning, { cjk: true, ms: hold });
+                say(spoken);
+                glyphs({ win: 10, big: 28, jackpot: 70 }[tier]);
+                if (tier !== 'win') gong();
+            } else {
+                shout({ win: 'WIN!', big: 'BIG WIN!', jackpot: 'JACKPOT!' }[tier], `+${clicksText(spin.payout)}`, { ms: hold });
+                if (tier !== 'win') neigh.play();
+                if (tier === 'jackpot') boom.play();
+            }
+            if (tier === 'win') {
+                throwCoins(Math.min(40, 10 + spin.times * 3), false);
+            } else {
+                throwCoins(tier === 'big' ? 120 : 220, true);
+                if (tier === 'jackpot') {
+                    later(() => throwCoins(220, true), 1400);
+                    later(() => throwCoins(220, true), 2800);
+                    if (golden) later(() => glyphs(60), 2200);
+                }
+            }
+            later(() => cabinet.classList.remove('is-winning', 'is-big', 'is-jackpot'), hold);
+        }
+
+        /* ---------- The machines ---------- */
+
+        function paytable(machine) {
+            const row = (count, symbol, times) => h('li', {},
+                h('span', { class: 'pay-syms', 'aria-hidden': 'true' },
+                    Array.from({ length: count }, () => symbolEl(machine, symbol, 'pay-sym')),
+                    count === 2 ? h('span', { class: 'pay-any' }, 'any two') : null),
+                h('span', { class: 'pay-times' }, h('span', { class: 'sr-only' }, `${count === 3 ? 'Three' : 'Any two'} ${machine.symbols[symbol]} pays `), `×${times}`));
+            const byPay = (table) => Object.entries(table).sort((a, b) => b[1] - a[1]);
+            $('paytable').replaceChildren(
+                ...byPay(machine.three).map(([symbol, times]) => row(3, symbol, times)),
+                ...byPay(machine.two).map(([symbol, times]) => row(2, symbol, times)),
+            );
+        }
+
+        function setMachine(key, { welcome = false } = {}) {
+            if (!isMachine(key) || state.busy) return;
+            const changed = key !== state.machine;
+            state.machine = key;
+            const machine = MACHINES[key];
+            const golden = key === 'golden';
+            clearShow();
+            cabinet.dataset.theme = key;
+            $('machine-name').replaceChildren(...(golden ? [h('span', { class: 'cjk', lang: 'zh-Hant' }, '金馬')] : []), machine.name);
+            $('machine-tagline').replaceChildren(...(golden
+                ? [h('span', { class: 'cjk', lang: 'zh-Hant' }, '馬年大吉'), ' · Good luck in the Year of the Horse!']
+                : ['Three in a row across the middle pays.']));
+            for (const button of document.querySelectorAll('[data-machine]')) button.setAttribute('aria-pressed', String(button.dataset.machine === key));
+            paytable(machine);
+            restoreReels();
+            $('win-meter').textContent = '0';
+            setStatus(golden ? 'Spin for the Golden Horse: three pay 88 times your bet!' : 'Pick your bet and spin!');
+            if (changed) history.replaceState(null, '', `#${key}`);
+            if (changed && welcome && golden) {
+                const [text, spoken, meaning] = ZH.welcome[0];
+                shout(text, meaning, { cjk: true, ms: 1700 });
+                say(spoken);
+                gong();
+                glyphs(12);
+            }
+            render();
+        }
+
+        /* ---------- Your clicks ---------- */
+
+        function render() {
+            const ready = session.loggedIn && wallet.clicks != null && !state.busy;
+            $('spin-btn').disabled = !ready;
+            $('spin-btn').textContent = state.busy ? 'Spinning…' : 'Spin';
+            $('bank').textContent = wallet.clicks != null ? fmt(wallet.clicks) : state.failed ? '?' : '…';
+            $('spins').textContent = fmt(state.spins);
+            $('bet-meter').textContent = fmt(state.bet);
+            for (const chip of document.querySelectorAll('[data-clicks]')) {
+                chip.setAttribute('aria-pressed', String(Number(chip.dataset.clicks) === state.bet));
+                chip.disabled = state.busy;
+            }
+            for (const button of document.querySelectorAll('[data-machine]')) button.disabled = state.busy;
+            cabinet.classList.toggle('is-spinning', state.busy);
+            $('today').hidden = wallet.today == null;
+            if (wallet.today != null) {
+                const { lossPerDay, winPerDay } = wallet.limits || { lossPerDay: 5000, winPerDay: 5000 };
+                const today = wallet.today;
+                $('today').textContent = `Today: ${today > 0 ? '+' : today < 0 ? '−' : ''}${fmt(Math.abs(today))} clicks. You can be up to ${fmt(winPerDay)} up or ${fmt(lossPerDay)} down a day.`;
+            }
+        }
+
+        function setWallet(mine) {
+            if (!mine || typeof mine.clicks !== 'number') return;
+            const before = wallet.clicks;
+            wallet.clicks = mine.clicks;
+            if (typeof mine.net === 'number') wallet.today = mine.net;
+            announceBalance(mine.clicks, before != null && mine.clicks > before ? mine.clicks - before : 0);
+        }
+
+        async function request(move) {
+            const res = await fetch(API, move
+                ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(move), credentials: 'same-origin' }
+                : { credentials: 'same-origin' });
+            if (res.status === 401) {
+                sessionExpired();
+                return null;
+            }
+            if (!res.ok) throw new Error(`Slots API: ${res.status}`);
+            return res.json();
+        }
+
+        async function load() {
+            if (!session.loggedIn) return;
+            try {
+                const game = await request(null);
+                if (!game) return;
+                state.failed = false;
+                state.last = game.last;
+                state.spins = game.spins || 0;
+                wallet.limits = game.limits || wallet.limits;
+                setWallet(game.bank);
+                if (game.refunded) toast(`${fmt(game.refunded)} clicks from a game that never finished came back to you.`, 'info', 7000);
+                // Back at the machine you were last on, unless the link says which.
+                if (!isMachine(location.hash.slice(1)) && game.last && isMachine(game.last.machine)) setMachine(game.last.machine);
+                else if (!state.busy) restoreReels();
+            } catch {
+                state.failed = true;
+                toast('Couldn’t reach the casino. Try reloading.', 'error', 5000);
+            }
+            render();
+        }
+
+        // On phones and tablets the controls sit under the machine: keep the reels and the Spin button on screen
+        // together.
+        const stacked = matchMedia('(max-width: 960px)');
+        function showMachine() {
+            if (!stacked.matches) return;
+            const top = cabinet.getBoundingClientRect().top - 12;
+            const bottom = $('spin-btn').getBoundingClientRect().bottom + 12;
+            const by = bottom - top <= innerHeight ? top : bottom - innerHeight;
+            if (Math.abs(by) > 1) scrollBy({ top: by, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+        }
+
+        async function spin() {
+            if (state.busy || !session.loggedIn || wallet.clicks == null) return;
+            if (wallet.clicks < state.bet) {
+                toast(`You only have ${clicksText(wallet.clicks)}. Click Trusty up top for more.`, 'info', 5000);
+                return;
+            }
+            const key = state.machine;
+            const machine = MACHINES[key];
+            state.busy = true;
+            clearShow();
+            setStatus('Spinning…');
+            $('win-meter').textContent = '0';
+            const still = reduceMotion.matches;
+            if (!still) for (const strip of strips) loop(strip, machine);
+            render();
+            showMachine();
+            const started = performance.now();
+            try {
+                const next = await request({ do: 'spin', machine: key, amount: state.bet });
+                if (!next) { restoreReels(); setStatus('Log in to play.'); return; }
+                const spun = next.last && next.spins !== state.spins && next.last.machine === key && isStops(machine, next.last.stops);
+                state.spins = next.spins || 0;
+                if (!spun) {
+                    // The bank said no (or another tab got in first): nothing was spun.
+                    if (next.last) state.last = next.last;
+                    restoreReels();
+                    setWallet(next.bank);
+                    setStatus(next.error || 'That spin didn’t happen. Try again.');
+                    if (next.error) toast(next.error, 'info', 7000);
+                    return;
+                }
+                state.last = next.last;
+                if (still) {
+                    showStops(machine, next.last.stops);
+                } else {
+                    await sleep(Math.max(0, SPIN_MS - (performance.now() - started)));
+                    const landings = strips.map(async (strip, i) => {
+                        await sleep(i * STOP_GAP_MS);
+                        await land(strip, machine, next.last.stops[i]);
+                    });
+                    await Promise.all(landings);
+                    $('reels').setAttribute('aria-label', `On the line: ${next.last.line.map((s) => machine.symbols[s]).join(', ')}`);
+                }
+                setWallet(next.bank);
+                celebrate(next.last);
+            } catch {
+                restoreReels();
+                setStatus('The machine jammed. Try that again.');
+                toast('The machine jammed. Try that again.', 'error', 5000);
+            } finally {
+                state.busy = false;
+                render();
+            }
+        }
+
+        /* ---------- Buttons and keys ---------- */
+
+        function setBet(amount) {
+            if (state.busy || !CHIPS.includes(amount)) return;
+            state.bet = amount;
+            render();
+        }
+
+        $('spin-btn').addEventListener('click', spin);
+        for (const chip of document.querySelectorAll('[data-clicks]')) chip.addEventListener('click', () => setBet(Number(chip.dataset.clicks)));
+        for (const button of document.querySelectorAll('[data-machine]')) button.addEventListener('click', () => setMachine(button.dataset.machine, { welcome: true }));
+        bindMuteButton($('mute-btn'));
+        $('mute-btn').addEventListener('click', () => { if (mute.on && speech) speech.cancel(); });
+        window.addEventListener('hashchange', () => setMachine(location.hash.slice(1)));
+
+        document.addEventListener('keydown', (e) => {
+            if (isForeignKey(e) || isActivationKey(e) || !session.loggedIn) return;
+            const k = e.key.toLowerCase();
+            if (k === ' ' || k === 'enter' || k === 's') {
+                e.preventDefault();
+                if (!e.repeat) spin();
+            } else if (k === 'm') {
+                setMachine(MACHINE_KEYS[(MACHINE_KEYS.indexOf(state.machine) + 1) % MACHINE_KEYS.length], { welcome: true });
+            } else if (/^[1-4]$/.test(k)) {
+                setBet(CHIPS[Number(k) - 1]);
+            }
+        });
+
+        // Logging out elsewhere (or a 401) puts the page back to "log in to play".
+        let wasIn = session.loggedIn;
+        onSession(({ loggedIn }) => {
+            if (loggedIn === wasIn) return;
+            wasIn = loggedIn;
+            if (!loggedIn) {
+                state.last = null;
+                state.spins = 0;
+                Object.assign(wallet, { clicks: null, today: null });
+            } else {
+                load();
+            }
+            render();
+        });
+
+        // What each machine pays back, worked out from its reels (scripts/slots.js), so it's never out of date.
+        $('odds').textContent = `The house always wins. ${MACHINE_KEYS.map((key) => {
+            const { rtp: back, hit } = rtp(MACHINES[key]);
+            return `${MACHINES[key].name} pays back about ${Math.round(back * 100)} of every 100 clicks bet and wins about 1 spin in ${Math.round(1 / hit)}`;
+        }).join('; ')}.`;
+
+        $('lobby-login-link').href = loginHref();
+        state.machine = isMachine(location.hash.slice(1)) ? location.hash.slice(1) : 'hay';
+        setMachine(state.machine);
+        sessionReady.then(load);
+    </script>
+</body>
+</html>

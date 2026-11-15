@@ -8,6 +8,7 @@ import feverOnline from '../utils/fever-online.js';
 import bank from '../utils/bank.js';
 import soloBlackjack from '../utils/solo-blackjack.js';
 import soloCraps from '../utils/solo-craps.js';
+import soloSlots from '../utils/solo-slots.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), changing your username (?action=rename, see
@@ -15,8 +16,8 @@ export default async (req, res) => {
     // (?action=admin, see utils/moderation.js), the home page's Latest Update (?action=update, see
     // utils/update.js), tickets into the online rooms (?action=fever, see utils/fever-online.js), the click
     // bank for betting clicks there (?action=bank, see utils/bank.js), Trusty Blackjack for one player
-    // (?action=blackjack, see utils/solo-blackjack.js) and Trusty Craps (?action=craps, see utils/solo-craps.js)
-    // live here too to save Vercel functions.
+    // (?action=blackjack, see utils/solo-blackjack.js), Trusty Craps (?action=craps, see utils/solo-craps.js) and
+    // Trusty Slots (?action=slots, see utils/solo-slots.js) live here too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
     }
@@ -43,6 +44,9 @@ export default async (req, res) => {
     }
     if (req.query.action === 'craps') {
         return soloCraps(req, res);
+    }
+    if (req.query.action === 'slots') {
+        return soloSlots(req, res);
     }
 
     if (req.method !== 'GET') {

@@ -939,6 +939,279 @@ kbd {
 }
 
 /* =========================================================================
+   Slots (chips, the log-in note and the controls panel are Blackjack's above)
+   ========================================================================= */
+/* The cabinet. data-theme picks the machine's colours: hay (Trusty's Hay Day) or golden (Golden Horse). */
+.slots {
+  --slots-bg: linear-gradient(180deg, #3550c4, #1d2c82);
+  --slots-trim: #ffe45c;
+  --slots-bulb: #fff6c2;
+  --slots-lobby: rgba(29, 44, 130, .97);
+  --slots-glow: rgba(255, 228, 92, .55);
+  position: relative;
+  padding: clamp(14px, 3vw, 26px);
+  border: 2px solid var(--ink);
+  border-radius: 28px 22px 30px 24px / 24px 30px 22px 28px;
+  box-shadow: var(--shadow-ink-lg);
+  background: var(--slots-bg);
+  color: #fff;
+}
+.slots[data-theme="golden"] {
+  --slots-bg:
+    radial-gradient(90% 60% at 50% 0%, rgba(255, 214, 90, .28), transparent 70%),
+    linear-gradient(180deg, #b3121f, #6f0711);
+  --slots-trim: #ffd65a;
+  --slots-bulb: #ffe9a8;
+  --slots-lobby: rgba(111, 7, 17, .97);
+  --slots-glow: rgba(255, 214, 90, .7);
+}
+.slots .casino-lobby { background: var(--slots-lobby); }
+.slots .casino-status { margin-top: clamp(10px, 2vw, 16px); color: var(--slots-trim); }
+
+/* Which machine */
+.slots-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.slots-picker button {
+  min-height: 48px;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 14px 11px 15px 12px;
+  background: #fff;
+  box-shadow: var(--shadow-ink);
+  font-family: var(--font-marker);
+  font-size: clamp(.95rem, 2.6vw, 1.15rem);
+  line-height: 1.15;
+  touch-action: manipulation;
+}
+.slots-picker button[data-machine="hay"][aria-pressed="true"] { background: #2a3fa8; color: #fff; }
+.slots-picker button[data-machine="golden"][aria-pressed="true"] { background: #a80f1d; color: #ffd65a; }
+.slots-picker button[aria-pressed="true"] { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.slots-picker button:disabled { cursor: not-allowed; }
+.slots-picker button:disabled:not([aria-pressed="true"]) { opacity: .5; }
+
+/* Chasing bulbs along the top and bottom of the cabinet: two sets, half a step apart, taking turns */
+.slots-lights { position: relative; height: 14px; }
+.slots-lights::before,
+.slots-lights::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, var(--slots-bulb) 0 4px, transparent 5px) center / 28px 100% repeat-x;
+  filter: drop-shadow(0 0 4px var(--slots-glow));
+  animation: slots-bulbs 1s steps(1) infinite;
+}
+.slots-lights::after { background-position-x: calc(50% + 14px); animation-delay: -.5s; }
+.slots.is-spinning .slots-lights::before, .slots.is-spinning .slots-lights::after { animation-duration: .3s; }
+.slots.is-spinning .slots-lights::after { animation-delay: -.15s; }
+.slots.is-winning .slots-lights::before, .slots.is-winning .slots-lights::after { animation-duration: .16s; }
+.slots.is-winning .slots-lights::after { animation-delay: -.08s; }
+@keyframes slots-bulbs { 0% { opacity: 1; } 50% { opacity: .18; } }
+
+.slots-sign { position: relative; padding: 8px 44px 10px; text-align: center; }
+.slots-name {
+  margin: 0;
+  font-family: var(--font-marker);
+  font-size: clamp(1.5rem, 5.4vw, 2.5rem);
+  line-height: 1.05;
+  color: var(--slots-trim);
+  text-shadow: 2px 2px 0 var(--ink), 0 0 18px var(--slots-glow);
+}
+.slots-tagline { margin: 2px 0 0; min-height: 1.5em; font-weight: 700; font-size: clamp(.85rem, 2.4vw, 1rem); color: #fff; }
+.cjk { font-family: "Kaiti SC", "STKaiti", "KaiTi", "BiauKai", "DFKai-SB", "Songti SC", "Noto Serif CJK TC", "Noto Serif CJK SC", "PMingLiU", serif; font-weight: 900; }
+.slots-name .cjk { margin-right: .2em; }
+
+/* Lanterns on the Golden Horse's sign */
+.lantern { display: none; }
+.slots[data-theme="golden"] .lantern {
+  display: block;
+  position: absolute;
+  top: 2px;
+  width: 26px;
+  height: 32px;
+  border: 2px solid var(--ink);
+  border-radius: 50% / 46%;
+  background: linear-gradient(90deg, #c8141f, #ff4a3d 45%, #c8141f);
+  box-shadow: inset 0 5px 0 -1px #ffd65a, inset 0 -5px 0 -1px #ffd65a, 0 0 14px rgba(255, 120, 60, .7);
+  transform-origin: 50% -8px;
+  animation: lantern-swing 3.2s ease-in-out infinite alternate;
+}
+.lantern::after { content: ""; position: absolute; left: 50%; top: 100%; width: 3px; height: 14px; margin-left: -1.5px; background: #ffd65a; }
+.lantern-left { left: 6px; }
+.lantern-right { right: 6px; animation-delay: -1.6s !important; }
+@keyframes lantern-swing { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+
+/* The window: three reels, three symbols tall, with the payline across the middle */
+/* svh keeps the whole machine on one screen: the reels are as tall as the window is wide. */
+.slots-window {
+  position: relative;
+  max-width: min(520px, 52svh);
+  margin: 0 auto;
+  padding: clamp(8px, 2vw, 14px);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #17171b, #2c2c33);
+  box-shadow: inset 0 0 0 3px var(--slots-trim), 0 8px 18px rgba(0, 0, 0, .35);
+}
+.reels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(6px, 1.6vw, 12px); }
+.reel {
+  container-type: inline-size;
+  position: relative;
+  aspect-ratio: 1 / 3;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fffdf5;
+}
+/* The curve of the drum: darker at the top and bottom */
+.reel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .34), transparent 26%, transparent 74%, rgba(0, 0, 0, .34));
+  pointer-events: none;
+}
+.reel-strip { display: flex; flex-direction: column; will-change: transform; }
+.reel-strip.is-loop { animation: reel-loop var(--loop, .7s) linear infinite; filter: blur(1.5px); }
+@keyframes reel-loop { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+.cell { display: grid; place-items: center; flex: none; aspect-ratio: 1; width: 100%; padding: 9%; }
+.sym { display: block; width: 100%; height: 100%; }
+.sym-face { display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, #fff 38%, #ffe45c 40%, #ffb92e); box-shadow: 0 0 0 2px var(--ink); }
+.sym-face img { width: 74%; height: 74%; object-fit: contain; }
+.tile {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 14%;
+  background: linear-gradient(180deg, #fffaf0, #f3e3c2);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .12);
+  color: var(--tile, #b3121f);
+  font-size: clamp(1.7rem, 9vw, 3.6rem);
+  font-size: 58cqw;
+  line-height: 1;
+}
+.tile-ma { --tile: #8f0d18; background: linear-gradient(180deg, #ffe58a, #f0b429); box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .14), inset 0 0 0 3px #fff3c4; }
+.tile-long, .tile-fa { --tile: #14703a; }
+.tile-jin { --tile: #8a5a00; }
+.cell.is-win { animation: cell-win .5s ease-in-out 4 alternate; }
+.cell.is-win .sym { filter: drop-shadow(0 0 6px #ffb400); }
+@keyframes cell-win { from { transform: scale(1); background: transparent; } to { transform: scale(1.1); background: rgba(255, 228, 92, .75); } }
+.payline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  background: var(--red);
+  box-shadow: 0 0 6px rgba(214, 51, 75, .9);
+  opacity: .5;
+  pointer-events: none;
+}
+.payline::before, .payline::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  border: 8px solid transparent;
+}
+.payline::before { left: -2px; border-left-color: var(--slots-trim); }
+.payline::after { right: -2px; border-right-color: var(--slots-trim); }
+.slots.is-winning .payline { opacity: 1; background: var(--slots-trim); box-shadow: 0 0 12px var(--slots-trim); }
+
+/* Bet and win, like the lit-up numbers on a machine */
+.slots-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: min(520px, 52svh); margin: clamp(10px, 2vw, 16px) auto 0; }
+.slots-meter { padding: 6px 12px; border: 2px solid var(--ink); border-radius: 10px; background: #17171b; text-align: center; }
+.slots-meter .stat-label { color: #d9d9e0; }
+.slots-meter output { display: block; font-family: var(--font-marker); font-size: clamp(1.3rem, 4.4vw, 1.9rem); line-height: 1.1; color: var(--slots-trim); font-variant-numeric: tabular-nums; }
+.slots-meter.is-up output { animation: meter-up .28s ease-in-out infinite alternate; }
+@keyframes meter-up { to { color: #fff; text-shadow: 0 0 12px var(--slots-trim); } }
+
+/* The big words over the reels after a win */
+.slots-shout {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 14px;
+  background: rgba(12, 4, 4, .66);
+  text-align: center;
+  pointer-events: none;
+}
+.slots-shout[hidden] { display: none; }
+.shout-big {
+  display: flex;
+  justify-content: center;
+  font-family: var(--font-marker);
+  font-size: clamp(2.2rem, 11vw, 4.6rem);
+  line-height: 1;
+  color: #ffe45c;
+  -webkit-text-stroke: 2px #8f0d18;
+  paint-order: stroke fill;
+  text-shadow: 0 4px 0 #8f0d18, 0 0 26px #ffb400;
+}
+.shout-big.cjk { font-size: clamp(2.8rem, 15vw, 6rem); gap: .04em; }
+.shout-big span { animation: shout-stamp .34s var(--ease-out) backwards; animation-delay: calc(var(--i) * .1s); }
+@keyframes shout-stamp { from { opacity: 0; transform: scale(3.2) rotate(-14deg); } }
+.shout-sub { max-width: 100%; margin: 0; padding: 0 10px; font-weight: 800; font-size: clamp(.85rem, 2.6vw, 1.1rem); color: #fff; text-shadow: 0 1px 4px #000; animation: shout-stamp .3s .5s var(--ease-out) backwards; }
+
+/* A big win: the whole cabinet flashes; a jackpot shakes it too */
+.slots.is-big { animation: slots-flash .24s steps(1) 8; }
+.slots.is-jackpot { animation: slots-flash .2s steps(1) 20, slots-shake .12s linear 34; }
+@keyframes slots-flash { 50% { box-shadow: var(--shadow-ink-lg), 0 0 0 6px var(--slots-trim), 0 0 60px 12px var(--slots-glow); } }
+@keyframes slots-shake { 25% { transform: translate(-4px, 2px) rotate(-.6deg); } 75% { transform: translate(4px, -2px) rotate(.6deg); } }
+
+/* Over the whole screen: the coins, and the Golden Horse's characters floating up */
+.slots-fx { position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; }
+.slots-fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.glyph {
+  position: absolute;
+  bottom: -1.2em;
+  left: var(--x);
+  font-size: var(--size);
+  line-height: 1;
+  color: #ffd65a;
+  -webkit-text-stroke: 1.5px #8f0d18;
+  paint-order: stroke fill;
+  text-shadow: 0 0 18px rgba(255, 180, 0, .9), 0 3px 0 #8f0d18;
+  animation: glyph-rise var(--time) ease-out var(--delay) both;
+}
+@keyframes glyph-rise {
+  from { transform: translateY(0) rotate(var(--r0)) scale(.4); opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  to { transform: translateY(-105vh) rotate(var(--r1)) scale(1.15); opacity: 0; }
+}
+
+/* The side panel */
+.slots-bet { display: grid; gap: 8px; }
+.chip-btn[data-clicks="20"] { --chip: #7a3fb0; }
+.slots-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
+.spin-btn { min-height: 60px; font-size: 1.5rem; }
+.paytable { display: grid; gap: 6px; min-height: 420px; margin: 0; padding: 0; list-style: none; }
+.paytable li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 8px; border: 1.5px dashed var(--grid-strong); border-radius: 10px; background: var(--paper); }
+.pay-syms { display: flex; align-items: center; gap: 3px; }
+.pay-syms .pay-sym { width: 34px; height: 34px; flex: none; }
+.pay-syms .tile { font-size: 22px; border-width: 1.5px; box-shadow: none; }
+.pay-any { margin-left: 4px; font-size: .8rem; font-weight: 700; color: var(--pencil); }
+.pay-times { font-family: var(--font-marker); font-size: 1.15rem; white-space: nowrap; }
+@media (max-width: 960px) {
+  .slots-controls .slots-actions { order: -2; }
+  .slots-controls .slots-bet { order: -1; }
+  .slots-controls .chips { justify-content: center; }
+  .slots-controls #bet-label { text-align: center; }
+  .paytable { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); min-height: 0; }
+}
+@media (max-width: 560px) {
+  .slots-sign { padding-inline: 34px; }
+  .slots[data-theme="golden"] .lantern { width: 20px; height: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slots-lights::before, .slots-lights::after, .lantern, .cell.is-win, .slots.is-big, .slots.is-jackpot, .slots-meter.is-up output, .shout-big span, .shout-sub { animation: none !important; }
+}
+
+/* =========================================================================
    Trustle
    ========================================================================= */
 .trustle {

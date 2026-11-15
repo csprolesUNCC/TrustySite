@@ -1,7 +1,7 @@
 // Loads every page in a real browser against tools/dev-server.mjs, at phone and desktop widths, logged out
 // and logged in, and fails if any page throws, logs an error, requests a missing file, scrolls sideways, has a
 // broken image or link, or has an accessibility problem axe-core can find. Then two people play Trusty Fever online
-// and a hand of Blackjack for clicks and roll Craps at a table, and one plays Craps alone (the dev server runs the rooms, the tables and a pretend
+// and a hand of Blackjack for clicks and roll Craps at a table, and one plays Craps alone and spins the Slots (the dev server runs the rooms, the tables and a pretend
 // click bank), and every online screen gets the same checks.
 //   npm run smoke   (needs Playwright: preinstalled in Claude Code cloud sessions, otherwise `npx playwright install chromium`
 //                    and `npm i -D playwright`)
@@ -242,6 +242,40 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Craps for clicks\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
+// Trusty Slots for clicks: carson spins Trusty's Hay Day, then the Golden Horse, at phone and desktop widths.
+{
+  const found = [];
+  const { pages: [player], close } = await twoPeople(found);
+  const check = async (what) => found.push(...(await axeProblems(player)).map((v) => `${what}: ${v}`));
+  try {
+    for (const width of [375, 1280]) {
+      await player.setViewportSize({ width, height: 800 });
+      await player.goto(`${BASE}/pages/games/slots.html#hay`, { waitUntil: 'networkidle' });
+      await player.waitForFunction(() => document.querySelector('#bank').textContent !== '…', null, { timeout: 5000 });
+      await check(`${width}px, before a spin`);
+      for (const machine of ['hay', 'golden']) {
+        await player.click(`[data-machine="${machine}"]`);
+        if ((await player.$eval('#cabinet', (el) => el.dataset.theme)) !== machine) found.push(`${width}px: the ${machine} machine didn't come up`);
+        for (let i = 0; i < 3; i++) {
+          const before = await player.$eval('#spins', (el) => el.textContent);
+          await player.waitForFunction(() => !document.querySelector('#spin-btn').disabled, null, { timeout: 5000 });
+          await player.click('#spin-btn');
+          await player.waitForFunction((n) => document.querySelector('#spins').textContent !== n && !document.querySelector('#spin-btn').disabled, before, { timeout: 8000 });
+          if (/Spinning|jammed|didn’t happen/.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px, ${machine}: no word on the spin`);
+          if ((await player.$$eval('.reel-strip', (els) => els.filter((el) => el.children.length >= 3 && !el.classList.contains('is-loop')).length)) !== 3) found.push(`${width}px, ${machine}: the reels didn't stop`);
+        }
+        await check(`${width}px, ${machine}, after spinning`);
+        const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+        if (wide) found.push(`${width}px, ${machine}: scrolls sideways`);
+      }
+    }
+  } catch (e) {
+    found.push(`didn't get through a spin: ${e.message.split('\n')[0]}`);
+  }
+  await close();
+  if (found.length) problems.push(`Trusty Slots for clicks\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
 // A Trusty Craps table with friends: carson opens one, luke sits down with the link and bets, and carson shoots.
 {
   const found = [];
@@ -280,7 +314,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table)${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins on both Slots machines${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

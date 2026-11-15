@@ -163,6 +163,7 @@ const NAV = [
   { href: '/pages/casino.html', label: 'Casino', items: [
     { href: '/pages/games/casino.html', label: 'Trusty Blackjack' },
     { href: '/pages/games/craps.html', label: 'Trusty Craps' },
+    { href: '/pages/games/slots.html', label: 'Trusty Slots' },
   ] },
   { href: '/pages/media.html', label: 'Trusty Media', items: [
     { href: '/pages/tv.html', label: 'Trusty TV' },
