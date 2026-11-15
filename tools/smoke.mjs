@@ -242,32 +242,58 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Craps for clicks\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
-// Trusty Slots for clicks: carson spins Trusty's Hay Day, then the Golden Horse, at phone and desktop widths.
+// Trusty Slots for clicks: carson spins the Hay Day a few times, then (with the dev server's mockslots=bonus
+// cookie) wins the Golden Horse bonus and plays its free spins out, at phone and desktop widths.
 {
   const found = [];
   const { pages: [player], close } = await twoPeople(found);
   const check = async (what) => found.push(...(await axeProblems(player)).map((v) => `${what}: ${v}`));
+  const button = () => player.$eval('#spin-btn', (el) => el.textContent);
+  // Waits for the Spin button to be ready again, tapping through any full-screen scene on the way.
+  const ready = async () => {
+    for (let i = 0; i < 150; i++) {
+      const state = await player.evaluate(() => ({ scene: !document.querySelector('#cine').hidden, ok: !document.querySelector('#spin-btn').disabled }));
+      if (state.ok && !state.scene) return;
+      if (state.scene) await player.click('#cine', { position: { x: 20, y: 20 } }).catch(() => {});
+      await player.waitForTimeout(200);
+    }
+    throw new Error('the Spin button never came back');
+  };
+  const spin = async () => {
+    await player.click('#spin-btn');
+    await player.waitForFunction(() => document.querySelector('#spin-btn').disabled || !document.querySelector('#cine').hidden, null, { timeout: 3000 }).catch(() => {});
+    await ready();
+  };
+  const stopped = () => player.$$eval('.reel-strip', (els) => els.filter((el) => el.children.length >= 3 && !el.classList.contains('is-loop')).length === 3);
   try {
     for (const width of [375, 1280]) {
       await player.setViewportSize({ width, height: 800 });
-      await player.goto(`${BASE}/pages/games/slots.html#hay`, { waitUntil: 'networkidle' });
+      await player.goto(`${BASE}/pages/games/slots.html`, { waitUntil: 'networkidle' });
       await player.waitForFunction(() => document.querySelector('#bank').textContent !== '…', null, { timeout: 5000 });
       await check(`${width}px, before a spin`);
-      for (const machine of ['hay', 'golden']) {
-        await player.click(`[data-machine="${machine}"]`);
-        if ((await player.$eval('#cabinet', (el) => el.dataset.theme)) !== machine) found.push(`${width}px: the ${machine} machine didn't come up`);
-        for (let i = 0; i < 3; i++) {
-          const before = await player.$eval('#spins', (el) => el.textContent);
-          await player.waitForFunction(() => !document.querySelector('#spin-btn').disabled, null, { timeout: 5000 });
-          await player.click('#spin-btn');
-          await player.waitForFunction((n) => document.querySelector('#spins').textContent !== n && !document.querySelector('#spin-btn').disabled, before, { timeout: 8000 });
-          if (/Spinning|jammed|didn’t happen/.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px, ${machine}: no word on the spin`);
-          if ((await player.$$eval('.reel-strip', (els) => els.filter((el) => el.children.length >= 3 && !el.classList.contains('is-loop')).length)) !== 3) found.push(`${width}px, ${machine}: the reels didn't stop`);
-        }
-        await check(`${width}px, ${machine}, after spinning`);
-        const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-        if (wide) found.push(`${width}px, ${machine}: scrolls sideways`);
-      }
+      const before = Number((await player.$eval('#spins', (el) => el.textContent)).replace(/\D/g, ''));
+      // A few spins. One of them can win the bonus by itself, so go by the button, not by a count of clicks.
+      for (let i = 0; i < 30 && Number((await player.$eval('#spins', (el) => el.textContent)).replace(/\D/g, '')) < before + 3; i++) await spin();
+      while (/Free spin/.test(await button())) await spin();
+      if (/Spinning|jammed|didn’t happen/.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px: no word on the spin`);
+      if (!(await stopped())) found.push(`${width}px: the reels didn't stop`);
+      await check(`${width}px, after spinning`);
+
+      // The bonus: the next spin stops with a gold tile on every reel.
+      await player.context().addCookies([{ name: 'mockslots', value: 'bonus', url: BASE }]);
+      await spin();
+      await player.context().clearCookies({ name: 'mockslots' });
+      if (!/Free spin \(8 left\)/.test(await button())) found.push(`${width}px: no free spins after three gold tiles (the button says "${await button()}")`);
+      if ((await player.$eval('#cabinet', (el) => el.dataset.theme)) !== 'golden') found.push(`${width}px: the Golden Horse didn't come up`);
+      await check(`${width}px, in the bonus`);
+      for (let i = 0; i < 8 && /Free spin/.test(await button()); i++) await spin();
+      if ((await button()) !== 'Spin') found.push(`${width}px: the bonus didn't end after 8 free spins (the button says "${await button()}")`);
+      if ((await player.$eval('#cabinet', (el) => el.dataset.theme)) !== 'hay') found.push(`${width}px: the Hay Day didn't come back`);
+      if (!/Golden Horse/.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px: no word on what the bonus paid`);
+      if (!(await stopped())) found.push(`${width}px: the reels didn't stop after the bonus`);
+      await check(`${width}px, after the bonus`);
+      const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      if (wide) found.push(`${width}px: scrolls sideways`);
     }
   } catch (e) {
     found.push(`didn't get through a spin: ${e.message.split('\n')[0]}`);
@@ -314,7 +340,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins on both Slots machines${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins and a Golden Horse bonus on the Slots${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

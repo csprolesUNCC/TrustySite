@@ -1,21 +1,22 @@
-import { BETS, MACHINES, isMachine, isBet, spin, lineOf, payFor } from '../scripts/slots.js';
+import { BETS, isBet, play as spinMachine } from '../scripts/slots.js';
 import { memoryGames, defaults } from './solo-store.js';
 
 // The Trusty Slots game itself (utils/solo-slots.js serves it), with no database here, so tools/dev-server.mjs and
 // the tests play exactly the same game with games kept in memory (memoryGames() from utils/solo-store.js).
 //
 // One move: bet and spin. The bet is staked at the click bank first (nothing spins if the bank says no), then the
-// reels stop where the server's dice put them, and what the spin pays is written down (`pending`) in the same save
-// as the spin, then settled at the bank; a payout that didn't get through is retried on the next request (the bank
+// reels stop where the server's dice put them. A spin that wins the Golden Horse bonus has all its free spins
+// decided right then too, so the whole thing is one bet and one payout: the page plays the free spins out
+// afterwards, but they're already settled. What the spin pays is written down (`pending`) in the same save as the
+// spin, then settled at the bank; a payout that didn't get through is retried on the next request (the bank
 // only pays a bet once). The page never decides anything: it gets the stops and draws them.
 
 const fresh = () => ({ v: 0, spins: 0, last: null, pending: [] });
 
-// What a request's body asks for, or null: { do: 'spin', machine, amount }.
+// What a request's body asks for, or null: { do: 'spin', amount }.
 export function cleanMove(body) {
-  if (!body || typeof body !== 'object' || body.do !== 'spin') return null;
-  if (!isMachine(body.machine) || !isBet(body.amount)) return null;
-  return { do: 'spin', machine: body.machine, amount: body.amount };
+  if (!body || typeof body !== 'object' || body.do !== 'spin' || !isBet(body.amount)) return null;
+  return { do: 'spin', amount: body.amount };
 }
 
 const reply = (doc, extra = {}) => ({ last: doc.last, spins: doc.spins, bets: BETS, ...extra });
@@ -37,8 +38,9 @@ async function settlePending(deps, userId, doc) {
 
 // deps: { load(userId), save(userId, doc, v) (false if the stored version isn't v any more), bank: { stake,
 // settle } as in utils/bank.js or tools/mock-bank.mjs, now(), random(), newId() }. move: from cleanMove(), or
-// null to just look. Returns what the page gets: { last: { machine, stops, line, amount, times, kind, symbol,
-// payout, at } | null, spins, bets, bank: { clicks, net } | null, error? }.
+// null to just look. Returns what the page gets: { last: { stops, line, times, kind, symbol, bonus (null, or the
+// free spins: { spins: [{ stops, line, times, kind, symbol }], times }), total, amount, payout, at } | null, spins,
+// bets, bank: { clicks, net } | null, error? }. The times are multiples of the bet; payout is clicks.
 export async function play(deps, userId, move) {
   const doc = (await deps.load(userId)) || fresh();
   let bank = await settlePending(deps, userId, doc);
@@ -49,13 +51,10 @@ export async function play(deps, userId, move) {
   if (!staked.ok) return reply(doc, { bank, error: staked.error });
   bank = { clicks: staked.clicks, net: staked.net };
 
-  const machine = MACHINES[move.machine];
-  const stops = spin(machine, deps.random);
-  const line = lineOf(machine, stops);
-  const pay = payFor(machine, line);
-  const payout = move.amount * pay.times;
+  const spun = spinMachine(deps.random);
+  const payout = move.amount * spun.total;
   doc.spins += 1;
-  doc.last = { machine: machine.key, stops, line, amount: move.amount, times: pay.times, kind: pay.kind, symbol: pay.symbol, payout, at: deps.now() };
+  doc.last = { ...spun, amount: move.amount, payout, at: deps.now() };
   doc.pending = [{ betId: id, payout }];
 
   if (!(await save(deps, userId, doc))) {

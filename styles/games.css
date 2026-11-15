@@ -941,7 +941,8 @@ kbd {
 /* =========================================================================
    Slots (chips, the log-in note and the controls panel are Blackjack's above)
    ========================================================================= */
-/* The cabinet. data-theme picks the machine's colours: hay (Trusty's Hay Day) or golden (Golden Horse). */
+/* The cabinet. data-theme is its colours: hay (Trusty's Hay Day), or golden while the Golden Horse's free spins
+   are on. */
 .slots {
   --slots-bg: linear-gradient(180deg, #3550c4, #1d2c82);
   --slots-trim: #ffe45c;
@@ -967,26 +968,6 @@ kbd {
 }
 .slots .casino-lobby { background: var(--slots-lobby); }
 .slots .casino-status { margin-top: clamp(10px, 2vw, 16px); color: var(--slots-trim); }
-
-/* Which machine */
-.slots-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.slots-picker button {
-  min-height: 48px;
-  padding: 6px 10px;
-  border: 2px solid var(--ink);
-  border-radius: 14px 11px 15px 12px;
-  background: #fff;
-  box-shadow: var(--shadow-ink);
-  font-family: var(--font-marker);
-  font-size: clamp(.95rem, 2.6vw, 1.15rem);
-  line-height: 1.15;
-  touch-action: manipulation;
-}
-.slots-picker button[data-machine="hay"][aria-pressed="true"] { background: #2a3fa8; color: #fff; }
-.slots-picker button[data-machine="golden"][aria-pressed="true"] { background: #a80f1d; color: #ffd65a; }
-.slots-picker button[aria-pressed="true"] { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.slots-picker button:disabled { cursor: not-allowed; }
-.slots-picker button:disabled:not([aria-pressed="true"]) { opacity: .5; }
 
 /* Chasing bulbs along the top and bottom of the cabinet: two sets, half a step apart, taking turns */
 .slots-lights { position: relative; height: 14px; }
@@ -1163,7 +1144,7 @@ kbd {
 @keyframes slots-shake { 25% { transform: translate(-4px, 2px) rotate(-.6deg); } 75% { transform: translate(4px, -2px) rotate(.6deg); } }
 
 /* Over the whole screen: the coins, and the Golden Horse's characters floating up */
-.slots-fx { position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; }
+.slots-fx { position: fixed; inset: 0; z-index: 1010; overflow: hidden; pointer-events: none; }
 .slots-fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .glyph {
   position: absolute;
@@ -1179,9 +1160,178 @@ kbd {
 }
 @keyframes glyph-rise {
   from { transform: translateY(0) rotate(var(--r0)) scale(.4); opacity: 0; }
-  12% { opacity: 1; }
-  80% { opacity: 1; }
+  12% { opacity: .9; }
+  80% { opacity: .9; }
   to { transform: translateY(-105vh) rotate(var(--r1)) scale(1.15); opacity: 0; }
+}
+
+/* Full-screen scenes for the big wins and the bonus (pages/games/slots.html builds them): rays turning behind a
+   title that's stamped in a letter at a time, the win counting up under it, and Trusty or the lanterns coming in.
+   The coins, fireworks and characters (.slots-fx) fall in front. dvh: it's a fixed overlay over the screen. */
+.cine {
+  --cine-a: #ffe45c;
+  --cine-ray: #9db4ff;
+  --cine-b: #3550c4;
+  --cine-dark: #0d1440;
+  --cine-edge: #1b2a78;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2.5vh, 26px);
+  height: 100dvh;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 46%, var(--cine-b), var(--cine-dark) 75%);
+  color: #fff;
+  cursor: pointer;
+  animation: cine-in .28s ease-out;
+}
+.cine[hidden] { display: none; }
+.cine-golden { --cine-a: #ffd65a; --cine-ray: #ffd65a; --cine-b: #c8141f; --cine-dark: #3a0308; --cine-edge: #8f0d18; }
+.cine.is-leaving { animation: cine-out .32s ease-in forwards; }
+@keyframes cine-in { from { opacity: 0; transform: scale(1.12); } }
+@keyframes cine-out { to { opacity: 0; transform: scale(1.08); } }
+.cine-rays {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 240vmax;
+  height: 240vmax;
+  margin: -120vmax 0 0 -120vmax;
+  background: repeating-conic-gradient(from 0deg, var(--cine-ray) 0 9deg, transparent 9deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, .5) 22%, transparent 46%);
+  mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, .5) 22%, transparent 46%);
+  opacity: .34;
+  animation: cine-turn 22s linear infinite;
+}
+.cine-hay .cine-rays { opacity: .2; }
+.cine-jackpot .cine-rays { opacity: .5; animation-duration: 9s; }
+.cine-hay.cine-jackpot .cine-rays { opacity: .3; }
+@keyframes cine-turn { to { transform: rotate(360deg); } }
+.cine-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: cine-flash .7s ease-out; pointer-events: none; }
+.cine-jackpot .cine-flash { animation: cine-flash .7s ease-out, cine-flash .5s ease-out 2.4s, cine-flash .5s ease-out 4.6s; }
+@keyframes cine-flash { from { opacity: .95; } to { opacity: 0; } }
+.cine-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(2px, 1vh, 10px);
+  max-width: 100%;
+  padding: 0 16px;
+  text-align: center;
+}
+.cine-jackpot .cine-stack { animation: cine-shake .1s linear 1s 14; }
+@keyframes cine-shake { 25% { transform: translate(-5px, 3px); } 75% { transform: translate(5px, -3px); } }
+.cine-kicker {
+  margin: 0;
+  font-family: var(--font-marker);
+  font-size: clamp(1.1rem, 4.4vw, 2rem);
+  color: #fff;
+  text-shadow: 0 2px 0 var(--cine-edge);
+  animation: cine-rise .4s var(--ease-out) backwards;
+}
+.cine-title {
+  display: flex;
+  justify-content: center;
+  font-family: var(--font-marker);
+  font-size: clamp(3rem, 17vw, 9.5rem);
+  line-height: 1;
+  color: var(--cine-a);
+  -webkit-text-stroke: 3px var(--cine-edge);
+  paint-order: stroke fill;
+  text-shadow: 0 6px 0 var(--cine-edge), 0 0 40px var(--cine-a);
+  animation: cine-pulse .5s ease-in-out 1.3s infinite alternate;
+}
+.cine-title.cjk { gap: .03em; font-size: clamp(3.6rem, 21vw, 11rem); }
+.cine-title span { animation: cine-stamp .42s var(--ease-out) backwards; animation-delay: calc(.15s + var(--i) * .11s); }
+@keyframes cine-stamp { from { opacity: 0; transform: scale(4.5) rotate(-18deg); } 70% { transform: scale(.88); } }
+@keyframes cine-pulse { to { transform: scale(1.07); } }
+.cine-amount {
+  margin: 0;
+  font-family: var(--font-marker);
+  font-size: clamp(2.6rem, 13vw, 6.5rem);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 4px 0 var(--cine-edge), 0 0 30px var(--cine-a);
+  font-variant-numeric: tabular-nums;
+  animation: cine-rise .4s .6s var(--ease-out) backwards;
+}
+.cine-sub {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(1rem, 3.6vw, 1.6rem);
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .7);
+  animation: cine-rise .4s .8s var(--ease-out) backwards;
+}
+.cine-extra { font-size: clamp(.9rem, 2.8vw, 1.2rem); color: var(--cine-a); animation-delay: 1s; }
+@keyframes cine-rise { from { opacity: 0; transform: translateY(24px); } }
+.cine-skip { position: absolute; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: .85rem; font-weight: 700; color: rgba(255, 255, 255, .75); animation: cine-rise .4s 1.4s backwards; }
+
+/* Trusty's face on a big coin, turning, above a big win */
+.cine-coin {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: clamp(84px, 17vh, 150px);
+  aspect-ratio: 1;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 46%, #ffe45c 48%, #ffb92e);
+  box-shadow: 0 0 40px var(--cine-a);
+  animation: cine-drop .6s var(--ease-out) backwards, cine-flip 1.6s .6s ease-in-out infinite;
+}
+.cine-coin img { width: 62%; height: 62%; border-radius: 50%; object-fit: contain; }
+@keyframes cine-drop { from { transform: translateY(-60vh) rotate(-200deg); } }
+@keyframes cine-flip { 50% { transform: rotateY(180deg) scale(1.08); } }
+/* Trusty on an index card, galloping in for a jackpot */
+.cine-trusty {
+  position: relative;
+  flex: none;
+  width: clamp(130px, 28vh, 250px);
+  padding: 8px;
+  border: 3px solid var(--ink);
+  border-radius: 12px 9px 13px 10px;
+  background: #fffdf5;
+  box-shadow: 6px 6px 0 var(--ink), 0 0 50px var(--cine-a);
+  animation: cine-gallop 1.5s cubic-bezier(.3, .6, .4, 1) backwards, cine-trot .34s 1.5s ease-in-out infinite alternate;
+}
+.cine-trusty img { display: block; width: 100%; height: auto; mix-blend-mode: multiply; }
+.cine-golden .cine-trusty { border-color: #8f0d18; background: linear-gradient(180deg, #fff3c4, #ffd65a); box-shadow: 6px 6px 0 #8f0d18, 0 0 60px var(--cine-a); }
+@keyframes cine-gallop {
+  0% { transform: translate(-110vw, 0) rotate(-8deg); }
+  20% { transform: translate(-80vw, -9vh) rotate(6deg); }
+  40% { transform: translate(-52vw, 0) rotate(-6deg); }
+  60% { transform: translate(-26vw, -7vh) rotate(6deg); }
+  80% { transform: translate(-8vw, 0) rotate(-4deg); }
+  100% { transform: translate(0, 0) rotate(-3deg); }
+}
+@keyframes cine-trot { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-12px) rotate(3deg); } }
+/* Lanterns coming down from the top of the screen for the Golden Horse */
+.cine-lanterns { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-around; padding: 0 4vw; }
+.cine-lantern {
+  position: relative;
+  width: clamp(34px, 8vw, 64px);
+  aspect-ratio: 5 / 6;
+  margin-top: calc(10px + (var(--i) * 37 % 3) * 2.2vh);
+  border: 2.5px solid var(--ink);
+  border-radius: 50% / 46%;
+  background: linear-gradient(90deg, #c8141f, #ff5a45 45%, #c8141f);
+  box-shadow: inset 0 7px 0 -1px #ffd65a, inset 0 -7px 0 -1px #ffd65a, 0 0 30px rgba(255, 140, 60, .9);
+  transform-origin: 50% -40px;
+  animation: cine-lantern-drop .7s var(--ease-out) backwards, lantern-swing 2.6s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * .12s), calc(.7s + var(--i) * -.5s);
+}
+.cine-lantern::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 2px; height: 40vh; margin-left: -1px; background: #ffd65a; }
+.cine-lantern::after { content: ""; position: absolute; left: 50%; top: 100%; width: 4px; height: 22px; margin-left: -2px; background: #ffd65a; }
+@keyframes cine-lantern-drop { from { translate: 0 -40vh; } }
+@media (max-height: 560px) {
+  .cine-coin, .cine-trusty { display: none; }
 }
 
 /* The side panel */
@@ -1189,7 +1339,13 @@ kbd {
 .chip-btn[data-clicks="20"] { --chip: #7a3fb0; }
 .slots-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
 .spin-btn { min-height: 60px; font-size: 1.5rem; }
-.paytable { display: grid; gap: 6px; min-height: 420px; margin: 0; padding: 0; list-style: none; }
+.paytable { display: grid; gap: 6px; min-height: 560px; margin: 0; padding: 0; list-style: none; }
+.paytable-bonus { min-height: 380px; margin-top: 10px; }
+.bonus-how { margin-top: 0; }
+.pay-bonus { border-style: solid; border-color: #c9a227; background: #fff6d6; }
+.pay-bonus .pay-times { font-size: .95rem; }
+.panel-golden .panel-title .cjk { color: #a80f1d; }
+.spin-btn.is-free { background: linear-gradient(180deg, #ffe58a, #f0b429); font-size: 1.2rem; }
 .paytable li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 8px; border: 1.5px dashed var(--grid-strong); border-radius: 10px; background: var(--paper); }
 .pay-syms { display: flex; align-items: center; gap: 3px; }
 .pay-syms .pay-sym { width: 34px; height: 34px; flex: none; }
@@ -1201,7 +1357,7 @@ kbd {
   .slots-controls .slots-bet { order: -1; }
   .slots-controls .chips { justify-content: center; }
   .slots-controls #bet-label { text-align: center; }
-  .paytable { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); min-height: 0; }
+  .paytable, .paytable-bonus { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); min-height: 0; }
 }
 @media (max-width: 560px) {
   .slots-sign { padding-inline: 34px; }
@@ -1209,6 +1365,7 @@ kbd {
 }
 @media (prefers-reduced-motion: reduce) {
   .slots-lights::before, .slots-lights::after, .lantern, .cell.is-win, .slots.is-big, .slots.is-jackpot, .slots-meter.is-up output, .shout-big span, .shout-sub { animation: none !important; }
+  .cine { display: none; }
 }
 
 /* =========================================================================

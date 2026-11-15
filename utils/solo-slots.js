@@ -8,11 +8,12 @@ import { mongoGames } from './solo-store.js';
 // function. The reels are spun here, never in the browser: a spin decided on the page could be rigged to win
 // clicks. Each account's last spin is kept in the database (`slots_solo`, one document per account) so a payout
 // that didn't get through can be paid on the next visit.
-//   GET: { last (the last spin: machine, stops, line, amount, times, kind, symbol, payout), spins, bets (limits),
-//     bank: { clicks, net }, limits, refunded }. It also pays out a spin whose payout didn't get through.
-//   POST { do: 'spin', machine, amount }: bets and spins. The same answer, with `bank` only when your clicks
+//   GET: { last (the last spin: stops, line, times, kind, symbol, bonus (its free spins, if it won the Golden
+//     Horse), total, amount, payout), spins, bets (limits), bank: { clicks, net }, limits, refunded }. It also pays
+//     out a spin whose payout didn't get through.
+//   POST { do: 'spin', amount }: bets and spins (and, when the spin wins the bonus, plays every free spin too). The same answer, with `bank` only when your clicks
 //     changed, and `error` when the bank said no.
-// The rules and the machines are scripts/slots.js; the game is utils/solo-slots-game.js.
+// The rules, the machine and its bonus are scripts/slots.js; the game is utils/solo-slots-game.js.
 
 export default async function soloSlots(req, res) {
   res.setHeader('Cache-Control', 'no-store');
