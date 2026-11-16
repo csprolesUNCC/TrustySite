@@ -3,14 +3,16 @@ import { authenticateUser } from './auth.js';
 import { stake, settle, status } from './bank.js';
 import { play, cleanMove, defaults } from './solo-slots-game.js';
 import { mongoGames } from './solo-store.js';
+import { mongoJackpot } from './slots-jackpot.js';
 
 // Trusty Slots, for clicks: served from api/leaderboard.js as ?action=slots so it doesn't take up another Vercel
 // function. The reels are spun here, never in the browser: a spin decided on the page could be rigged to win
 // clicks. Each account's last spin is kept in the database (`slots_solo`, one document per account) so a payout
 // that didn't get through can be paid on the next visit.
 //   GET: { last (the last spin: stops, line, times, kind, symbol, bonus (its free spins, if it won the Golden
-//     Horse), total, amount, payout), spins, bets (limits), bank: { clicks, net }, limits, refunded }. It also pays
-//     out a spin whose payout didn't get through.
+//     Horse), total, amount, jackpot (the Grand Jackpot clicks it won), payout), spins, bets (limits), jackpot (the
+//     Grand Jackpot's pot now, which the whole site's spins build up: utils/slots-jackpot.js), bank: { clicks, net },
+//     limits, refunded }. It also pays out a spin whose payout didn't get through.
 //   POST { do: 'spin', amount }: bets and spins (and, when the spin wins the bonus, plays every free spin too). The same answer, with `bank` only when your clicks
 //     changed, and `error` when the bank said no.
 // The rules, the machine and its bonus are scripts/slots.js; the game is utils/solo-slots-game.js.
@@ -30,6 +32,7 @@ export default async function soloSlots(req, res) {
     const deps = {
       ...defaults,
       ...mongoGames(db.collection('slots_solo')),
+      jackpot: mongoJackpot(db.collection('slots_jackpot')),
       bank: { stake: (op) => stake(clicks, op), settle: (bets) => settle(clicks, bets) },
     };
     const game = await play(deps, userId, move);

@@ -13,9 +13,14 @@
 // reel, anywhere in the window (above, on or below the line), the spin also wins BONUS.spins free spins on the
 // Golden Horse's reels, each paying its own paytable times the bet that triggered them.
 //
-// The house always wins: with the bonus counted in, the machine pays back less than is bet in the long run (rtp()
-// adds it up exactly, and tests/slots.test.js keeps it between RTP.min and RTP.max). Change a strip or a paytable
-// and run the tests.
+// The Grand Jackpot (JACKPOT): a pot every player's spins build up together. A share of every bet goes into it,
+// and any spin can win the whole of it at once, whatever the reels show; the bigger the bet, the better the chance
+// (jackpotChance). After a win it starts again from JACKPOT.seed. It stops growing at JACKPOT.max, which is what
+// keeps the machine a loser for its players however long the pot goes unwon.
+//
+// The house always wins: with the bonus and the jackpot counted in, the machine pays back less than is bet in the
+// long run, and less than is bet even on a spin at a full pot (rtp() adds it up exactly, and tests/slots.test.js
+// keeps it between RTP.min and RTP.max). Change a strip, a paytable or the jackpot's numbers and run the tests.
 
 // Bets in tens, like the tables', but smaller: one spin can pay up to MAX_RETURN times its bet.
 export const BETS = { min: 10, max: 100, step: 10 };
@@ -24,6 +29,13 @@ export const isBet = (n) => Number.isSafeInteger(n) && n >= BETS.min && n <= BET
 // What the machine has to pay back in the long run, as a share of what's bet.
 export const RTP = { min: 0.9, max: 0.955 };
 export const REELS = 3;
+
+// The Grand Jackpot. rate: the share of every bet that goes into the pot. seed: what it starts from after a win
+// (the house puts that in). max: where it stops growing. odds: a spin at the biggest bet wins it 1 time in this
+// many; a smaller bet has that much less of a chance (a 10-click spin, a tenth of a 100-click one), so a click
+// bet is worth the same shot at the pot whatever the bet.
+export const JACKPOT = { rate: 0.02, seed: 1000, max: 25000, odds: 5000 };
+export const jackpotChance = (amount) => (isBet(amount) ? amount / BETS.max / JACKPOT.odds : 0);
 const WINDOW = [-1, 0, 1]; // the symbols a stopped reel shows: above the line, on it, below it
 
 // Trusty's Hay Day.
@@ -39,7 +51,7 @@ export const MACHINE = {
     'hay', 'carrot', 'apple', 'pencil', 'shoe', 'hay', 'bonus', 'carrot', 'seven', 'apple', 'pencil', 'hay', 'carrot',
     'shoe', 'apple', 'hay', 'pencil', 'carrot', 'trusty', 'hay', 'bonus', 'apple', 'shoe', 'carrot', 'pencil', 'seven',
   ],
-  three: { trusty: 50, seven: 40, shoe: 25, pencil: 12, apple: 12, carrot: 7, hay: 6 },
+  three: { trusty: 50, seven: 40, shoe: 25, pencil: 12, apple: 12, carrot: 7, hay: 5 },
   two: { trusty: 10, seven: 5, apple: 2, carrot: 2, hay: 2 },
   jackpot: 'trusty',
   scatter: 'bonus',
@@ -63,10 +75,11 @@ export const BONUS = {
   jackpot: 'ma',
 };
 
-// The most one spin can pay back, as a multiple of what was bet: the Hay Day's jackpot with the bonus on the same
-// spin, and the Golden Horse's jackpot on every free spin. utils/bank-rules.js caps payouts at it.
+// The most one spin can pay back, as a multiple of what was bet: the Hay Day's top prize with the bonus on the
+// same spin, the Golden Horse's top prize on every free spin, and a full Grand Jackpot won on the smallest bet.
+// utils/bank-rules.js caps payouts at it.
 const top = (machine) => Math.max(...Object.values(machine.three));
-export const MAX_RETURN = top(MACHINE) + BONUS.spins * top(BONUS);
+export const MAX_RETURN = top(MACHINE) + BONUS.spins * top(BONUS) + JACKPOT.max / BETS.min;
 
 // Where the reels stop: one index into the strip per reel. random() is 0 <= n < 1.
 export function spin(machine, random) {
@@ -156,9 +169,11 @@ function lineOdds(machine) {
   return { back: paid / n ** 3, hit: hits / n ** 3 };
 }
 
-// The whole machine, bonus included: { rtp (what comes back per click bet), hit (how often a spin's line pays),
-// line (the share that comes from the Hay Day's own paytable), bonusEvery (spins per bonus, on average),
-// bonusPays (what a bonus pays on average, in bets) }.
+// The whole machine, bonus and jackpot included: { rtp (what comes back per click bet in the long run), hit (how
+// often a spin's line pays), line (the share that comes from the Hay Day's own paytable), bonusEvery (spins per
+// bonus, on average), bonusPays (what a bonus pays on average, in bets), jackpot (the share that comes back
+// through the Grand Jackpot: what goes in, plus the house's seed), worst (what a spin pays back on average while
+// the pot is full, the most the machine ever pays) }.
 export function rtp() {
   const base = lineOdds(MACHINE);
   const n = MACHINE.strip.length;
@@ -166,5 +181,11 @@ export function rtp() {
   for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) for (let c = 0; c < n; c++) if (triggers([a, b, c])) wins += 1;
   const chance = wins / n ** 3;
   const bonusPays = BONUS.spins * lineOdds(BONUS).back;
-  return { rtp: base.back + chance * bonusPays, hit: base.hit, line: base.back, bonusEvery: 1 / chance, bonusPays };
+  const reels = base.back + chance * bonusPays;
+  const perClick = 1 / (JACKPOT.odds * BETS.max); // the chance of the pot that each click bet buys
+  const jackpot = JACKPOT.rate + JACKPOT.seed * perClick;
+  return {
+    rtp: reels + jackpot, hit: base.hit, line: base.back, bonusEvery: 1 / chance, bonusPays, jackpot,
+    worst: reels + JACKPOT.max * perClick,
+  };
 }

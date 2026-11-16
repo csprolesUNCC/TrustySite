@@ -243,7 +243,8 @@ async function twoPeople(found) {
 }
 
 // Trusty Slots for clicks: carson spins the Hay Day a few times, then (with the dev server's mockslots=bonus
-// cookie) wins the Golden Horse bonus and plays its free spins out, at phone and desktop widths.
+// cookie) wins the Golden Horse bonus and plays its free spins out, then (mockslots=jackpot) wins the Grand Jackpot,
+// at phone and desktop widths.
 {
   const found = [];
   const { pages: [player], close } = await twoPeople(found);
@@ -268,6 +269,8 @@ async function twoPeople(found) {
   try {
     for (const width of [375, 1280]) {
       await player.setViewportSize({ width, height: 800 });
+      // A player of their own each time: winning the Grand Jackpot puts one over the bank's limit for the day.
+      await player.context().addCookies([{ name: 'mockuser', value: `spinner${width}`, url: BASE }]);
       await player.goto(`${BASE}/pages/games/slots.html`, { waitUntil: 'networkidle' });
       await player.waitForFunction(() => document.querySelector('#bank').textContent !== '…', null, { timeout: 5000 });
       await check(`${width}px, before a spin`);
@@ -292,6 +295,20 @@ async function twoPeople(found) {
       if (!/Golden Horse/.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px: no word on what the bonus paid`);
       if (!(await stopped())) found.push(`${width}px: the reels didn't stop after the bonus`);
       await check(`${width}px, after the bonus`);
+
+      // The Grand Jackpot: the next spin wins the pot, which then starts again.
+      const pot = () => player.$eval('#grand-amount', (el) => Number(el.textContent.replace(/\D/g, '')));
+      const full = await pot();
+      const clicksBefore = Number((await player.$eval('#bank', (el) => el.textContent)).replace(/\D/g, ''));
+      await player.context().addCookies([{ name: 'mockslots', value: 'jackpot', url: BASE }]);
+      await spin();
+      await player.context().clearCookies({ name: 'mockslots' });
+      if (!/Grand Jackpot/.test(await player.$eval('#status', (el) => el.textContent))) found.push(`${width}px: no word on the Grand Jackpot`);
+      if (full > 1100 && (await pot()) >= full) found.push(`${width}px: the pot was ${full} and is ${await pot()} after being won`);
+      if (full < 1000) found.push(`${width}px: the pot only had ${full} in it`);
+      const clicksAfter = Number((await player.$eval('#bank', (el) => el.textContent)).replace(/\D/g, ''));
+      if (clicksAfter < clicksBefore + full - 100) found.push(`${width}px: the pot (${full}) didn't reach the player's clicks (${clicksBefore} to ${clicksAfter})`);
+      await check(`${width}px, after the Grand Jackpot`);
       const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       if (wide) found.push(`${width}px: scrolls sideways`);
     }
@@ -340,7 +357,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins and a Golden Horse bonus on the Slots${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins, a Golden Horse bonus and a Grand Jackpot on the Slots${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

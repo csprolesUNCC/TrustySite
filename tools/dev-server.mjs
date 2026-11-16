@@ -21,6 +21,7 @@ import { play as soloPlay, cleanMove, memoryGames, defaults as soloDefaults } fr
 import { play as crapsPlay, cleanMove as crapsMove } from '../utils/solo-craps-game.js';
 import { play as slotsPlay, cleanMove as slotsMove } from '../utils/solo-slots-game.js';
 import { MACHINE as SLOT_MACHINE } from '../scripts/slots.js';
+import { memoryJackpot } from '../utils/slots-jackpot.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
 import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 import { isHouse } from '../utils/house.js';
@@ -50,9 +51,12 @@ const craps = { ...soloDefaults, ...memoryGames(), bank };
 // Trusty Slots (utils/solo-slots.js, the real game), the same way. The cookie mockslots=bonus makes every spin
 // win the Golden Horse bonus (the reels stop with a gold tile showing on each: stops 5, 6 and 7 of the Hay Day's
 // strip), so there's a way to look at it without spinning 80 times; the free spins themselves stay random.
-const slots = { ...soloDefaults, ...memoryGames(), bank };
+// mockslots=jackpot makes every spin win the Grand Jackpot, which starts here with a few thousand clicks in it.
+const slots = { ...soloDefaults, ...memoryGames(), bank, jackpot: memoryJackpot() };
+slots.jackpot.pot.cents = 743219;
 const BONUS_STOPS = [5, 6, 7];
 function slotsFor(req) {
+  if (/(?:^|;\s*)mockslots=jackpot(?:;|$)/.test(req.headers.cookie || '')) return { ...slots, luck: () => 0 };
   if (!/(?:^|;\s*)mockslots=bonus(?:;|$)/.test(req.headers.cookie || '')) return slots;
   const stops = BONUS_STOPS.map((stop) => (stop + 0.5) / SLOT_MACHINE.strip.length);
   return { ...slots, random: () => (stops.length ? stops.shift() : slots.random()) };

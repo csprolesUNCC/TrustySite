@@ -93,7 +93,7 @@ async function openBet(col, userId, betId) {
   return doc ? doc.bank.open[betId] : null;
 }
 
-// A payout over maxPayout() (3 times a Blackjack bet, 8 times a Craps one, 754 times a Slots spin, a refund
+// A payout over maxPayout() (3 times a Blackjack bet, 8 times a Craps one, 3,254 times a Slots spin, a refund
 // otherwise) is refused.
 export async function settle(col, bets, now = new Date()) {
   const balances = {};

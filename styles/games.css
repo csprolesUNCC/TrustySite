@@ -1021,6 +1021,37 @@ kbd {
 @keyframes lantern-swing { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
 
 /* The window: three reels, three symbols tall, with the payline across the middle */
+/* The Grand Jackpot's pot, lit up above the reels */
+.grand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 12px;
+  max-width: min(520px, 52svh);
+  margin: 0 auto clamp(8px, 1.6vw, 12px);
+  padding: 4px 12px 5px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #2a1c00, #120c00);
+  box-shadow: inset 0 0 0 2px #c9a227, 0 0 16px rgba(255, 200, 60, .45);
+  text-align: center;
+}
+.grand-label { font-family: var(--font-marker); font-size: clamp(.8rem, 2.6vw, 1rem); letter-spacing: .06em; text-transform: uppercase; color: #ffd65a; }
+.grand-amount {
+  font-family: var(--font-marker);
+  font-size: clamp(1.5rem, 5.6vw, 2.2rem);
+  line-height: 1.1;
+  color: #fff3b0;
+  text-shadow: 0 0 12px #ffb400, 0 2px 0 #7a4b00;
+  font-variant-numeric: tabular-nums;
+  animation: grand-glow 1.6s ease-in-out infinite alternate;
+}
+.grand-note { flex-basis: 100%; font-size: .72rem; font-weight: 700; color: #e6d6a0; }
+.grand.is-won { animation: slots-flash .2s steps(1) infinite; }
+.grand.is-won .grand-amount { animation: meter-up .16s ease-in-out infinite alternate; }
+@keyframes grand-glow { to { text-shadow: 0 0 22px #ffd65a, 0 2px 0 #7a4b00; color: #fff; } }
+
 /* svh keeps the whole machine on one screen: the reels are as tall as the window is wide. */
 .slots-window {
   position: relative;
@@ -1191,6 +1222,11 @@ kbd {
 }
 .cine[hidden] { display: none; }
 .cine-golden { --cine-a: #ffd65a; --cine-ray: #ffd65a; --cine-b: #c8141f; --cine-dark: #3a0308; --cine-edge: #8f0d18; }
+/* The Grand Jackpot: black and gold */
+.cine-grand { --cine-a: #ffd65a; --cine-ray: #ffd65a; --cine-b: #6b4a00; --cine-dark: #070500; --cine-edge: #7a4b00; }
+.cine-grand .cine-title { font-size: clamp(2rem, 9.6vw, 8rem); color: #fff3b0; }
+.cine-grand .cine-amount { font-size: clamp(3rem, 16vw, 8rem); color: #ffd65a; }
+.cine-grand .cine-trusty { border-color: #7a4b00; background: linear-gradient(180deg, #fff8dc, #ffd65a); }
 .cine.is-leaving { animation: cine-out .32s ease-in forwards; }
 @keyframes cine-in { from { opacity: 0; transform: scale(1.12); } }
 @keyframes cine-out { to { opacity: 0; transform: scale(1.08); } }
@@ -1208,11 +1244,12 @@ kbd {
   animation: cine-turn 22s linear infinite;
 }
 .cine-hay .cine-rays { opacity: .2; }
-.cine-jackpot .cine-rays { opacity: .5; animation-duration: 9s; }
+.cine-jackpot .cine-rays, .cine-grand .cine-rays { opacity: .5; animation-duration: 9s; }
 .cine-hay.cine-jackpot .cine-rays { opacity: .3; }
 @keyframes cine-turn { to { transform: rotate(360deg); } }
 .cine-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: cine-flash .7s ease-out; pointer-events: none; }
 .cine-jackpot .cine-flash { animation: cine-flash .7s ease-out, cine-flash .5s ease-out 2.4s, cine-flash .5s ease-out 4.6s; }
+.cine-grand .cine-flash { animation: cine-flash .7s ease-out, cine-flash .5s ease-out 2.7s, cine-flash .5s ease-out 4.8s, cine-flash .5s ease-out 6.9s, cine-flash .5s ease-out 9s; }
 @keyframes cine-flash { from { opacity: .95; } to { opacity: 0; } }
 .cine-stack {
   position: relative;
@@ -1225,6 +1262,7 @@ kbd {
   text-align: center;
 }
 .cine-jackpot .cine-stack { animation: cine-shake .1s linear 1s 14; }
+.cine-grand .cine-stack { animation: cine-shake .1s linear 1s 24; }
 @keyframes cine-shake { 25% { transform: translate(-5px, 3px); } 75% { transform: translate(5px, -3px); } }
 .cine-kicker {
   margin: 0;
@@ -1385,7 +1423,7 @@ kbd {
   .slots[data-theme="golden"] .lantern { width: 20px; height: 26px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .slots-lights::before, .slots-lights::after, .lantern, .cell.is-win, .slots.is-big, .slots.is-jackpot, .slots-meter.is-up output, .shout-big span, .shout-sub { animation: none !important; }
+  .grand-amount, .grand.is-won, .grand.is-won .grand-amount, .slots-lights::before, .slots-lights::after, .lantern, .cell.is-win, .slots.is-big, .slots.is-jackpot, .slots-meter.is-up output, .shout-big span, .shout-sub { animation: none !important; }
   .cine { display: none; }
 }
 

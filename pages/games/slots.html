@@ -95,6 +95,12 @@
                         <p class="slots-tagline" id="machine-tagline">Three in a row pays. Three gold tiles win the bonus!</p>
                     </div>
 
+                    <p class="grand" id="grand">
+                        <span class="grand-label" id="grand-label">Grand Jackpot</span>
+                        <output class="grand-amount" id="grand-amount" aria-labelledby="grand-label" aria-live="off">…</output>
+                        <span class="grand-note">Every spin feeds it. Any spin can win it all.</span>
+                    </p>
+
                     <div class="slots-window">
                         <div class="reels" id="reels" role="img" aria-label="The reels">
                             <div class="reel"><div class="reel-strip"></div></div>
@@ -168,6 +174,7 @@
                     <ul class="how-to bullets">
                         <li><span class="keys">&#9733;</span> Pick a bet and spin. Only the middle row pays; the gold tiles count on any row.</li>
                         <li><span class="keys">&#9733;</span> Every spin, free spins included, is decided on Trusty’s server the moment you press the button. The reels just show you what happened.</li>
+                        <li><span class="keys">&#9733;</span> <span id="grand-how">A share of every bet goes into the Grand Jackpot, and any spin can win the whole pot.</span></li>
                         <li><span class="keys">&#9733;</span> <span id="odds">The house always wins: the machine pays back a little less than is bet.</span></li>
                     </ul>
                 </div>
@@ -195,12 +202,13 @@
     <script type="module">
         import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
         import { isForeignKey, isActivationKey, mute, sound, bindMuteButton } from '/scripts/game-kit.js';
-        import { MACHINE, BONUS, CHIPS, isStops, symbolAt, lineOf, scattersAt, tierOf, rtp } from '/scripts/slots.js';
+        import { MACHINE, BONUS, JACKPOT, BETS, CHIPS, isStops, symbolAt, lineOf, scattersAt, tierOf, rtp } from '/scripts/slots.js';
 
         // Every spin is for your real site clicks. The site's API (?action=slots, utils/solo-slots.js) takes the
         // bet, decides where the reels stop (and, when a spin wins the Golden Horse bonus, every free spin with
         // it) and pays out, all on the server where nobody can rig it. This page only picks a bet and puts on the
-        // show: the reels, the lights, the coins, the full-screen scenes for big wins, and in the bonus the
+        // show: the reels, the lights, the coins, the full-screen scenes for big wins, the Grand Jackpot's pot
+        // (which every player's spins build up, and the server alone decides who wins), and in the bonus the
         // characters and the voice. The machine, its bonus and what they pay are scripts/slots.js.
 
         const API = '/api/leaderboard?action=slots';
@@ -220,7 +228,8 @@
         // last: the last spin, as the API gave it. spins: how many the account has made (a spin that happened
         // changes it). bonus: the Golden Horse round being played out, { spin (the one that won it), next (which
         // free spin is next), won (what they've paid so far, in bets), bank (your clicks once it's all in) }.
-        const state = { bet: 10, last: null, spins: 0, busy: false, failed: false, bonus: null };
+        // pot: the Grand Jackpot, as last heard from the API.
+        const state = { bet: 10, last: null, spins: 0, busy: false, failed: false, bonus: null, pot: null };
         const wallet = { clicks: null, today: null, limits: null };
 
         /* ---------- Symbols ---------- */
@@ -704,7 +713,7 @@
 
         // A number counting up, with a tick for the coins going in.
         const counting = new Map(); // element -> the count that's running on it
-        function countUp(el, total, { from = 0, ms = Math.min(2200, 500 + (total - from) * 1.2), box = null } = {}) {
+        function countUp(el, total, { from = 0, ms = Math.min(2200, 500 + (total - from) * 1.2), box = null, quiet = false } = {}) {
             if (reduceMotion.matches || total === from) { el.textContent = fmt(total); return; }
             const start = performance.now();
             const mine = {};
@@ -715,11 +724,21 @@
                 if (counting.get(el) !== mine) return;
                 const t = Math.min(1, (now - start) / ms);
                 el.textContent = fmt(Math.round(from + (total - from) * t));
-                if (now - ticked > 70 && t < 1) { ticked = now; tone(1568 + 400 * t, 0, 0.05, 'square', 0.025); }
+                if (!quiet && now - ticked > 70 && t < 1) { ticked = now; tone(1568 + 400 * t, 0, 0.05, 'square', 0.025); }
                 if (t < 1) requestAnimationFrame(step);
                 else box?.classList.remove('is-up');
             };
             requestAnimationFrame(step);
+        }
+
+        // The Grand Jackpot's pot on the cabinet. It ticks up when your own spins (or anyone's, since you last
+        // heard) have added to it.
+        function setPot(clicks) {
+            if (typeof clicks !== 'number') return;
+            const before = state.pot;
+            state.pot = clicks;
+            if (before != null && clicks > before) countUp($('grand-amount'), clicks, { from: before, ms: 600, quiet: true });
+            else { counting.delete($('grand-amount')); $('grand-amount').textContent = fmt(clicks); }
         }
 
         function setStatus(...parts) {
@@ -798,7 +817,7 @@
                 theme: 'hay',
                 kind: tier,
                 kicker: jackpot ? 'Three Trustys!' : 'Trusty’s Hay Day',
-                title: jackpot ? 'JACKPOT!' : 'BIG WIN!',
+                title: jackpot ? 'MEGA WIN!' : 'BIG WIN!',
                 amount: payout,
                 sub: 'clicks',
                 ms: jackpot ? 7500 : 4800,
@@ -814,6 +833,35 @@
                         later(() => { fanfare('hay', 'jackpot'); throwCoins(240, true); fountain(70); }, 2400);
                         later(() => { neigh.play(); throwCoins(240, true); }, 4600);
                     }
+                },
+            });
+        }
+
+        // The Grand Jackpot: the whole pot, all at once. Everything the machine has, for as long as it takes to
+        // count the pot up.
+        const siren = () => { for (let i = 0; i < 6; i++) { tone(620, i * 0.3, 0.15, 'sawtooth', 0.05); tone(930, i * 0.3 + 0.15, 0.15, 'sawtooth', 0.05); } };
+        function grandScene(amount) {
+            return scene({
+                theme: 'grand',
+                kind: 'grand',
+                kicker: 'You won the whole pot!',
+                title: 'GRAND JACKPOT!',
+                amount,
+                sub: 'clicks',
+                ms: 12000,
+                decor: [trustyCard()],
+                start() {
+                    siren();
+                    boom.play();
+                    later(() => neigh.play(), 900);
+                    fountain(110);
+                    fireworks('golden', 30, 380);
+                    for (let i = 0; i < 5; i++) {
+                        later(() => { fanfare('hay', 'jackpot'); throwCoins(260, true); fountain(80); }, 600 + i * 2100);
+                    }
+                    dragon({ height: 0.2, delay: 2600 });
+                    dragon({ from: -1, height: 0.8, delay: 5600 });
+                    later(() => { boom.play(); neigh.play(); }, 6000);
                 },
             });
         }
@@ -1104,6 +1152,7 @@
                 wallet.limits = game.limits || wallet.limits;
                 setWallet(game.bank);
                 if (game.refunded) toast(`${fmt(game.refunded)} clicks from a game that never finished came back to you.`, 'info', 7000);
+                setPot(game.jackpot);
                 if (!state.busy && !state.bonus) restoreReels();
             } catch {
                 state.failed = true;
@@ -1148,20 +1197,37 @@
                     if (next.last) state.last = next.last;
                     restoreReels();
                     setWallet(next.bank);
+                    setPot(next.jackpot);
                     setStatus(next.error || 'That spin didn’t happen. Try again.');
                     if (next.error) toast(next.error, 'info', 7000);
                     return;
                 }
                 const last = state.last = next.last;
                 await spinTo(MACHINE, last.stops, spinning);
-                // The free spins' clicks are already in the bank; they show up once the free spins have been played.
+                // The free spins' clicks (and a Grand Jackpot's) are already in the bank; they show up once they've
+                // been played out on screen.
+                const grand = last.jackpot || 0;
                 const held = last.bonus ? last.bonus.times * last.amount : 0;
-                if (next.bank) setWallet({ clicks: next.bank.clicks - held, net: next.bank.net - held });
+                const showBank = (keep) => { if (next.bank) setWallet({ clicks: next.bank.clicks - keep, net: next.bank.net - keep }); };
+                showBank(held + grand);
+                if (!grand) setPot(next.jackpot);
                 if (last.times) {
                     countUp($('win-meter'), last.times * last.amount, { box: $('win-box') });
                     await celebrate(MACHINE, last, last.amount);
-                } else if (!last.bonus) {
+                } else if (!last.bonus && !grand) {
                     setStatus(pick(LOSSES));
+                }
+                if (grand) {
+                    $('grand').classList.add('is-won');
+                    setStatus('The Grand Jackpot!');
+                    if (!reduceMotion.matches) { drumroll(1.2); await sleep(1300); }
+                    await grandScene(grand);
+                    clearShow();
+                    $('grand').classList.remove('is-won');
+                    showBank(held);
+                    setPot(next.jackpot);
+                    $('win-meter').textContent = fmt(last.times * last.amount + grand);
+                    setStatus(`Grand Jackpot! The whole pot is yours: ${clicksText(grand)}!`);
                 }
                 if (last.bonus) await startBonus(last, next.bank);
             } catch {
@@ -1212,6 +1278,8 @@
             if (!loggedIn) {
                 state.last = null;
                 state.spins = 0;
+                state.pot = null;
+                $('grand-amount').textContent = '…';
                 if (state.bonus) { state.bonus = null; setTheme(false); restoreReels(); }
                 Object.assign(wallet, { clicks: null, today: null });
             } else {
@@ -1222,7 +1290,8 @@
 
         // What the machine pays back, worked out from its reels (scripts/slots.js), so it's never out of date.
         const odds = rtp();
-        $('odds').textContent = `The house always wins. With the bonus counted in, the machine pays back about ${Math.round(odds.rtp * 100)} of every 100 clicks bet. The line wins about 1 spin in ${Math.round(1 / odds.hit)}, and the bonus comes up about once in ${Math.round(odds.bonusEvery)} spins.`;
+        $('grand-how').textContent = `${Math.round(JACKPOT.rate * 100)}% of every bet, yours and everyone else’s, goes into the Grand Jackpot, and any spin can win the whole pot, whatever the reels show. The bigger the bet, the better the chance: about 1 in ${fmt(JACKPOT.odds)} at ${BETS.max} clicks. It starts again from ${fmt(JACKPOT.seed)} and tops out at ${fmt(JACKPOT.max)}.`;
+        $('odds').textContent = `The house always wins. With the bonus and the jackpot counted in, the machine pays back about ${Math.round(odds.rtp * 100)} of every 100 clicks bet. The line wins about 1 spin in ${Math.round(1 / odds.hit)}, and the bonus comes up about once in ${Math.round(odds.bonusEvery)} spins.`;
         $('bonus-how').textContent = `A gold tile showing on all three reels, on any row, wins ${BONUS.spins} free spins on the Golden Horse. They pay about ${Math.round(odds.bonusPays)} times your bet on average.`;
 
         $('lobby-login-link').href = loginHref();
