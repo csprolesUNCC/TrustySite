@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MongoClient } from 'mongodb';
 import bankApi, { stake, settle, settlePot, refundStale, status, signedOp, dayOf, LIMITS, STALE_MS } from '../utils/bank.js';
+import { limitsFor, limitBasis } from '../utils/bank-rules.js';
 import { signPayload } from '../utils/fever-ticket.js';
 
 const SECRET = 'a-test-secret-that-is-long-enough-1234';
@@ -100,17 +101,33 @@ test('two tabs can’t spend the same clicks', needsMongo, () => withDb(async (c
   assert.equal(await clicksOf(col, 'u1'), 0);
 }));
 
+test('a bigger player gets a bigger daily limit', () => {
+  assert.deepEqual(limitsFor(0), LIMITS);
+  assert.equal(limitsFor(4999).lossPerDay, 5000);
+  assert.equal(limitsFor(5000).lossPerDay, 10000);
+  assert.equal(limitsFor(49999).winPerDay, 10000);
+  assert.equal(limitsFor(50000).winPerDay, 25000);
+  assert.equal(limitsFor(249999).lossPerDay, 25000);
+  assert.equal(limitsFor(250000).lossPerDay, 50000);
+  assert.equal(limitsFor(10000000).winPerDay, 50000);
+  assert.equal(limitsFor(250000).maxStake, LIMITS.maxStake, 'one bet is still at most 500');
+  assert.equal(limitBasis(6000, 1500), 4500, 'today’s winnings don’t count');
+  assert.equal(limitBasis(3000, -2500), 5500, 'nor do today’s losses');
+});
+
 test('daily limits, and a new day starts from zero', needsMongo, () => withDb(async (col) => {
-  await col.insertOne({ userId: 'u1', clicks: 100000 });
+  await col.insertOne({ userId: 'u1', clicks: 20000 }); // a Stallion: 10,000 up or down a day
   const morning = new Date('2026-11-10T15:00:00Z');
-  for (let i = 0; i < 9; i++) await stake(col, { userId: 'u1', betId: id(i + 1), amount: 500, game: 'blackjack' }, morning);
-  await stake(col, { userId: 'u1', betId: id(10), amount: 300, game: 'blackjack' }, morning); // 4,800 down, all still open
-  assert.match((await stake(col, { userId: 'u1', betId: id(11), amount: 500, game: 'blackjack' }, morning)).error, /more than 5,000 clicks down/);
-  assert.equal((await stake(col, { userId: 'u1', betId: id(12), amount: 200, game: 'blackjack' }, morning)).ok, true, 'up to the limit is fine');
-  // Win them all back and then some: once you're 5,000 up, no more bets today.
-  const bets = Array.from({ length: 10 }, (_, i) => ({ userId: 'u1', betId: id(i + 1), payout: i < 9 ? 1500 : 900 }));
-  await settle(col, [...bets, { userId: 'u1', betId: id(12), payout: 600 }], morning);
-  assert.equal((await status(col, 'u1', morning)).net, 9 * 1000 + 600 + 400);
+  for (let i = 0; i < 19; i++) await stake(col, { userId: 'u1', betId: id(i + 1), amount: 500, game: 'blackjack' }, morning);
+  await stake(col, { userId: 'u1', betId: id(30), amount: 300, game: 'blackjack' }, morning); // 9,800 down, all still open
+  assert.match((await stake(col, { userId: 'u1', betId: id(31), amount: 500, game: 'blackjack' }, morning)).error, /more than 10,000 clicks down/);
+  assert.equal((await stake(col, { userId: 'u1', betId: id(32), amount: 200, game: 'blackjack' }, morning)).ok, true, 'up to the limit is fine');
+  assert.equal((await status(col, 'u1', morning)).limits.lossPerDay, 10000, 'losing doesn’t lower the limit');
+  // Win them all back and then some: once you're 10,000 up, no more bets today.
+  const bets = Array.from({ length: 19 }, (_, i) => ({ userId: 'u1', betId: id(i + 1), payout: 1500 }));
+  await settle(col, [...bets, { userId: 'u1', betId: id(30), payout: 900 }, { userId: 'u1', betId: id(32), payout: 600 }], morning);
+  assert.equal((await status(col, 'u1', morning)).net, 19 * 1000 + 600 + 400);
+  assert.equal((await status(col, 'u1', morning)).limits.winPerDay, 10000, 'winning doesn’t raise it either');
   assert.match((await stake(col, { userId: 'u1', betId: id(20), amount: 10, game: 'blackjack' }, morning)).error, /daily limit/);
   // Midnight Eastern is 05:00 UTC in November.
   const tomorrow = new Date('2026-11-11T05:30:00Z');
