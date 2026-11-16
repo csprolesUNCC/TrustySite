@@ -119,7 +119,7 @@
 
     <script type="module">
         import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref } from '/scripts/site.js';
-        import { safeDrawing, openDrawing, rankBadge } from '/scripts/leaderboard.js';
+        import { safeDrawing, openDrawing, rankBadge, clickIcon } from '/scripts/leaderboard.js';
         import { nextRank, rankProgress } from '/scripts/milestones.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
         import { usernameProblem } from '/scripts/username.js';
@@ -298,7 +298,9 @@
 
         function render() {
             document.title = `${profile.username} — Trusty da Horse`;
-            $('profile-name').textContent = profile.username;
+            // Trusty's own account is the house, never on the clicks board.
+            const clickPlace = !profile.house && profile.clicks ? profile.clicks.rank : 0;
+            $('profile-name').replaceChildren(...[profile.username, clickIcon(clickPlace)].filter(Boolean));
             const since = new Date(profile.memberSince);
             $('profile-since').textContent = Number.isNaN(since.getTime()) ? '' : `Trusty fan since ${joinedFormat.format(since)}.`;
             renderRename();

@@ -75,6 +75,24 @@ export function rankBadge(clicks) {
   return rank ? h('span', { class: 'rank-badge', title: rank.name, dataset: { level: rankLevel(rank) } }, rank.name) : null;
 }
 
+// The clicks board's top three get a gold, silver or bronze $ next to their name, there and on their profile.
+const CLICK_ICONS = [
+  { src: '/images/leaderboard/goldClick.png', width: 384, height: 495, label: '#1 on the clicks board' },
+  { src: '/images/leaderboard/silverClick.png', width: 381, height: 500, label: '#2 on the clicks board' },
+  { src: '/images/leaderboard/bronzeClick.png', width: 376, height: 490, label: '#3 on the clicks board' },
+];
+
+export function clickIcon(place) {
+  const icon = CLICK_ICONS[place - 1];
+  return icon ? h('img', { class: 'board-icon', src: icon.src, width: icon.width, height: icon.height, alt: icon.label, title: icon.label }) : null;
+}
+
+// A name with its place's icon after it, on boards that have icons.
+function nameWithIcon(entry, className, key, place) {
+  const icon = key === 'clicks' ? clickIcon(place) : null;
+  return icon ? h('span', { class: 'name-with-icon' }, nameTag(entry, className), icon) : nameTag(entry, className);
+}
+
 function drawingThumb(entry, className) {
   if (!entry.drawing) return h('span', { class: `${className} board-thumb-empty`, 'aria-hidden': 'true' });
   return h('button', {
@@ -95,7 +113,7 @@ export function renderList(list, entries, { key, startRank = 1 }) {
     },
     h('span', { class: 'board-rank' }, rank),
     key === 'draw' ? drawingThumb(entry, 'board-thumb') : null,
-    key === 'clicks' ? h('span', { class: 'board-who' }, nameTag(entry, 'board-name'), rankBadge(entry.score)) : nameTag(entry, 'board-name'),
+    key === 'clicks' ? h('span', { class: 'board-who' }, nameWithIcon(entry, 'board-name', key, rank), rankBadge(entry.score)) : nameTag(entry, 'board-name'),
     h('span', { class: 'board-score' }, board.format(entry.score)));
   }));
 }
@@ -109,7 +127,7 @@ export function renderPodium(container, entries, { key }) {
   container.replaceChildren(h('ol', { class: 'podium', 'aria-label': `${board.label} top three` },
     entries.slice(0, 3).map((entry, i) => h('li', { class: `podium-spot place-${i + 1}${isMe(entry) ? ' is-me' : ''}` },
       key === 'draw' ? drawingThumb(entry, 'podium-thumb') : null,
-      nameTag(entry, 'podium-name'),
+      nameWithIcon(entry, 'podium-name', key, i + 1),
       key === 'clicks' ? rankBadge(entry.score) : null,
       h('span', { class: 'podium-score' }, board.format(entry.score)),
       h('span', { class: 'podium-block', 'aria-label': `Rank ${i + 1}` }, i + 1)))));

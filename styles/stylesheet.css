@@ -661,6 +661,10 @@ button.board-thumb { cursor: zoom-in; }
 /* The clicks board puts each player's click rank under their name */
 .board-who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
 .board-who .board-name { max-width: 100%; line-height: 1.35; }
+/* The clicks board's gold, silver and bronze $ after a top-three name (scripts/leaderboard.js) */
+.name-with-icon { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; }
+.name-with-icon .podium-name { min-width: 0; }
+.board-icon { flex: none; width: auto; height: 1.25em; }
 
 /* Click ranks (scripts/milestones.js), on the clicks board, profiles and the list of ranks: the higher the rank,
    the brighter the badge. */
