@@ -1,6 +1,8 @@
 # Search engines can crawl everything. Pages that shouldn't show up in search results
 # (the login pages, the admin panel, the 404 page) have a noindex tag instead, which
-# crawlers only see if they're allowed to fetch the page.
+# crawlers only see if they're allowed to fetch the page. Everything that isn't a page
+# (API answers, scripts, styles, images, sounds...) gets a noindex header from vercel.json:
+# Google still has to fetch the scripts and styles to see the pages properly.
 User-agent: *
 Allow: /
 

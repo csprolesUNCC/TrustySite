@@ -211,7 +211,9 @@ export function startServer(port = 8787) {
     if (!file.startsWith(ROOT + path.sep) && file !== ROOT) { res.writeHead(403); res.end(); return; }
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
     let status = 200;
-    if (!fs.existsSync(file) || /(^|\/)(node_modules|\.git|api|utils|tests|tools|realtime)(\/|$)/.test(path.relative(ROOT, file))) {
+    const rel = path.relative(ROOT, file);
+    if (!fs.existsSync(file) || /(^|\/)(node_modules|\.git|\.github|api|utils|tests|tools|realtime)(\/|$)/.test(rel)
+      || /^(package(-lock)?\.json|vercel\.json|\.vercelignore|\.gitignore|README\.md|CLAUDE\.md)$/.test(rel)) { // as vercel.json's redirects
       status = 404;
       file = path.join(ROOT, '404.html');
     }
