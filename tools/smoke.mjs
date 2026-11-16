@@ -269,7 +269,7 @@ async function twoPeople(found) {
   try {
     for (const width of [375, 1280]) {
       await player.setViewportSize({ width, height: 800 });
-      // A player of their own each time: winning the Grand Jackpot puts one over the bank's limit for the day.
+      // A player of their own each time, so what one width wins or loses doesn't use up the other's limit for the day.
       await player.context().addCookies([{ name: 'mockuser', value: `spinner${width}`, url: BASE }]);
       await player.goto(`${BASE}/pages/games/slots.html`, { waitUntil: 'networkidle' });
       await player.waitForFunction(() => document.querySelector('#bank').textContent !== '…', null, { timeout: 5000 });
@@ -309,6 +309,11 @@ async function twoPeople(found) {
       const clicksAfter = Number((await player.$eval('#bank', (el) => el.textContent)).replace(/\D/g, ''));
       if (clicksAfter < clicksBefore + full - 100) found.push(`${width}px: the pot (${full}) didn't reach the player's clicks (${clicksBefore} to ${clicksAfter})`);
       await check(`${width}px, after the Grand Jackpot`);
+      // The pot doesn't count towards the day's limit: the winner can spin again.
+      const spinsBefore = await player.$eval('#spins', (el) => el.textContent);
+      await spin();
+      while (/Free spin/.test(await button())) await spin();
+      if ((await player.$eval('#spins', (el) => el.textContent)) === spinsBefore) found.push(`${width}px: couldn't spin after winning the Grand Jackpot ("${await player.$eval('#status', (el) => el.textContent)}")`);
       const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       if (wide) found.push(`${width}px: scrolls sideways`);
     }

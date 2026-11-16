@@ -266,6 +266,28 @@ test('the Grand Jackpot: every spin feeds it, and the lucky one takes the lot', 
   assert.equal(g.open(), 0);
 });
 
+test('a Grand Jackpot is paid in full and doesn’t count towards the day’s limit', async () => {
+  const g = game();
+  g.jackpot.pot.cents = JACKPOT.max * 100;
+  g.deps.luck = () => 0;
+  let shown = await g.spin(10, ['carrot', 'carrot', 'carrot']);
+  assert.equal(shown.last.jackpot, JACKPOT.max);
+  assert.equal(g.clicks(), 1000 - 10 + 70 + JACKPOT.max);
+  assert.deepEqual(shown.bank, { clicks: 1060 + JACKPOT.max, net: 60 }, 'only the line’s win is on the day’s total');
+  assert.equal(g.bank.status(ME).month.slots, 60 + JACKPOT.max, 'the house still paid it');
+  // So the winner can carry on betting.
+  g.deps.luck = () => 0.999999;
+  shown = await g.spin(100, ['hay', 'apple', 'carrot']);
+  assert.equal(shown.error, undefined);
+  assert.equal(shown.spins, 2);
+  // Nobody else gets to call part of a payout a windfall.
+  const bet = { userId: ME, betId: 'e'.repeat(16), amount: 100, game: 'blackjack' };
+  await g.bank.stake(bet);
+  const before = g.bank.account(ME).net;
+  await g.bank.settle([{ userId: ME, betId: bet.betId, payout: 300, windfall: 300 }]);
+  assert.equal(g.bank.account(ME).net, before + 300);
+});
+
 test('a jackpot won by a spin that lost the race goes back in the pot', async () => {
   const g = game();
   await g.spin(100, ['hay', 'apple', 'carrot']);

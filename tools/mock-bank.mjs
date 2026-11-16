@@ -2,7 +2,7 @@
 // tools/dev-server.mjs runs and for the tests. Same answers and limits as the real one; nothing is saved, and
 // everyone starts with `startingClicks` (the pretend API's header clicker says 12,345 too).
 
-import { LIMITS, GAMES, maxPayout, limitsFor, limitBasis } from '../utils/bank-rules.js';
+import { LIMITS, GAMES, maxPayout, windfallOf, limitsFor, limitBasis } from '../utils/bank-rules.js';
 
 export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
   const accounts = new Map();
@@ -29,13 +29,13 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     return { ok: true, clicks: a.clicks, net: a.net };
   }
 
-  function close(userId, betId, payout, balances) {
+  function close(userId, betId, payout, balances, windfall = 0) {
     const a = account(userId);
     const bet = a.open.get(betId);
     if (!bet) return;
     a.open.delete(betId);
     a.clicks += payout;
-    a.net += payout;
+    a.net += payout - windfallOf(bet, payout, windfall);
     a.month[bet.game] += payout - bet.amount;
     balances[userId] = { clicks: a.clicks, net: a.net };
   }
@@ -43,9 +43,9 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
   async function settle(bets) {
     await later();
     const balances = {};
-    for (const { userId, betId, payout } of bets) {
+    for (const { userId, betId, payout, windfall } of bets) {
       const bet = account(userId).open.get(betId);
-      if (bet && payout <= maxPayout(bet)) close(userId, betId, payout, balances);
+      if (bet && payout <= maxPayout(bet)) close(userId, betId, payout, balances, windfall);
     }
     return { ok: true, balances };
   }

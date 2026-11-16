@@ -17,6 +17,7 @@ export function limitsFor(basis) {
   return tier ? { ...LIMITS, lossPerDay: tier.perDay, winPerDay: tier.perDay } : LIMITS;
 }
 // The clicks a player's limit goes by: what they have, minus what today's bets have won or lost (`net`, today's).
+// (A Grand Jackpot isn't in `net`, so winning one today can move a player up a step straight away.)
 export const limitBasis = (clicks, net) => Math.max(0, (clicks || 0) - (net || 0));
 export const STALE_MS = 2 * 60 * 60 * 1000;
 export const FRESH_MS = 60 * 1000;
@@ -29,6 +30,9 @@ const ROOM_GAMES = ['blackjack', 'fever', 'craps']; // what the room server can 
 // MAX_RETURN in scripts/slots.js). Anything else is a refund at most.
 export const MAX_RETURN = { blackjack: 3, craps: 8, slots: 3254 };
 export const maxPayout = (bet) => bet.amount * (MAX_RETURN[bet.game] || 1);
+// The part of a payout that doesn't count towards the day's limit: only on a Slots bet (its Grand Jackpot), and
+// never more than the payout itself.
+export const windfallOf = (bet, payout, windfall) => (bet.game === 'slots' && Number.isSafeInteger(windfall) && windfall > 0 ? Math.min(windfall, payout) : 0);
 const MAX_BETS = 64;
 
 export const isUserId = (v) => typeof v === 'string' && v.length > 0 && v.length <= 64;

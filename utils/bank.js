@@ -1,6 +1,6 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
-import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, limitsFor, limitBasis } from './bank-rules.js';
+import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, windfallOf, limitsFor, limitBasis } from './bank-rules.js';
 
 // The click bank: betting site clicks at Trusty Blackjack (on your own and at the online tables), Trusty Craps,
 // Trusty Slots and on online Trusty Fever games,
@@ -81,7 +81,8 @@ function limitsOf(doc, today) {
 }
 
 // Pays one open bet out, once. Returns the player's new { clicks, bank: { net } }, or null if it was already done.
-async function close(col, userId, betId, bet, payout, now) {
+// windfall: the part of the payout that doesn't count towards the day's limit (the Slots' Grand Jackpot).
+async function close(col, userId, betId, bet, payout, now, windfall = 0) {
   const today = dayOf(now);
   await rollover(col, userId, today);
   return unwrap(await col.findOneAndUpdate(
@@ -91,7 +92,7 @@ async function close(col, userId, betId, bet, payout, now) {
       $inc: {
         clicks: payout,
         // A bet from an earlier day was already counted against that day.
-        'bank.net': bet.day === today ? payout : payout - bet.amount,
+        'bank.net': (bet.day === today ? payout : payout - bet.amount) - windfall,
         [`bank.stats.${bet.game}.${monthOf(now)}`]: payout - bet.amount,
       },
     },
@@ -105,17 +106,19 @@ async function openBet(col, userId, betId) {
 }
 
 // A payout over maxPayout() (3 times a Blackjack bet, 8 times a Craps one, 3,254 times a Slots spin, a refund
-// otherwise) is refused.
+// otherwise) is refused. A Slots bet can come with `windfall`: the Grand Jackpot's part of its payout, which is
+// paid like the rest but left out of the day's running total, so winning the pot doesn't stop anyone betting until
+// midnight. Only the site's own Slots game can say so: the room server's settles never carry one (signedOp).
 export async function settle(col, bets, now = new Date()) {
   const balances = {};
-  for (const { userId, betId, payout } of bets) {
+  for (const { userId, betId, payout, windfall } of bets) {
     const bet = await openBet(col, userId, betId);
     if (!bet) continue; // already settled (a retry), or given back
     if (payout > maxPayout(bet)) {
       console.error(`Bank: refused to pay ${payout} on a ${bet.amount}-click ${bet.game} bet.`);
       continue;
     }
-    const after = await close(col, userId, betId, bet, payout, now);
+    const after = await close(col, userId, betId, bet, payout, now, windfallOf(bet, payout, windfall));
     if (after) balances[userId] = { clicks: after.clicks, net: after.bank.net };
   }
   return { ok: true, balances };

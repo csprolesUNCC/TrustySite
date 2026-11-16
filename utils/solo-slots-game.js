@@ -45,7 +45,8 @@ async function save(deps, userId, doc) {
 // Pays out the last spin (again, if its payout didn't get through: the bank only pays each bet once).
 async function settlePending(deps, userId, doc) {
   if (!doc.pending || !doc.pending.length) return null;
-  const answer = await deps.bank.settle(doc.pending.map(({ betId, payout }) => ({ userId, betId, payout })));
+  // windfall: a Grand Jackpot's clicks, which the bank pays without counting them towards the day's limit.
+  const answer = await deps.bank.settle(doc.pending.map(({ betId, payout, windfall }) => ({ userId, betId, payout, ...(windfall ? { windfall } : {}) })));
   doc.pending = [];
   await save(deps, userId, doc); // if another tab beat us to it, the next visit settles again, harmlessly
   return (answer && answer.balances && answer.balances[userId]) || null;
@@ -75,7 +76,7 @@ export async function play(deps, userId, move) {
   const payout = move.amount * spun.total + jackpot;
   doc.spins += 1;
   doc.last = { ...spun, amount: move.amount, jackpot, payout, at: deps.now() };
-  doc.pending = [{ betId: id, payout }];
+  doc.pending = [{ betId: id, payout, ...(jackpot ? { windfall: jackpot } : {}) }];
 
   if (!(await save(deps, userId, doc))) {
     // Another tab spun first: this spin never happened, so its bet goes back (and the pot, if it had won it).
