@@ -2,6 +2,8 @@
 
 /* Usernames have no spaces to wrap at, so a long one breaks anywhere rather than running off a phone screen. */
 .profile-name { overflow-wrap: anywhere; }
+/* A top-three clicker's gold, silver or bronze $ after their name */
+.profile-name .board-icon { height: .95em; margin-left: .25em; vertical-align: -.1em; }
 
 /* Your own profile: changing your username, under the name */
 .profile-rename { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 16px; }
