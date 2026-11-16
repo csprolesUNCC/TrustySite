@@ -4,6 +4,20 @@ import { verifyPayload } from './fever-ticket.js';
 // database here, so tools/dev-server.mjs's pretend bank checks requests exactly the same way.
 
 export const LIMITS = { maxStake: 500, lossPerDay: 5000, winPerDay: 5000 };
+// Bigger players get a bigger daily limit (both ways), going by their clicks not counting today's bets
+// (limitBasis()), so winning or losing doesn't move it mid-day. The steps are click ranks in scripts/milestones.js:
+// Stallion, Trusty's Best Friend and Triple Crown. Highest first.
+export const LIMIT_TIERS = [
+  { at: 250000, perDay: 50000 },
+  { at: 50000, perDay: 25000 },
+  { at: 5000, perDay: 10000 },
+];
+export function limitsFor(basis) {
+  const tier = LIMIT_TIERS.find((t) => basis >= t.at);
+  return tier ? { ...LIMITS, lossPerDay: tier.perDay, winPerDay: tier.perDay } : LIMITS;
+}
+// The clicks a player's limit goes by: what they have, minus what today's bets have won or lost (`net`, today's).
+export const limitBasis = (clicks, net) => Math.max(0, (clicks || 0) - (net || 0));
 export const STALE_MS = 2 * 60 * 60 * 1000;
 export const FRESH_MS = 60 * 1000;
 const BET_ID = /^[0-9a-f]{16}$/;

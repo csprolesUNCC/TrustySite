@@ -1,0 +1,9 @@
+# What the live site never needs: these aren't uploaded to Vercel at all, so nobody can open them
+# there. (vercel.json also sends their addresses to the 404 page, in case one ever slips through.)
+# Only leave out what neither a page nor an api/ function loads: utils/ and package.json have to stay.
+/.github
+/tests
+/tools
+/realtime
+/README.md
+/CLAUDE.md

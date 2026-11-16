@@ -2,7 +2,7 @@
 // tools/dev-server.mjs runs and for the tests. Same answers and limits as the real one; nothing is saved, and
 // everyone starts with `startingClicks` (the pretend API's header clicker says 12,345 too).
 
-import { LIMITS, GAMES, maxPayout } from '../utils/bank-rules.js';
+import { LIMITS, GAMES, maxPayout, limitsFor, limitBasis } from '../utils/bank-rules.js';
 
 export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
   const accounts = new Map();
@@ -20,8 +20,9 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     if (a.open.has(betId)) return { ok: true, clicks: a.clicks, net: a.net };
     if (!Number.isInteger(amount) || amount < 1 || amount > LIMITS.maxStake) return { ok: false, error: 'That’s not a bet.' };
     if (a.clicks < amount) return { ok: false, error: `You only have ${fmt(a.clicks)} clicks.` };
-    if (a.net >= LIMITS.winPerDay) return { ok: false, error: `You’re ${fmt(a.net)} clicks up today: that’s the daily limit. Come back after midnight!` };
-    if (a.net - amount < -LIMITS.lossPerDay) return { ok: false, error: `That could put you more than ${fmt(LIMITS.lossPerDay)} clicks down today, the daily limit. Bet less, or come back after midnight.` };
+    const limits = limitsFor(limitBasis(a.clicks, a.net));
+    if (a.net >= limits.winPerDay) return { ok: false, error: `You’re ${fmt(a.net)} clicks up today: that’s your daily limit. Come back after midnight!` };
+    if (a.net - amount < -limits.lossPerDay) return { ok: false, error: `That could put you more than ${fmt(limits.lossPerDay)} clicks down today, your daily limit. Bet less, or come back after midnight.` };
     a.clicks -= amount;
     a.net -= amount;
     a.open.set(betId, { amount, game, solo: solo === true });
@@ -66,7 +67,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
 
   function status(userId) {
     const a = account(userId);
-    return { clicks: a.clicks, net: a.net, refunded: 0, limits: LIMITS, month: { ...a.month } };
+    return { clicks: a.clicks, net: a.net, refunded: 0, limits: limitsFor(limitBasis(a.clicks, a.net)), month: { ...a.month } };
   }
 
   // The house's side of everyone's bets (utils/house.js does the same from the real bank's stats).

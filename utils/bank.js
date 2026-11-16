@@ -1,6 +1,6 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
-import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout } from './bank-rules.js';
+import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, limitsFor, limitBasis } from './bank-rules.js';
 
 // The click bank: betting site clicks at Trusty Blackjack (on your own and at the online tables), Trusty Craps,
 // Trusty Slots and on online Trusty Fever games,
@@ -20,7 +20,8 @@ import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout } from './bank-ru
 //       holds for those stakes itself, splits it between the winners, and writes the split down (`fever_pots`)
 //       so a retry pays exactly the same.
 // Limits: at most `maxStake` on one bet, and once you're `lossPerDay` down or `winPerDay` up for the day (Eastern
-// time, like Trustle) no more bets until midnight. Open bets count as lost until they're settled. Clicks can't
+// time, like Trustle) no more bets until midnight; those two grow with your clicks (LIMIT_TIERS in
+// utils/bank-rules.js), and GET says yours. Open bets count as lost until they're settled. Clicks can't
 // be bought or sent to anyone: keep it that way, or this stops being play money.
 
 export { LIMITS, STALE_MS, signedOp };
@@ -43,12 +44,16 @@ async function rollover(col, userId, today) {
 export async function stake(col, { userId, betId, amount, game, solo = false }, now = new Date()) {
   const today = dayOf(now);
   await rollover(col, userId, today);
+  // The basis only goes up during a day (clicking; bets move clicks and net together), so a limit worked out
+  // from this read is never more than the player's real one by the time the update runs.
+  const before = await col.findOne({ userId }, { projection: { clicks: 1, 'bank.day': 1, 'bank.net': 1 } });
+  const limits = limitsOf(before, today);
   const done = unwrap(await col.findOneAndUpdate(
     {
       userId,
       clicks: { $gte: amount },
       'bank.day': today,
-      'bank.net': { $gte: amount - LIMITS.lossPerDay, $lt: LIMITS.winPerDay },
+      'bank.net': { $gte: amount - limits.lossPerDay, $lt: limits.winPerDay },
       [`bank.open.${betId}`]: { $exists: false },
     },
     {
@@ -65,8 +70,14 @@ export async function stake(col, { userId, betId, amount, game, solo = false }, 
   if (doc.bank && doc.bank.open && doc.bank.open[betId]) return { ok: true, clicks: doc.clicks, net: doc.bank.net }; // a retry
   const net = doc.bank && doc.bank.day === today ? doc.bank.net : 0;
   if ((doc.clicks || 0) < amount) return { ok: false, error: `You only have ${fmt(doc.clicks || 0)} clicks.` };
-  if (net >= LIMITS.winPerDay) return { ok: false, error: `You’re ${fmt(net)} clicks up today: that’s the daily limit. Come back after midnight!` };
-  return { ok: false, error: `That could put you more than ${fmt(LIMITS.lossPerDay)} clicks down today, the daily limit. Bet less, or come back after midnight.` };
+  if (net >= limits.winPerDay) return { ok: false, error: `You’re ${fmt(net)} clicks up today: that’s your daily limit. Come back after midnight!` };
+  return { ok: false, error: `That could put you more than ${fmt(limits.lossPerDay)} clicks down today, your daily limit. Bet less, or come back after midnight.` };
+}
+
+// A player's limits, from their `click_game` document (with at least clicks and bank.day/bank.net).
+function limitsOf(doc, today) {
+  const net = doc && doc.bank && doc.bank.day === today ? doc.bank.net : 0;
+  return limitsFor(limitBasis(doc && doc.clicks, net));
 }
 
 // Pays one open bet out, once. Returns the player's new { clicks, bank: { net } }, or null if it was already done.
@@ -176,7 +187,7 @@ export async function status(col, userId, now = new Date()) {
     clicks: (doc && doc.clicks) || 0,
     net: bank.day === dayOf(now) ? bank.net : 0,
     refunded,
-    limits: LIMITS,
+    limits: limitsOf(doc, dayOf(now)),
     month: Object.fromEntries(GAMES.map((game) => [game, (stats[game] && stats[game][month]) || 0])),
   };
 }
