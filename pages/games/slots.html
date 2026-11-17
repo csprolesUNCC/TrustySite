@@ -175,7 +175,6 @@
                         <li><span class="keys">&#9733;</span> Pick a bet and spin. Only the middle row pays; the gold tiles count on any row.</li>
                         <li><span class="keys">&#9733;</span> Every spin, free spins included, is decided on Trusty’s server the moment you press the button. The reels just show you what happened.</li>
                         <li><span class="keys">&#9733;</span> <span id="grand-how">A share of every bet goes into the Grand Jackpot, and any spin can win the whole pot.</span></li>
-                        <li><span class="keys">&#9733;</span> <span id="odds">The house always wins: the machine pays back a little less than is bet.</span></li>
                     </ul>
                 </div>
                 <div class="panel desktop-only">
@@ -390,7 +389,6 @@
         const GLYPHS = ['福', '發', '馬', '金', '囍', '龍', '財', '吉', '旺'];
         const LOSSES = [
             'Nothing. Trusty thanks you for the clicks.',
-            'No luck. The house is a horse, and the horse always wins.',
             'Not this time.',
             'So close. (It wasn’t.)',
             'Nothing on the line.',
@@ -1288,10 +1286,9 @@
             render();
         });
 
-        // What the machine pays back, worked out from its reels (scripts/slots.js), so it's never out of date.
+        // What the bonus pays on average, worked out from its reels (scripts/slots.js), so it's never out of date.
         const odds = rtp();
         $('grand-how').textContent = `${Math.round(JACKPOT.rate * 100)}% of every bet, yours and everyone else’s, goes into the Grand Jackpot, and any spin can win the whole pot, whatever the reels show. The bigger the bet, the better the chance: about 1 in ${fmt(JACKPOT.odds)} at ${BETS.max} clicks. It starts again from ${fmt(JACKPOT.seed)} and tops out at ${fmt(JACKPOT.max)}.`;
-        $('odds').textContent = `The house always wins. With the bonus and the jackpot counted in, the machine pays back about ${Math.round(odds.rtp * 100)} of every 100 clicks bet. The line wins about 1 spin in ${Math.round(1 / odds.hit)}, and the bonus comes up about once in ${Math.round(odds.bonusEvery)} spins.`;
         $('bonus-how').textContent = `A gold tile showing on all three reels, on any row, wins ${BONUS.spins} free spins on the Golden Horse. They pay about ${Math.round(odds.bonusPays)} times your bet on average.`;
 
         $('lobby-login-link').href = loginHref();

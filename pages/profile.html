@@ -219,7 +219,7 @@
                 value(all < 0 ? signed(all) : fmt(all)),
                 all > 0 ? clickRank(all) : null,
                 h('p', { class: 'profile-stat-detail' }, total >= 0
-                    ? `${fmt(total)} won off players at the casino. The house always wins.`
+                    ? `${fmt(total)} won off players at the casino.`
                     : `Down ${fmt(-total)} at the casino. The players are winning… for now.`),
                 played.length ? h('p', { class: 'profile-stat-detail' }, played.map((game) => `${GAME_NAMES[game]} ${signed(games[game])}`).join(' · ')) : null,
                 own ? h('p', { class: 'profile-stat-detail' }, `Plus ${fmt(own)} from clicking himself.`) : null);
