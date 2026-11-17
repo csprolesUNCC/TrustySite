@@ -20,6 +20,7 @@ import { signedOp } from '../utils/bank-rules.js';
 import { play as soloPlay, cleanMove, memoryGames, defaults as soloDefaults } from '../utils/solo-blackjack-game.js';
 import { play as crapsPlay, cleanMove as crapsMove } from '../utils/solo-craps-game.js';
 import { play as slotsPlay, cleanMove as slotsMove } from '../utils/solo-slots-game.js';
+import { play as pokerPlay, cleanMove as pokerMove } from '../utils/solo-poker-game.js';
 import { MACHINE as SLOT_MACHINE } from '../scripts/slots.js';
 import { memoryJackpot } from '../utils/slots-jackpot.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
@@ -48,6 +49,8 @@ const accountOf = (req) => `mock-${mockUser(req)}`;
 const solo = { ...soloDefaults, ...memoryGames(), bank };
 // Trusty Craps (utils/solo-craps.js, the real game), the same way.
 const craps = { ...soloDefaults, ...memoryGames(), bank };
+// Trusty Poker against the bots (utils/solo-poker.js, the real game), the same way.
+const poker = { ...soloDefaults, ...memoryGames(), bank };
 // Trusty Slots (utils/solo-slots.js, the real game), the same way. The cookie mockslots=bonus makes every spin
 // win the Golden Horse bonus (the reels stop with a gold tile showing on each: stops 5, 6 and 7 of the Hay Day's
 // strip), so there's a way to look at it without spinning 80 times; the free spins themselves stay random.
@@ -149,6 +152,17 @@ async function api(req, url, body) {
       const move = req.method === 'POST' ? slotsMove(body) : null;
       if (req.method === 'POST' && !move) return [400, { error: 'That’s not a spin.' }];
       const game = await slotsPlay(slotsFor(req), accountOf(req), move);
+      if (!move) {
+        const mine = bank.status(accountOf(req));
+        Object.assign(game, { bank: { clicks: mine.clicks, net: mine.net }, limits: mine.limits, refunded: 0 });
+      }
+      return [200, game];
+    }
+    if (action === 'poker') {
+      if (!me) return [401, { error: 'Authentication required' }];
+      const move = req.method === 'POST' ? pokerMove(body) : null;
+      if (req.method === 'POST' && !move) return [400, { error: 'That’s not a move.' }];
+      const game = await pokerPlay(poker, accountOf(req), move);
       if (!move) {
         const mine = bank.status(accountOf(req));
         Object.assign(game, { bank: { clicks: mine.clicks, net: mine.net }, limits: mine.limits, refunded: 0 });

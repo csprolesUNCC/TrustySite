@@ -19,6 +19,7 @@ const id = (n) => n.toString(16).padStart(16, '0');
 test('only signed, fresh, sensible requests get through', async () => {
   const good = { op: 'stake', userId: 'u1', betId: id(1), amount: 100, game: 'blackjack' };
   assert.deepEqual(await signedOp(await sign(good), SECRET), good);
+  assert.deepEqual(await signedOp(await sign({ ...good, game: 'poker' }), SECRET), { ...good, game: 'poker' }, 'a Poker table’s buy-in');
   assert.equal(await signedOp(await sign(good), `${SECRET}x`), null, 'another secret');
   assert.equal(await signedOp(await sign(good, Date.now() - 120000), SECRET), null, 'too old');
   const forged = await sign(good);
@@ -28,7 +29,7 @@ test('only signed, fresh, sensible requests get through', async () => {
 
   for (const bad of [
     { ...good, amount: 0 }, { ...good, amount: LIMITS.maxStake + 1 }, { ...good, amount: 2.5 }, { ...good, amount: '100' },
-    { ...good, game: 'poker' }, { ...good, userId: { $ne: null } }, { ...good, betId: 'abc.def' }, { ...good, betId: 'x'.repeat(16) },
+    { ...good, game: 'roulette' }, { ...good, game: 'slots' }, { ...good, userId: { $ne: null } }, { ...good, betId: 'abc.def' }, { ...good, betId: 'x'.repeat(16) },
     { op: 'settle', bets: [] }, { op: 'settle', bets: [{ userId: 'u1', betId: id(1), payout: -1 }] },
     { op: 'pot', potId: id(9), stakes: [{ userId: 'u1', betId: id(1) }, { userId: 'u1', betId: id(2) }], winners: ['u1'] },
     { op: 'pot', potId: id(9), stakes: [{ userId: 'u1', betId: id(1) }], winners: ['u2'] },

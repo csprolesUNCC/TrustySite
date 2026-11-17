@@ -164,6 +164,7 @@ const NAV = [
     { href: '/pages/games/casino.html', label: 'Trusty Blackjack' },
     { href: '/pages/games/craps.html', label: 'Trusty Craps' },
     { href: '/pages/games/slots.html', label: 'Trusty Slots' },
+    { href: '/pages/games/poker.html', label: 'Trusty Poker' },
   ] },
   { href: '/pages/media.html', label: 'Trusty Media', items: [
     { href: '/pages/tv.html', label: 'Trusty TV' },

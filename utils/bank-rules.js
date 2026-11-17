@@ -22,13 +22,15 @@ export const limitBasis = (clicks, net) => Math.max(0, (clicks || 0) - (net || 0
 export const STALE_MS = 2 * 60 * 60 * 1000;
 export const FRESH_MS = 60 * 1000;
 const BET_ID = /^[0-9a-f]{16}$/;
-export const GAMES = ['blackjack', 'fever', 'craps', 'slots'];
-const ROOM_GAMES = ['blackjack', 'fever', 'craps']; // what the room server can bet on (Slots only spin on the site's API)
+export const GAMES = ['blackjack', 'fever', 'craps', 'slots', 'poker'];
+const ROOM_GAMES = ['blackjack', 'fever', 'craps', 'poker']; // what the room server can bet on (Slots only spin on the site's API)
 // The most one settled bet can pay back, as a multiple of what was bet: Blackjack's insurance pays 2 to 1 (3x),
 // Craps' Any Craps 7 to 1 (8x, MAX_RETURN in scripts/craps.js), a Slots spin at most 3,254 times the bet (its
 // top prize, the top prize on all 8 free spins of the bonus, and a full Grand Jackpot won on a 10-click bet:
-// MAX_RETURN in scripts/slots.js). Anything else is a refund at most.
-export const MAX_RETURN = { blackjack: 3, craps: 8, slots: 3254 };
+// MAX_RETURN in scripts/slots.js), a Poker buy-in 30 times (the stack it pays back: a seat is cashed out at 5
+// times its buy-in, so nobody starts a hand with that much, and a six-seat table holds less than 30 times it:
+// MAX_RETURN in scripts/poker.js). Anything else is a refund at most.
+export const MAX_RETURN = { blackjack: 3, craps: 8, slots: 3254, poker: 30 };
 export const maxPayout = (bet) => bet.amount * (MAX_RETURN[bet.game] || 1);
 // The part of a payout that doesn't count towards the day's limit: only on a Slots bet (its Grand Jackpot), and
 // never more than the payout itself.

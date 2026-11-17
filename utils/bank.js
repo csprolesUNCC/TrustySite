@@ -3,7 +3,7 @@ import { authenticateUser } from './auth.js';
 import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, windfallOf, limitsFor, limitBasis } from './bank-rules.js';
 
 // The click bank: betting site clicks at Trusty Blackjack (on your own and at the online tables), Trusty Craps,
-// Trusty Slots and on online Trusty Fever games,
+// Trusty Slots, Trusty Poker (a buy-in is one bet; the stack is its payout) and on online Trusty Fever games,
 // served from api/leaderboard.js as ?action=bank so it doesn't take up another Vercel function. Clicks live in
 // `click_game` (one document per account: the header clicker's total), and every bet and every payout is one
 // atomic update of that document, so two tabs or a retried request can never spend the same clicks twice or be
@@ -38,7 +38,7 @@ async function rollover(col, userId, today) {
   await col.updateOne({ userId, 'bank.day': { $ne: today } }, { $set: { 'bank.day': today, 'bank.net': 0 } });
 }
 
-// solo: a bet from a one-player game on the site's API (Blackjack on your own, Craps, Slots), which looks after its own
+// solo: a bet from a one-player game on the site's API (Blackjack on your own, Craps, Slots, Poker), which looks after its own
 // open bets, so refundStale() leaves it alone: otherwise walking away from a bad hand for 2 hours would get the bet
 // back.
 export async function stake(col, { userId, betId, amount, game, solo = false }, now = new Date()) {

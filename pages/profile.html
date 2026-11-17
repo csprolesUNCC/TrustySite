@@ -206,7 +206,7 @@
         }
 
         const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n))}`;
-        const GAME_NAMES = { blackjack: 'Blackjack', craps: 'Craps', slots: 'Slots', fever: 'Fever pots' };
+        const GAME_NAMES = { blackjack: 'Blackjack', craps: 'Craps', slots: 'Slots', poker: 'Poker', fever: 'Fever pots' };
 
         // Trusty's own profile: his click total is the house's net at the casino (utils/house.js), everything players
         // have lost minus everything they've won, plus any clicks of his own.
@@ -226,7 +226,7 @@
         }
 
         // Plus their click rank, their daily bonus streak, and how betting clicks went this month, at Blackjack,
-        // Craps, the Slots and on Fever pots.
+        // Craps, the Slots, Poker and on Fever pots.
         function clicksCard() {
             if (profile.house) return houseCard();
             const c = profile.clicks;

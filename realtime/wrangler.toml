@@ -1,4 +1,4 @@
-# Trusty's online rooms (see worker.js): Trusty Fever's rooms and Trusty Blackjack's and Trusty Craps' tables. Deploy from this
+# Trusty's online rooms (see worker.js): Trusty Fever's rooms and Trusty Blackjack's, Craps' and Poker's tables. Deploy from this
 # folder with `npm install`, then `npm run deploy`; the secret goes in with `npx wrangler secret put FEVER_SECRET`
 # (the same value as FEVER_SECRET on Vercel).
 name = "trusty-fever"
@@ -21,6 +21,10 @@ class_name = "BlackjackTable"
 name = "CRAPS"
 class_name = "CrapsTable"
 
+[[durable_objects.bindings]]
+name = "POKER"
+class_name = "PokerTable"
+
 # SQLite-backed Durable Objects are the kind the Workers Free plan allows. Each new class needs a new tag.
 [[migrations]]
 tag = "v1"
@@ -33,6 +37,10 @@ new_sqlite_classes = ["BlackjackTable"]
 [[migrations]]
 tag = "v3"
 new_sqlite_classes = ["CrapsTable"]
+
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["PokerTable"]
 
 [dev]
 port = 8790

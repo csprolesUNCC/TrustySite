@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#1f6b43"/>
+  <rect x="16" y="16" width="368" height="268" rx="22" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="3" stroke-dasharray="10 8"/>
+  <text x="200" y="266" fill="#fff" font-family="Arial Black, Helvetica, Arial, sans-serif" font-weight="900" font-size="22" letter-spacing="3" text-anchor="middle">ALL IN</text>
+  <g transform="rotate(-14 150 130)">
+    <rect x="98" y="58" width="104" height="146" rx="12" fill="#fff" stroke="#1b1b1f" stroke-width="6"/>
+    <text x="116" y="96" fill="#1b1b1f" font-family="Arial Black, Helvetica, Arial, sans-serif" font-weight="900" font-size="30">A</text>
+    <path d="M150 112 c-22 22 -30 34 -16 44 c8 5 14 0 16 -6 c-1 10 -4 16 -10 20 h20 c-6 -4 -9 -10 -10 -20 c2 6 8 11 16 6 c14 -10 6 -22 -16 -44z" fill="#1b1b1f"/>
+  </g>
+  <g transform="rotate(12 250 126)">
+    <rect x="198" y="54" width="104" height="146" rx="12" fill="#fff" stroke="#1b1b1f" stroke-width="6"/>
+    <text x="214" y="92" fill="#d6334b" font-family="Arial Black, Helvetica, Arial, sans-serif" font-weight="900" font-size="30">K</text>
+    <path d="M250 158 c-26 -18 -36 -30 -36 -42 c0 -10 8 -18 18 -18 c8 0 14 5 18 12 c4 -7 10 -12 18 -12 c10 0 18 8 18 18 c0 12 -10 24 -36 42z" fill="#d6334b"/>
+  </g>
+  <g stroke="#1b1b1f" stroke-width="4">
+    <ellipse cx="78" cy="218" rx="34" ry="12" fill="#1f4fbf"/>
+    <ellipse cx="78" cy="206" rx="34" ry="12" fill="#d6334b"/>
+    <ellipse cx="322" cy="214" rx="34" ry="12" fill="#1b1b1f"/>
+    <ellipse cx="322" cy="202" rx="34" ry="12" fill="#23824a"/>
+    <ellipse cx="322" cy="190" rx="34" ry="12" fill="#d6334b"/>
+  </g>
+  <g fill="none" stroke="#ffe45c" stroke-width="5" stroke-linecap="round">
+    <path d="M70 70 l-14 -12"/><path d="M66 94 l-20 -2"/><path d="M332 64 l14 -12"/><path d="M338 90 l20 -2"/>
+  </g>
+</svg>

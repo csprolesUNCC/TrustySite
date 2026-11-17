@@ -1,7 +1,8 @@
 // Loads every page in a real browser against tools/dev-server.mjs, at phone and desktop widths, logged out
 // and logged in, and fails if any page throws, logs an error, requests a missing file, scrolls sideways, has a
 // broken image or link, or has an accessibility problem axe-core can find. Then two people play Trusty Fever online
-// and a hand of Blackjack for clicks and roll Craps at a table, and one plays Craps alone and spins the Slots (the dev server runs the rooms, the tables and a pretend
+// and a hand of Blackjack for clicks, roll Craps and play a hand of Poker at a table, and one plays Craps alone, spins the Slots
+// and plays the Poker bots (the dev server runs the rooms, the tables and a pretend
 // click bank), and every online screen gets the same checks.
 //   npm run smoke   (needs Playwright: preinstalled in Claude Code cloud sessions, otherwise `npx playwright install chromium`
 //                    and `npm i -D playwright`)
@@ -355,6 +356,94 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Craps table\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
+// Trusty Poker against the bots: carson buys in, calls or checks his way through a hand, gets the next one and
+// gets up, at phone and desktop widths.
+{
+  const found = [];
+  const { pages: [player], close } = await twoPeople(found);
+  const check = async (what) => found.push(...(await axeProblems(player)).map((v) => `${what}: ${v}`));
+  const status = () => player.$eval('#status-text', (el) => el.textContent);
+  const handDone = /wins|win the|split/;
+  try {
+    for (const width of [375, 1280]) {
+      await player.setViewportSize({ width, height: 800 });
+      await player.context().addCookies([{ name: 'mockuser', value: `poker${width}`, url: BASE }]);
+      await player.goto(`${BASE}/pages/games/poker.html`, { waitUntil: 'networkidle' });
+      await player.waitForFunction(() => !document.querySelector('#sit-box').hidden && !document.querySelector('#sit-btn').disabled, null, { timeout: 5000 });
+      await check(`${width}px, before sitting down`);
+      await player.click('[data-buyin="100"]');
+      await player.click('#sit-btn');
+      for (let i = 0; i < 80 && !handDone.test(await status()); i++) {
+        const turn = await player.evaluate(() => !document.querySelector('#act-box').hidden && !document.querySelector('#call-btn').disabled);
+        if (turn) {
+          if (i === 0) await check(`${width}px, your turn`);
+          await player.click('#call-btn');
+        }
+        await player.waitForTimeout(400);
+      }
+      if (!handDone.test(await status())) found.push(`${width}px: the hand never finished: "${await status()}"`);
+      await check(`${width}px, after a hand`);
+      if (await player.evaluate(() => !document.querySelector('#between-box').hidden)) {
+        // The next hand (unless it already dealt itself), then get up: folding, if it's in progress.
+        if (await player.evaluate(() => !document.querySelector('#next-btn').hidden && !document.querySelector('#next-btn').disabled)) await player.click('#next-btn');
+        await player.waitForFunction(() => !document.querySelector('#up-btn').disabled && !document.querySelector('#between-box').hidden, null, { timeout: 8000 });
+        await player.click('#up-btn');
+      }
+      await player.waitForFunction(() => /got up|Out of chips|cashed you out/.test(document.querySelector('#status-text').textContent), null, { timeout: 8000 });
+      await check(`${width}px, after getting up`);
+      const wide = await player.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      if (wide) found.push(`${width}px: scrolls sideways`);
+    }
+  } catch (e) {
+    found.push(`didn't get through a hand: ${e.message.split('\n')[0]}`);
+  }
+  await close();
+  if (found.length) problems.push(`Trusty Poker against the bots\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
+// A Trusty Poker table with friends: carson opens one and sits down, luke follows the link and sits down too, and
+// they play a hand with the bots.
+{
+  const found = [];
+  const { pages: [host, guest], close } = await twoPeople(found);
+  const check = async (page, what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
+  const status = (page) => page.$eval('#status-text', (el) => el.textContent);
+  try {
+    await host.goto(`${BASE}/pages/games/poker.html`, { waitUntil: 'networkidle' });
+    await host.waitForFunction(() => !document.querySelector('#friends-panel').hidden, null, { timeout: 5000 });
+    await host.click('#open-table');
+    await host.waitForFunction(() => document.querySelector('#table-label').textContent.length === 4, null, { timeout: 5000 });
+    const code = await host.$eval('#table-label', (el) => el.textContent);
+    await host.waitForFunction(() => !document.querySelector('#sit-btn').disabled && !document.querySelector('#sit-box').hidden, null, { timeout: 5000 });
+    await host.click('#sit-btn');
+    await guest.goto(`${BASE}/pages/games/poker.html#table=${code}`, { waitUntil: 'networkidle' });
+    await guest.waitForFunction(() => /200-click buy-ins|dealt in next hand|Waiting|turn/.test(document.querySelector('#status-text').textContent), null, { timeout: 8000 });
+    await check(guest, 'table, before sitting down');
+    if (await guest.evaluate(() => !document.querySelector('#sit-box').hidden)) await guest.click('#sit-btn');
+    // Both play (call or check) until luke has been dealt in and a hand he's in has finished.
+    let dealt = false;
+    let done = false;
+    for (let i = 0; i < 240 && !done; i++) {
+      for (const page of [host, guest]) {
+        const turn = await page.evaluate(() => !document.querySelector('#act-box').hidden && !document.querySelector('#call-btn').disabled);
+        if (turn) await page.click('#call-btn');
+      }
+      const mine = await guest.evaluate(() => document.querySelectorAll('.pk-seat.is-you .card-face:not(.card-back)').length);
+      if (mine === 2 && !/wins|win the|split/.test(await status(guest))) dealt = true;
+      if (dealt && /wins|win the|split/.test(await status(guest))) done = true;
+      await host.waitForTimeout(250);
+    }
+    if (!dealt) found.push(`luke was never dealt in: "${await status(guest)}"`);
+    else if (!done) found.push(`the hand never finished: "${await status(guest)}"`);
+    await check(host, 'table, after a hand');
+    await check(guest, 'table, after a hand');
+  } catch (e) {
+    found.push(`didn't get through a hand: ${e.message.split('\n')[0]}`);
+  }
+  await close();
+  if (found.length) problems.push(`Trusty Poker table\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
 for (const href of links) {
   const res = await fetch(href);
   if (res.status >= 400) problems.push(`broken link: ${href.replace(BASE, '')} (${res.status})`);
@@ -362,7 +451,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins, a Golden Horse bonus and a Grand Jackpot on the Slots${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins, a Golden Horse bonus and a Grand Jackpot on the Slots, Poker hands (against the bots and at a table)${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

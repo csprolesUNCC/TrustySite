@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en" class="game-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Trusty Poker — Trusty da Horse</title>
+    <meta name="description" content="Texas Hold'em at the horse casino! Play No-Limit Hold'em for your site clicks against Trusty and his bots, or at a table with your friends.">
+    <link rel="canonical" href="https://trustydahorse.com/pages/games/poker.html">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:title" content="Trusty Poker">
+    <meta property="og:description" content="No-Limit Hold'em at the horse casino. Bet your clicks against Trusty's bots, or your friends.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty/trusty.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/games.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="container game-head">
+            <a class="back-link" href="/pages/casino.html">The Casino</a>
+            <div class="game-title-row">
+                <div>
+                    <p class="eyebrow">The horse casino</p>
+                    <h1>Trusty Poker</h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="container game-layout">
+            <section class="game-main" aria-label="Poker table">
+                <div class="casino poker">
+                    <div class="pk-table" id="pk-table">
+                        <div class="pk-seat" data-pos="2"></div>
+                        <div class="pk-seat" data-pos="3"></div>
+                        <div class="pk-seat" data-pos="4"></div>
+                        <div class="pk-middle">
+                            <p class="pk-pot" id="pot">&nbsp;</p>
+                            <div class="cards pk-board" id="board" role="group" aria-label="The board"></div>
+                        </div>
+                        <div class="pk-seat" data-pos="1"></div>
+                        <div class="pk-seat" data-pos="0"></div>
+                        <div class="pk-seat" data-pos="5"></div>
+                    </div>
+
+                    <p class="casino-status" id="status" role="status" aria-live="polite"><span id="status-text">Pull up a chair!</span> <span class="casino-timer" id="timer" aria-hidden="true" hidden></span></p>
+                    <p class="pk-mine" id="mine"></p>
+
+                    <div class="casino-lobby" id="lobby" data-auth-show="out">
+                        <p class="overlay-kicker">Play for clicks</p>
+                        <h2 class="overlay-title">Log in to play</h2>
+                        <p class="lobby-sub">Your buy-in is your real Trusty clicks, so you need an account.</p>
+                        <div class="overlay-actions">
+                            <a class="btn btn-lg btn-highlight" id="lobby-login-link" href="/pages/auth/login.html">Log in</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="game-side">
+                <div class="panel casino-controls pk-controls" id="controls" data-auth-show="in">
+                    <div class="pk-actions" id="act-box" hidden>
+                        <div class="pk-raise" id="raise-box">
+                            <div class="pk-raise-top">
+                                <label class="stat-label" for="raise-range" id="raise-label">Raise to</label>
+                                <output class="pk-raise-out" id="raise-out" for="raise-range">0</output>
+                            </div>
+                            <input class="pk-range" type="range" id="raise-range" min="0" max="0" step="1" value="0">
+                            <div class="pk-presets" role="group" aria-label="Raise size">
+                                <button class="btn btn-sm btn-outline" type="button" data-preset="min">Min</button>
+                                <button class="btn btn-sm btn-outline" type="button" data-preset="half">½ pot</button>
+                                <button class="btn btn-sm btn-outline" type="button" data-preset="pot">Pot</button>
+                                <button class="btn btn-sm btn-outline" type="button" data-preset="all">All in</button>
+                            </div>
+                        </div>
+                        <div class="action-row pk-buttons">
+                            <button class="btn btn-outline" type="button" id="fold-btn">Fold</button>
+                            <button class="btn" type="button" id="call-btn">Check</button>
+                            <button class="btn btn-highlight" type="button" id="raise-btn">Raise</button>
+                        </div>
+                    </div>
+
+                    <div class="btn-row pk-between" id="between-box" hidden>
+                        <button class="btn btn-highlight" type="button" id="next-btn">Next hand</button>
+                        <button class="btn btn-outline" type="button" id="up-btn">Get up</button>
+                    </div>
+
+                    <div class="pk-sit" id="sit-box" hidden>
+                        <span class="stat-label" id="buyin-label">Buy-in (blinds)</span>
+                        <div class="pk-buyins" role="group" aria-labelledby="buyin-label">
+                            <button class="pk-buyin" type="button" data-buyin="100" aria-pressed="false">100 <small>1/2</small></button>
+                            <button class="pk-buyin" type="button" data-buyin="200" aria-pressed="true">200 <small>2/4</small></button>
+                            <button class="pk-buyin" type="button" data-buyin="500" aria-pressed="false">500 <small>5/10</small></button>
+                        </div>
+                        <div class="pk-bots" id="bots-row">
+                            <label class="stat-label" for="bots">Opponents</label>
+                            <select class="input" id="bots">
+                                <option value="1">1 (heads up)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5" selected>5 (full table)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-highlight" type="button" id="sit-btn">Sit down</button>
+                    </div>
+
+                    <div class="bankroll">
+                        <div>
+                            <span class="stat-label">Your clicks</span>
+                            <span class="bankroll-amount" id="bank">…</span>
+                        </div>
+                        <div>
+                            <span class="stat-label">Your chips</span>
+                            <span class="bankroll-amount" id="chips">–</span>
+                        </div>
+                    </div>
+                    <p class="side-note casino-today" id="today" hidden></p>
+                </div>
+                <div class="panel friends" id="friends-panel" hidden>
+                    <h2 class="panel-title">Play with friends</h2>
+                    <p class="side-note">Open a table and send them the link, or type in the code of theirs. Up to six of you, and Trusty’s bots fill the empty seats.</p>
+                    <div class="friends-actions">
+                        <button class="btn btn-sm btn-highlight" type="button" id="open-table">Open a table</button>
+                        <form class="room-join" id="join-table" novalidate>
+                            <label class="sr-only" for="table-code">Table code</label>
+                            <input class="input" id="table-code" name="code" placeholder="CODE" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                            <button class="btn btn-sm btn-outline" type="submit">Join</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="panel" id="table-panel" hidden>
+                    <h2 class="panel-title">Table <span class="table-code" id="table-label"></span></h2>
+                    <ul class="table-people" id="table-people"></ul>
+                    <p class="side-note">The first one to sit down picks the buy-in; everyone else buys in for the same. 25 seconds to act, then you check or fold. Leaving the table gets you up after the hand.</p>
+                    <div class="btn-row">
+                        <button class="btn btn-sm btn-outline" type="button" id="copy-table">Copy link</button>
+                        <button class="btn btn-sm btn-ghost" type="button" id="leave-table">Leave the table</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2 class="panel-title">House rules</h2>
+                    <ul class="how-to bullets">
+                        <li><span class="keys">&#9824;</span> No-Limit Texas Hold’em: two cards each, five on the board, best five-card hand wins. Bet, raise or go all in whenever it’s your turn.</li>
+                        <li><span class="keys">&#9829;</span> Your buy-in becomes chips. Get up whenever you like and your chips go back as clicks. Win five times your buy-in and Trusty cashes you out (sit back down to keep going).</li>
+                        <li><span class="keys">&#9830;</span> The house takes a rake: 5% of every pot that sees a flop, at most 3 big blinds. No flop, no rake.</li>
+                        <li><span class="keys">&#9827;</span> From best to worst: straight flush, four of a kind, full house, flush, straight, three of a kind, two pair, pair, high card.</li>
+                    </ul>
+                </div>
+                <div class="panel desktop-only">
+                    <h2 class="panel-title">Shortcuts</h2>
+                    <ul class="how-to">
+                        <li><span class="keys"><kbd>F</kbd></span> Fold</li>
+                        <li><span class="keys"><kbd>C</kbd></span> Check or call</li>
+                        <li><span class="keys"><kbd>R</kbd></span> Bet or raise</li>
+                        <li><span class="keys"><kbd>N</kbd></span> Next hand / sit down</li>
+                    </ul>
+                </div>
+                <p class="side-note">Buy-ins are your real site clicks: 100, 200 or 500. Once you’re 5,000 up or down for the day (more for bigger players: up to 50,000 from 250,000 clicks), betting waits until midnight.</p>
+            </aside>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
+        import { isForeignKey, isActivationKey } from '/scripts/game-kit.js';
+        import { SEATS, POKER_PROTOCOL, evaluate, describeScore } from '/scripts/poker.js';
+        import { roomsOpen, connect, newCode, roomLink, roomFromHash, bankStatus, ROOM_CODE } from '/scripts/rooms.js';
+
+        // Every hand is for your real site clicks, two ways: on your own against Trusty's bots (solo), dealt by the
+        // site's API (?action=poker, utils/solo-poker.js), which plays the bots inside each of your moves and says
+        // what they did so this page can show it a move at a time; or at an online table with friends
+        // (realtime/poker-table.js, through the room server), where bots fill the empty seats. Either way the cards
+        // are dealt on a server and you only ever see your own until a showdown. The page draws what it's told.
+
+        const API = '/api/leaderboard?action=poker';
+        const TABLE_TAKEN = 4003; // CLOSE.taken in realtime/common.js
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        const STEP_MS = () => (reduceMotion.matches ? 120 : 600);
+        const DEAL_MS = () => (reduceMotion.matches ? 200 : 850);
+        const AUTO_NEXT_MS = 3500;
+        const $ = (id) => document.getElementById(id);
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const short = (name) => (name.length > 12 ? `${name.slice(0, 11)}…` : name);
+        const clicksText = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
+        const RANK = { T: '10' };
+        const RANK_WORD = { A: 'Ace', K: 'King', Q: 'Queen', J: 'Jack', T: 'Ten', 9: 'Nine', 8: 'Eight', 7: 'Seven', 6: 'Six', 5: 'Five', 4: 'Four', 3: 'Three', 2: 'Two' };
+        const RANK_WORDS = { A: 'Aces', K: 'Kings', Q: 'Queens', J: 'Jacks', T: 'Tens', 9: 'Nines', 8: 'Eights', 7: 'Sevens', 6: 'Sixes', 5: 'Fives', 4: 'Fours', 3: 'Threes', 2: 'Twos' };
+        const SUIT = { s: '♠', h: '♥', d: '♦', c: '♣' };
+        const SUIT_NAME = { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' };
+        const ORDER = '23456789TJQKA';
+
+        // game: what's on the table in one shape whichever way you're playing: { table (scripts/poker.js view()),
+        // sit (you're seated: { buyIn }), last (your last cash-out, solo), waiting (bought in, dealt in next hand),
+        // leaving, buyIn (the table's, when it's set) }. shown: the table being drawn (part way through what the
+        // bots did, while that plays out). log: the whole hand's log, as far as it's been seen.
+        const state = { game: null, failed: false, busy: false, playing: false, shown: null, log: [], buyIn: 200, raise: 0, raiseKey: '', auto: null };
+        const wallet = { clicks: null, today: null, limits: null };
+        let mode = 'solo'; // solo | table
+        // The online table: { code, conn, msg (the last { t: 'poker' }), status (reconnecting), deadline
+        // (performance.now() when whoever's up runs out of time), nextAt (when the next hand starts) }.
+        let net = null;
+        let tablesOpen = false;
+
+        /* ---------- Cards ---------- */
+
+        function cardEl(card) {
+            if (!card) return h('div', { class: 'card-face card-back', role: 'img', 'aria-label': 'Face-down card', dataset: { key: 'hidden' } });
+            const red = card[1] === 'h' || card[1] === 'd';
+            const rank = RANK[card[0]] || card[0];
+            return h('div', { class: `card-face${red ? ' red' : ''}`, role: 'img', 'aria-label': `${RANK_WORD[card[0]]} of ${SUIT_NAME[card[1]]}`, dataset: { key: card } },
+                h('span', { class: 'card-corner', 'aria-hidden': 'true' }, h('span', null, rank), h('span', null, SUIT[card[1]])),
+                h('span', { class: 'card-pip', 'aria-hidden': 'true' }, SUIT[card[1]]),
+                h('span', { class: 'card-corner bottom', 'aria-hidden': 'true' }, h('span', null, rank), h('span', null, SUIT[card[1]])));
+        }
+
+        // Only touch cards that changed, so the deal animation plays once per new card.
+        function renderCards(box, cards, { best = null } = {}) {
+            cards.forEach((card, i) => {
+                const key = card || 'hidden';
+                const existing = box.children[i];
+                const el = existing && existing.dataset.key === key ? existing : cardEl(card);
+                if (el !== existing) {
+                    if (existing) existing.replaceWith(el);
+                    else box.append(el);
+                }
+                el.classList.toggle('is-best', Boolean(best && card && best.includes(card)));
+            });
+            while (box.children.length > cards.length) box.lastElementChild.remove();
+        }
+
+        // Your two cards before the flop, in words.
+        function preflopName(cards) {
+            const [a, b] = [...cards].sort((x, y) => ORDER.indexOf(y[0]) - ORDER.indexOf(x[0]));
+            if (a[0] === b[0]) return `Pocket ${RANK_WORDS[a[0]]}`;
+            return `${RANK_WORD[a[0]]}-${RANK_WORD[b[0]]}${a[1] === b[1] ? ' suited' : ''}`;
+        }
+
+        /* ---------- What's on the table ---------- */
+
+        const atTable = () => mode === 'table';
+        const view = () => state.shown || (state.game && state.game.table) || null;
+        const hand = () => (view() && view().hand) || null;
+        const mySeat = () => (view() && view().you >= 0 ? view().you : -1);
+        const seated = () => Boolean(state.game && state.game.sit);
+        const myTurn = () => !state.playing && !state.busy && Boolean(hand() && hand().legal) && hand().street !== 'over';
+        const handOver = () => !hand() || hand().street === 'over';
+        const nameOf = (v, i) => (i === v.you ? 'You' : v.seats[i] ? short(v.seats[i].name) : 'Someone');
+        // Where seat i sits on screen: you at the bottom, then round to the left.
+        const posOf = (v, i) => (i - (v.you >= 0 ? v.you : 0) + SEATS) % SEATS;
+
+        // The last thing each seat did this street, in words.
+        function lastActions(v) {
+            const out = {};
+            if (!v.hand) return out;
+            for (const e of v.hand.log) {
+                if (e.deal) {
+                    for (const k of Object.keys(out)) if (out[k] !== 'Fold') delete out[k];
+                    continue;
+                }
+                out[e.seat] = actionWord(e);
+            }
+            return out;
+        }
+
+        function actionWord(e) {
+            const all = e.allIn ? 'All in ' : '';
+            switch (e.do) {
+                case 'sb': return `Small blind ${e.amount}`;
+                case 'bb': return `Big blind ${e.amount}`;
+                case 'fold': return 'Fold';
+                case 'check': return 'Check';
+                case 'call': return e.allIn ? `All in ${fmt(e.amount)}` : `Call ${fmt(e.amount)}`;
+                case 'bet': return `${all || 'Bet '}${fmt(e.amount)}`;
+                default: return `${all || 'Raise to '}${fmt(e.amount)}`;
+            }
+        }
+
+        // The same thing, as a sentence for the status line.
+        function actionSentence(v, e) {
+            const who = nameOf(v, e.seat);
+            const you = e.seat === v.you;
+            if (e.deal) return e.deal === 'flop' ? 'The flop.' : e.deal === 'turn' ? 'The turn.' : 'The river.';
+            switch (e.do) {
+                case 'sb': return `${who} ${you ? 'post' : 'posts'} the small blind.`;
+                case 'bb': return `${who} ${you ? 'post' : 'posts'} the big blind.`;
+                case 'fold': return `${who} ${you ? 'fold' : 'folds'}.`;
+                case 'check': return `${who} ${you ? 'check' : 'checks'}.`;
+                case 'call': return `${who} ${you ? 'call' : 'calls'} ${fmt(e.amount)}${e.allIn ? ', all in' : ''}.`;
+                case 'bet': return `${who} ${you ? 'bet' : 'bets'} ${fmt(e.amount)}${e.allIn ? ', all in' : ''}.`;
+                default: return `${who} ${you ? 'raise' : 'raises'} to ${fmt(e.amount)}${e.allIn ? ', all in' : ''}.`;
+            }
+        }
+
+        function resultSentence(v) {
+            const r = v.hand.result;
+            const parts = r.pots.map((pot, k) => {
+                const names = pot.winners.map((i) => nameOf(v, i));
+                const you = pot.winners.includes(v.you);
+                const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)} split` : `${names[0]} ${you ? 'win' : 'wins'}`;
+                const what = r.pots.length > 1 ? (k === 0 ? 'the main pot' : 'a side pot') : 'the pot';
+                return `${who} ${what} (${fmt(pot.amount)})${pot.name ? ` with ${pot.name.replace(/^[A-Z]/, (c) => c.toLowerCase())}` : ''}.`;
+            });
+            return parts.join(' ');
+        }
+
+        function statusText() {
+            if (!session.loggedIn) return 'Log in to play for clicks.';
+            if (atTable()) {
+                if (net.status) return net.status;
+                if (!net.msg) return 'Finding you a seat…';
+            } else if (state.failed) {
+                return 'Trusty dropped the cards. Reload to try again.';
+            }
+            if (!state.game) return 'Pulling up a chair…';
+            const g = state.game;
+            const v = view();
+            if (state.busy && !state.playing) return seated() ? 'Thinking…' : 'Buying in…';
+            if (state.playing && state.step) return state.step;
+            if (!seated()) {
+                if (atTable() && g.busy) return 'Buying in…';
+                if (g.waiting) return 'You’re in! You’ll be dealt in next hand.';
+                if (g.last) {
+                    const { payout, buyIn, why } = g.last;
+                    const lead = why === 'bust' ? 'Out of chips!' : why === 'cashout' ? `Five times your buy-in! Trusty cashed you out with ${clicksText(payout)}.` : why === 'away' ? `You were away, so you got up with ${clicksText(payout)}.` : `You got up with ${clicksText(payout)}.`;
+                    const net = payout - buyIn;
+                    return `${lead} ${net > 0 ? `That’s ${fmt(net)} up.` : net < 0 ? `That’s ${fmt(-net)} down.` : 'Even.'} Sit down again?`;
+                }
+                if (atTable()) return g.buyIn ? `This table plays ${fmt(g.buyIn)}-click buy-ins. Sit down to play.` : 'Pick a buy-in and sit down: the rest of the table will match it.';
+                return 'Pick a buy-in and how many bots to play, and sit down.';
+            }
+            if (!v || !v.hand) return atTable() ? 'Waiting for the next hand…' : 'Shuffling…';
+            if (v.hand.street === 'over') {
+                const tail = atTable() ? (g.leaving ? ' You’re getting up.' : '') : '';
+                return `${resultSentence(v)}${tail}`;
+            }
+            if (myTurn()) {
+                const can = v.hand.legal;
+                return can.check ? 'Your turn: check or bet.' : `Your turn: ${fmt(can.call)} to call.`;
+            }
+            if (g.leaving) return 'You’ll get up after this hand.';
+            const up = v.hand.toAct;
+            return up >= 0 ? `Waiting for ${nameOf(v, up)}…` : '…';
+        }
+
+        /* ---------- Rendering ---------- */
+
+        // Each seat's parts are made once and updated in place, so cards already down don't deal in again.
+        function seatParts(el) {
+            if (!el.parts) {
+                el.parts = {
+                    name: h('div', { class: 'pk-name' }),
+                    stack: h('div', { class: 'pk-stack' }),
+                    cards: h('div', { class: 'cards' }),
+                    act: h('div', { class: 'pk-act' }),
+                    bet: h('div', { class: 'pk-bet' }),
+                    clock: h('span', { class: 'pk-clock', 'aria-hidden': 'true' }),
+                };
+                el.replaceChildren(...Object.values(el.parts));
+            }
+            return el.parts;
+        }
+
+        function renderSeats() {
+            const v = view();
+            const acts = v ? lastActions(v) : {};
+            const r = v && v.hand && v.hand.result;
+            for (const el of document.querySelectorAll('.pk-seat')) {
+                const pos = Number(el.dataset.pos);
+                const i = v ? ((v.you >= 0 ? v.you : 0) + pos) % SEATS : pos;
+                const seat = v && v.seats[i];
+                const parts = seatParts(el);
+                if (!seat) {
+                    el.className = 'pk-seat is-empty';
+                    parts.name.replaceChildren(pos === 0 && !atTable() ? 'You' : 'Empty seat');
+                    for (const part of ['stack', 'act', 'bet', 'clock']) parts[part].hidden = true;
+                    renderCards(parts.cards, []);
+                    continue;
+                }
+                const p = v.hand && v.hand.players[i];
+                const shown = r && r.shown[i];
+                const won = r && r.won[i];
+                const up = v.hand && v.hand.street !== 'over' && v.hand.toAct === i && !state.playing;
+                el.className = `pk-seat${up ? ' is-up' : ''}${p && p.folded ? ' is-folded' : ''}${won ? ' is-winner' : ''}${i === v.you ? ' is-you' : ''}`;
+                renderCards(parts.cards, p ? (p.cards || (p.folded ? [] : [null, null])) : [], { best: shown && won ? shown.best : null });
+                parts.name.replaceChildren(...[
+                    i === v.button ? h('span', { class: 'pk-dealer', title: 'Dealer button' }, 'D') : null,
+                    h('span', { class: 'pk-who' }, i === v.you && atTable() ? `${short(seat.name)} (you)` : short(seat.name)),
+                    seat.bot ? h('span', { class: 'sr-only' }, ', a bot') : null,
+                ].filter(Boolean));
+                parts.stack.hidden = false;
+                parts.stack.replaceChildren(p && p.allIn && !r ? 'All in' : fmt(seat.stack), h('span', { class: 'sr-only' }, ' chips'));
+                parts.act.textContent = won ? `+${fmt(won)}` : shown ? shown.name : acts[i] || '';
+                parts.act.classList.toggle('is-won', Boolean(won));
+                parts.act.hidden = false;
+                parts.bet.textContent = p && p.bet && !r ? fmt(p.bet) : '';
+                parts.bet.hidden = !parts.bet.textContent;
+                const timer = up && net && net.deadline && atTable() ? Math.max(0, Math.ceil((net.deadline - performance.now()) / 1000)) : 0;
+                parts.clock.textContent = timer ? `${timer}s` : '';
+                parts.clock.hidden = !timer;
+            }
+        }
+
+        function renderMiddle() {
+            const v = view();
+            const hd = v && v.hand;
+            const box = $('board');
+            renderCards(box, hd ? hd.board : []);
+            const r = hd && hd.result;
+            const best = r && r.shown && r.pots[0] && r.shown[r.pots[0].winners[0]];
+            for (const el of box.children) el.classList.toggle('is-best', Boolean(best && best.best.includes(el.dataset.key)));
+            const bets = hd ? hd.players.reduce((sum, p) => sum + (p ? p.bet : 0), 0) : 0;
+            $('pot').style.visibility = hd ? '' : 'hidden';
+            $('pot').textContent = !hd ? ' ' : r ? `Pot ${fmt(r.pots.reduce((s, p) => s + p.amount, 0) + r.rake)}${r.rake ? ` · rake ${fmt(r.rake)}` : ''}` : `Pot ${fmt(hd.pot - bets)}${bets ? ` (+${fmt(bets)} bet)` : ''}`;
+            const me = mySeat();
+            const mine = hd && me >= 0 && hd.players[me] && hd.players[me].cards;
+            $('mine').textContent = mine ? `You have: ${hd.board.length >= 3 ? describeScore(evaluate([...mine, ...hd.board])) : preflopName(mine)}` : ' ';
+        }
+
+        // The raise slider, for the turn that's up.
+        function presetTo(kind) {
+            const hd = hand();
+            const can = hd.legal;
+            if (!can.raise) return 0;
+            const step = view().sb;
+            const potAfter = hd.pot + can.call;
+            const target = kind === 'min' ? can.raise.min : kind === 'all' ? can.raise.max
+                : hd.currentBet + Math.round((potAfter * (kind === 'half' ? 0.5 : 1)) / step) * step;
+            return Math.max(can.raise.min, Math.min(can.raise.max, target));
+        }
+
+        function renderControls() {
+            const g = state.game;
+            const v = view();
+            const turn = myTurn();
+            $('act-box').hidden = !(seated() && !handOver());
+            $('between-box').hidden = !seated();
+            $('next-btn').hidden = atTable() || !handOver();
+            const me = v && v.hand && mySeat() >= 0 ? v.hand.players[mySeat()] : null;
+            const inIt = !handOver() && me && !me.folded;
+            $('sit-box').hidden = !(g && !seated() && !g.waiting && session.loggedIn);
+            $('bots-row').hidden = atTable();
+            $('up-btn').textContent = atTable() ? (g && g.leaving ? 'Getting up…' : 'Get up after this hand') : inIt ? 'Fold and get up' : 'Get up';
+            $('up-btn').disabled = state.busy || state.playing || Boolean(atTable() && g && g.leaving);
+            $('next-btn').disabled = state.busy || state.playing;
+            const locked = atTable() && g && g.buyIn;
+            for (const b of document.querySelectorAll('[data-buyin]')) {
+                const value = Number(b.dataset.buyin);
+                b.setAttribute('aria-pressed', String(value === state.buyIn));
+                b.disabled = state.busy || Boolean(locked && value !== g.buyIn);
+            }
+            if (locked) state.buyIn = g.buyIn;
+            $('sit-btn').disabled = state.busy || (wallet.clicks != null && wallet.clicks < state.buyIn) || Boolean(atTable() && g && g.busy);
+            $('sit-btn').textContent = `Sit down (${fmt(state.buyIn)} clicks)`;
+
+            const can = turn ? v.hand.legal : null;
+            $('fold-btn').disabled = !turn;
+            $('call-btn').disabled = !turn;
+            $('call-btn').textContent = can && !can.check ? `Call ${fmt(can.call)}` : 'Check';
+            const raise = can && can.raise;
+            $('raise-btn').disabled = !raise;
+            $('raise-box').hidden = false;
+            for (const b of document.querySelectorAll('[data-preset]')) b.disabled = !raise;
+            const range = $('raise-range');
+            range.disabled = !raise;
+            if (raise) {
+                // A new turn starts the slider at the smallest raise.
+                const key = `${v.hands}:${v.hand.log.length}`;
+                if (state.raiseKey !== key) {
+                    state.raiseKey = key;
+                    state.raise = raise.min;
+                }
+                state.raise = Math.max(raise.min, Math.min(raise.max, state.raise));
+                Object.assign(range, { min: raise.min, max: raise.max, step: v.sb });
+                range.value = state.raise;
+                const all = state.raise === raise.max;
+                $('raise-label').textContent = can.bet ? 'Bet' : 'Raise to';
+                $('raise-out').textContent = fmt(state.raise);
+                $('raise-btn').textContent = all ? `All in ${fmt(state.raise)}` : `${can.bet ? 'Bet' : 'Raise'} ${fmt(state.raise)}`;
+            } else {
+                $('raise-out').textContent = '–';
+                $('raise-btn').textContent = can && can.bet ? 'Bet' : 'Raise';
+            }
+            const at = mySeat();
+            $('chips').textContent = v && at >= 0 && v.seats[at] && seated() ? fmt(v.seats[at].stack) : '–';
+        }
+
+        function renderTablePeople() {
+            if (!atTable()) return;
+            $('table-label').textContent = net.code;
+            const msg = net.msg;
+            if (!msg) return;
+            $('table-people').replaceChildren(...msg.people.map((p) => h('li', null,
+                h('strong', null, `${short(p.name)}${p.name === msg.you ? ' (you)' : ''}`),
+                h('span', null, p.busy ? 'buying in…' : p.waiting ? 'sitting down next hand' : p.seat >= 0 ? `${fmt(msg.table.seats[p.seat].stack)} chips` : 'watching'))));
+        }
+
+        function renderTimer() {
+            const g = state.game;
+            const v = view();
+            const mine = atTable() && myTurn() && net.deadline ? Math.ceil((net.deadline - performance.now()) / 1000) : 0;
+            const next = atTable() && v && v.hand && v.hand.street === 'over' && net.nextAt ? Math.ceil((net.nextAt - performance.now()) / 1000) : 0;
+            const left = mine > 0 ? mine : next > 0 && g && (g.sit || g.waiting) ? next : 0;
+            $('timer').textContent = left > 0 ? `${left}s` : '';
+            $('timer').hidden = !(left > 0);
+        }
+
+        function render() {
+            $('friends-panel').hidden = !(tablesOpen && session.loggedIn && !atTable() && !seated());
+            $('table-panel').hidden = !atTable();
+            $('status-text').textContent = statusText();
+            renderSeats();
+            renderMiddle();
+            renderControls();
+            renderTablePeople();
+            renderTimer();
+            $('bank').textContent = wallet.clicks != null ? fmt(wallet.clicks) : '…';
+            $('today').hidden = wallet.today == null;
+            if (wallet.today != null) {
+                const { lossPerDay, winPerDay } = wallet.limits || { lossPerDay: 5000, winPerDay: 5000 };
+                const today = wallet.today;
+                $('today').textContent = `Today: ${today > 0 ? '+' : today < 0 ? '−' : ''}${fmt(Math.abs(today))} clicks (chips you’re sitting with count once you get up). You can be up to ${fmt(winPerDay)} up or ${fmt(lossPerDay)} down a day.`;
+            }
+        }
+
+        /* ---------- Your clicks ---------- */
+
+        function setWallet(mine) {
+            if (!mine || typeof mine.clicks !== 'number') return;
+            const before = wallet.clicks;
+            wallet.clicks = mine.clicks;
+            if (typeof mine.net === 'number') wallet.today = mine.net;
+            announceBalance(mine.clicks, before != null && mine.clicks > before ? mine.clicks - before : 0);
+        }
+
+        /* ---------- Showing what the bots did, a move at a time ---------- */
+
+        const clone = (x) => JSON.parse(JSON.stringify(x));
+
+        // The table as it was when the hand began, from how it ended up (for a hand dealt in this move).
+        function handStart(v) {
+            const d = clone(v);
+            const r = d.hand.result;
+            d.hand.players.forEach((p, i) => {
+                if (!p) return;
+                d.seats[i].stack += p.total - ((r && r.won[i]) || 0) - (r && r.returned && r.returned.seat === i ? r.returned.amount : 0);
+                Object.assign(p, { bet: 0, total: 0, folded: false, allIn: false });
+                if (i !== d.you) p.cards = [null, null];
+            });
+            Object.assign(d.hand, { board: [], pot: 0, result: null, legal: null, street: 'preflop', toAct: -1, currentBet: 0, log: [] });
+            return d;
+        }
+
+        // The table from where we last saw it (mid-hand: the bots' moves since come next).
+        function resume(prev) {
+            const d = clone(prev);
+            Object.assign(d.hand, { legal: null, toAct: -1 });
+            return d;
+        }
+
+        function apply(d, e) {
+            const hd = d.hand;
+            hd.log.push(e);
+            if (e.deal) {
+                hd.board.push(...e.cards);
+                hd.street = e.deal;
+                hd.currentBet = 0;
+                for (const p of hd.players) if (p) p.bet = 0;
+                return;
+            }
+            const p = hd.players[e.seat];
+            let paid = 0;
+            if (e.do === 'sb' || e.do === 'bb' || e.do === 'call') paid = e.amount;
+            if (e.do === 'bet' || e.do === 'raise') {
+                paid = e.amount - p.bet;
+                hd.currentBet = e.amount;
+            }
+            if (e.do === 'bb') hd.currentBet = Math.max(hd.currentBet, e.amount);
+            if (e.do === 'fold') p.folded = true;
+            p.bet += paid;
+            p.total += paid;
+            hd.pot += paid;
+            d.seats[e.seat].stack -= paid;
+            if (d.seats[e.seat].stack <= 0 && paid) p.allIn = true;
+        }
+
+        // Plays the new log entries in `next` over the table we had (or the start of a fresh hand), then shows
+        // `next` as it is.
+        async function playLog(prev, next) {
+            const v = next.table;
+            if (!v || !v.hand) return;
+            const fresh = !prev || prev.dealt !== v.dealt;
+            if (fresh && v.hand.logAt !== 0) return;
+            if (!fresh && v.hand.logAt === 0) { // the same hand as before, sent whole: nothing new to show
+                state.log = v.hand.log;
+                return;
+            }
+            const entries = v.hand.log;
+            const fullLog = fresh ? entries : [...state.log.slice(0, v.hand.logAt), ...entries];
+            state.log = fullLog;
+            if (!fresh && !(prev && prev.hand)) return;
+            const d = fresh ? handStart(v) : resume(prev);
+            if (!fresh) d.hand.log = state.log.slice(0, v.hand.logAt);
+            state.playing = true;
+            for (const [k, e] of entries.entries()) {
+                apply(d, e);
+                const mine = e.seat === v.you && k === 0 && !fresh;
+                if (mine) continue; // your own move shows straight away
+                state.shown = d;
+                state.step = actionSentence(v, e);
+                render();
+                await sleep(e.deal ? DEAL_MS() : e.do === 'sb' || e.do === 'bb' ? STEP_MS() / 3 : STEP_MS());
+            }
+            state.playing = false;
+            state.step = null;
+            state.shown = null;
+        }
+
+        /* ---------- Solo ---------- */
+
+        async function request(move) {
+            const res = await fetch(API, move
+                ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(move), credentials: 'same-origin' }
+                : { credentials: 'same-origin' });
+            if (res.status === 401) {
+                sessionExpired();
+                return null;
+            }
+            if (!res.ok) throw new Error(`Poker API: ${res.status}`);
+            return res.json();
+        }
+
+        async function load() {
+            if (!session.loggedIn || atTable()) return;
+            try {
+                const game = await request(null);
+                if (!game || atTable()) return;
+                state.game = game;
+                state.log = game.table && game.table.hand ? game.table.hand.log : [];
+                state.failed = false;
+                if (game.sit) state.buyIn = game.sit.buyIn;
+                wallet.limits = game.limits || wallet.limits;
+                setWallet(game.bank);
+                if (game.refunded) toast(`${fmt(game.refunded)} clicks from a game that never finished came back to you.`, 'info', 7000);
+                if (game.last && game.last.why === 'away' && game.last.payout >= 0 && !game.sit) toast(`You were away for an hour, so you got up with ${clicksText(game.last.payout)}.`, 'info', 7000);
+            } catch {
+                state.failed = true;
+            }
+            render();
+            autoNext();
+        }
+
+        // On phones and tablets the controls sit under the table: keep the table and the buttons on screen together.
+        const stacked = matchMedia('(max-width: 960px)');
+        function showTable() {
+            if (!stacked.matches) return;
+            const top = document.querySelector('.casino').getBoundingClientRect().top - 12;
+            const bottom = $('controls').getBoundingClientRect().bottom + 12;
+            const by = bottom - top <= innerHeight ? top : Math.min(top, bottom - innerHeight);
+            if (Math.abs(by) > 1) scrollBy({ top: by, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+        }
+
+        async function soloMove(move) {
+            if (state.busy || state.playing) return;
+            clearTimeout(state.auto);
+            state.busy = true;
+            render();
+            try {
+                const before = state.game && state.game.table;
+                const next = await request(move);
+                if (!next || atTable()) return;
+                state.busy = false;
+                const hd = next.table && next.table.hand;
+                if (!next.error && move.do !== 'leave') await playLog(before, next);
+                else if (hd) state.log = hd.logAt ? [...state.log.slice(0, hd.logAt), ...hd.log] : hd.log;
+                // The API only sends what's new in the hand's log: keep the whole of it for the seats' last moves.
+                if (hd) Object.assign(hd, { log: state.log, logAt: 0 });
+                state.game = next;
+                setWallet(next.bank);
+                if (next.error) toast(next.error, 'info', 7000);
+            } catch {
+                toast('Trusty dropped the cards. Try that again.', 'error', 5000);
+            } finally {
+                state.busy = false;
+                state.playing = false;
+                state.shown = null;
+                render();
+                if (move.do === 'sit' || move.do === 'next') showTable();
+                autoNext();
+            }
+        }
+
+        // Between hands on your own, the next one comes by itself (while you're looking).
+        function autoNext() {
+            clearTimeout(state.auto);
+            if (atTable() || !seated() || !handOver() || state.busy || document.hidden) return;
+            state.auto = setTimeout(() => {
+                if (!atTable() && seated() && handOver() && !document.hidden) soloMove({ do: 'next' });
+            }, AUTO_NEXT_MS);
+        }
+        document.addEventListener('visibilitychange', autoNext);
+
+        /* ---------- Tables ---------- */
+
+        // A { t: 'poker' } message in the solo API's shape.
+        const gameFrom = (msg) => ({
+            table: msg.table,
+            sit: msg.seat >= 0 ? { buyIn: msg.table.buyIn } : null,
+            last: null,
+            waiting: msg.waiting,
+            leaving: msg.leaving,
+            busy: msg.busy,
+            buyIn: msg.buyIn,
+        });
+
+        function onMessage(msg) {
+            if (msg.t === 'poker') {
+                net.msg = msg;
+                net.code = msg.code;
+                net.deadline = msg.left ? performance.now() + msg.left : 0;
+                net.nextAt = msg.next ? performance.now() + msg.next : 0;
+                const before = state.game;
+                state.game = gameFrom(msg);
+                const fresh = msg.table && msg.table.hand && before && before.table && before.table.hand && before.table.hands !== msg.table.hands;
+                render();
+                if (fresh || (msg.seat >= 0 && before && !before.sit)) showTable();
+            } else if (msg.t === 'bank') {
+                setWallet(msg);
+                render();
+            } else if (msg.t === 'notice') {
+                toast(msg.message, 'info', 7000);
+            }
+        }
+
+        function openTable(code, { make = false, tries = 0 } = {}) {
+            if (net) net.conn.leave();
+            clearTimeout(state.auto);
+            mode = 'table';
+            Object.assign(state, { game: null, shown: null, log: [], busy: false, playing: false });
+            const here = { code, conn: null, msg: null, status: null, deadline: 0, nextAt: 0 };
+            net = here;
+            history.replaceState(null, '', `#table=${code}`);
+            bankStatus().then((mine) => {
+                if (!mine || net !== here) return;
+                wallet.limits = mine.limits;
+                setWallet(mine);
+                render();
+            });
+            here.conn = connect({
+                kind: 'poker',
+                code,
+                version: POKER_PROTOCOL,
+                make,
+                on: {
+                    message: (msg) => { if (net === here) onMessage(msg); },
+                    status: (text) => {
+                        if (net !== here) return;
+                        net.status = text;
+                        render();
+                    },
+                    gone: (message, { code: why, login } = {}) => {
+                        if (net !== here) return;
+                        if (why === TABLE_TAKEN && make && tries < 3) {
+                            openTable(newCode(), { make: true, tries: tries + 1 });
+                            return;
+                        }
+                        leaveTable();
+                        if (login) sessionExpired();
+                        else if (message) toast(message, 'info', 7000);
+                    },
+                },
+            });
+            render();
+        }
+
+        // Back to playing on your own. (Leaving the table's page gets you up there after the hand.)
+        function leaveTable() {
+            if (net) net.conn.leave();
+            net = null;
+            if (roomFromHash('table')) history.replaceState(null, '', location.pathname + location.search);
+            mode = 'solo';
+            Object.assign(state, { game: null, shown: null, log: [], busy: false, playing: false });
+            load();
+            render();
+        }
+
+        async function copyLink() {
+            const url = roomLink(net.code, 'table');
+            try {
+                if (matchMedia('(pointer: coarse)').matches && navigator.share) {
+                    await navigator.share({ title: 'Trusty Poker', text: `Play poker with me! Table ${net.code}:`, url });
+                    return;
+                }
+                await navigator.clipboard.writeText(url);
+                toast('Link copied: send it to your friends!');
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                toast(`Send your friends this link: ${url}`, 'info', 8000);
+            }
+        }
+
+        async function checkHash() {
+            const code = roomFromHash('table');
+            if (!code || (net && net.code === code)) return;
+            if (!(await roomsOpen())) {
+                toast('Tables with friends aren’t open right now, but you can still play the bots on your own.', 'info', 6000);
+                return;
+            }
+            if (!session.loggedIn) {
+                document.querySelector('.lobby-sub').textContent = `Log in to sit at table ${code}. Your buy-in is your real Trusty clicks.`;
+                $('lobby-login-link').href = loginHref();
+                return;
+            }
+            if (seated() && !atTable()) {
+                toast('Get up from your table with the bots first, then follow the link again.', 'info', 7000);
+                return;
+            }
+            openTable(code);
+        }
+
+        /* ---------- Buttons and keys ---------- */
+
+        function send(action) {
+            if (!myTurn()) return;
+            if (atTable()) net.conn.send({ t: 'act', action });
+            else soloMove({ do: 'act', action });
+        }
+
+        const fold = () => { if (!$('fold-btn').disabled) send({ do: 'fold' }); };
+        const callOrCheck = () => { if (!$('call-btn').disabled) send({ do: hand().legal.check ? 'check' : 'call' }); };
+        const raise = () => { if (!$('raise-btn').disabled) send({ do: 'raise', to: state.raise }); };
+
+        function sitDown() {
+            if ($('sit-btn').disabled || !$('sit-box').offsetParent) return;
+            if (atTable()) {
+                net.conn.send({ t: 'sit', buyIn: state.buyIn });
+                state.game.busy = true;
+                render();
+            } else {
+                soloMove({ do: 'sit', buyIn: state.buyIn, bots: Number($('bots').value) });
+            }
+        }
+
+        function getUp() {
+            if ($('up-btn').disabled) return;
+            if (atTable()) net.conn.send({ t: 'leave' });
+            else soloMove({ do: 'leave' });
+        }
+
+        $('fold-btn').addEventListener('click', fold);
+        $('call-btn').addEventListener('click', callOrCheck);
+        $('raise-btn').addEventListener('click', raise);
+        $('raise-range').addEventListener('input', (e) => {
+            state.raise = Number(e.target.value);
+            render();
+        });
+        for (const b of document.querySelectorAll('[data-preset]')) {
+            b.addEventListener('click', () => {
+                if (!myTurn()) return;
+                state.raise = presetTo(b.dataset.preset);
+                render();
+            });
+        }
+        for (const b of document.querySelectorAll('[data-buyin]')) {
+            b.addEventListener('click', () => {
+                state.buyIn = Number(b.dataset.buyin);
+                render();
+            });
+        }
+        $('sit-btn').addEventListener('click', sitDown);
+        $('next-btn').addEventListener('click', () => { if (!$('next-btn').disabled && seated() && handOver()) soloMove({ do: 'next' }); });
+        $('up-btn').addEventListener('click', getUp);
+        $('open-table').addEventListener('click', () => openTable(newCode(), { make: true }));
+        $('table-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+        $('join-table').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = $('table-code').value.trim().toUpperCase();
+            if (!ROOM_CODE.test(code)) {
+                toast('Table codes are four letters, like KXQT.');
+                $('table-code').focus();
+                return;
+            }
+            openTable(code);
+        });
+        $('copy-table').addEventListener('click', copyLink);
+        $('leave-table').addEventListener('click', leaveTable);
+        window.addEventListener('hashchange', checkHash);
+
+        document.addEventListener('keydown', (e) => {
+            if (isForeignKey(e) || isActivationKey(e) || !session.loggedIn) return;
+            if (e.target && e.target.closest && e.target.closest('input, select')) return;
+            const k = e.key.toLowerCase();
+            if (k === 'f') fold();
+            else if (k === 'c') callOrCheck();
+            else if (k === 'r') raise();
+            else if (k === 'n') {
+                if (seated() && handOver() && !atTable()) $('next-btn').click();
+                else if (!seated()) sitDown();
+            }
+        });
+
+        // At a table, the clocks tick on.
+        setInterval(() => {
+            if (!atTable()) return;
+            renderTimer();
+            renderSeats();
+        }, 500);
+
+        let wasIn = session.loggedIn;
+        onSession(({ loggedIn }) => {
+            if (loggedIn === wasIn) return;
+            wasIn = loggedIn;
+            if (!loggedIn) {
+                if (net) leaveTable();
+                state.game = null;
+                Object.assign(wallet, { clicks: null, today: null });
+            } else {
+                load();
+            }
+            render();
+        });
+
+        $('lobby-login-link').href = loginHref();
+        render();
+        sessionReady.then(() => {
+            if (!roomFromHash('table') || !session.loggedIn) load();
+            roomsOpen().then((open) => {
+                tablesOpen = open;
+                render();
+                checkHash();
+            });
+        });
+    </script>
+</body>
+</html>
