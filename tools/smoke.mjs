@@ -386,8 +386,10 @@ async function twoPeople(found) {
       if (await player.evaluate(() => !document.querySelector('#between-box').hidden)) {
         // The next hand (unless it already dealt itself), then get up: folding, if it's in progress.
         if (await player.evaluate(() => !document.querySelector('#next-btn').hidden && !document.querySelector('#next-btn').disabled)) await player.click('#next-btn');
-        await player.waitForFunction(() => !document.querySelector('#up-btn').disabled && !document.querySelector('#between-box').hidden, null, { timeout: 8000 });
-        await player.click('#up-btn');
+        // Calling every bet can lose the whole stack, in which case the page has already got the player up.
+        await player.waitForFunction(() => (!document.querySelector('#up-btn').disabled && !document.querySelector('#between-box').hidden)
+          || /Out of chips/.test(document.querySelector('#status-text').textContent), null, { timeout: 8000 });
+        if (!(await player.evaluate(() => /Out of chips/.test(document.querySelector('#status-text').textContent)))) await player.click('#up-btn');
       }
       await player.waitForFunction(() => /got up|Out of chips|cashed you out/.test(document.querySelector('#status-text').textContent), null, { timeout: 8000 });
       await check(`${width}px, after getting up`);
