@@ -21,6 +21,17 @@ async function connectToDatabase() {
 
         cachedClient = client;
         cachedDb = db;
+
+        // Accounts are looked up by username or email ignoring capitals (login, sign-up, profiles, password resets),
+        // so these indexes use the same collation those queries do. Named, so they sit beside any older plain ones.
+        // Made once per server start; never holds up a request.
+        const users = db.collection('users');
+        for (const field of ['username', 'email']) {
+            users.createIndex({ [field]: 1 }, { name: `${field}_ci`, collation: { locale: 'en', strength: 2 } }).catch((error) => {
+                if (error && (error.code === 85 || error.code === 86)) return;
+                console.error(`Index users.${field} failed:`, error);
+            });
+        }
         
         console.log('Successfully connected to MongoDB.');
         return { client, db };

@@ -9,10 +9,25 @@
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:url" content="https://trustydahorse.com/pages/games/trustis.html">
     <meta property="og:title" content="Trustis">
     <meta property="og:description" content="Fit the Trustys Together!">
     <meta property="og:image" content="https://trustydahorse.com/images/thumbnails/trustis.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- Where this page sits on the site, for Google to show in place of its address -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://trustydahorse.com/"},
+                {"@type": "ListItem", "position": 2, "name": "Games", "item": "https://trustydahorse.com/pages/games.html"},
+                {"@type": "ListItem", "position": 3, "name": "Trustis", "item": "https://trustydahorse.com/pages/games/trustis.html"}
+            ]
+        }
+    </script>
     <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/icon-96x96.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -666,7 +681,7 @@
                     setStat('best', best);
                     overNote('Saved to the leaderboard!');
                     toast('High score saved!', 'success');
-                    loadLeaderboard();
+                    loadLeaderboard({ fresh: true });
                 } else if (res.ok) {
                     // The account already has a better game (from another device, say).
                     await loadPersonalBest();
@@ -690,11 +705,11 @@
             } catch { /* keep the last known best */ }
         }
 
-        async function loadLeaderboard() {
+        async function loadLeaderboard({ fresh = false } = {}) {
             const list = $('leaderboard');
             if (!list.children.length) renderSkeleton(list, 5);
             try {
-                const entries = await fetchBoard('trustis');
+                const entries = await fetchBoard('trustis', { fresh });
                 if (entries.length) renderList(list, entries.slice(0, 10), { key: 'trustis' });
                 else renderStatus(list, 'No scores yet! Be the first.');
             } catch {

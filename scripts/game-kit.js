@@ -140,9 +140,12 @@ export const mute = {
   set on(value) { try { localStorage.setItem(MUTE_KEY, value ? '1' : '0'); } catch { /* storage blocked */ } },
 };
 
-export function sound(src, { volume = 1 } = {}) {
-  const el = new Audio(src);
-  el.preload = 'auto';
+// preload: 'auto' downloads the sound with the page, so a game can play it the moment it's needed; 'none' waits
+// for the first play (for a sound only a click plays, which can wait a moment the first time).
+export function sound(src, { volume = 1, preload = 'auto' } = {}) {
+  const el = new Audio();
+  el.preload = preload;
+  el.src = src;
   el.volume = volume;
   return {
     play() {

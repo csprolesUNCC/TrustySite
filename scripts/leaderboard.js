@@ -42,9 +42,11 @@ export const BOARDS = {
   },
 };
 
-export async function fetchBoard(key) {
+// The boards are kept by Vercel's CDN for a few seconds (utils/cache.js). `fresh` skips it: right after saving a
+// score, so the player's new one is on the board.
+export async function fetchBoard(key, { fresh = false } = {}) {
   const board = BOARDS[key];
-  const res = await fetch(board.url);
+  const res = await fetch(fresh ? `${board.url}${board.url.includes('?') ? '&' : '?'}fresh=1` : board.url);
   if (!res.ok) throw new Error(`Leaderboard request failed (${res.status})`);
   const data = await res.json();
   if (!Array.isArray(data)) throw new Error('Unexpected leaderboard response');
@@ -77,9 +79,9 @@ export function rankBadge(clicks) {
 
 // The clicks board's top three get a gold, silver or bronze $ next to their name, there and on their profile.
 const CLICK_ICONS = [
-  { src: '/images/leaderboard/goldClick.png', width: 384, height: 495, label: '#1 on the clicks board' },
-  { src: '/images/leaderboard/silverClick.png', width: 381, height: 500, label: '#2 on the clicks board' },
-  { src: '/images/leaderboard/bronzeClick.png', width: 376, height: 490, label: '#3 on the clicks board' },
+  { src: '/images/leaderboard/goldClick.webp', width: 99, height: 128, label: '#1 on the clicks board' },
+  { src: '/images/leaderboard/silverClick.webp', width: 98, height: 128, label: '#2 on the clicks board' },
+  { src: '/images/leaderboard/bronzeClick.webp', width: 98, height: 128, label: '#3 on the clicks board' },
 ];
 
 export function clickIcon(place) {

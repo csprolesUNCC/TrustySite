@@ -1,6 +1,7 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser, isAdmin } from './auth.js';
 import { cleanText } from './text.js';
+import { currentAccount } from './rename.js';
 
 // The Latest Update note on the home page (index.html), served from api/leaderboard.js as ?action=update so
 // it doesn't take up another Vercel function.
@@ -50,6 +51,8 @@ async function postUpdate(req, res) {
     const user = authenticateUser(req);
     if (!user) return res.status(401).json({ error: 'Authentication required' });
     if (!isAdmin(user)) return res.status(403).json({ error: 'Admins only' });
+    // An admin's login from before their password was reset doesn't count here either.
+    if ((await currentAccount(user)).revoked) return res.status(401).json({ error: 'Authentication required' });
 
     const { date, headline = '', text } = req.body || {};
     if (typeof headline !== 'string' || typeof text !== 'string' || headline.length > HEADLINE_MAX * 10 || text.length > TEXT_MAX * 10) {

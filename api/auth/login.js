@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import connectToDatabase from '../../utils/connect.js';
-import { authenticateUser, isAdmin, setAuthCookie, shouldRenew } from '../../utils/auth.js';
-import { copyName, currentUsername } from '../../utils/rename.js';
+import { authenticateUser, isAdmin, setAuthCookie, clearAuthCookie, shouldRenew } from '../../utils/auth.js';
+import { copyName, currentAccount } from '../../utils/rename.js';
 import { countHit, overLimit, clientIp } from '../../utils/rate-limit.js';
 
 // Wrong passwords allowed per FAIL_WINDOW_MS (utils/rate-limit.js): from one IP address, and for one account from
@@ -17,11 +17,15 @@ export default async (req, res) => {
     if (req.method === 'GET') {
         const user = authenticateUser(req);
 
-        if (user) {
+        // A token from before the account's password was reset is logged out (tokenRevoked in utils/auth.js), and
+        // isn't renewed: this is where every page load renews logins.
+        const account = user && await currentAccount(user);
+        if (account && account.revoked) clearAuthCookie(res);
+        if (account && !account.revoked) {
             // A token from before a rename (made on another device, see utils/rename.js) still has the old name,
             // and anything saved with it since then went out under that name. Copy the new one again and swap
             // the token; if the copying fails, keep the old token so the next page load tries again.
-            const username = await currentUsername(user);
+            const { username } = account;
             if (username !== user.username) {
                 try {
                     await copyName(user.userId, username);

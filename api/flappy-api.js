@@ -1,5 +1,6 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
+import { cachePublic } from '../utils/cache.js';
 
 // Far past anything a person can reach (a pencil every ~1.5 seconds is ~2,400 an hour).
 const MAX_SCORE = 100000;
@@ -56,6 +57,7 @@ export default async (req, res) => {
                 .limit(10)
                 .toArray();
 
+            cachePublic(req, res);
             return res.status(200).json(scores);
         }
 

@@ -3,6 +3,7 @@ import { connectToDatabase } from './db.js';
 import connectToUsersDatabase from './connect.js';
 import { authenticateUser, isAdmin } from './auth.js';
 import { badWordsIn } from './bad-words.js';
+import { currentAccount } from './rename.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 
 // Reporting Draw Trusty drawings, and the admin panel (pages/admin.html). Both are served from existing
@@ -138,6 +139,8 @@ export default async function adminApi(req, res) {
     if (!isAdmin(user)) return res.status(403).json({ error: 'Admins only' });
 
     try {
+        // An admin's login from before their password was reset doesn't count here either.
+        if ((await currentAccount(user)).revoked) return res.status(401).json({ error: 'Authentication required' });
         const { view } = req.query;
         if (req.method === 'GET' && view === 'drawings') return await listDrawings(res);
         if (req.method === 'GET' && view === 'drawing') return await sendDrawing(req, res);

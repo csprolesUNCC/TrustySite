@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import { isHouse } from './house.js';
 import { connectToDatabase } from './db.js';
 import connectToUsersDatabase from './connect.js';
-import { authenticateUser, isAdmin, setAuthCookie } from './auth.js';
+import { authenticateUser, isAdmin, setAuthCookie, tokenRevoked } from './auth.js';
 import { usernameProblem, RENAME_DAYS } from '../scripts/username.js';
 
 // Changing your username (the Change username button on your own profile, pages/profile.html), served from
@@ -53,20 +53,25 @@ export function nextRename(account) {
 
 /**
  * @param {object} user - The payload from authenticateUser.
- * @returns {Promise<string>} The account's username now, which isn't the token's if it was renamed since the
- * token was made. The token's when the account can't be looked up.
+ * @returns {Promise<{ username: string, revoked: boolean }>} The account's username now, which isn't the token's
+ * if it was renamed since the token was made, and whether the token was made before the account's password was
+ * last reset (tokenRevoked in utils/auth.js), so it no longer counts. The token's name, not revoked, when the
+ * account can't be looked up.
  */
-export async function currentUsername(user) {
+export async function currentAccount(user) {
     try {
         const { db } = await connectToUsersDatabase();
         const account = await db.collection('users').findOne(
             { _id: new ObjectId(String(user.userId)) },
-            { projection: { username: 1 } }
+            { projection: { username: 1, passwordChangedAt: 1 } }
         );
-        return account && typeof account.username === 'string' ? account.username : user.username;
+        return {
+            username: account && typeof account.username === 'string' ? account.username : user.username,
+            revoked: tokenRevoked(user, account),
+        };
     } catch (error) {
-        console.error('Username lookup failed:', error);
-        return user.username;
+        console.error('Account lookup failed:', error);
+        return { username: user.username, revoked: false };
     }
 }
 
@@ -86,8 +91,8 @@ export default async function rename(req, res) {
         const { db } = await connectToUsersDatabase();
         const accounts = db.collection('users');
         const _id = new ObjectId(String(user.userId));
-        const account = await accounts.findOne({ _id }, { projection: { username: 1, usernameChangedAt: 1 } });
-        if (!account) return res.status(401).json({ error: 'Authentication required' });
+        const account = await accounts.findOne({ _id }, { projection: { username: 1, usernameChangedAt: 1, passwordChangedAt: 1 } });
+        if (!account || tokenRevoked(user, account)) return res.status(401).json({ error: 'Authentication required' });
         if (isHouse(account.username)) return res.status(403).json({ error: 'Trusty keeps his name: his casino winnings go by it.' });
         if (account.username === username) return res.status(400).json({ error: 'That’s already your username.' });
         const next = nextRename(account);

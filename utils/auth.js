@@ -31,7 +31,8 @@ function authenticateUser(req) {
     if (!token) return null;
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        // Only the algorithm setAuthCookie signs with, so a token can't pick a weaker one for itself.
+        const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
         return decoded; // Contains { userId, username }
     } catch (error) {
         return null;
@@ -49,8 +50,28 @@ const RENEW_AFTER_SECONDS = 60 * 60 * 24;
  * @param {{ userId: *, username: string }} user
  */
 function setAuthCookie(res, { userId, username }) {
-    const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: SESSION_SECONDS });
+    const token = jwt.sign({ userId, username }, JWT_SECRET, { algorithm: 'HS256', expiresIn: SESSION_SECONDS });
     res.setHeader('Set-Cookie', `authToken=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_SECONDS}`);
+}
+
+/** Logs this browser out: the authToken cookie, emptied and already expired. */
+function clearAuthCookie(res) {
+    res.setHeader('Set-Cookie', 'authToken=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+}
+
+/**
+ * Resetting a password (api/auth/reset-password.js) logs out every device that was logged in before it, so a
+ * stolen login stops working once its owner resets their password. Tokens carry when they were made (`iat`, in
+ * seconds) and the account when its password last changed (`passwordChangedAt`).
+ * @param {object} user - The payload from authenticateUser.
+ * @param {object|null} account - The account from the users db, with `passwordChangedAt`.
+ * @returns {boolean} Whether that token was made before the password changed, so it no longer counts.
+ */
+function tokenRevoked(user, account) {
+    const changed = account && account.passwordChangedAt instanceof Date ? account.passwordChangedAt.getTime() : NaN;
+    if (!Number.isFinite(changed)) return false;
+    // Seconds, like `iat`: a login in the same second as the reset is the new password's.
+    return !(typeof user.iat === 'number' && user.iat >= Math.floor(changed / 1000));
 }
 
 /**
@@ -77,4 +98,4 @@ function isAdmin(user) {
     return Boolean(user && typeof user.username === 'string' && ADMINS.includes(user.username.toLowerCase()));
 }
 
-export { authenticateUser, isAdmin, setAuthCookie, shouldRenew };
+export { authenticateUser, isAdmin, setAuthCookie, clearAuthCookie, shouldRenew, tokenRevoked };

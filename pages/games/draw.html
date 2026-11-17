@@ -9,10 +9,25 @@
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:url" content="https://trustydahorse.com/pages/games/draw.html">
     <meta property="og:title" content="Draw Trusty!">
     <meta property="og:description" content="Memorize and draw! How close can you get to the real Trusty?">
     <meta property="og:image" content="https://trustydahorse.com/images/thumbnails/draw.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- Where this page sits on the site, for Google to show in place of its address -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://trustydahorse.com/"},
+                {"@type": "ListItem", "position": 2, "name": "Games", "item": "https://trustydahorse.com/pages/games.html"},
+                {"@type": "ListItem", "position": 3, "name": "Draw Trusty", "item": "https://trustydahorse.com/pages/games/draw.html"}
+            ]
+        }
+    </script>
     <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/icon-96x96.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -324,7 +339,7 @@
                     setHud(`${data.score}%!`, 0, null, 'done');
                 }
                 toast(res.status === 201 ? 'Drawing saved to the leaderboard!' : 'Nice drawing! Not a new high score.', res.status === 201 ? 'success' : 'info');
-                await Promise.all([loadPersonalBest(), loadBoard()]);
+                await Promise.all([loadPersonalBest(), loadBoard({ fresh: true })]);
             } catch {
                 toast('Couldn’t save your drawing. Check your connection.', 'error');
             }
@@ -348,11 +363,11 @@
             } catch { /* keep the last known best */ }
         }
 
-        async function loadBoard() {
+        async function loadBoard({ fresh = false } = {}) {
             const list = $('board');
             if (!list.children.length) renderSkeleton(list, 5);
             try {
-                const entries = await fetchBoard('draw');
+                const entries = await fetchBoard('draw', { fresh });
                 if (entries.length) renderList(list, entries.slice(0, 10), { key: 'draw' });
                 else renderStatus(list, 'No drawings ranked yet!');
             } catch {

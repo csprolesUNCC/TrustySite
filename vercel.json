@@ -3,14 +3,19 @@
   "headers": [
     {
       "source": "/(.*)",
-      "headers": [{ "key": "X-Content-Type-Options", "value": "nosniff" }]
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
     },
     {
       "source": "/fonts/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {
-      "source": "/(images|sound|models)/(.*)",
+      "source": "/(images|sound|models|data)/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
@@ -27,6 +32,7 @@
     }
   ],
   "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true },
     { "source": "/api/:path(.*)\\.js", "destination": "/api/:path", "permanent": false },
     { "source": "/:dir(utils|tests|tools|realtime|node_modules|\\.git|\\.github)/(.*)", "destination": "/404.html", "permanent": false },
     { "source": "/:file(package\\.json|package-lock\\.json|vercel\\.json|\\.vercelignore|\\.gitignore|README\\.md|CLAUDE\\.md)", "destination": "/404.html", "permanent": false },

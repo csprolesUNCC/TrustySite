@@ -1,5 +1,6 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
+import { cachePublic } from './cache.js';
 
 // The Trustis leaderboard (pages/games/trustis.html), served from api/leaderboard.js as ?action=trustis so it
 // doesn't take up another Vercel function. `trustis_scores` keeps each player's best game.
@@ -35,6 +36,7 @@ async function getScores(req, res) {
         .sort({ score: -1, timestamp: 1 })
         .limit(10)
         .toArray();
+    cachePublic(req, res);
     return res.status(200).json(scores);
 }
 

@@ -1,5 +1,6 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
+import { cachePublic } from '../utils/cache.js';
 import { decodePngDataUrl } from '../utils/png.js';
 import { reportDrawing } from '../utils/moderation.js';
 import { gradeDrawing, GRADER_VERSION } from '../scripts/draw-grader.js';
@@ -32,6 +33,7 @@ export default async (req, res) => {
                 .limit(10)
                 .toArray();
             // `id` and `at` pick out this exact drawing for the Report button (see utils/moderation.js).
+            cachePublic(req, res);
             return res.status(200).json(scores.map(({ _id, timestamp, ...entry }) => ({ ...entry, id: _id, at: timestamp })));
         }
 
@@ -52,7 +54,7 @@ export default async (req, res) => {
             const user = authenticateUser(req);
             if (!user) return res.status(401).json({ error: 'Auth required' });
 
-            const { score, image } = req.body;
+            const { score, image } = req.body || {};
             if (typeof score !== 'number' || score < 0) {
                 return res.status(400).json({ error: 'Invalid score' });
             }

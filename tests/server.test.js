@@ -117,3 +117,41 @@ test('login refuses objects as the username or password', async () => {
     assert.equal(res.statusCode, 400, JSON.stringify(body));
   }
 });
+
+test('login tokens: only HS256 with the site secret counts', async () => {
+  const { default: jwt } = await import('jsonwebtoken');
+  const { authenticateUser } = await import('../utils/auth.js');
+  const cookie = (token) => ({ headers: { cookie: `authToken=${token}` } });
+  const payload = { userId: 'abc', username: 'carson' };
+  assert.equal(authenticateUser(cookie(jwt.sign(payload, process.env.JWT_SECRET, { algorithm: 'HS256' }))).username, 'carson');
+  assert.equal(authenticateUser(cookie(jwt.sign(payload, process.env.JWT_SECRET, { algorithm: 'HS512' }))), null);
+  assert.equal(authenticateUser(cookie(jwt.sign(payload, 'someone-elses-secret'))), null);
+  const unsigned = `${Buffer.from('{"alg":"none","typ":"JWT"}').toString('base64url')}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.`;
+  assert.equal(authenticateUser(cookie(unsigned)), null);
+});
+
+test('a password reset logs out the logins made before it', async () => {
+  const { tokenRevoked } = await import('../utils/auth.js');
+  const at = (iso) => new Date(iso);
+  const iat = (iso) => Math.floor(at(iso).getTime() / 1000);
+  const account = { passwordChangedAt: at('2026-11-17T12:00:00.500Z') };
+  assert.equal(tokenRevoked({ iat: iat('2026-11-10T00:00:00Z') }, account), true);
+  assert.equal(tokenRevoked({ iat: iat('2026-11-17T11:59:59Z') }, account), true);
+  assert.equal(tokenRevoked({ iat: iat('2026-11-17T12:00:00.900Z') }, account), false, 'logged in again in the same second');
+  assert.equal(tokenRevoked({ iat: iat('2026-11-18T00:00:00Z') }, account), false);
+  assert.equal(tokenRevoked({}, account), true, 'a token that doesn’t say when it was made');
+  assert.equal(tokenRevoked({ iat: 1 }, {}), false, 'never reset');
+  assert.equal(tokenRevoked({ iat: 1 }, null), false, 'no account to go by');
+});
+
+test('public boards: the CDN keeps them briefly, and ?fresh=1 skips it', async () => {
+  const { cachePublic } = await import('../utils/cache.js');
+  const cached = fakeRes();
+  cachePublic({ query: {} }, cached);
+  assert.match(cached.headers['Vercel-CDN-Cache-Control'], /^max-age=\d+$/);
+  assert.equal(cached.headers['Cache-Control'], 'no-cache');
+  const fresh = fakeRes();
+  cachePublic({ query: { fresh: '1' } }, fresh);
+  assert.equal(fresh.headers['Cache-Control'], 'no-store');
+  assert.equal(fresh.headers['Vercel-CDN-Cache-Control'], undefined);
+});

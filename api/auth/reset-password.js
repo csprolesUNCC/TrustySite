@@ -36,7 +36,8 @@ export default async (req, res) => {
         await usersCollection.updateOne(
             { _id: user._id },
             {
-                $set: { password: hashedPassword },
+                // Logs out every device that was logged in with the old password (tokenRevoked in utils/auth.js).
+                $set: { password: hashedPassword, passwordChangedAt: new Date() },
                 // resetToken: the plain tokens stored before they were hashed
                 $unset: { resetTokenHash: '', resetToken: '', resetTokenExpiry: '' }
             }

@@ -1,4 +1,5 @@
 import { connectToDatabase } from '../utils/db.js';
+import { cachePublic } from '../utils/cache.js';
 import profile from '../utils/profile.js';
 import trustis from '../utils/trustis.js';
 import adminApi from '../utils/moderation.js';
@@ -69,6 +70,7 @@ export default async (req, res) => {
             .limit(50)
             .toArray();
 
+        cachePublic(req, res);
         return res.status(200).json(leaderboard);
     } catch (error) {
         console.error('Leaderboard API Error:', error);

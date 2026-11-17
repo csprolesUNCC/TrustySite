@@ -28,6 +28,9 @@ import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 import { isHouse } from '../utils/house.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// The headers vercel.json sends with every file.
+const SECURITY_HEADERS = Object.fromEntries(JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'))
+  .headers.find((rule) => rule.source === '/(.*)').headers.map(({ key, value }) => [key, value]));
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript',
@@ -237,7 +240,8 @@ export function startServer(port = 8787) {
     }
     const type = TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream';
     let data = fs.readFileSync(file);
-    const headers = { 'Content-Type': type, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' };
+    // The same security headers vercel.json sends, so the smoke test catches a page they'd break.
+    const headers = { 'Content-Type': type, 'Cache-Control': 'no-cache', ...SECURITY_HEADERS };
     if (/text|javascript|json|xml|svg/.test(type) && /\bgzip\b/.test(req.headers['accept-encoding'] || '') && req.method !== 'HEAD') {
       data = zlib.gzipSync(data);
       headers['Content-Encoding'] = 'gzip';
