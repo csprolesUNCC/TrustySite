@@ -12,7 +12,7 @@ const LS_RANK_OWNER = 'trusty:rank:owner';
 const LS_NAME_KEYS = ['trusty:trustle:owner', LS_RANK_OWNER];
 const FACE = '/images/icons/mobile-icon-96.webp';
 const ADMIN_PAGE = '/pages/admin.html';
-const CLICK_LIMIT = 3; // header clicker: clicks per second
+const CLICK_LIMIT = 8; // header clicker: clicks per second
 const NOTE_MS = 4500; // how long a rank up or daily bonus note stays under the clicker
 
 function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }

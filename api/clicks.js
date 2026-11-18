@@ -5,7 +5,7 @@ import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
 // The server allows a little slack so network jitter doesn't reject honest clicks.
-const MAX_CLICKS = 3;
+const MAX_CLICKS = 8;
 const WINDOW_MS = 1000;
 const JITTER_MS = 100;
 
