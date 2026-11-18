@@ -1,6 +1,7 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
+import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
@@ -9,14 +10,70 @@ const MAX_CLICKS = 8;
 const WINDOW_MS = 1000;
 const JITTER_MS = 100;
 
-// Watching Trusty TV (POST ?action=tv) earns TV_CLICKS clicks every TV_EVERY_MS, at most once per
-// window for the account no matter how many tabs are open. The slack covers timer and network jitter.
-const TV_CLICKS = 5;
-const TV_EVERY_MS = 5000;
-const TV_SLACK_MS = 500;
-// Each reward also adds its seconds to the account's watch time for the channel that was on
-// (`tvSeconds.<channel key>`), which the profile page uses to pick a favorite channel.
-const TV_CHANNELS = new Set(CHANNELS.map((c) => c.key));
+// Watching Trusty TV (POST ?action=tv) or listening to Trusty Radio (POST ?action=radio) earns WATCH_REWARD.clicks
+// every WATCH_REWARD.every seconds, at most once per window for the account no matter how many tabs are open, and at
+// most WATCH_REWARD.daily clicks a day (midnight Eastern) from each, counted in the account's `tvDaily` /
+// `radioDaily` ({ day, clicks }). The slack covers timer and network jitter.
+const WATCH_SLACK_MS = 500;
+const WATCH = {
+    // Each TV reward also adds its seconds to the account's watch time for the channel that was on
+    // (`tvSeconds.<channel key>`), which the profile page uses to pick a favorite channel.
+    tv: { name: 'Trusty TV', last: 'lastTvReward', daily: 'tvDaily', seconds: 'tvSeconds', keys: new Set(CHANNELS.map((c) => c.key)) },
+    radio: { name: 'Trusty Radio', last: 'lastRadioReward', daily: 'radioDaily' }
+};
+
+// Pays one watch reward if the last one was long enough ago and today's are under the cap. Returns [status, body].
+async function payWatch(collection, user, source, body) {
+    const { clicks: CLICKS, every, daily: CAP } = WATCH_REWARD;
+    const now = new Date();
+    const today = dayOf(now);
+    const ready = { [source.last]: { $not: { $gt: new Date(now.getTime() - every * 1000 + WATCH_SLACK_MS) } } };
+    const key = source.seconds && body && source.keys.has(body.channel) ? body.channel : null;
+    const inc = { clicks: CLICKS };
+    if (key) inc[`${source.seconds}.${key}`] = every;
+    const set = { username: user.username, [source.last]: now };
+    const options = { returnDocument: 'after', projection: { clicks: 1, [source.daily]: 1 } };
+    const paid = (result) => {
+        const doc = result && 'value' in result ? result.value : result;
+        return doc ? { clicks: doc.clicks, added: CLICKS, today: doc[source.daily].clicks, cap: CAP } : null;
+    };
+
+    // Already paid some today: only while that's under the cap.
+    let answer = paid(await collection.findOneAndUpdate(
+        { userId: user.userId, ...ready, [`${source.daily}.day`]: today, [`${source.daily}.clicks`]: { $lte: CAP - CLICKS } },
+        { $inc: { ...inc, [`${source.daily}.clicks`]: CLICKS }, $set: set },
+        options
+    ));
+    // The day's first: today's count starts over.
+    answer ||= paid(await collection.findOneAndUpdate(
+        { userId: user.userId, ...ready, [`${source.daily}.day`]: { $ne: today } },
+        { $inc: inc, $set: { ...set, [source.daily]: { day: today, clicks: CLICKS } } },
+        options
+    ));
+    if (answer) return [200, answer];
+
+    // No match: this user has never clicked, today's cap is reached, or the last reward was too recent.
+    const inserted = await collection.updateOne(
+        { userId: user.userId },
+        {
+            $setOnInsert: {
+                clicks: CLICKS, username: user.username, [source.last]: now, recent: [],
+                [source.daily]: { day: today, clicks: CLICKS },
+                ...(source.seconds && { [source.seconds]: key ? { [key]: every } : {} })
+            }
+        },
+        { upsert: true }
+    );
+    if (inserted.upsertedCount) {
+        return [200, { clicks: CLICKS, added: CLICKS, today: CLICKS, cap: CAP }];
+    }
+    const doc = await collection.findOne({ userId: user.userId }, { projection: { [source.daily]: 1 } });
+    const counted = doc && doc[source.daily];
+    if (counted && counted.day === today && counted.clicks > CAP - CLICKS) {
+        return [429, { error: `That's today's ${CAP} clicks from ${source.name}. More from midnight Eastern.`, capped: true, day: today, today: counted.clicks, cap: CAP }];
+    }
+    return [429, { error: `${source.name} gives ${CLICKS} clicks every ${every} seconds.` }];
+}
 
 // The first click of each day (from midnight Eastern) also pays the daily bonus, which grows with every day in a
 // row (dailyClaim() in scripts/milestones.js). The account's `daily` ({ day, streak }) says which day was last
@@ -56,36 +113,9 @@ export default async (req, res) => {
             });
         }
 
-        if (req.method === 'POST' && req.query.action === 'tv') {
-            const now = new Date();
-            const cutoff = new Date(now.getTime() - TV_EVERY_MS + TV_SLACK_MS);
-            const channel = req.body && TV_CHANNELS.has(req.body.channel) ? req.body.channel : null;
-            const seconds = channel ? { [channel]: TV_EVERY_MS / 1000 } : {};
-            const inc = { clicks: TV_CLICKS };
-            if (channel) inc[`tvSeconds.${channel}`] = seconds[channel];
-            const result = await collection.findOneAndUpdate(
-                { userId: user.userId, lastTvReward: { $not: { $gt: cutoff } } },
-                {
-                    $inc: inc,
-                    $set: { username: user.username, lastTvReward: now }
-                },
-                { returnDocument: 'after' }
-            );
-            const doc = result && 'value' in result ? result.value : result;
-            if (doc) {
-                return res.status(200).json({ clicks: doc.clicks, added: TV_CLICKS });
-            }
-
-            // No match: either this user has never clicked, or the last reward was too recent.
-            const inserted = await collection.updateOne(
-                { userId: user.userId },
-                { $setOnInsert: { clicks: TV_CLICKS, username: user.username, lastTvReward: now, recent: [], tvSeconds: seconds } },
-                { upsert: true }
-            );
-            if (inserted.upsertedCount) {
-                return res.status(200).json({ clicks: TV_CLICKS, added: TV_CLICKS });
-            }
-            return res.status(429).json({ error: `Trusty TV gives ${TV_CLICKS} clicks every ${TV_EVERY_MS / 1000} seconds.` });
+        if (req.method === 'POST' && Object.hasOwn(WATCH, req.query.action)) {
+            const [status, answer] = await payWatch(collection, user, WATCH[req.query.action], req.body);
+            return res.status(status).json(answer);
         }
 
         if (req.method === 'POST') {

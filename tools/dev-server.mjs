@@ -25,6 +25,7 @@ import { MACHINE as SLOT_MACHINE } from '../scripts/slots.js';
 import { memoryJackpot } from '../utils/slots-jackpot.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
 import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
+import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { isHouse } from '../utils/house.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -99,9 +100,16 @@ async function api(req, url, body) {
     if (!me) return [401, { error: 'Authentication required' }];
     const account = bank.account(accountOf(req));
     if (req.method !== 'POST') return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()) }];
-    if (action === 'tv') {
-      account.clicks += 5;
-      return [200, { clicks: account.clicks, added: 5 }];
+    if (action === 'tv' || action === 'radio') {
+      // Trusty TV's and Trusty Radio's rewards, each with its own daily cap, as api/clicks.js pays them.
+      const { clicks, daily: cap } = WATCH_REWARD;
+      const day = dayOf();
+      account.watch ||= {};
+      const counted = account.watch[action]?.day === day ? account.watch[action].clicks : 0;
+      if (counted + clicks > cap) return [429, { error: 'That’s today’s clicks.', capped: true, day, today: counted, cap }];
+      account.watch[action] = { day, clicks: counted + clicks };
+      account.clicks += clicks;
+      return [200, { clicks: account.clicks, added: clicks, today: counted + clicks, cap }];
     }
     // A click, and the daily bonus with the day's first one, as api/clicks.js pays it.
     account.clicks += 1;
