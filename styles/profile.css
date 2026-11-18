@@ -106,9 +106,10 @@
 }
 .profile-drawing img { width: 100%; height: 100%; object-fit: contain; }
 
-/* Trustle takes two columns, next to Trustis (the whole row on smaller screens): its numbers on one side,
-   the guess bars on the other */
-.profile-stat.is-trustle { grid-column: span 2; }
+/* Clicks takes two columns next to Flappy (the whole row on smaller screens), so the other one-column cards
+   fill their rows. Trustle takes the whole row under them: its numbers on one side, the guess bars on the other */
+.profile-stat.is-clicks { grid-column: span 2; }
+.profile-stat.is-trustle { grid-column: 1 / -1; }
 .profile-trustle { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px clamp(20px, 4vw, 40px); align-items: start; }
 .profile-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .profile-mini {
@@ -137,7 +138,7 @@
   .profile-top { grid-template-columns: 1fr; }
   .profile-tv { max-width: 420px; }
   .profile-stats { grid-template-columns: 1fr 1fr; }
-  .profile-stat.is-trustle { grid-column: 1 / -1; }
+  .profile-stat.is-clicks { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   .profile-stats, .profile-trustle { grid-template-columns: 1fr; }

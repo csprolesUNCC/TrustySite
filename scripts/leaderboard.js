@@ -40,6 +40,13 @@ export const BOARDS = {
     format: (n) => fmt(n),
     unit: 'points',
   },
+  snake: {
+    url: '/api/leaderboard?action=snake',
+    label: 'Trusty Snake',
+    normalize: (e) => ({ name: e.name, score: e.score }),
+    format: (n) => fmt(n),
+    unit: 'snacks',
+  },
 };
 
 // The boards are kept by Vercel's CDN for a few seconds (utils/cache.js). `fresh` skips it: right after saving a

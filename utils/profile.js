@@ -48,12 +48,14 @@ async function getProfile(req, res) {
     const flappyCol = db.collection('scores');
     const drawCol = db.collection('draw_scores');
     const trustisCol = db.collection('trustis_scores');
+    const snakeCol = db.collection('snake_scores');
     const best = { sort: { score: -1, timestamp: 1 } };
-    const [clickDoc, flappyDoc, drawDoc, trustisDoc, trustleDoc, profileDoc] = await Promise.all([
+    const [clickDoc, flappyDoc, drawDoc, trustisDoc, snakeDoc, trustleDoc, profileDoc] = await Promise.all([
         clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1, 'bank.stats': 1, daily: 1 } }),
         flappyCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
         drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1 } }),
         trustisCol.findOne({ userId }, { ...best, projection: { score: 1, lines: 1, level: 1, timestamp: 1 } }),
+        snakeCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
         db.collection('trustle').findOne({ userId }, { projection: { games: 1 } }),
         db.collection('profiles').findOne({ userId }, { projection: { bio: 1 } }),
     ]);
@@ -62,11 +64,13 @@ async function getProfile(req, res) {
     const hasFlappy = flappyDoc && typeof flappyDoc.score === 'number';
     const hasDraw = drawDoc && typeof drawDoc.score === 'number';
     const hasTrustis = trustisDoc && typeof trustisDoc.score === 'number';
-    const [clickRank, flappyRank, drawRank, trustisRank] = await Promise.all([
+    const hasSnake = snakeDoc && typeof snakeDoc.score === 'number';
+    const [clickRank, flappyRank, drawRank, trustisRank, snakeRank] = await Promise.all([
         hasClicks ? rankOf(clicksCol, 'clicks', clickDoc) : null,
         hasFlappy ? rankOf(flappyCol, 'score', flappyDoc, { ties: true }) : null,
         hasDraw ? rankOf(drawCol, 'score', drawDoc, { filter: { grader: GRADER_VERSION }, ties: true }) : null,
         hasTrustis ? rankOf(trustisCol, 'score', trustisDoc, { ties: true }) : null,
+        hasSnake ? rankOf(snakeCol, 'score', snakeDoc, { ties: true }) : null,
     ]);
 
     // Trustle stats are worked out from the synced history, the same way the game page does it.
@@ -119,6 +123,7 @@ async function getProfile(req, res) {
             at: drawDoc.timestamp,
         } : null,
         trustis: hasTrustis ? { score: trustisDoc.score, rank: trustisRank, lines: trustisDoc.lines, level: trustisDoc.level } : null,
+        snake: hasSnake ? { score: snakeDoc.score, rank: snakeRank } : null,
         trustle: trustle.played ? trustle : null,
         tv,
     });

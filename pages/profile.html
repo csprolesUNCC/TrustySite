@@ -274,6 +274,14 @@
                 profile.isMe ? h('a', { class: 'text-link', href: '/pages/games/trustis.html' }, 'Play Trustis') : null);
         }
 
+        function snakeCard() {
+            const s = profile.snake;
+            return statCard('Trusty Snake best', 'is-snake',
+                s ? [value(fmt(s.score)), rankLine(s.rank, '/pages/leaderboard.html#snake')]
+                  : emptyLine('Hasn’t fed Trusty any snacks yet.'),
+                profile.isMe ? h('a', { class: 'text-link', href: '/pages/games/snake.html' }, 'Play Trusty Snake') : null);
+        }
+
         function trustleCard() {
             const t = profile.trustle;
             if (!t) {
@@ -307,7 +315,7 @@
             renderRename();
             renderBio();
             renderTv();
-            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), trustleCard());
+            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), snakeCard(), trustleCard());
             show('profile');
         }
 

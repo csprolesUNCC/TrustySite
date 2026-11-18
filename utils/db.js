@@ -11,6 +11,7 @@ const INDEXES = {
     scores: [{ userId: 1 }, { score: -1, timestamp: 1 }], // Flappy Trusty
     draw_scores: [{ userId: 1 }, { grader: 1, score: -1, timestamp: 1 }],
     trustis_scores: [{ userId: 1 }, { score: -1, timestamp: 1 }],
+    snake_scores: [{ userId: 1 }, { score: -1, timestamp: 1 }],
     trustle: [{ userId: 1 }],
     profiles: [{ userId: 1 }],
     updates: [{ savedAt: -1 }],

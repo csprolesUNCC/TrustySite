@@ -25,6 +25,7 @@ const NAME_COPIES = [
     ['scores', 'name'], // Flappy Trusty
     ['draw_scores', 'name'],
     ['trustis_scores', 'name'],
+    ['snake_scores', 'name'],
     ['trustle', 'username'],
     ['profiles', 'username'],
 ];
