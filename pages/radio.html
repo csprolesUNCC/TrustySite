@@ -111,6 +111,8 @@
                     <ol class="tv-guide" id="guide"></ol>
                 </div>
                 <p class="tv-note">Every station plays back to back, all day, every day. Everyone listening hears the same moment, so tell your friends to tune in.</p>
+                <p class="tv-note" data-auth-show="in">Every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 5,000 a day.<span id="earned"></span></p>
+                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 5,000 a day.</p>
             </aside>
         </section>
     </main>
@@ -118,9 +120,10 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h } from '/scripts/site.js';
+        import { h, fmt, session, sessionExpired, announceClicks, loginHref } from '/scripts/site.js';
         import { STATIONS, BAND } from '/scripts/radio-lineup.js';
-        import { buildSchedule, onAir, upNext } from '/scripts/tv-schedule.js';
+        import { buildSchedule, onAir, upNext, WATCH_REWARD } from '/scripts/tv-schedule.js';
+        import { dayOf } from '/scripts/milestones.js';
 
         const $ = (id) => document.getElementById(id);
         const radio = $('radio');
@@ -404,6 +407,64 @@
             });
         }
 
+        /* ---------- Listening rewards ---------- */
+
+        // A logged-in listener earns WATCH_REWARD.clicks for every REWARD_EVERY seconds a song is actually
+        // playing on screen, up to WATCH_REWARD.daily a day (api/clicks.js gives them out and enforces both;
+        // Trusty TV's are counted separately).
+        const REWARD_EVERY = WATCH_REWARD.every;
+        let listened = 0;  // seconds listened toward the next reward
+        let capped = null; // the day today's clicks ran out, if they have
+        let rewarding = false;
+
+        function listening() {
+            return session.loggedIn && capped !== dayOf(now()) && !document.hidden && !offAir() && !tuning()
+                && player && typeof player.getPlayerState === 'function'
+                && broken !== current && !screen.classList.contains('is-static')
+                && player.getPlayerState() === STATE.PLAYING;
+        }
+
+        async function reward() {
+            rewarding = true;
+            try {
+                const res = await fetch('/api/clicks?action=radio', { method: 'POST' });
+                if (res.status === 401) {
+                    sessionExpired();
+                    return;
+                }
+                if (res.status === 429) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data.capped) {
+                        // That's today's lot: stop asking until midnight Eastern.
+                        capped = data.day;
+                        $('earned').textContent = ` You've earned today's ${fmt(data.cap)}. More from midnight Eastern.`;
+                        return;
+                    }
+                    // A hair too soon for the server (a slow request before this one, or another tab
+                    // listening too), so these seconds still count: try again next second.
+                    listened = Math.max(listened, REWARD_EVERY - 1);
+                    return;
+                }
+                if (!res.ok) return;
+                const data = await res.json();
+                $('earned').textContent = ` You've earned ${fmt(data.today)} of today's ${fmt(data.cap)}.`;
+                announceClicks(data.clicks, data.added);
+            } catch { /* offline: this one doesn't count */ }
+            finally {
+                rewarding = false;
+            }
+        }
+
+        // Runs once a second.
+        function listenTick() {
+            if (!listening()) return;
+            listened += 1;
+            if (listened >= REWARD_EVERY && !rewarding) {
+                listened = 0;
+                reward();
+            }
+        }
+
         /* ---------- Controls ---------- */
 
         function setSound(on, remember = false) {
@@ -576,6 +637,7 @@
 
         /* ---------- Go ---------- */
 
+        $('login-link').href = loginHref();
         showStation();
         showStatic('Tuning in…');
         if (schedules.every((s) => !s.shows.length)) {
@@ -586,7 +648,10 @@
             if (offAir()) showStatic('Off the air');
             tune();
             let ticks = 0;
-            setInterval(() => tune(++ticks % 5 === 0), 1000);
+            setInterval(() => {
+                tune(++ticks % 5 === 0);
+                listenTick();
+            }, 1000);
             try {
                 const YT = await loadYouTube();
                 await halfVisible(screen);
