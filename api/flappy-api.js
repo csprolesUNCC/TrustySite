@@ -1,6 +1,7 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { cachePublic } from '../utils/cache.js';
+import { rewardGame } from '../utils/game-rewards.js';
 
 // Far past anything a person can reach (a pencil every ~1.5 seconds is ~2,400 an hour).
 const MAX_SCORE = 100000;
@@ -24,10 +25,12 @@ export default async (req, res) => {
                 return res.status(400).json({ error: 'Invalid score' });
             }
 
+            // Every finished game earns clicks (utils/game-rewards.js), best or not.
+            const reward = await rewardGame(user, 'flappy', score);
             const existingScore = await collection.findOne({ userId: user.userId });
 
             if (existingScore && score <= existingScore.score) {
-                return res.status(200).json({ message: 'Not a new high score' });
+                return res.status(200).json({ message: 'Not a new high score', reward });
             }
 
             await collection.updateOne(
@@ -35,7 +38,7 @@ export default async (req, res) => {
                 { $set: { userId: user.userId, name: user.username, score, timestamp: new Date() } },
                 { upsert: true }
             );
-            return res.status(201).json({ message: 'Score updated!' });
+            return res.status(201).json({ message: 'Score updated!', reward });
         }
 
         // --- 2. GET HIGH SCORE OR LEADERBOARD (GET) ---

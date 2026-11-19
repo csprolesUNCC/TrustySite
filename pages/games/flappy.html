@@ -107,7 +107,8 @@
                         <div class="stat"><span class="stat-label">Last flight</span><span class="stat-value" id="stat-last">0</span></div>
                         <div class="stat"><span class="stat-label" id="stat-best-label">Best</span><span class="stat-value" id="stat-best">0</span></div>
                     </div>
-                    <p class="side-note" data-auth-show="out">Playing as a guest, so your best only saves on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboard.</p>
+                    <p class="side-note" data-auth-show="out">Playing as a guest, so your best only saves on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboard and earn clicks.</p>
+                    <p class="side-note" data-auth-show="in">Every flight earns 2 clicks a point, up to 2,000 clicks a day.</p>
                 </div>
 
                 <div class="panel">
@@ -131,7 +132,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { onSession, sessionReady, loginHref, toast, fmt } from '/scripts/site.js';
+        import { onSession, sessionReady, sessionExpired, loginHref, toast, fmt, announceClicks } from '/scripts/site.js';
         import { fetchBoard, renderList, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
         import {
             loadImage, inkSprite, setupCanvas, offscreen, drawRuledPaper, sound, bindMuteButton,
@@ -497,10 +498,21 @@
             showOverlay('over');
             $('again-btn').focus({ preventScroll: true });
 
-            if (loggedIn && isBest) await submitScore(final);
+            // Every logged-in game that scored goes to the API: a new best for the leaderboard, and clicks either way.
+            if (loggedIn && final > 0) await submitScore(final, isBest);
         }
 
-        async function submitScore(final) {
+        // "+12 clicks!" for a game's reward, or why there wasn't one (scripts/game-rewards.js).
+        function rewardNote(reward) {
+            if (!reward) return '';
+            if (reward.added) {
+                announceClicks(reward.clicks, reward.added);
+                return ` +${fmt(reward.added)} clicks!`;
+            }
+            return reward.today >= reward.cap ? ` That’s today’s ${fmt(reward.cap)} clicks from Flappy.` : '';
+        }
+
+        async function submitScore(final, isBest) {
             try {
                 const res = await fetch('/api/flappy-api', {
                     method: 'POST',
@@ -508,13 +520,21 @@
                     body: JSON.stringify({ score: final }),
                 });
                 if (res.status === 401) {
+                    sessionExpired();
                     $('over-sub').textContent = 'Your session expired, so this score wasn’t saved. Log in again to save scores.';
                     return;
                 }
                 if (!res.ok) throw new Error(String(res.status));
-                $('over-sub').textContent = 'High score saved to the leaderboard!';
-                toast('High score saved!', 'success');
-                await Promise.all([loadPersonalBest(), loadBoard({ fresh: true })]);
+                const data = await res.json().catch(() => ({}));
+                const earned = rewardNote(data.reward);
+                if (res.status === 201) {
+                    $('over-sub').textContent = `High score saved to the leaderboard!${earned}`;
+                    toast('High score saved!', 'success');
+                    await Promise.all([loadPersonalBest(), loadBoard({ fresh: true })]);
+                } else {
+                    if (isBest) await loadPersonalBest(); // the account already has a better game (from another device, say)
+                    $('over-sub').textContent = `Your best is ${fmt(best)}.${earned}`;
+                }
             } catch {
                 $('over-sub').textContent = 'Couldn’t save your score. Check your connection.';
             }
