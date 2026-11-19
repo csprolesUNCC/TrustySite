@@ -26,6 +26,7 @@ import { memoryJackpot } from '../utils/slots-jackpot.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
 import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
+import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -87,6 +88,21 @@ function trustleSync(userId, body) {
     added += clicks;
   }
   return { games: {}, rewards, added, clicks: account.clicks };
+}
+
+// Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
+// each game's daily cap) into the pretend bank. Saving a score is pretend: every game is a "new best".
+function gameReward(req, game, body) {
+  const score = body && body.score;
+  if (!Number.isSafeInteger(score) || score < 0) return [400, { error: 'Invalid score' }];
+  const account = bank.account(accountOf(req));
+  const day = dayOf();
+  account.games ||= {};
+  const counted = account.games[game]?.day === day ? account.games[game].clicks : 0;
+  const added = payable(game, score, counted);
+  account.games[game] = { day, clicks: counted + added };
+  account.clicks += added;
+  return [201, { message: 'Score saved!', reward: { added, clicks: account.clicks, today: counted + added, cap: GAME_REWARDS[game].daily } }];
 }
 
 async function api(req, url, body) {
@@ -180,6 +196,9 @@ async function api(req, url, body) {
       }
       return [200, game];
     }
+    if ((action === 'trustis' || action === 'snake') && req.method === 'POST') {
+      return me ? gameReward(req, action, body) : [401, { error: 'Authentication required' }];
+    }
     if (action === 'trustis') return [200, url.searchParams.get('personal') ? { highScore: 5000 } : board('score', 'name', 90000)];
     if (action === 'snake') return [200, url.searchParams.get('personal') ? { highScore: 12 } : board('score', 'name', 140)];
     if (action === 'profile' && req.method === 'GET') {
@@ -202,7 +221,8 @@ async function api(req, url, body) {
     if (req.method !== 'GET') return [200, {}];
     return [200, board('clicks', 'username', 50000)];
   }
-  if (p === '/api/flappy-api') return [200, action === 'personal' ? { highScore: 12 } : req.method === 'POST' ? { message: 'Score updated!' } : board('score', 'name', 60)];
+  if (p === '/api/flappy-api' && req.method === 'POST') return me ? gameReward(req, 'flappy', body) : [401, { error: 'Auth required' }];
+  if (p === '/api/flappy-api') return [200, action === 'personal' ? { highScore: 12 } : board('score', 'name', 60)];
   if (p === '/api/draw-api') {
     if (action === 'get_personal') return [200, { highScore: 70 }];
     if (action === 'get_leaderboard') return [200, board('score', 'name', 92).map((e, i) => ({ ...e, drawing: null, id: `${i}`.padStart(24, '0'), at: new Date().toISOString() }))];

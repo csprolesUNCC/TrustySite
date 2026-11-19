@@ -1,12 +1,14 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
 import { cachePublic } from './cache.js';
+import { rewardGame } from './game-rewards.js';
 
 // The Trustis leaderboard (pages/games/trustis.html), served from api/leaderboard.js as ?action=trustis so it
 // doesn't take up another Vercel function. `trustis_scores` keeps each player's best game.
 //   GET: the top 10, [{ name, score }].
 //   GET &personal=1: the logged-in player's best, { highScore } (0 when logged out).
 //   POST { score, lines, level }: a finished game. Saved (201) if it beats the player's best, otherwise 200.
+//     Either way it pays the game's clicks: `reward` is { added, clicks, today, cap }, or null if that failed.
 // Like Flappy Trusty's, the score comes from the browser, so all this can check is that it adds up.
 
 const MAX_START_LEVEL = 15; // the game's start level picker goes up to the same
@@ -50,13 +52,15 @@ async function saveScore(req, res) {
     const db = await connectToDatabase();
     const collection = db.collection('trustis_scores');
     const saved = { ...game, name: user.username, timestamp: new Date() };
+    // Every finished game earns clicks (utils/game-rewards.js), best or not.
+    const reward = await rewardGame(user, 'trustis', game.score);
 
     // Only ever raise a player's best: replace a lower one, or save their first game.
     const raised = await collection.updateOne({ userId: user.userId, score: { $lt: game.score } }, { $set: saved });
-    if (raised.matchedCount) return res.status(201).json({ message: 'Score saved!' });
+    if (raised.matchedCount) return res.status(201).json({ message: 'Score saved!', reward });
     const first = await collection.updateOne({ userId: user.userId }, { $setOnInsert: saved }, { upsert: true });
-    if (first.upsertedCount) return res.status(201).json({ message: 'Score saved!' });
-    return res.status(200).json({ message: 'Not a new high score' });
+    if (first.upsertedCount) return res.status(201).json({ message: 'Score saved!', reward });
+    return res.status(200).json({ message: 'Not a new high score', reward });
 }
 
 export default async function trustis(req, res) {

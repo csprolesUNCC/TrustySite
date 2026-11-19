@@ -123,7 +123,7 @@ export function sessionRenamed(username) {
   publishSession();
 }
 
-// Pages that hand out clicks (Trusty TV, Trustle) report the new total so the header clicker keeps up.
+// Pages that hand out clicks (Trusty TV, Trustle, Flappy, Trustis, Snake) report the new total so the header clicker keeps up.
 export function announceClicks(clicks, added) {
   document.dispatchEvent(new CustomEvent('trusty:clicks', { detail: { clicks, added } }));
 }
