@@ -2,6 +2,7 @@ import { connectToDatabase } from '../utils/db.js';
 import { cachePublic } from '../utils/cache.js';
 import profile from '../utils/profile.js';
 import trustis from '../utils/trustis.js';
+import snake from '../utils/snake.js';
 import adminApi from '../utils/moderation.js';
 import latestUpdate from '../utils/update.js';
 import rename from '../utils/rename.js';
@@ -14,8 +15,8 @@ import soloPoker from '../utils/solo-poker.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), changing your username (?action=rename, see
-    // utils/rename.js), the Trustis board (?action=trustis, see utils/trustis.js), the admin panel
-    // (?action=admin, see utils/moderation.js), the home page's Latest Update (?action=update, see
+    // utils/rename.js), the Trustis board (?action=trustis, see utils/trustis.js), the Trusty Snake board
+    // (?action=snake, see utils/snake.js), the admin panel (?action=admin, see utils/moderation.js), the home page's Latest Update (?action=update, see
     // utils/update.js), tickets into the online rooms (?action=fever, see utils/fever-online.js), the click
     // bank for betting clicks there (?action=bank, see utils/bank.js), Trusty Blackjack for one player
     // (?action=blackjack, see utils/solo-blackjack.js), Trusty Craps (?action=craps, see utils/solo-craps.js),
@@ -29,6 +30,9 @@ export default async (req, res) => {
     }
     if (req.query.action === 'trustis') {
         return trustis(req, res);
+    }
+    if (req.query.action === 'snake') {
+        return snake(req, res);
     }
     if (req.query.action === 'admin') {
         return adminApi(req, res);
