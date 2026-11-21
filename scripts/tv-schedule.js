@@ -8,7 +8,7 @@ export const ON_AIR_SINCE = Date.UTC(2026, 0, 1);
 // What a logged-in viewer or listener earns: `clicks` for every `every` seconds something is playing on screen,
 // up to `daily` clicks a day (from midnight Eastern) from Trusty TV and another `daily` from Trusty Radio.
 // api/clicks.js pays them out and enforces all three; the pages' notes say the same numbers.
-export const WATCH_REWARD = { clicks: 10, every: 5, daily: 5000 };
+export const WATCH_REWARD = { clicks: 10, every: 5, daily: 2500 };
 
 // Takes a YouTube link (watch, youtu.be, shorts, embed or live) or a bare 11-character video id.
 export function videoId(link) {
