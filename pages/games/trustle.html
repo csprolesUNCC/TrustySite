@@ -70,6 +70,7 @@
                     <ul class="tags">
                         <li class="tag" id="puzzle-tag">Trustle</li>
                         <li class="tag tag-blue" id="length-tag" hidden></li>
+                        <li class="tag tag-gold" id="multiplier-tag" hidden></li>
                     </ul>
                 </div>
 
@@ -136,13 +137,21 @@
                 <div class="panel">
                     <h2 class="panel-title">Clicks for playing</h2>
                     <dl class="scoring-table" id="reward-table">
-                        <dt>1 guess</dt><dd>200</dd>
-                        <dt>2 guesses</dt><dd>100</dd>
-                        <dt>3 guesses</dt><dd>50</dd>
-                        <dt>4 guesses</dt><dd>35</dd>
-                        <dt>5 guesses</dt><dd>25</dd>
-                        <dt>6 guesses</dt><dd>15</dd>
-                        <dt>Out of guesses</dt><dd>5</dd>
+                        <dt>1 guess</dt><dd>500</dd>
+                        <dt>2 guesses</dt><dd>250</dd>
+                        <dt>3 guesses</dt><dd>150</dd>
+                        <dt>4 guesses</dt><dd>100</dd>
+                        <dt>5 guesses</dt><dd>75</dd>
+                        <dt>6 guesses</dt><dd>50</dd>
+                        <dt>Out of guesses</dt><dd>20</dd>
+                    </dl>
+                    <h3 class="trustle-dist-title">Longer words pay more</h3>
+                    <dl class="scoring-table" id="multiplier-table">
+                        <dt>3–5 letters</dt><dd>×1</dd>
+                        <dt>6 letters</dt><dd>×2</dd>
+                        <dt>7 letters</dt><dd>×4</dd>
+                        <dt>8 letters</dt><dd>×7</dd>
+                        <dt>9 letters</dt><dd>×10</dd>
                     </dl>
                     <p class="side-note" data-auth-show="in">Every day’s word pays once, straight into your Trusty clicker.</p>
                     <p class="side-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> to collect them for your Trusty clicker. Every day’s word pays once.</p>
@@ -159,7 +168,7 @@
         import { WORDS, PLACES } from '/scripts/trustle-words.js';
         import {
             MAX_GUESSES, puzzleNumber, puzzleStart, puzzleWord, grade, letterStates, shareText,
-            cleanGame, mergeHistory, sameGame, statsFrom, historyFromLegacy, rewardFor, rewardable,
+            cleanGame, mergeHistory, sameGame, statsFrom, historyFromLegacy, rewardFor, rewardable, multiplierFor,
         } from '/scripts/trustle.js';
 
         const HISTORY_KEY = 'trusty:trustle:history';
@@ -426,6 +435,9 @@
             $('puzzle-tag').textContent = `Trustle #${n}`;
             $('length-tag').textContent = `${len} letters`;
             $('length-tag').hidden = false;
+            const times = multiplierFor(len);
+            $('multiplier-tag').textContent = `×${times} clicks`;
+            $('multiplier-tag').hidden = times === 1;
             buildBoard();
             buildKeys();
             guesses.forEach((guess, r) => paintRow(r, guess, false));
