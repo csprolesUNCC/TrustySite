@@ -327,8 +327,11 @@ kbd {
    Trusty Fever
    ========================================================================= */
 .fever-stage { --ar: 1.4533; --stage-room: 24px; }
+/* On touch screens the steer buttons are as tall as phones have room for under the wide board (it's only about
+   200-270px tall there), like Trusty Snake's pad; the board leaves them room when the height is what limits it. */
 @media (pointer: coarse) {
-  .fever-stage { --stage-room: 110px; }
+  .fever-game { --pad-h: clamp(72px, 14svh, 112px); }
+  .fever-stage { --stage-room: calc(var(--pad-h) + 46px); }
 }
 /* On phones the board is only about 200–270px tall: the overlays tighten up there, and anything still
    too tall (bigger text in Safari, a long game-over list) scrolls instead of being cut off top and bottom. */
@@ -348,10 +351,10 @@ kbd {
 .fever-stage #overlay-start { background: rgba(251, 248, 240, .78); }
 /* Holding a side must never turn into a scroll, or the browser cancels the press mid-turn. */
 .fever-pad { align-items: center; gap: 12px; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.fever-pad .fever-steer { width: 112px; }
+.fever-pad .fever-steer { flex: 1; max-width: 240px; width: auto; height: var(--pad-h, 64px); font-size: calc(var(--pad-h, 64px) * .4); }
 /* Only the side the finger is on now looks pressed: :active stays on the button a slide started from. */
 .fever-pad .fever-steer:active:not(.is-pressed) { transform: none; box-shadow: 3px 3px 0 var(--ink); background: #fff; }
-.fever-pad .pad-word { width: auto; padding: 0 16px; font-size: .9rem; }
+.fever-pad .pad-word { width: auto; height: var(--pad-h, 64px); padding: 0 16px; font-size: .9rem; }
 
 .fever-target { font-family: var(--font-hand); font-weight: 700; font-size: 1.25rem; color: var(--red); }
 .fever-scores { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
