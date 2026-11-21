@@ -1826,6 +1826,7 @@ dialog.reader::backdrop { background: #1e1f23; }
   box-shadow: var(--shadow-ink-lg);
   overflow: hidden;
   background: radial-gradient(120% 90% at 50% 25%, #ffffff 0%, #f5f0e3 55%, #e6dcc4 100%);
+  container-type: inline-size;
 }
 .viewer-stage model-viewer {
   display: block;
@@ -1858,7 +1859,12 @@ dialog.reader::backdrop { background: #1e1f23; }
   pointer-events: none;
 }
 .viewer-credit { margin-top: 14px; font-size: .9rem; color: var(--pencil); }
+/* The AR button only shows on phones that can do AR. Next to Pause spin and Reset view it needs a stage about 430px
+   wide; narrower than that it sits above them (one small button's height plus the toolbar's gap). */
 .viewer-ar { position: absolute; right: 14px; bottom: 14px; }
+@container (max-width: 440px) {
+  .viewer-ar { bottom: calc(14px + 36px + 8px); }
+}
 
 /* =========================================================================
    About
