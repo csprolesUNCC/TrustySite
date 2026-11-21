@@ -46,7 +46,7 @@ test('the house always wins: the machine, bonus, jackpot and all, pays back less
 });
 
 test('the Grand Jackpot: a share of every bet, a chance that goes with the bet, and a pot that stops growing', () => {
-  assert.ok(JACKPOT.rate > 0 && JACKPOT.rate <= 0.05);
+  assert.ok(JACKPOT.rate > 0 && JACKPOT.rate <= 0.1);
   assert.ok(JACKPOT.seed > 0 && JACKPOT.seed < JACKPOT.max);
   for (const chip of CHIPS) assert.ok(Number.isInteger(Math.round(chip * JACKPOT.rate * 100)), 'shares are whole hundredths');
   assert.equal(jackpotChance(BETS.max), 1 / JACKPOT.odds);
@@ -60,14 +60,13 @@ test('the Grand Jackpot: a share of every bet, a chance that goes with the bet, 
 test('the pot: shares go in, it stops at the top, and a win takes it all and starts it again', async () => {
   const jackpot = memoryJackpot();
   assert.equal(await jackpot.peek(), JACKPOT.seed);
-  assert.equal(await jackpot.add(10), JACKPOT.seed, 'a fifth of a click isn’t a click yet');
-  for (let i = 0; i < 4; i++) await jackpot.add(10);
+  assert.equal(await jackpot.add(10), JACKPOT.seed + 1, '10% of 10');
   assert.equal(await jackpot.peek(), JACKPOT.seed + 1);
-  assert.equal(await jackpot.add(100), JACKPOT.seed + 3);
-  assert.equal(await jackpot.claim(), JACKPOT.seed + 3);
+  assert.equal(await jackpot.add(100), JACKPOT.seed + 11);
+  assert.equal(await jackpot.claim(), JACKPOT.seed + 11);
   assert.equal(await jackpot.peek(), JACKPOT.seed);
-  await jackpot.giveBack(JACKPOT.seed + 3);
-  assert.equal(await jackpot.peek(), JACKPOT.seed + 3, 'a win that never happened goes back');
+  await jackpot.giveBack(JACKPOT.seed + 11);
+  assert.equal(await jackpot.peek(), JACKPOT.seed + 11, 'a win that never happened goes back');
   jackpot.pot.cents = JACKPOT.max * 100 - 50;
   assert.equal(await jackpot.add(100), JACKPOT.max, 'it never goes over the top');
   assert.equal(await jackpot.add(100), JACKPOT.max);
@@ -249,20 +248,20 @@ test('the bank pays the most a spin can possibly win', async () => {
 test('the Grand Jackpot: every spin feeds it, and the lucky one takes the lot', async () => {
   const g = game();
   let shown = await g.spin(100, ['hay', 'apple', 'carrot']);
-  assert.equal(shown.jackpot, JACKPOT.seed + 2, '2% of 100');
+  assert.equal(shown.jackpot, JACKPOT.seed + 10, '10% of 100');
   assert.equal(shown.last.jackpot, 0);
   shown = await g.spin(50, ['carrot', 'carrot', 'carrot']);
-  assert.equal(shown.jackpot, JACKPOT.seed + 3);
+  assert.equal(shown.jackpot, JACKPOT.seed + 15);
   // The roll goes with the bet: the same luck wins at 100 and not at 50.
   g.deps.luck = () => 1 / JACKPOT.odds - 1e-9;
   shown = await g.spin(50, ['hay', 'apple', 'carrot']);
   assert.equal(shown.last.jackpot, 0);
   const before = g.clicks();
   shown = await g.spin(100, ['hay', 'hay', 'hay']);
-  assert.equal(shown.last.jackpot, JACKPOT.seed + 4, 'everything that was in it');
-  assert.equal(shown.last.payout, 500 + JACKPOT.seed + 4, 'with what the line paid');
-  assert.equal(g.clicks(), before - 100 + 500 + JACKPOT.seed + 4);
-  assert.equal(shown.jackpot, JACKPOT.seed + 2, 'a new pot, with this spin’s share already in it');
+  assert.equal(shown.last.jackpot, JACKPOT.seed + 20, 'everything that was in it');
+  assert.equal(shown.last.payout, 500 + JACKPOT.seed + 20, 'with what the line paid');
+  assert.equal(g.clicks(), before - 100 + 500 + JACKPOT.seed + 20);
+  assert.equal(shown.jackpot, JACKPOT.seed + 10, 'a new pot, with this spin’s share already in it');
   assert.equal(g.open(), 0);
 });
 
@@ -298,7 +297,7 @@ test('a jackpot won by a spin that lost the race goes back in the pot', async ()
   g.deps.luck = () => 0;
   const shown = await g.spin(100, ['hay', 'apple', 'carrot']);
   assert.match(shown.error, /another tab/);
-  assert.equal(shown.jackpot, JACKPOT.seed + 4, 'still there, with both real spins’ shares');
+  assert.equal(shown.jackpot, JACKPOT.seed + 20, 'still there, with both real spins’ shares');
   assert.equal(g.clicks(), 800);
 });
 
