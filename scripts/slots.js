@@ -33,8 +33,9 @@ export const REELS = 3;
 // The Grand Jackpot. rate: the share of every bet that goes into the pot. seed: what it starts from after a win
 // (the house puts that in). max: where it stops growing. odds: a spin at the biggest bet wins it 1 time in this
 // many; a smaller bet has that much less of a chance (a 10-click spin, a tenth of a 100-click one), so a click
-// bet is worth the same shot at the pot whatever the bet.
-export const JACKPOT = { rate: 0.02, seed: 1000, max: 25000, odds: 5000 };
+// bet is worth the same shot at the pot whatever the bet. At this rate the pot fills up long before it's usually
+// won, so most wins are of a full pot: the rate, the odds and the top go together (rtp() counts the top).
+export const JACKPOT = { rate: 0.1, seed: 1000, max: 25000, odds: 10000 };
 export const jackpotChance = (amount) => (isBet(amount) ? amount / BETS.max / JACKPOT.odds : 0);
 const WINDOW = [-1, 0, 1]; // the symbols a stopped reel shows: above the line, on it, below it
 
@@ -172,8 +173,8 @@ function lineOdds(machine) {
 // The whole machine, bonus and jackpot included: { rtp (what comes back per click bet in the long run), hit (how
 // often a spin's line pays), line (the share that comes from the Hay Day's own paytable), bonusEvery (spins per
 // bonus, on average), bonusPays (what a bonus pays on average, in bets), jackpot (the share that comes back
-// through the Grand Jackpot: what goes in, plus the house's seed), worst (what a spin pays back on average while
-// the pot is full, the most the machine ever pays) }.
+// through the Grand Jackpot: what goes in before the pot is full, plus the house's seed), worst (what a spin pays
+// back on average while the pot is full, the most the machine ever pays) }.
 export function rtp() {
   const base = lineOdds(MACHINE);
   const n = MACHINE.strip.length;
@@ -183,7 +184,10 @@ export function rtp() {
   const bonusPays = BONUS.spins * lineOdds(BONUS).back;
   const reels = base.back + chance * bonusPays;
   const perClick = 1 / (JACKPOT.odds * BETS.max); // the chance of the pot that each click bet buys
-  const jackpot = JACKPOT.rate + JACKPOT.seed * perClick;
+  // Clicks bet between two wins are spread exponentially (perClick a click), and only the first `fill` of them feed
+  // the pot before it tops out; what goes in after that stays with the house.
+  const fill = (JACKPOT.max - JACKPOT.seed) / JACKPOT.rate;
+  const jackpot = JACKPOT.rate * (1 - Math.exp(-perClick * fill)) + JACKPOT.seed * perClick;
   return {
     rtp: reels + jackpot, hit: base.hit, line: base.back, bonusEvery: 1 / chance, bonusPays, jackpot,
     worst: reels + JACKPOT.max * perClick,

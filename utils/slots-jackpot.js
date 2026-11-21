@@ -5,7 +5,7 @@ import { JACKPOT } from '../scripts/slots.js';
 // In MongoDB for the site (mongoJackpot(): one document, `_id: 'pot'`, in `slots_jackpot`), in memory for the
 // tests and tools/dev-server.mjs (memoryJackpot()). No database driver here, so the dev server can use it.
 //
-// The pot is kept in hundredths of a click, so a 10-click bet's 2% is a whole number; everything going in or out
+// The pot is kept in hundredths of a click, so a 10-click bet's share is a whole number; everything going in or out
 // of here is in clicks, and a win pays whole ones. Every change is one atomic update: two spins at once can't
 // both win the same pot (the second one gets the new pot, back at the seed).
 //   peek(): the pot now, in clicks.
