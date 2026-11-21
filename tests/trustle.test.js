@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   puzzleNumber, puzzleStart, puzzleWord, grade, letterStates, cleanGame, outcome, mergeGame, statsFrom, shareText, MAX_GUESSES,
-  REWARDS, LOSS_REWARD, rewardFor, rewardable,
+  REWARDS, LOSS_REWARD, MULTIPLIERS, multiplierFor, rewardFor, rewardable,
 } from '../scripts/trustle.js';
 import { FIRST_DAY, WORDS, PLACES } from '../scripts/trustle-words.js';
 
@@ -100,15 +100,16 @@ test('outcome(), mergeGame() and statsFrom() agree on a history', () => {
 });
 
 test('rewardFor() pays more for fewer guesses, a little for running out, and nothing for unfinished or rebuilt games', () => {
-  assert.deepEqual(REWARDS, [200, 100, 50, 35, 25, 15]);
-  assert.equal(LOSS_REWARD, 5);
+  assert.deepEqual(REWARDS, [500, 250, 150, 100, 75, 50]);
+  assert.equal(LOSS_REWARD, 20);
   const n = 3;
   const answer = puzzleWord(n).word;
+  const times = multiplierFor(answer.length);
   const miss = 'Z'.repeat(answer.length);
   for (let tries = 1; tries <= MAX_GUESSES; tries++) {
-    assert.equal(rewardFor(n, { guesses: [...Array(tries - 1).fill(miss), answer] }), REWARDS[tries - 1], `got it in ${tries}`);
+    assert.equal(rewardFor(n, { guesses: [...Array(tries - 1).fill(miss), answer] }), REWARDS[tries - 1] * times, `got it in ${tries}`);
   }
-  assert.equal(rewardFor(n, { guesses: Array(MAX_GUESSES).fill(miss) }), LOSS_REWARD, 'out of guesses');
+  assert.equal(rewardFor(n, { guesses: Array(MAX_GUESSES).fill(miss) }), LOSS_REWARD * times, 'out of guesses');
   assert.equal(rewardFor(n, { guesses: [miss] }), 0, 'still playing');
   assert.equal(rewardFor(n, { guesses: [] }), 0);
   assert.equal(rewardFor(n, { legacy: true, won: true, tries: 1 }), 0, 'rebuilt from the old stats');
@@ -130,6 +131,14 @@ test('the Trustle page lists the same rewards', () => {
   assert.ok(table, 'pages/games/trustle.html has no reward table (id="reward-table")');
   const listed = [...table[1].matchAll(/<dd>([\d,]+)<\/dd>/g)].map((m) => Number(m[1].replace(/,/g, '')));
   assert.deepEqual(listed, [...REWARDS, LOSS_REWARD]);
+  const mult = /<dl[^>]* id="multiplier-table"[^>]*>([\s\S]*?)<\/dl>/.exec(html);
+  assert.ok(mult, 'pages/games/trustle.html has no multiplier table (id="multiplier-table")');
+  const rows = [...mult[1].matchAll(/<dt>(\d+)(?:–\d+)? letters<\/dt><dd>×(\d+)<\/dd>/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  assert.deepEqual(rows, [...MULTIPLIERS].reverse());
+});
+
+test('longer words multiply the reward', () => {
+  assert.deepEqual([3, 4, 5, 6, 7, 8, 9].map(multiplierFor), [1, 1, 1, 2, 4, 7, 10]);
 });
 
 test('shareText() has the puzzle number, score and one row per guess', () => {

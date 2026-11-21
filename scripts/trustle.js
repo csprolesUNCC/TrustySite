@@ -209,10 +209,18 @@ export function historyFromLegacy(s) {
 /* ---------- Clicks for playing (shared by the page and api/trustle-api.js) ---------- */
 
 // A finished game earns clicks for the player's Trusty clicker: REWARDS[i] for getting it in i + 1 guesses,
-// LOSS_REWARD for running out. The words are all in trustle-words.js, so anyone could send a winning game:
-// that's why it's a couple hundred clicks a day at most.
-export const REWARDS = [200, 100, 50, 35, 25, 15];
-export const LOSS_REWARD = 5;
+// LOSS_REWARD for running out, times the day's word length multiplier (multiplierFor). Short words stay at
+// 1x, since with six guesses for every length they're the hardest to get; the long ones are the rare big
+// days. The words are all in trustle-words.js, so anyone could send a winning game: that's why the best day
+// (9 letters in one guess) stops at 5,000, what Trusty TV pays for a whole day's watching.
+export const REWARDS = [500, 250, 150, 100, 75, 50];
+export const LOSS_REWARD = 20;
+
+// [shortest length, multiplier], longest first. Whole numbers, so every reward is a whole number of clicks.
+export const MULTIPLIERS = [[9, 10], [8, 7], [7, 4], [6, 2], [3, 1]];
+
+// The reward multiplier for an answer of `length` letters.
+export const multiplierFor = (length) => (MULTIPLIERS.find(([min]) => length >= min) || [0, 1])[1];
 
 // Clicks a game of puzzle `n` earns: none while it's still being played, or for a day rebuilt from the old
 // stats (legacy), which only roughly matches its puzzle.
@@ -220,7 +228,7 @@ export function rewardFor(n, game) {
   if (!game || game.legacy) return 0;
   const { done, won, tries } = outcome(n, game);
   if (!done) return 0;
-  return won ? REWARDS[tries - 1] : LOSS_REWARD;
+  return (won ? REWARDS[tries - 1] : LOSS_REWARD) * multiplierFor(puzzleWord(n).word.length);
 }
 
 // Whether puzzle `n` can still be paid for when today's puzzle is `today`: within a day of it, so a game
