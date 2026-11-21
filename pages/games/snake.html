@@ -60,7 +60,7 @@
         </div>
 
         <div class="container game-layout">
-            <section class="game-main" aria-label="Game">
+            <section class="game-main snake-game" aria-label="Game">
                 <div class="stage snake-stage" id="stage" tabindex="0" aria-label="Trusty Snake. Use the arrow keys or swipe to steer.">
                     <canvas id="game" aria-hidden="true"></canvas>
 
@@ -226,45 +226,57 @@
 
         const delta = (a, b) => ({ x: a.x - b.x, y: a.y - b.y });
 
-        function drawSegment(img, x, y, angle) {
+        // The sprites are drawn going left, with Trusty's face and legs on top and bottom. Going up or down they're
+        // turned a quarter; going right they're mirrored, not turned half way, or he'd run along upside down.
+        function drawSegment(img, x, y, d) {
             ctx.save();
             ctx.translate(x * CELL + CELL / 2, y * CELL + CELL / 2);
-            ctx.rotate(angle);
+            if (d.x > 0) ctx.scale(-1, 1);
+            else if (d.y) ctx.rotate(d.y > 0 ? -Math.PI / 2 : Math.PI / 2);
             ctx.drawImage(img, -CELL / 2, -CELL / 2, CELL, CELL);
             ctx.restore();
         }
 
         function drawSnake() {
             // A highlighter band under the body keeps the thin line-art snake easy to follow on small screens.
+            // One path, filled once, so the see-through yellow doesn't double up where the pieces overlap.
             ctx.fillStyle = 'rgba(255, 228, 92, .55)';
-            for (const seg of snake) ctx.fillRect(seg.x * CELL + 3, seg.y * CELL + 3, CELL - 6, CELL - 6);
+            ctx.beginPath();
+            for (const seg of snake) ctx.rect(seg.x * CELL + 3, seg.y * CELL + 3, CELL - 6, CELL - 6);
             for (let i = 1; i < snake.length; i++) {
                 const a = snake[i - 1];
                 const b = snake[i];
                 const x = Math.min(a.x, b.x) * CELL + 3;
                 const y = Math.min(a.y, b.y) * CELL + 3;
-                ctx.fillRect(x, y, (Math.abs(a.x - b.x) + 1) * CELL - 6, (Math.abs(a.y - b.y) + 1) * CELL - 6);
+                ctx.rect(x, y, (Math.abs(a.x - b.x) + 1) * CELL - 6, (Math.abs(a.y - b.y) + 1) * CELL - 6);
             }
+            ctx.fill();
             for (let i = 0; i < snake.length; i++) {
                 const seg = snake[i];
+                // Which way this piece is going: towards the one ahead of it (the head goes the way it last moved,
+                // so its neck always meets the body).
+                const ahead = i === 0 ? delta(seg, snake[1]) : delta(snake[i - 1], seg);
                 if (i === 0) {
-                    drawSegment(sprites.head, seg.x, seg.y, Math.atan2(dir.y, dir.x) + Math.PI);
+                    drawSegment(sprites.head, seg.x, seg.y, ahead);
                 } else if (i === snake.length - 1) {
-                    const d = delta(snake[i - 1], seg);
-                    drawSegment(sprites.tail, seg.x, seg.y, Math.atan2(d.y, d.x) + Math.PI);
+                    drawSegment(sprites.tail, seg.x, seg.y, ahead);
                 } else {
-                    const ahead = delta(snake[i - 1], seg);
                     const behind = delta(snake[i + 1], seg);
                     if (ahead.x + behind.x === 0 && ahead.y + behind.y === 0) {
-                        drawSegment(sprites.body, seg.x, seg.y, Math.atan2(ahead.y, ahead.x) + Math.PI);
+                        drawSegment(sprites.body, seg.x, seg.y, ahead);
                     } else {
+                        // The corner art joins right and down; turn it to join the two pieces either side.
                         const sx = ahead.x + behind.x;
                         const sy = ahead.y + behind.y;
                         let angle = 0;
                         if (sx === -1 && sy === 1) angle = Math.PI / 2;
                         else if (sx === -1 && sy === -1) angle = Math.PI;
                         else if (sx === 1 && sy === -1) angle = -Math.PI / 2;
-                        drawSegment(sprites.corner, seg.x, seg.y, angle);
+                        ctx.save();
+                        ctx.translate(seg.x * CELL + CELL / 2, seg.y * CELL + CELL / 2);
+                        ctx.rotate(angle);
+                        ctx.drawImage(sprites.corner, -CELL / 2, -CELL / 2, CELL, CELL);
+                        ctx.restore();
                     }
                 }
             }
@@ -481,16 +493,46 @@
         });
         stage.addEventListener('pointercancel', () => { swipe = null; });
 
-        for (const btn of document.querySelectorAll('#dpad [data-dir]')) {
-            btn.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                btn.classList.add('is-pressed');
-                steer(btn.dataset.dir);
-            });
-            const release = () => btn.classList.remove('is-pressed');
-            btn.addEventListener('pointerup', release);
-            btn.addEventListener('pointerleave', release);
-            btn.addEventListener('pointercancel', release);
+        // The touch pad: the whole round pad is the target, not just the four buttons. A press goes the way of the
+        // arrow nearest the finger (by angle from the middle), and sliding the thumb round to another arrow steers
+        // again without lifting it, so quick turns don't need four precise taps.
+        const dpad = $('dpad');
+        const padButtons = Object.fromEntries([...dpad.querySelectorAll('[data-dir]')].map((b) => [b.dataset.dir, b]));
+        const presses = new Map(); // pointerId -> direction it's on
+        function padDir(e) {
+            const r = dpad.getBoundingClientRect();
+            const dx = e.clientX - (r.left + r.width / 2);
+            const dy = e.clientY - (r.top + r.height / 2);
+            if (Math.hypot(dx, dy) < r.width * 0.1) return null; // right in the middle: no clear way yet
+            return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        }
+        function showPressed() {
+            const on = new Set(presses.values());
+            for (const [name, btn] of Object.entries(padButtons)) btn.classList.toggle('is-pressed', on.has(name));
+        }
+        function padPress(e) {
+            const name = padDir(e);
+            if (name === presses.get(e.pointerId)) return;
+            presses.set(e.pointerId, name);
+            showPressed();
+            if (name) steer(name);
+        }
+        dpad.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            try { dpad.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+            presses.delete(e.pointerId);
+            padPress(e);
+        });
+        dpad.addEventListener('pointermove', (e) => { if (presses.has(e.pointerId)) padPress(e); });
+        const padRelease = (e) => {
+            presses.delete(e.pointerId);
+            showPressed();
+        };
+        dpad.addEventListener('pointerup', padRelease);
+        dpad.addEventListener('pointercancel', padRelease);
+        dpad.addEventListener('contextmenu', (e) => e.preventDefault());
+        // Keyboard and switch users still press the buttons themselves (a click with no pointer behind it).
+        for (const btn of Object.values(padButtons)) {
             btn.addEventListener('click', (e) => { if (e.detail === 0) steer(btn.dataset.dir); });
         }
 

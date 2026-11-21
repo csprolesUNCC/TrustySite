@@ -184,10 +184,29 @@ html.game-focus { overflow: hidden; }
 .pad-btn svg { width: 28px; height: 28px; }
 .pad-btn:active, .pad-btn.is-pressed { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); background: var(--note-yellow); }
 .pad-btn.wide { width: auto; padding: 0 18px; font-size: 1rem; }
-.dpad { display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 64px); gap: 8px; justify-content: center; }
+/* Trusty Snake's pad: four arrows in a cross on a rounded plate. The page steers by where the finger is on the whole
+   plate (scripts in snake.html), so the gaps and corners count too. --pad-cell is set with the Snake stage below. */
+.dpad {
+  --pad-cell: 64px;
+  --pad-gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, var(--pad-cell));
+  grid-template-rows: repeat(3, var(--pad-cell));
+  gap: var(--pad-gap);
+  padding: 8px;
+  border: 2px dashed var(--pencil);
+  border-radius: 30%;
+  background: rgba(255, 255, 255, .55);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.dpad .pad-btn { width: var(--pad-cell); height: var(--pad-cell); font-size: calc(var(--pad-cell) * .36); pointer-events: none; }
 .dpad [data-dir="up"] { grid-column: 2; grid-row: 1; }
 .dpad [data-dir="left"] { grid-column: 1; grid-row: 2; }
-.dpad [data-dir="down"] { grid-column: 2; grid-row: 2; }
+.dpad [data-dir="down"] { grid-column: 2; grid-row: 3; }
 .dpad [data-dir="right"] { grid-column: 3; grid-row: 2; }
 
 /* ---------- Side panels ---------- */
@@ -270,8 +289,15 @@ kbd {
    Trusty Snake
    ========================================================================= */
 .snake-stage { --ar: 1; --stage-room: 24px; max-width: 680px; }
+/* On touch screens the pad goes under the board, as big as the height left over once the board fills the width
+   (between 56px and 92px an arrow), and the board shrinks to leave it room on short screens. The 76px is the
+   pad's gaps and border, the space above it and a little to spare. */
 @media (pointer: coarse) {
-  .snake-stage { --stage-room: 190px; }
+  .snake-game {
+    --pad-cell: clamp(56px, calc((100svh - min(100vw - 32px, 680px) - 76px) / 3), 92px);
+  }
+  .snake-game .dpad { --pad-cell: inherit; }
+  .snake-stage { --stage-room: calc(var(--pad-cell) * 3 + 76px); }
 }
 .segmented {
   display: inline-flex;
