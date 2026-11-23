@@ -3,7 +3,7 @@ import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
 import { cachePublic } from './cache.js';
 import { dayOf } from '../scripts/milestones.js';
-import { GAME_KEYS, BOARD_KEYS, isDay, dayAfter, puzzleOn, parseShare, rankOf, flagsFor, cleanResult, statsFor } from '../scripts/daily-games.js';
+import { GAME_KEYS, BOARD_KEYS, POST_REWARD, isDay, dayAfter, puzzleOn, parseShare, rankOf, flagsFor, cleanResult, statsFor } from '../scripts/daily-games.js';
 import { puzzleNumber, puzzleWord, cleanGame, outcome, grade } from '../scripts/trustle.js';
 
 // The Daily Games board (pages/daily.html), served from api/leaderboard.js as ?action=daily so it doesn't take
@@ -12,9 +12,11 @@ import { puzzleNumber, puzzleWord, cleanGame, outcome, grade } from '../scripts/
 //     { day, today, boards: { trustle | wordle | connections | krillion: { n, entries: [{ id?, name, result, flags }] } } }.
 //     Trustle's come from the games players already sync (api/trustle-api.js); the rest were pasted in.
 //   POST { text }: the logged-in player posts one game's share text. scripts/daily-games.js reads and checks it;
-//     one result per player per game per day, and the first one stays.
+//     one result per player per game per day, and the first one stays. Posting pays POST_REWARD clicks (the
+//     answer's `reward`: { added, clicks }, or null if paying failed; the result is saved either way).
 //   POST { do: 'report', id }: a logged-in player reports someone else's result, once.
-// It's the honor system (nothing can check another site's score), so it pays no clicks. Results that look too
+// It's the honor system (nothing can check another site's score), so the reward is the same whatever the
+// result: only posting earns it, and the unique index means each game pays once a day. Results that look too
 // good are flagged when they're posted (flagsFor), which shows "Sus?" on the board until an admin clears it;
 // flagged and reported results are listed in the admin panel (utils/moderation.js, view=daily), which can take
 // one down. A result that's been taken down stays in `daily_scores` as `removed`, so it can't be posted again.
@@ -105,13 +107,32 @@ async function postScore(req, res, user) {
         reportedBy: [],
         savedAt: new Date(),
     };
+    let insertedId;
     try {
-        const { insertedId } = await scores.insertOne(doc);
-        return res.status(201).json({ day: doc.day, entry: { id: String(insertedId), game: doc.game, n: doc.n, name: doc.name, result: doc.result, flags: doc.flags } });
+        ({ insertedId } = await scores.insertOne(doc));
     } catch (error) {
         // Another tab posted the same game first (the index on userId, game and day is unique).
         if (error && error.code === 11000) return res.status(409).json({ error: 'You’ve already posted that one.' });
         throw error;
+    }
+    const reward = await payPost(db, user);
+    return res.status(201).json({ day: doc.day, reward, entry: { id: String(insertedId), game: doc.game, n: doc.n, name: doc.name, result: doc.result, flags: doc.flags } });
+}
+
+// The clicks for a result that was just saved. Only the insert that won the unique index gets here, so each
+// game pays once per day without any counting of its own.
+async function payPost(db, user) {
+    try {
+        const paid = await db.collection('click_game').findOneAndUpdate(
+            { userId: user.userId },
+            { $inc: { clicks: POST_REWARD }, $set: { username: user.username }, $setOnInsert: { recent: [] } },
+            { upsert: true, returnDocument: 'after', projection: { clicks: 1 } }
+        );
+        const after = paid && 'value' in paid ? paid.value : paid;
+        return { added: POST_REWARD, clicks: after ? after.clicks : null };
+    } catch (error) {
+        console.error('Daily Games reward error:', error);
+        return null;
     }
 }
 

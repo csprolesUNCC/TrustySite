@@ -28,7 +28,7 @@ import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
-import { GAME_KEYS, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
+import { GAME_KEYS, POST_REWARD, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
 import { puzzleWord } from '../scripts/trustle.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -249,7 +249,12 @@ async function api(req, url, body) {
       if (req.method === 'GET') return [200, dailyBoards()];
       if (!me) return [401, { error: 'Log in to post your results.' }];
       if (body && body.do === 'report') return [201, { message: 'Reported' }];
-      return dailyPost(mockUser(req), body && body.text);
+      const [status, answer] = dailyPost(mockUser(req), body && body.text);
+      if (status !== 201) return [status, answer];
+      // Posting pays its clicks into the pretend bank, as utils/daily.js does.
+      const account = bank.account(accountOf(req));
+      account.clicks += POST_REWARD;
+      return [status, { ...answer, reward: { added: POST_REWARD, clicks: account.clicks } }];
     }
     if ((action === 'trustis' || action === 'snake') && req.method === 'POST') {
       return me ? gameReward(req, action, body) : [401, { error: 'Authentication required' }];

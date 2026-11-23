@@ -63,7 +63,7 @@
 
             <section class="panel daily-post" aria-labelledby="post-title">
                 <h2 class="panel-title" id="post-title">Post a result</h2>
-                <p class="muted daily-post-lead">Press <strong>Share</strong> at the end of a game, then paste what it copied here.</p>
+                <p class="muted daily-post-lead">Press <strong>Share</strong> at the end of a game, then paste what it copied here. Each game you post earns 100 clicks.</p>
                 <form id="post-form" data-auth-show="in" novalidate>
                     <div class="field">
                         <label for="share-text">Share text</label>
@@ -96,7 +96,7 @@
             <div class="sticky-note blue daily-how">
                 <h2 id="how-title">How it works</h2>
                 <p>Trustle is played right here, so its board fills in by itself. Wordle, Connections, Krillion and RNGdle live on other sites that don’t let anyone check a score, so this board runs on the honor system: whatever you paste is what goes up. The first result you post for a puzzle is the one that counts, and only today’s puzzles (or yesterday’s) can be posted. RNGdle’s share doesn’t say which day it’s from, so a roll counts for the day you post it.</p>
-                <p>Results that are hard to believe (Wordle in one guess, a perfect Krillion, a long run of perfect Connections, a top 0.1% RNGdle roll) get a <span class="daily-sus">Sus?</span> tag until an admin takes a look. If you think someone’s fibbing, report it. Nothing here earns clicks, so there’s nothing to win by cheating except bragging rights.</p>
+                <p>Results that are hard to believe (Wordle in one guess, a perfect Krillion, a long run of perfect Connections, a top 0.1% RNGdle roll) get a <span class="daily-sus">Sus?</span> tag until an admin takes a look. If you think someone’s fibbing, report it. Posting a result earns 100 clicks, once a day for each game, but it’s the same 100 whatever you scored, so there’s nothing to win by cheating except bragging rights.</p>
             </div>
         </section>
     </main>
@@ -104,7 +104,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, session, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
+        import { h, fmt, toast, session, sessionReady, sessionExpired, loginHref, profileHref, announceClicks } from '/scripts/site.js';
         import { dayOf, dayBefore } from '/scripts/milestones.js';
         import { GAMES, BOARD_KEYS, BOARD_NAMES, EMOJI, parseShare, describe, detail, rankOf, places, dayAfter, isDay } from '/scripts/daily-games.js';
 
@@ -276,13 +276,15 @@
                     throw new Error('Your login ran out. Log in again to post.');
                 }
                 if (!res.ok || !data.entry) throw new Error(data.error || 'Couldn’t post that. Try again?');
-                const { entry } = data;
+                const { entry, reward } = data;
                 text.value = '';
                 check();
-                status.textContent = entry.flags.length
+                const earned = reward && reward.added ? ` +${fmt(reward.added)} clicks!` : '';
+                status.textContent = (entry.flags.length
                     ? `Posted ${puzzleName(entry.game, entry.n)}. It’s marked Sus? for now (${entry.flags[0].toLowerCase()}).`
-                    : `Posted ${puzzleName(entry.game, entry.n)}: ${describe(entry.game, entry.result)}.`;
-                toast('Your result is on the board.', 'success');
+                    : `Posted ${puzzleName(entry.game, entry.n)}: ${describe(entry.game, entry.result)}.`) + earned;
+                toast(`Your result is on the board.${earned}`, 'success');
+                if (reward && reward.added && Number.isFinite(reward.clicks)) announceClicks(reward.clicks, reward.added);
                 day = isDay(data.day) && data.day <= today ? data.day : today;
                 history.replaceState(null, '', day === today ? location.pathname : `#${day}`);
                 load({ fresh: true });

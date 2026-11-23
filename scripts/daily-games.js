@@ -6,8 +6,9 @@
 //
 // None of these sites let anyone check a score, so this is the honor system: all the checks here can do is turn
 // away share text that's broken or made up badly (a grid that doesn't match the score, a puzzle that isn't on
-// today) and point out results that are hard to believe (flagsFor). Nothing here pays clicks, and it mustn't:
-// anyone can type a perfect grid.
+// today) and point out results that are hard to believe (flagsFor). Posting a result pays POST_REWARD clicks,
+// the same for any result, so a made-up perfect grid earns no more than an honest bad one: never make the
+// reward depend on the score, since anyone can type a perfect grid.
 
 import { dayOf, dayBefore } from './milestones.js';
 
@@ -32,6 +33,10 @@ export const BOARD_KEYS = ['trustle', ...GAME_KEYS];
 export const BOARD_NAMES = { trustle: 'Trustle', ...Object.fromEntries(GAME_KEYS.map((key) => [key, GAMES[key].name])) };
 
 export const MAX_TEXT = 2000;
+
+// Clicks for posting a result, once per game per puzzle day (one result per player per game per day is all
+// that can be posted), whatever the result. The page's notes say the number too.
+export const POST_REWARD = 100;
 
 /** The day puzzle `n` of `game` was out (null for a game without numbers). */
 export function dayOfPuzzle(game, n) {
