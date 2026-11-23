@@ -294,15 +294,14 @@ const NAV = [
     { href: '/pages/games/slots.html', label: 'Trusty Slots' },
     { href: '/pages/games/poker.html', label: 'Trusty Poker' },
   ] },
-  { href: '/pages/media.html', label: 'Trusty Media', items: [
-    { href: '/pages/tv.html', label: 'Trusty TV' },
-    { href: '/pages/radio.html', label: 'Trusty Radio' },
-  ] },
   { href: '/pages/tools.html', label: 'Trusty Tools', items: [
     { href: '/pages/trustyGPT.html', label: 'TrustyGPT' },
     { href: '/pages/viewer.html', label: '3D Trusty' },
     { href: '/pages/weather.html', label: 'Trusty Weather' },
+    { href: '/pages/tv.html', label: 'Trusty TV' },
+    { href: '/pages/radio.html', label: 'Trusty Radio' },
   ] },
+  { href: '/pages/shop.html', label: 'Item Shop' },
   { href: '/pages/about.html', label: 'About' },
 ];
 
