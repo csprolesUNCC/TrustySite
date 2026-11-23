@@ -73,9 +73,18 @@ test('RNGdle: real share text from rngdle.com, counted for the day it’s posted
   assert.equal(detail('rngdle', read.result), '🎲 805,393 · Common · Bottom\u00a07.5% · 11 badges');
   assert.deepEqual(cleanResult('rngdle', read.result), read.result);
   assert.ok(rankOf('rngdle', { ep: 5000 }) < rankOf('rngdle', { ep: 2831 }));
+  // What a desktop browser copies: no rarity line
+  const desktop = 'RNGdle 🎲 805393\n\n⬜ 🏞️ Hills\n⬜ 🐫 Dunes\n⬜ 🦘 Hopscotch\n+8 more\n\n2,831 EP\nhttps://rngdle.com';
+  assert.deepEqual(parseShare(desktop, TODAY).result, { roll: 805393, ep: 2831, tier: null, side: null, pct: null, badges: 11 });
+  assert.equal(detail('rngdle', parseShare(desktop, TODAY).result), '🎲 805,393 · 11 badges');
+  assert.deepEqual(cleanResult('rngdle', parseShare(desktop, TODAY).result), parseShare(desktop, TODAY).result);
+  assert.deepEqual(flagsFor('rngdle', parseShare(desktop, TODAY).result), []);
+  // The rarity without its percentage
+  assert.equal(parseShare(desktop.replace('\n\n⬜ 🏞️', '\n\n⬜ RARE\n\n⬜ 🏞️'), TODAY).result.tier, 'RARE');
+  assert.equal(parseShare(desktop.replace('\n\n⬜ 🏞️', '\n\n⬜ RARE\n\n⬜ 🏞️'), TODAY).result.badges, 11);
   // A roll past a million, or no EP
   assert.ok(parseShare(real.replace('805393', '1805393'), TODAY).error);
-  assert.ok(parseShare(real.replace('2,831 EP', ''), TODAY).error);
+  assert.match(parseShare(real.replace('2,831 EP', ''), TODAY).error, /EP/);
   // Only a roll the site calls 1 in 1,000 or rarer is flagged
   assert.deepEqual(flagsFor('rngdle', read.result), []);
   assert.deepEqual(flagsFor('rngdle', { ...read.result, side: 'Top', pct: 1 }), []);

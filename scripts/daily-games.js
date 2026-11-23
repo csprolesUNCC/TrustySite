@@ -146,33 +146,39 @@ function readKrillion(text) {
 
 // RNGdle: one random roll a day from 0 to 1,000,000, scored in EP for the patterns in it. Its share is
 //   RNGdle 🎲 805393
-//   ⬜ COMMON • Bottom 7.5%
+//   ⬜ COMMON • Bottom 7.5%   (the rarity line: phones copy it, desktop browsers leave it out)
 //   ⬜ 🏞️ Hills            (a line per badge, the first few)
 //   +8 more
 //   2,831 EP
 // with no puzzle number or date, so a roll counts for the day it's posted, and nothing can tell today's roll
 // from an old one. The EP can't be checked against the roll either (the scoring is the site's own).
 export const RNGDLE = { maxRoll: 1000000, maxEp: 10000000, rare: 0.1 };
-const RNGDLE_TIER = /^[^\S\n]*\S*[^\S\n]*([A-Z][A-Z ]{1,19}?)[^\S\n]*[•·|-][^\S\n]*(Top|Bottom)[^\S\n]+(\d{1,3}(?:\.\d+)?)\s*%[^\S\n]*$/m;
+// The rarity line: its color square, the rarity in capitals, and how rare the roll is ("Bottom 7.5%"), which
+// might be missing too.
+const RNGDLE_TIER = /^[^\S\n]*\S*[^\S\n]*([A-Z][A-Z ]{1,19}?)(?:[^\S\n]*[•·|-][^\S\n]*(Top|Bottom)[^\S\n]+(\d{1,3}(?:\.\d+)?)\s*%)?[^\S\n]*$/;
 
 function readRngdle(text, today) {
   const head = /\bRNGdle\b[^\d\n]*(\d[\d,]{0,8})/i.exec(text);
   if (!head) return null;
   const rest = text.slice(head.index + head[0].length);
   const roll = numberIn(head[1]);
-  const ep = /(\d[\d,]{0,9})\s*EP\b/.exec(rest);
-  const tier = RNGDLE_TIER.exec(rest);
-  if (!ep || !tier) return { error: 'Paste the whole thing: it needs the rarity line and your EP.' };
-  const pct = Number(tier[3]);
+  const ep = /(\d[\d,]{0,9})\s*EP\b/i.exec(rest) || /\bEP\b\s*:?\s*(\d[\d,]{0,9})/i.exec(rest);
+  if (!ep) return { error: 'Paste the whole thing: it needs your EP.' };
   const points = numberIn(ep[1]);
-  if (!Number.isSafeInteger(roll) || roll > RNGDLE.maxRoll || points > RNGDLE.maxEp || pct > 100) {
+  if (!Number.isSafeInteger(roll) || roll > RNGDLE.maxRoll || !Number.isSafeInteger(points) || points > RNGDLE.maxEp) {
     return { error: 'Those numbers don’t look like an RNGdle roll.' };
   }
-  // The badges: a line each between the rarity line and the EP, plus "+8 more".
-  const between = rest.slice(tier.index + tier[0].length, ep.index).split('\n').map((l) => l.trim()).filter(Boolean);
-  const more = between.map((l) => /^\+\s*(\d{1,3})\s+more$/i.exec(l)).find(Boolean);
-  const badges = between.filter((l) => !/^\+/.test(l) && !/^https?:/i.test(l)).length + (more ? Number(more[1]) : 0);
-  return { game: 'rngdle', n: null, day: today, result: { roll, ep: points, tier: tier[1].trim(), side: tier[2], pct, badges } };
+  const lines = rest.slice(0, ep.index).split('\n').map((l) => l.trim()).filter(Boolean);
+  const tierLine = lines.map((l) => RNGDLE_TIER.exec(l)).find(Boolean);
+  const pct = tierLine && tierLine[3] !== undefined ? Number(tierLine[3]) : null;
+  if (pct !== null && pct > 100) return { error: 'Those numbers don’t look like an RNGdle roll.' };
+  // The badges: a line each between the header and the EP (not the rarity line), plus "+8 more".
+  const more = lines.map((l) => /^\+\s*(\d{1,3})\s+more$/i.exec(l)).find(Boolean);
+  const badges = lines.filter((l) => !RNGDLE_TIER.test(l) && !/^\+/.test(l) && !/^https?:/i.test(l)).length + (more ? Number(more[1]) : 0);
+  return {
+    game: 'rngdle', n: null, day: today,
+    result: { roll, ep: points, tier: tierLine ? tierLine[1].trim() : null, side: pct === null ? null : tierLine[2], pct, badges },
+  };
 }
 
 /**
@@ -231,7 +237,12 @@ const titleCase = (words) => words.toLowerCase().replace(/\b[a-z]/g, (c) => c.to
 /** A line under the name for a game with no grid to show (RNGdle's roll), or null. */
 export function detail(game, result) {
   if (game !== 'rngdle') return null;
-  return [`🎲 ${result.roll.toLocaleString('en-US')}`, titleCase(result.tier), `${result.side}\u00a0${result.pct}%`, plural(result.badges, 'badge')].join(' · ');
+  return [
+    `🎲 ${result.roll.toLocaleString('en-US')}`,
+    result.tier ? titleCase(result.tier) : null,
+    result.pct !== null ? `${result.side}\u00a0${result.pct}%` : null,
+    plural(result.badges, 'badge'),
+  ].filter(Boolean).join(' · ');
 }
 
 // The emoji the share text used, for showing a grid again.
@@ -366,8 +377,9 @@ export function cleanResult(game, result) {
   if (game === 'rngdle') {
     const { roll, ep, tier, side, pct, badges } = result;
     if (!whole(roll, 0, RNGDLE.maxRoll) || !whole(ep, 0, RNGDLE.maxEp) || !whole(badges, 0, 999)) return null;
-    if (typeof tier !== 'string' || !/^[A-Z][A-Z ]{1,19}$/.test(tier) || (side !== 'Top' && side !== 'Bottom')) return null;
-    if (typeof pct !== 'number' || !(pct >= 0 && pct <= 100)) return null;
+    if (tier !== null && (typeof tier !== 'string' || !/^[A-Z][A-Z ]{1,19}$/.test(tier))) return null;
+    if (pct === null || pct === undefined) return { roll, ep, tier, side: null, pct: null, badges };
+    if ((side !== 'Top' && side !== 'Bottom') || typeof pct !== 'number' || !(pct >= 0 && pct <= 100)) return null;
     return { roll, ep, tier, side, pct, badges };
   }
   return null;
