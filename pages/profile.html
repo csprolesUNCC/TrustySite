@@ -315,6 +315,7 @@
                 wordle: (s) => [pct(s), s.average !== null ? `${s.average} guesses on average` : null, streak(s)],
                 connections: (s) => [pct(s), `${fmt(s.perfect)} perfect`, streak(s)],
                 krillion: (s) => [`${fmt(s.average)} on average`, `best ${fmt(s.best)}`, streak(s)],
+                rngdle: (s) => [`${fmt(s.average)} EP on average`, `best ${fmt(s.best)} EP`, streak(s)],
             };
             const played = Object.keys(DAILY_GAMES).filter((game) => d[game] && d[game].played);
             return statCard('Daily Games', 'is-daily',
@@ -322,7 +323,7 @@
                     ? h('ul', { class: 'profile-daily' }, played.map((game) => h('li', null,
                         h('span', { class: 'profile-daily-game' }, `${DAILY_GAMES[game].name} · ${fmt(d[game].played)} played`),
                         h('span', { class: 'profile-stat-detail' }, lines[game](d[game]).filter(Boolean).join(' · ')))))
-                    : emptyLine(profile.isMe ? 'You haven’t posted a Wordle, Connections or Krillion yet.' : 'Hasn’t posted any daily games yet.'),
+                    : emptyLine(profile.isMe ? 'You haven’t posted a Wordle, Connections, Krillion or RNGdle yet.' : 'Hasn’t posted any daily games yet.'),
                 h('a', { class: 'text-link', href: '/pages/daily.html' }, 'See today’s boards'));
         }
 

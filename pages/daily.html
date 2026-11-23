@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Daily Games — Trusty da Horse</title>
-    <meta name="description" content="Trustle plus the rest of your daily games: post your Wordle, Connections and Krillion results and see how everyone did today.">
+    <meta name="description" content="Trustle plus the rest of your daily games: post your Wordle, Connections, Krillion and RNGdle results and see how everyone did today.">
     <link rel="canonical" href="https://trustydahorse.com/pages/daily.html">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Trusty da Horse">
     <meta property="og:url" content="https://trustydahorse.com/pages/daily.html">
     <meta property="og:title" content="Trusty's Daily Games">
-    <meta property="og:description" content="Today's Trustle, plus everyone's Wordle, Connections and Krillion. Paste your results and see who did best.">
+    <meta property="og:description" content="Today's Trustle, plus everyone's Wordle, Connections, Krillion and RNGdle. Paste your results and see who did best.">
     <meta property="og:image" content="https://trustydahorse.com/images/thumbnails/trustle.png">
     <meta name="twitter:card" content="summary_large_image">
     <!-- Where this page sits on the site, for Google to show in place of its address -->
@@ -45,7 +45,7 @@
         <header class="page-head container">
             <p class="eyebrow">Every day, all in one place</p>
             <h1>Daily Games</h1>
-            <p class="lead">Play today’s Trustle, then bring your Wordle, Connections and Krillion results here and see how everyone did.</p>
+            <p class="lead">Play today’s Trustle, then bring your Wordle, Connections, Krillion and RNGdle results here and see how everyone did.</p>
         </header>
 
         <section class="section-tight container daily-top" aria-label="Today">
@@ -68,7 +68,7 @@
                     <div class="field">
                         <label for="share-text">Share text</label>
                         <textarea id="share-text" rows="6" maxlength="2000" spellcheck="false" autocomplete="off" placeholder="Wordle 1,983 3/6&#10;&#10;⬜🟨⬜⬜⬜&#10;🟩🟩⬜🟨⬜&#10;🟩🟩🟩🟩🟩" aria-describedby="share-preview"></textarea>
-                        <span class="hint daily-preview" id="share-preview" aria-live="polite">Wordle, Connections or Krillion, one game at a time.</span>
+                        <span class="hint daily-preview" id="share-preview" aria-live="polite">Wordle, Connections, Krillion or RNGdle, one game at a time.</span>
                     </div>
                     <div class="btn-row">
                         <button class="btn" type="submit" id="post-btn" disabled>Post it</button>
@@ -95,8 +95,8 @@
         <section class="section container" aria-labelledby="how-title">
             <div class="sticky-note blue daily-how">
                 <h2 id="how-title">How it works</h2>
-                <p>Trustle is played right here, so its board fills in by itself. Wordle, Connections and Krillion live on other sites that don’t let anyone check a score, so this board runs on the honor system: whatever you paste is what goes up. The first result you post for a puzzle is the one that counts, and only today’s puzzles (or yesterday’s) can be posted.</p>
-                <p>Results that are hard to believe (Wordle in one guess, a perfect Krillion, a long run of perfect Connections) get a <span class="daily-sus">Sus?</span> tag until an admin takes a look. If you think someone’s fibbing, report it. Nothing here earns clicks, so there’s nothing to win by cheating except bragging rights.</p>
+                <p>Trustle is played right here, so its board fills in by itself. Wordle, Connections, Krillion and RNGdle live on other sites that don’t let anyone check a score, so this board runs on the honor system: whatever you paste is what goes up. The first result you post for a puzzle is the one that counts, and only today’s puzzles (or yesterday’s) can be posted. RNGdle’s share doesn’t say which day it’s from, so a roll counts for the day you post it.</p>
+                <p>Results that are hard to believe (Wordle in one guess, a perfect Krillion, a long run of perfect Connections, a top 0.1% RNGdle roll) get a <span class="daily-sus">Sus?</span> tag until an admin takes a look. If you think someone’s fibbing, report it. Nothing here earns clicks, so there’s nothing to win by cheating except bragging rights.</p>
             </div>
         </section>
     </main>
@@ -106,7 +106,7 @@
     <script type="module">
         import { h, fmt, toast, session, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
         import { dayOf, dayBefore } from '/scripts/milestones.js';
-        import { GAMES, BOARD_KEYS, BOARD_NAMES, EMOJI, parseShare, describe, rankOf, places, dayAfter, isDay } from '/scripts/daily-games.js';
+        import { GAMES, BOARD_KEYS, BOARD_NAMES, EMOJI, parseShare, describe, detail, rankOf, places, dayAfter, isDay } from '/scripts/daily-games.js';
 
         // Everything comes from utils/daily.js (?action=daily on api/leaderboard.js). Names and results come from
         // other players, so they're only ever set as text.
@@ -123,6 +123,8 @@
         /* ---------- Boards ---------- */
 
         function grid(game, result) {
+            const line = detail(game, result);
+            if (line) return h('span', { class: 'daily-detail' }, line);
             if (!result.grid) return null;
             const emoji = game === 'krillion';
             return h('span', { class: `daily-grid${emoji ? ' is-emoji' : ''}`, dataset: { game }, 'aria-hidden': 'true' },
@@ -248,13 +250,16 @@
                 $('post-btn').disabled = true;
                 return null;
             }
-            preview.textContent = `Looks like ${GAMES[read.game].name} #${fmt(read.n)}: ${describe(read.game, read.result)}.`;
+            preview.textContent = `Looks like ${puzzleName(read.game, read.n)}: ${describe(read.game, read.result)}.`;
             preview.dataset.tone = 'ok';
             $('post-btn').disabled = false;
             return read;
         }
 
         text.addEventListener('input', check);
+
+        // "Wordle #1,983", or just "RNGdle", whose rolls have no number.
+        const puzzleName = (game, n) => (n === null || n === undefined ? GAMES[game].name : `${GAMES[game].name} #${fmt(n)}`);
 
         $('post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -275,8 +280,8 @@
                 text.value = '';
                 check();
                 status.textContent = entry.flags.length
-                    ? `Posted ${GAMES[entry.game].name} #${fmt(entry.n)}. It’s marked Sus? for now (${entry.flags[0].toLowerCase()}).`
-                    : `Posted ${GAMES[entry.game].name} #${fmt(entry.n)}: ${describe(entry.game, entry.result)}.`;
+                    ? `Posted ${puzzleName(entry.game, entry.n)}. It’s marked Sus? for now (${entry.flags[0].toLowerCase()}).`
+                    : `Posted ${puzzleName(entry.game, entry.n)}: ${describe(entry.game, entry.result)}.`;
                 toast('Your result is on the board.', 'success');
                 day = isDay(data.day) && data.day <= today ? data.day : today;
                 history.replaceState(null, '', day === today ? location.pathname : `#${day}`);

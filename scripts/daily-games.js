@@ -1,5 +1,5 @@
 // The Daily Games board's rules (pages/daily.html), with no DOM: reading the share text other sites' daily
-// games copy (Wordle, Connections, Krillion), checking it makes sense, ranking results, flagging ones that look
+// games copy (Wordle, Connections, Krillion, RNGdle), checking it makes sense, ranking results, flagging ones that look
 // too good, and working out a player's stats. Trustle is on the board too, but its results come from the games
 // the site already keeps (api/trustle-api.js), not from pasted text. Shared by the page (to preview a paste), utils/daily.js
 // (which decides what's saved), the pretend API and the tests.
@@ -18,11 +18,13 @@ export const dayAfter = (day) => dayFrom(dayNumber(day) + 1);
 export const isDay = (day) => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) && dayFrom(dayNumber(day)) === day;
 
 // The other sites' games, in the order the board shows them (after Trustle). `first` is the day of puzzle
-// `start`, so a puzzle's number gives its day.
+// `start`, so a puzzle's number gives its day. RNGdle's share has no number or date, so it has no `first`: a
+// roll counts for the day it's posted.
 export const GAMES = {
   wordle: { name: 'Wordle', site: 'NYT Games', url: 'https://www.nytimes.com/games/wordle/index.html', first: '2021-06-19', start: 0 },
   connections: { name: 'Connections', site: 'NYT Games', url: 'https://www.nytimes.com/games/connections', first: '2023-06-12', start: 1 },
   krillion: { name: 'Krillion', site: 'krillion.io', url: 'https://krillion.io', first: '2026-07-16', start: 1 },
+  rngdle: { name: 'RNGdle', site: 'rngdle.com', url: 'https://rngdle.com' },
 };
 export const GAME_KEYS = Object.keys(GAMES);
 // Every board on the page, Trustle first.
@@ -31,16 +33,16 @@ export const BOARD_NAMES = { trustle: 'Trustle', ...Object.fromEntries(GAME_KEYS
 
 export const MAX_TEXT = 2000;
 
-/** The day puzzle `n` of `game` was out. */
+/** The day puzzle `n` of `game` was out (null for a game without numbers). */
 export function dayOfPuzzle(game, n) {
   const g = GAMES[game];
-  return g ? dayFrom(dayNumber(g.first) + (n - g.start)) : null;
+  return g && g.first ? dayFrom(dayNumber(g.first) + (n - g.start)) : null;
 }
 
-/** The number of `game`'s puzzle on `day`. */
+/** The number of `game`'s puzzle on `day` (null for a game without numbers). */
 export function puzzleOn(game, day) {
   const g = GAMES[game];
-  return g ? dayNumber(day) - dayNumber(g.first) + g.start : null;
+  return g && g.first ? dayNumber(day) - dayNumber(g.first) + g.start : null;
 }
 
 /**
@@ -142,6 +144,37 @@ function readKrillion(text) {
   return { game: 'krillion', n, result: { score, grid: [row] } };
 }
 
+// RNGdle: one random roll a day from 0 to 1,000,000, scored in EP for the patterns in it. Its share is
+//   RNGdle 🎲 805393
+//   ⬜ COMMON • Bottom 7.5%
+//   ⬜ 🏞️ Hills            (a line per badge, the first few)
+//   +8 more
+//   2,831 EP
+// with no puzzle number or date, so a roll counts for the day it's posted, and nothing can tell today's roll
+// from an old one. The EP can't be checked against the roll either (the scoring is the site's own).
+export const RNGDLE = { maxRoll: 1000000, maxEp: 10000000, rare: 0.1 };
+const RNGDLE_TIER = /^[^\S\n]*\S*[^\S\n]*([A-Z][A-Z ]{1,19}?)[^\S\n]*[•·|-][^\S\n]*(Top|Bottom)[^\S\n]+(\d{1,3}(?:\.\d+)?)\s*%[^\S\n]*$/m;
+
+function readRngdle(text, today) {
+  const head = /\bRNGdle\b[^\d\n]*(\d[\d,]{0,8})/i.exec(text);
+  if (!head) return null;
+  const rest = text.slice(head.index + head[0].length);
+  const roll = numberIn(head[1]);
+  const ep = /(\d[\d,]{0,9})\s*EP\b/.exec(rest);
+  const tier = RNGDLE_TIER.exec(rest);
+  if (!ep || !tier) return { error: 'Paste the whole thing: it needs the rarity line and your EP.' };
+  const pct = Number(tier[3]);
+  const points = numberIn(ep[1]);
+  if (!Number.isSafeInteger(roll) || roll > RNGDLE.maxRoll || points > RNGDLE.maxEp || pct > 100) {
+    return { error: 'Those numbers don’t look like an RNGdle roll.' };
+  }
+  // The badges: a line each between the rarity line and the EP, plus "+8 more".
+  const between = rest.slice(tier.index + tier[0].length, ep.index).split('\n').map((l) => l.trim()).filter(Boolean);
+  const more = between.map((l) => /^\+\s*(\d{1,3})\s+more$/i.exec(l)).find(Boolean);
+  const badges = between.filter((l) => !/^\+/.test(l) && !/^https?:/i.test(l)).length + (more ? Number(more[1]) : 0);
+  return { game: 'rngdle', n: null, day: today, result: { roll, ep: points, tier: tier[1].trim(), side: tier[2], pct, badges } };
+}
+
 /**
  * Reads one game's share text.
  * @param {unknown} text - What the player pasted.
@@ -152,10 +185,10 @@ export function parseShare(text, today = dayOf()) {
   if (typeof text !== 'string' || !text.trim()) return { error: 'Paste the share text from a game first.' };
   if (text.length > MAX_TEXT) return { error: 'That’s too much text. Paste one game at a time.' };
   const t = clean(text);
-  const read = readWordle(t) || readConnections(t) || readKrillion(t);
-  if (!read) return { error: 'That doesn’t look like share text from Wordle, Connections or Krillion.' };
+  const read = readWordle(t) || readConnections(t) || readKrillion(t) || readRngdle(t, today);
+  if (!read) return { error: 'That doesn’t look like share text from Wordle, Connections, Krillion or RNGdle.' };
   if (read.error) return read;
-  const day = Number.isSafeInteger(read.n) && read.n >= GAMES[read.game].start ? dayOfPuzzle(read.game, read.n) : null;
+  const day = read.day || (Number.isSafeInteger(read.n) && read.n >= GAMES[read.game].start ? dayOfPuzzle(read.game, read.n) : null);
   if (!day) return { error: 'That puzzle number doesn’t look right.' };
   if (!postableDays(today).includes(day)) {
     return { error: `That’s not today’s ${GAMES[read.game].name}. Only today’s puzzle (or yesterday’s) can go on the board.` };
@@ -171,6 +204,7 @@ export function rankOf(game, result) {
     case 'wordle': return result.guesses || 7;
     case 'connections': return result.won ? result.mistakes : 10 - result.found; // every win beats every loss
     case 'krillion': return KRILLION.max - result.score; // the higher score, the better
+    case 'rngdle': return -result.ep; // the more EP, the better
     case 'trustle': return result.won ? result.tries : 7;
     default: return Infinity;
   }
@@ -187,8 +221,17 @@ export function describe(game, result) {
       if (!result.won) return `Lost (${result.found}/4)`;
       return result.mistakes ? plural(result.mistakes, 'mistake') : 'Perfect';
     case 'krillion': return `${result.score}/${KRILLION.max}`;
+    case 'rngdle': return `${result.ep.toLocaleString('en-US')} EP`;
     default: return '';
   }
+}
+
+const titleCase = (words) => words.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
+
+/** A line under the name for a game with no grid to show (RNGdle's roll), or null. */
+export function detail(game, result) {
+  if (game !== 'rngdle') return null;
+  return [`🎲 ${result.roll.toLocaleString('en-US')}`, titleCase(result.tier), `${result.side}\u00a0${result.pct}%`, plural(result.badges, 'badge')].join(' · ');
 }
 
 // The emoji the share text used, for showing a grid again.
@@ -223,6 +266,8 @@ export const FLAG_RULES = {
   connectionsPerfect: { games: 15, text: '15 perfect Connections in a row' },
   krillionPerfect: `A perfect ${KRILLION.max} at Krillion`,
   krillionAverage: { games: 10, last: 20, above: 600, text: 'Averaging over 600 at Krillion' },
+  // Every RNGdle roll is luck, so only one the site itself calls a 1-in-1,000 is worth a look.
+  rngdleRare: `A top ${RNGDLE.rare}% RNGdle roll`,
 };
 
 /**
@@ -252,6 +297,7 @@ export function flagsFor(game, result, history = []) {
     const list = recent(last);
     if (list.length >= games && average(list, (r) => r.score) > above) flags.push(text);
   }
+  if (game === 'rngdle' && result.side === 'Top' && result.pct <= RNGDLE.rare) flags.push(FLAG_RULES.rngdleRare);
   return flags;
 }
 
@@ -284,6 +330,10 @@ export function statsFor(game, entries, today = dayOf()) {
     const scores = results.map((r) => r.score);
     Object.assign(stats, { average: scores.length ? Math.round(mean(scores)) : null, best: scores.length ? Math.max(...scores) : null });
   }
+  if (game === 'rngdle') {
+    const eps = results.map((r) => r.ep);
+    Object.assign(stats, { average: eps.length ? Math.round(mean(eps)) : null, best: eps.length ? Math.max(...eps) : null });
+  }
   return stats;
 }
 
@@ -312,6 +362,13 @@ export function cleanResult(game, result) {
   if (game === 'krillion') {
     const grid = rows(new RegExp(`^[${KRILLION.tiers.map((t) => t.tile).join('')}]{${KRILLION.prompts}}$`), 1);
     return grid && grid.length === 1 && result.score === krillionScore(grid[0]) ? { score: result.score, grid } : null;
+  }
+  if (game === 'rngdle') {
+    const { roll, ep, tier, side, pct, badges } = result;
+    if (!whole(roll, 0, RNGDLE.maxRoll) || !whole(ep, 0, RNGDLE.maxEp) || !whole(badges, 0, 999)) return null;
+    if (typeof tier !== 'string' || !/^[A-Z][A-Z ]{1,19}$/.test(tier) || (side !== 'Top' && side !== 'Bottom')) return null;
+    if (typeof pct !== 'number' || !(pct >= 0 && pct <= 100)) return null;
+    return { roll, ep, tier, side, pct, badges };
   }
   return null;
 }

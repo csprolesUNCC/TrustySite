@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import jwt from 'jsonwebtoken';
 import {
-  GAMES, KRILLION, parseShare, dayOfPuzzle, puzzleOn, postableDays, rankOf, describe, places, flagsFor, statsFor, cleanResult, krillionScore,
+  GAMES, KRILLION, RNGDLE, detail, parseShare, dayOfPuzzle, puzzleOn, postableDays, rankOf, describe, places, flagsFor, statsFor, cleanResult, krillionScore,
 } from '../scripts/daily-games.js';
 import daily from '../utils/daily.js';
 
@@ -18,7 +18,8 @@ test('puzzle numbers line up with their days', () => {
   assert.equal(dayOfPuzzle('connections', 1), '2023-06-12');
   assert.equal(dayOfPuzzle('krillion', 1), '2026-07-16');
   assert.equal(dayOfPuzzle('krillion', 94), '2026-10-17');
-  for (const game of Object.keys(GAMES)) assert.equal(dayOfPuzzle(game, n(game)), TODAY);
+  for (const game of Object.keys(GAMES).filter((g) => GAMES[g].first)) assert.equal(dayOfPuzzle(game, n(game)), TODAY);
+  assert.equal(puzzleOn('rngdle', TODAY), null);
   assert.deepEqual(postableDays(TODAY), ['2026-11-22', '2026-11-23', '2026-11-24']);
 });
 
@@ -62,6 +63,24 @@ test('Krillion: real share text from krillion.io', () => {
   const real = 'Krillion #130 🦐\n245\n\n🐟🐟🐟🐟🐟🏮🫧';
   assert.deepEqual(parseShare(real, '2026-11-22'), { game: 'krillion', n: 130, day: '2026-11-22', result: { score: 245, grid: ['3333351'] } });
   assert.ok(parseShare(real.replace('245', '400'), '2026-11-22').error); // the score edited, the emoji not
+});
+
+test('RNGdle: real share text from rngdle.com, counted for the day it’s posted', () => {
+  const real = 'RNGdle 🎲 805393\n\n⬜ COMMON • Bottom 7.5%\n\n⬜ 🏞️ Hills\n⬜ 🐫 Dunes\n⬜ 🦘 Hopscotch\n+8 more\n\n2,831 EP\nhttps://rngdle.com';
+  const read = parseShare(real, TODAY);
+  assert.deepEqual(read, { game: 'rngdle', n: null, day: TODAY, result: { roll: 805393, ep: 2831, tier: 'COMMON', side: 'Bottom', pct: 7.5, badges: 11 } });
+  assert.equal(describe('rngdle', read.result), '2,831 EP');
+  assert.equal(detail('rngdle', read.result), '🎲 805,393 · Common · Bottom\u00a07.5% · 11 badges');
+  assert.deepEqual(cleanResult('rngdle', read.result), read.result);
+  assert.ok(rankOf('rngdle', { ep: 5000 }) < rankOf('rngdle', { ep: 2831 }));
+  // A roll past a million, or no EP
+  assert.ok(parseShare(real.replace('805393', '1805393'), TODAY).error);
+  assert.ok(parseShare(real.replace('2,831 EP', ''), TODAY).error);
+  // Only a roll the site calls 1 in 1,000 or rarer is flagged
+  assert.deepEqual(flagsFor('rngdle', read.result), []);
+  assert.deepEqual(flagsFor('rngdle', { ...read.result, side: 'Top', pct: 1 }), []);
+  assert.equal(flagsFor('rngdle', { ...read.result, side: 'Top', pct: RNGDLE.rare }).length, 1);
+  assert.equal(cleanResult('rngdle', { ...read.result, tier: '<b>' }), null);
 });
 
 test('Krillion: the score is worked out from the emoji, and has to match a score line', () => {

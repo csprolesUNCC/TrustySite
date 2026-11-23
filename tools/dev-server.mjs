@@ -115,6 +115,8 @@ function dailyPost(name, text) {
   dailyPost('gallop', `Connections\nPuzzle #${n('connections')}\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨`);
   dailyPost('hayhound', `Krillion #${n('krillion')} 🦐\n300\n\n🌟🦑🐟🏮⬛🫧🤡`);
   dailyPost('neigh_sayer', `Krillion #${n('krillion')} 🦐\n🐟🐟🫧🦑⬛🤡🫧`);
+  dailyPost('pencilpusher', 'RNGdle 🎲 805393\n\n⬜ COMMON • Bottom 7.5%\n\n⬜ 🏞️ Hills\n⬜ 🐫 Dunes\n⬜ 🦘 Hopscotch\n+8 more\n\n2,831 EP\nhttps://rngdle.com');
+  dailyPost('gallop', 'RNGdle 🎲 777777\n\n🟪 EPIC • Top 0.05%\n\n🟪 🎰 Jackpot\n🟪 🪞 Mirror\n\n9,120 EP\nhttps://rngdle.com');
 }
 function dailyBoards() {
   const day = dayOf();
@@ -261,7 +263,7 @@ async function api(req, url, body) {
         bio: 'Professional Trusty enjoyer.', clicks: isHouse(u) ? null : { total: 12345, rank: 3, streak: 4 }, flappy: { score: 42, rank: 2 }, draw: null,
         trustis: { score: 90000, rank: 1, lines: 120, level: 13 }, snake: { score: 40, rank: 4 },
         trustle: { played: 20, won: 18, streak: 4, best: 9, dist: [0, 2, 5, 6, 4, 1] }, tv: { trusty: 3600, snn: 600 },
-        daily: { wordle: { played: 30, streak: 6, won: 29, average: 3.9, best: 2 }, connections: { played: 12, streak: 2, won: 10, perfect: 4 }, krillion: { played: 5, streak: 0, average: 310, best: 455 } },
+        daily: { wordle: { played: 30, streak: 6, won: 29, average: 3.9, best: 2 }, connections: { played: 12, streak: 2, won: 10, perfect: 4 }, krillion: { played: 5, streak: 0, average: 310, best: 455 }, rngdle: { played: 8, streak: 3, average: 3410, best: 6020 } },
         bets: Object.fromEntries(Object.entries(bank.status(`mock-${u}`).month).filter(([, n]) => n)),
         house: isHouse(u) ? bank.house() : null,
       }];

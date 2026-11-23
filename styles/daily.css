@@ -93,6 +93,7 @@
 .daily-grid[data-game="connections"] .daily-tile[data-tile="g"] { background: #a0c35a; }
 .daily-grid[data-game="connections"] .daily-tile[data-tile="b"] { background: #b0c4ef; }
 .daily-grid[data-game="connections"] .daily-tile[data-tile="p"] { background: #ba81c5; }
+.daily-detail { color: var(--ink-soft); font-size: .88rem; font-weight: 600; }
 .daily-grid.is-emoji .daily-grid-row { gap: 1px; font-size: 1rem; line-height: 1.2; }
 
 .daily-how { max-width: 760px; margin-inline: auto; }
