@@ -112,8 +112,8 @@
                     <ol class="tv-guide" id="guide"></ol>
                 </div>
                 <p class="tv-note">Every station plays back to back, all day, every day. Everyone listening hears the same moment, so tell your friends to tune in.</p>
-                <p class="tv-note" data-auth-show="in">Every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 2,500 a day.<span id="earned"></span></p>
-                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 2,500 a day.</p>
+                <p class="tv-note" data-auth-show="in">Every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 2,500 a day from Trusty Radio and Trusty TV together.<span id="earned"></span></p>
+                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 2,500 a day from Trusty Radio and Trusty TV together.</p>
             </aside>
         </section>
     </main>
@@ -411,8 +411,8 @@
         /* ---------- Listening rewards ---------- */
 
         // A logged-in listener earns WATCH_REWARD.clicks for every REWARD_EVERY seconds a song is actually
-        // playing on screen, up to WATCH_REWARD.daily a day (api/clicks.js gives them out and enforces both;
-        // Trusty TV's are counted separately).
+        // playing on screen, up to WATCH_REWARD.daily a day together with Trusty TV's (api/clicks.js gives
+        // them out and enforces both).
         const REWARD_EVERY = WATCH_REWARD.every;
         let listened = 0;  // seconds listened toward the next reward
         let capped = null; // the day today's clicks ran out, if they have

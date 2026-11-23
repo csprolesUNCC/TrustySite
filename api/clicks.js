@@ -13,14 +13,15 @@ const JITTER_MS = 100;
 
 // Watching Trusty TV (POST ?action=tv) or listening to Trusty Radio (POST ?action=radio) earns WATCH_REWARD.clicks
 // every WATCH_REWARD.every seconds, at most once per window for the account no matter how many tabs are open, and at
-// most WATCH_REWARD.daily clicks a day (midnight Eastern) from each, counted in the account's `tvDaily` /
-// `radioDaily` ({ day, clicks }). The slack covers timer and network jitter.
+// most WATCH_REWARD.daily clicks a day (midnight Eastern) from the two together, counted in the account's
+// `mediaDaily` ({ day, clicks }). The slack covers timer and network jitter.
 const WATCH_SLACK_MS = 500;
+const MEDIA_DAILY = 'mediaDaily';
 const WATCH = {
     // Each TV reward also adds its seconds to the account's watch time for the channel that was on
     // (`tvSeconds.<channel key>`), which the profile page uses to pick a favorite channel.
-    tv: { name: 'Trusty TV', last: 'lastTvReward', daily: 'tvDaily', seconds: 'tvSeconds', keys: new Set(CHANNELS.map((c) => c.key)) },
-    radio: { name: 'Trusty Radio', last: 'lastRadioReward', daily: 'radioDaily' }
+    tv: { name: 'Trusty TV', last: 'lastTvReward', daily: MEDIA_DAILY, seconds: 'tvSeconds', keys: new Set(CHANNELS.map((c) => c.key)) },
+    radio: { name: 'Trusty Radio', last: 'lastRadioReward', daily: MEDIA_DAILY }
 };
 
 // Pays one watch reward if the last one was long enough ago and today's are under the cap. Returns [status, body].
@@ -71,7 +72,7 @@ async function payWatch(collection, user, source, body) {
     const doc = await collection.findOne({ userId: user.userId }, { projection: { [source.daily]: 1 } });
     const counted = doc && doc[source.daily];
     if (counted && counted.day === today && counted.clicks > CAP - CLICKS) {
-        return [429, { error: `That's today's ${CAP} clicks from ${source.name}. More from midnight Eastern.`, capped: true, day: today, today: counted.clicks, cap: CAP }];
+        return [429, { error: `That's today's ${CAP} clicks from Trusty TV and Trusty Radio. More from midnight Eastern.`, capped: true, day: today, today: counted.clicks, cap: CAP }];
     }
     return [429, { error: `${source.name} gives ${CLICKS} clicks every ${every} seconds.` }];
 }
