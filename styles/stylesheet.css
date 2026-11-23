@@ -865,7 +865,7 @@ trusty-footer { display: block; }
 .site-nav a[aria-current] { color: var(--ink); }
 .site-nav a[aria-current]::after { opacity: 1; transform: scaleX(1); }
 
-/* Dropdown group (Games, Trusty Media, Trusty Tools): the page link, a caret, and a card of links under them */
+/* Dropdown group (Games, Casino, Trusty Tools): the page link, a caret, and a card of links under them */
 .nav-drop { position: relative; display: flex; align-items: center; }
 .nav-drop > a { padding-right: 2px; }
 .nav-drop > a::after { right: 2px; }
