@@ -57,6 +57,13 @@ test('Connections: wins, mistakes and losses', () => {
   assert.ok(parseShare(`Connections\nPuzzle #${n('connections')}\n${'🟩🟦🟩🟩\n'.repeat(4)}🟨🟨🟨🟨`, TODAY).error);
 });
 
+test('Krillion: real share text from krillion.io', () => {
+  // Pasted straight from the game (a 28th percentile dive).
+  const real = 'Krillion #130 🦐\n245\n\n🐟🐟🐟🐟🐟🏮🫧';
+  assert.deepEqual(parseShare(real, '2026-11-22'), { game: 'krillion', n: 130, day: '2026-11-22', result: { score: 245, grid: ['3333351'] } });
+  assert.ok(parseShare(real.replace('245', '400'), '2026-11-22').error); // the score edited, the emoji not
+});
+
 test('Krillion: the score is worked out from the emoji, and has to match a score line', () => {
   const read = parseShare(`Krillion #${n('krillion')} 🦐\n300/700\n🌟🦑🐟🏮⬛🫧🤡`, TODAY);
   assert.deepEqual(read.result, { score: 300, grid: ['6435m12'] });

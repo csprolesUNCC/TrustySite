@@ -113,7 +113,7 @@ function dailyPost(name, text) {
   [['luke', 3], ['hayhound', 4], ['stickfig', 1], ['margins', 4]].forEach(([name, g]) => dailyPost(name, `Wordle ${n('wordle')} ${g}/6\n\n${W[g]}`));
   dailyPost('luke', `Connections\nPuzzle #${n('connections')}\n🟨🟨🟨🟨\n🟩🟦🟩🟩\n🟩🟩🟩🟩\n🟦🟦🟦🟦\n🟪🟪🟪🟪`);
   dailyPost('gallop', `Connections\nPuzzle #${n('connections')}\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨`);
-  dailyPost('hayhound', `Krillion #${n('krillion')} 🦐\n300/700\n🌟🦑🐟🏮⬛🫧🤡`);
+  dailyPost('hayhound', `Krillion #${n('krillion')} 🦐\n300\n\n🌟🦑🐟🏮⬛🫧🤡`);
   dailyPost('neigh_sayer', `Krillion #${n('krillion')} 🦐\n🐟🐟🫧🦑⬛🤡🫧`);
 }
 function dailyBoards() {

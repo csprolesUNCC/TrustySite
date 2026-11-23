@@ -116,7 +116,7 @@ function readConnections(text) {
   return { game: 'connections', n, result: { won, mistakes, found: found.length, grid } };
 }
 
-// "Krillion #131 🦐", a score, then a row of one emoji per prompt. The score comes from the row itself, so a
+// "Krillion #130 🦐", the score on a line of its own, a blank line, then a row of one emoji per prompt. The score comes from the row itself, so a
 // score line that says something else means the text was changed.
 function readKrillion(text) {
   const head = /\bKrillion\s*#\s*(\d[\d,.\u00a0\u202f]{0,6})/i.exec(text);
@@ -130,10 +130,14 @@ function readKrillion(text) {
   const row = tilesOf(longest, KRILLION_TILES);
   if (runs.length > 1 || [...row].length !== KRILLION.prompts) return { error: `A Krillion dive has ${KRILLION.prompts} prompts, so the row needs ${KRILLION.prompts} emoji.` };
   const score = krillionScore(row);
-  // Only numbers that clearly are the score are checked ("450/700", "450 pts", "4,500m" deep: 10m a point),
-  // so a line like "Top 12%" never gets in the way.
-  const said = [...rest.matchAll(/(\d[\d,]{0,5})\s*(\/\s*700|pts\b|points\b|m\b)/gi)]
-    .map((m) => (m[2].toLowerCase() === 'm' ? numberIn(m[1]) / 10 : numberIn(m[1])));
+  // Only numbers that clearly are the score are checked: the game's own share puts it alone on the line under
+  // the header ("245"); "450/700", "450 pts" and "4,500m" deep (10m a point) count too. A line like "Top 12%"
+  // never gets in the way.
+  const said = [
+    ...[...rest.matchAll(/^\s*(\d{1,3})\s*$/gm)].map((m) => Number(m[1])),
+    ...[...rest.matchAll(/(\d[\d,]{0,5})\s*(\/\s*700|pts\b|points\b|m\b)/gi)]
+      .map((m) => (m[2].toLowerCase() === 'm' ? numberIn(m[1]) / 10 : numberIn(m[1]))),
+  ];
   if (said.length && !said.includes(score)) return { error: 'That score doesn’t match the emoji under it.' };
   return { game: 'krillion', n, result: { score, grid: [row] } };
 }
