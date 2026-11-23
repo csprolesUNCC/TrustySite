@@ -26,17 +26,22 @@ export function toSeconds(length) {
   return parts.reduce((total, p) => total * 60 + Number(p), 0);
 }
 
+// A live stream (`live: true` in a lineup, with no length) is scheduled as one airing a day, so the schedule's
+// math still works; the page plays it as it is instead of seeking to a second.
+export const LIVE_SECONDS = 24 * 60 * 60;
+
 export function buildSchedule(lineup) {
   const shows = [];
   let total = 0;
   for (const entry of lineup) {
     const id = videoId(entry.link);
-    const seconds = toSeconds(entry.length);
+    const live = entry.live === true;
+    const seconds = live ? LIVE_SECONDS : toSeconds(entry.length);
     if (!id || !(seconds > 0)) {
       console.warn('Trusty TV: skipping a show with a bad link or length', entry);
       continue;
     }
-    shows.push({ id, title: entry.title || '', seconds });
+    shows.push(live ? { id, title: entry.title || '', seconds, live } : { id, title: entry.title || '', seconds });
     total += seconds;
   }
   return { shows, total };

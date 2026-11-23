@@ -222,7 +222,7 @@
 .tv-now-meta { margin: 8px 0 0; font-size: .9rem; color: var(--pencil); }
 .tv-guide { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .tv-guide li { display: grid; grid-template-columns: 5.4em minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.tv-guide time { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--blue); }
+.tv-guide time, .tv-guide-when { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--blue); }
 .tv-note { margin: 0; font-size: .9rem; color: var(--pencil); }
 
 @media (max-width: 640px) {
