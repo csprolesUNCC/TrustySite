@@ -49,7 +49,7 @@ export const rankLevel = (rank) => RANKS.indexOf(rank) + 1;
 // The first click of each day pays DAILY.base clicks, DAILY.step more for every day in a row before it, and
 // never more than DAILY.max. A new day starts at midnight Eastern, the same moment as Trustle's new word, so
 // it's the same day for everyone. pages/leaderboard.html says the same numbers (id="daily-rule").
-export const DAILY = { base: 25, step: 5, max: 100 };
+export const DAILY = { base: 25, step: 10, max: 250 };
 
 const dayFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 
