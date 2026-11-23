@@ -218,13 +218,12 @@ async function api(req, url, body) {
       return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()), shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) } }];
     }
     if (action === 'tv' || action === 'radio') {
-      // Trusty TV's and Trusty Radio's rewards, each with its own daily cap, as api/clicks.js pays them.
+      // Trusty TV's and Trusty Radio's rewards, sharing one daily cap, as api/clicks.js pays them.
       const { clicks, daily: cap } = WATCH_REWARD;
       const day = dayOf();
-      account.watch ||= {};
-      const counted = account.watch[action]?.day === day ? account.watch[action].clicks : 0;
+      const counted = account.watch?.day === day ? account.watch.clicks : 0;
       if (counted + clicks > cap) return [429, { error: 'That’s today’s clicks.', capped: true, day, today: counted, cap }];
-      account.watch[action] = { day, clicks: counted + clicks };
+      account.watch = { day, clicks: counted + clicks };
       account.clicks += clicks;
       return [200, { clicks: account.clicks, added: clicks, today: counted + clicks, cap }];
     }
