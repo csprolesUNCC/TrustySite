@@ -28,6 +28,8 @@ import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
+import { GAME_KEYS, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
+import { puzzleWord } from '../scripts/trustle.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The headers vercel.json sends with every file.
@@ -88,6 +90,51 @@ function trustleSync(userId, body) {
     added += clicks;
   }
   return { games: {}, rewards, added, clicks: account.clicks };
+}
+
+// The Daily Games board (utils/daily.js), kept in memory and started with a few made-up results for today, read
+// by the real parser (scripts/daily-games.js) so the samples are checked like anyone's paste.
+const dailyScores = [];
+let dailyId = 0;
+function dailyPost(name, text) {
+  const read = parseShare(text);
+  if (read.error) return [400, { error: read.error }];
+  if (dailyScores.some((s) => s.name === name && s.game === read.game && s.day === read.day)) {
+    return [409, { error: 'You’ve already posted that one. The first result you post is the one that counts.' }];
+  }
+  const history = dailyScores.filter((s) => s.name === name && s.game === read.game).reverse().map((s) => s.result);
+  const entry = { id: String(++dailyId).padStart(24, '0'), name, ...read, rank: rankOf(read.game, read.result), flags: flagsFor(read.game, read.result, history), reports: 0 };
+  dailyScores.push(entry);
+  return [201, { day: entry.day, entry }];
+}
+{
+  const n = (game) => puzzleOn(game, dayOf());
+  const W = { 3: '⬜🟨⬜⬜⬜\n🟩🟩⬜🟨⬜\n🟩🟩🟩🟩🟩', 4: '⬜⬜⬜⬜🟨\n⬜🟨⬜⬜⬜\n🟩🟩⬜🟩⬜\n🟩🟩🟩🟩🟩', 1: '🟩🟩🟩🟩🟩' };
+  [['luke', 3], ['hayhound', 4], ['stickfig', 1], ['margins', 4]].forEach(([name, g]) => dailyPost(name, `Wordle ${n('wordle')} ${g}/6\n\n${W[g]}`));
+  dailyPost('luke', `Connections\nPuzzle #${n('connections')}\n🟨🟨🟨🟨\n🟩🟦🟩🟩\n🟩🟩🟩🟩\n🟦🟦🟦🟦\n🟪🟪🟪🟪`);
+  dailyPost('gallop', `Connections\nPuzzle #${n('connections')}\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨`);
+  dailyPost('hayhound', `Krillion #${n('krillion')} 🦐\n300/700\n🌟🦑🐟🏮⬛🫧🤡`);
+  dailyPost('neigh_sayer', `Krillion #${n('krillion')} 🦐\n🐟🐟🫧🦑⬛🤡🫧`);
+}
+function dailyBoards() {
+  const day = dayOf();
+  const trustleN = puzzleNumber();
+  const length = puzzleWord(trustleN).word.length;
+  const row = (tiles) => tiles.padEnd(length, 'a').slice(0, length);
+  const trustle = [
+    { name: 'carson', result: { won: true, tries: 3, grid: [row('apa'), row('ccap'), 'c'.repeat(length)] } },
+    { name: 'tractorfan', result: { won: true, tries: 5, grid: [row('a'), row('pa'), row('cpa'), row('ccpa'), 'c'.repeat(length)] } },
+    { name: 'mane_event', result: { won: false, tries: 6, grid: Array.from({ length: 6 }, () => row('pc')) } },
+  ];
+  const boards = { trustle: { n: trustleN, entries: trustle } };
+  for (const game of GAME_KEYS) {
+    boards[game] = {
+      n: puzzleOn(game, day),
+      entries: dailyScores.filter((s) => s.game === game && s.day === day).sort((a, b) => a.rank - b.rank)
+        .map(({ id, name, result, flags }) => ({ id, name, result, flags })),
+    };
+  }
+  return { day, today: day, boards };
 }
 
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
@@ -196,6 +243,12 @@ async function api(req, url, body) {
       }
       return [200, game];
     }
+    if (action === 'daily') {
+      if (req.method === 'GET') return [200, dailyBoards()];
+      if (!me) return [401, { error: 'Log in to post your results.' }];
+      if (body && body.do === 'report') return [201, { message: 'Reported' }];
+      return dailyPost(mockUser(req), body && body.text);
+    }
     if ((action === 'trustis' || action === 'snake') && req.method === 'POST') {
       return me ? gameReward(req, action, body) : [401, { error: 'Authentication required' }];
     }
@@ -208,6 +261,7 @@ async function api(req, url, body) {
         bio: 'Professional Trusty enjoyer.', clicks: isHouse(u) ? null : { total: 12345, rank: 3, streak: 4 }, flappy: { score: 42, rank: 2 }, draw: null,
         trustis: { score: 90000, rank: 1, lines: 120, level: 13 }, snake: { score: 40, rank: 4 },
         trustle: { played: 20, won: 18, streak: 4, best: 9, dist: [0, 2, 5, 6, 4, 1] }, tv: { trusty: 3600, snn: 600 },
+        daily: { wordle: { played: 30, streak: 6, won: 29, average: 3.9, best: 2 }, connections: { played: 12, streak: 2, won: 10, perfect: 4 }, krillion: { played: 5, streak: 0, average: 310, best: 455 } },
         bets: Object.fromEntries(Object.entries(bank.status(`mock-${u}`).month).filter(([, n]) => n)),
         house: isHouse(u) ? bank.house() : null,
       }];
@@ -215,6 +269,7 @@ async function api(req, url, body) {
     if (action === 'admin') {
       if (!me) return [401, { error: 'Authentication required' }];
       const view = url.searchParams.get('view');
+      if (view === 'daily') return [200, { results: dailyScores.filter((s) => s.flags.length).map((s) => ({ ...s, at: new Date().toISOString() })) }];
       if (view === 'users') return [200, { users: NAMES.map((username, i) => ({ username, createdAt: new Date(Date.now() - i * 864e5).toISOString(), flags: [] })) }];
       return [200, { drawings: [] }];
     }

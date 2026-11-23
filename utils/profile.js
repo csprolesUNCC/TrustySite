@@ -9,6 +9,7 @@ import { CHANNELS } from '../scripts/tv-lineup.js';
 import { dayOf, dailyStatus } from '../scripts/milestones.js';
 import { monthOf } from './bank.js';
 import { isHouse, houseWinnings } from './house.js';
+import { dailyStats } from './daily.js';
 
 // Profile pages (pages/profile.html), served from api/leaderboard.js as ?action=profile so they don't
 // take up another Vercel function.
@@ -50,7 +51,7 @@ async function getProfile(req, res) {
     const trustisCol = db.collection('trustis_scores');
     const snakeCol = db.collection('snake_scores');
     const best = { sort: { score: -1, timestamp: 1 } };
-    const [clickDoc, flappyDoc, drawDoc, trustisDoc, snakeDoc, trustleDoc, profileDoc] = await Promise.all([
+    const [clickDoc, flappyDoc, drawDoc, trustisDoc, snakeDoc, trustleDoc, profileDoc, daily] = await Promise.all([
         clicksCol.findOne({ userId }, { projection: { clicks: 1, tvSeconds: 1, 'bank.stats': 1, daily: 1 } }),
         flappyCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
         drawCol.findOne({ userId, grader: GRADER_VERSION }, { ...best, projection: { score: 1, timestamp: 1, drawing: 1 } }),
@@ -58,6 +59,7 @@ async function getProfile(req, res) {
         snakeCol.findOne({ userId }, { ...best, projection: { score: 1, timestamp: 1 } }),
         db.collection('trustle').findOne({ userId }, { projection: { games: 1 } }),
         db.collection('profiles').findOne({ userId }, { projection: { bio: 1 } }),
+        dailyStats(db, userId), // the other sites' games on the Daily Games board (utils/daily.js)
     ]);
 
     const hasClicks = clickDoc && clickDoc.clicks > 0;
@@ -125,6 +127,7 @@ async function getProfile(req, res) {
         trustis: hasTrustis ? { score: trustisDoc.score, rank: trustisRank, lines: trustisDoc.lines, level: trustisDoc.level } : null,
         snake: hasSnake ? { score: snakeDoc.score, rank: snakeRank } : null,
         trustle: trustle.played ? trustle : null,
+        daily,
         tv,
     });
 }

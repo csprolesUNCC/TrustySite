@@ -158,6 +158,7 @@ const NAV = [
     { href: '/pages/games/trustis.html', label: 'Trustis' },
     { href: '/pages/games/draw.html', label: 'Draw Trusty' },
     { href: '/pages/games/snake.html', label: 'Trusty Snake' },
+    { href: '/pages/daily.html', label: 'Daily Games' },
     { href: '/pages/leaderboard.html', label: 'Leaderboards' },
   ] },
   { href: '/pages/casino.html', label: 'Casino', items: [

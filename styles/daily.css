@@ -1,0 +1,101 @@
+/* Daily Games (pages/daily.html): Trustle as the headliner, then everyone's results at each game. */
+
+.daily-top {
+  display: grid;
+  gap: clamp(16px, 2.5vw, 28px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  align-items: start;
+}
+
+.daily-headliner { flex-direction: row; }
+.daily-headliner .card-media { flex: 0 0 42%; border-bottom: 0; border-right: 2px solid var(--ink); }
+.daily-headliner .card-media img { height: 100%; object-fit: cover; }
+.daily-headliner-title { margin: 0; font-size: clamp(1.6rem, 3vw, 2.1rem); }
+@media (max-width: 560px) {
+  .daily-headliner { flex-direction: column; }
+  .daily-headliner .card-media { flex: none; border-right: 0; border-bottom: 2px solid var(--ink); }
+}
+
+.daily-post-lead { margin: 0 0 14px; }
+.daily-post textarea { font-family: inherit; min-height: 9.5em; resize: vertical; }
+.daily-preview[data-tone="error"] { color: var(--red); }
+.daily-preview[data-tone="ok"] { color: var(--green); font-weight: 700; }
+
+.daily-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: clamp(16px, 2.5vw, 24px);
+}
+.daily-day-title { margin: 0; text-align: center; font-size: clamp(1.25rem, 2.6vw, 1.7rem); }
+
+/* Holds its height while the boards load, so the page doesn't jump. */
+.daily-boards:empty, .daily-board.is-loading { min-height: 220px; }
+.daily-board.is-loading { background: var(--paper-deep); box-shadow: none; border-style: dashed; border-color: var(--pencil-light); }
+.daily-board.is-headliner { background: var(--note-yellow); }
+.daily-board .panel-title .text-link { font-family: var(--font-body, inherit); font-size: .95rem; font-weight: 700; }
+.daily-boards > .board-error { grid-column: 1 / -1; }
+
+.daily-list { list-style: none; margin: 0; padding: 0; }
+.daily-row {
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 4px;
+  border-bottom: 1.5px dashed var(--pencil-light);
+}
+.daily-row:last-child { border-bottom: 0; }
+.daily-row[data-place="1"] .board-rank { color: #b58900; }
+.daily-row[data-place="2"] .board-rank { color: #7c8591; }
+.daily-row[data-place="3"] .board-rank { color: #a8662b; }
+.daily-row.is-me { background: linear-gradient(transparent 4%, rgba(255, 228, 92, .55) 4%, rgba(255, 228, 92, .55) 96%, transparent 96%); }
+.daily-row.is-me .board-name::after { content: " (you)"; font-weight: 500; color: var(--pencil); }
+
+.daily-who { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.daily-name-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.daily-result { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+
+.daily-sus {
+  flex: none;
+  padding: 0 .45em;
+  border: 1.5px solid var(--red);
+  border-radius: 999px;
+  color: var(--red);
+  font-size: .8rem;
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.daily-report {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pencil);
+  font: inherit;
+  font-size: .82rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.daily-report:hover:not(:disabled) { color: var(--red); }
+.daily-report:disabled { cursor: default; text-decoration: none; }
+
+/* A result's grid, drawn the way its share text looked. */
+.daily-grid { display: inline-flex; flex-direction: column; gap: 2px; }
+.daily-grid-row { display: flex; gap: 2px; }
+.daily-tile { width: 10px; height: 10px; border-radius: 2px; background: #d9d6cd; }
+.daily-tile[data-tile="c"] { background: var(--green); }
+.daily-tile[data-tile="p"] { background: #e0b819; }
+.daily-grid[data-game="connections"] .daily-tile[data-tile="y"] { background: #f3d55b; }
+.daily-grid[data-game="connections"] .daily-tile[data-tile="g"] { background: #a0c35a; }
+.daily-grid[data-game="connections"] .daily-tile[data-tile="b"] { background: #b0c4ef; }
+.daily-grid[data-game="connections"] .daily-tile[data-tile="p"] { background: #ba81c5; }
+.daily-grid.is-emoji .daily-grid-row { gap: 1px; font-size: 1rem; line-height: 1.2; }
+
+.daily-how { max-width: 760px; margin-inline: auto; }
+.daily-how p { margin: 0 0 .7em; }
+.daily-how p:last-child { margin-bottom: 0; }
+.daily-how .daily-sus { display: inline-block; }

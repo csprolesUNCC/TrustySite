@@ -105,3 +105,4 @@ a.admin-user-name:hover { color: var(--blue); }
   text-decoration: none;
 }
 .admin-names a:hover { color: var(--blue); text-decoration: underline; }
+.admin-daily .btn-row { margin-left: auto; gap: 8px; }
