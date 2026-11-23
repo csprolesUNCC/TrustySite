@@ -39,6 +39,13 @@ for (const [name, lineup] of lineups) {
     for (const entry of lineup) {
       const id = videoId(entry.link);
       assert.ok(id, `bad link: ${entry.link}`);
+      if (entry.live === true) {
+        // A live stream has no length.
+        assert.equal(entry.length, undefined, `${entry.title}: a live stream has no length`);
+        assert.ok(!ids.has(id), `listed twice: ${entry.title} (${id})`);
+        ids.add(id);
+        continue;
+      }
       assert.ok(toSeconds(entry.length) > 0, `bad length for ${entry.title}: ${entry.length}`);
       assert.match(String(entry.length), /^\d+(:\d{2}){0,2}$/, `${entry.title}: length should look like 3:46 or 1:02:03`);
       assert.ok(!ids.has(id), `listed twice: ${entry.title} (${id})`);
