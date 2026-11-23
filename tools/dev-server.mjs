@@ -30,6 +30,7 @@ import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
 import { GAME_KEYS, POST_REWARD, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
 import { puzzleWord } from '../scripts/trustle.js';
+import { ITEMS, cleanOrder, equippedOf, nameStyleOf, ownedSet, isFree } from '../scripts/shop.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The headers vercel.json sends with every file.
@@ -139,6 +140,54 @@ function dailyBoards() {
   return { day, today: day, boards };
 }
 
+// The Item Shop (utils/shop.js), buying with the pretend bank's clicks. A few of the sample players have styled
+// names, so the boards show some.
+const SAMPLE_STYLES = {
+  luke: { font: 'calligraphy', color: 'gilded' },
+  hayhound: { highlight: 'yellow' },
+  neigh_sayer: { font: 'blackletter', color: 'red' },
+  stickfig: { color: 'rainbow', highlight: 'sparkle' },
+  margins: { font: 'quill', color: 'blue', highlight: 'washi' },
+  gallop: { font: 'bubble', color: 'hl-pink' },
+};
+const shopOf = (account) => (account.shop ||= { owned: [], equipped: {}, spent: 0 });
+const shopAnswer = (account) => {
+  const shop = shopOf(account);
+  return { clicks: account.clicks, owned: [...ownedSet(shop.owned)], equipped: equippedOf(shop), spent: shop.spent };
+};
+function shopApi(req, url, body) {
+  const names = url.searchParams.getAll('n');
+  if (req.method === 'GET' && names.length) {
+    const styles = {};
+    for (const name of names) {
+      const style = SAMPLE_STYLES[name] || nameStyleOf(bank.account(`mock-${name}`).shop);
+      if (style) styles[name] = style;
+    }
+    return [200, { styles }];
+  }
+  if (!loggedIn(req)) return [401, { error: 'Log in to shop.' }];
+  const account = bank.account(accountOf(req));
+  if (req.method === 'GET') return [200, { ...shopAnswer(account), house: isHouse(mockUser(req)), items: ITEMS.length }];
+  const order = cleanOrder(body);
+  if (!order) return [400, { error: 'That’s not something the shop sells.' }];
+  if (isHouse(mockUser(req))) return [403, { error: 'Trusty’s account is the house: it can’t shop.' }];
+  const shop = shopOf(account);
+  const { item } = order;
+  if (order.do === 'equip') {
+    if (!isFree(item) && !shop.owned.includes(item.id)) return [403, { error: `You don’t own ${item.name} yet.`, ...shopAnswer(account) }];
+    if (isFree(item)) delete shop.equipped[item.kind];
+    else shop.equipped[item.kind] = item.id;
+    return [200, shopAnswer(account)];
+  }
+  if (shop.owned.includes(item.id)) return [409, { error: `You already have ${item.name}.`, ...shopAnswer(account) }];
+  if (account.clicks < item.price) return [400, { error: `${item.name} costs ${item.price} clicks: you need ${item.price - account.clicks} more.`, ...shopAnswer(account) }];
+  account.clicks -= item.price;
+  shop.spent += item.price;
+  shop.owned.push(item.id);
+  shop.equipped[item.kind] = item.id;
+  return [200, { ...shopAnswer(account), bought: item.id }];
+}
+
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
 // each game's daily cap) into the pretend bank. Saving a score is pretend: every game is a "new best".
 function gameReward(req, game, body) {
@@ -164,7 +213,10 @@ async function api(req, url, body) {
   if (p === '/api/clicks') {
     if (!me) return [401, { error: 'Authentication required' }];
     const account = bank.account(accountOf(req));
-    if (req.method !== 'POST') return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()) }];
+    if (req.method !== 'POST') {
+      const shop = shopOf(account);
+      return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()), shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) } }];
+    }
     if (action === 'tv' || action === 'radio') {
       // Trusty TV's and Trusty Radio's rewards, each with its own daily cap, as api/clicks.js pays them.
       const { clicks, daily: cap } = WATCH_REWARD;
@@ -185,6 +237,7 @@ async function api(req, url, body) {
     return [200, { clicks: account.clicks, daily: claim }];
   }
   if (p === '/api/leaderboard') {
+    if (action === 'shop') return shopApi(req, url, body);
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;

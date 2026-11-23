@@ -70,6 +70,7 @@
   --green: #23824a;
   --highlight: #ffe45c;
   --gold: #f2c230;
+  --on-ink: #fff; /* text on an ink-colored button: dark themes turn ink light, so this turns dark */
 
   --note-yellow: #fff1a1;
   --note-pink: #ffd3de;
@@ -426,7 +427,7 @@ img[src$="/trusty.png"] { clip-path: inset(0 2%); }
 /* ---------- Buttons ---------- */
 .btn {
   --btn-bg: var(--ink);
-  --btn-fg: #fff;
+  --btn-fg: var(--on-ink);
   --btn-border: var(--ink);
   --btn-shadow: rgba(27, 27, 31, .28);
   display: inline-flex;
@@ -462,7 +463,7 @@ img[src$="/trusty.png"] { clip-path: inset(0 2%); }
 }
 .btn-outline { --btn-bg: var(--card); --btn-fg: var(--ink); --btn-shadow: var(--ink); }
 .btn-highlight { --btn-bg: var(--highlight); --btn-fg: var(--ink); --btn-shadow: var(--ink); }
-.btn-blue { --btn-bg: var(--blue); --btn-fg: #fff; --btn-border: var(--blue-dark); --btn-shadow: var(--blue-dark); }
+.btn-blue { --btn-bg: var(--blue); --btn-fg: var(--on-ink); --btn-border: var(--blue-dark); --btn-shadow: var(--blue-dark); }
 .btn-ghost {
   --btn-bg: transparent;
   --btn-fg: var(--ink);
@@ -788,6 +789,7 @@ trusty-footer { display: block; }
   position: relative;
   height: var(--header-h);
   background: rgba(251, 248, 240, .92);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
   -webkit-backdrop-filter: saturate(1.2) blur(10px);
   backdrop-filter: saturate(1.2) blur(10px);
 }
@@ -938,7 +940,8 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   text-decoration: none;
   white-space: nowrap;
 }
-.admin-link:hover, .admin-link[aria-current] { color: #fff; background: var(--ink); }
+.admin-link:hover, .admin-link[aria-current] { color: var(--on-ink); background: var(--ink); }
+.shop-link { background: var(--note-green); }
 
 /* The Trusty clicker (logged-in only) */
 .clicker {
@@ -1953,6 +1956,316 @@ dialog.reader::backdrop { background: #1e1f23; }
   .notfound-sheet { grid-template-columns: 1fr; }
   .notfound-sheet img { max-width: 140px; }
 }
+
+/* =========================================================================
+   Item Shop: website themes (scripts/shop.js)
+   html[data-site-theme] is the theme the logged-in player has on: every page's head sets it from localStorage
+   before the page draws, and scripts/site.js keeps it in step with the account. A light theme only swaps the
+   tokens. A dark one turns the page dark with light ink, and puts the paper back inside every surface listed
+   below (cards, sheets, panels, notes, dialogs, form fields, game stages...), so whatever sits on white keeps its
+   dark ink. A new kind of box with its own light background goes in that list.
+   ========================================================================= */
+:root[data-site-theme="legal-pad"] {
+  --paper: #fbf0b4; --paper-deep: #f3e28c; --card: #fffbe3;
+  --rule: #a7c3e2; --rule-faint: #e6e2c2; --margin: #e2737e; --grid: #ecdf9f; --grid-strong: #e0cf7c;
+  --note-yellow: #fff8d2;
+}
+:root[data-site-theme="legal-pad"] body {
+  background-image: linear-gradient(90deg, transparent 31px, rgba(226, 115, 126, .55) 31px 33px, transparent 33px);
+}
+
+:root[data-site-theme="graph-paper"] {
+  --paper: #f4f8fd; --paper-deep: #e4edf8; --card: #fff;
+  --rule: #b3c9e6; --grid: #cfdcef; --grid-strong: #b3c9e6; --blue: #2a62c9;
+}
+:root[data-site-theme="graph-paper"] body {
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+:root[data-site-theme="sunset"] {
+  --paper: #fde2cf; --paper-deep: #f8cbb3; --card: #fff8f2;
+  --ink: #2b1a24; --ink-soft: #4a3240; --pencil: #7a5a66; --pencil-light: #a68893;
+  --rule: #f1c0ac; --rule-faint: #f8dccf; --margin: #c9507a; --grid: #f6d2c2; --grid-strong: #eebba6;
+  --blue: #8f2f62; --blue-dark: #6b2149; --note-blue: #e8dcff;
+}
+:root[data-site-theme="sunset"] body {
+  background-image: linear-gradient(180deg, #ffe8cc 0%, #fdd6d0 55%, #f6c5da 100%);
+  background-attachment: fixed;
+}
+
+:root[data-site-theme="hay-day"] {
+  --paper: #f6e3a3; --paper-deep: #ecd27f; --card: #fffaf0;
+  --rule: #e0c46e; --rule-faint: #efdca0; --margin: #c8553d; --grid: #ead58e; --grid-strong: #dcc070;
+  --blue: #2c45b0; --blue-dark: #1d2c82; --red: #c8553d;
+}
+:root[data-site-theme="hay-day"] body {
+  background-image:
+    repeating-linear-gradient(115deg, rgba(178, 132, 30, .10) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(62deg, rgba(178, 132, 30, .07) 0 2px, transparent 2px 13px);
+}
+:root[data-site-theme="hay-day"] .site-footer { background: #3550c4; --ink: #fff; --ink-soft: #e6ebff; --pencil: #ccd5ff; --blue: #ffe45c; --blue-dark: #fff3a8; color: #fff; }
+
+:root[data-site-theme="golden-horse"] {
+  --paper: #fff0cf; --paper-deep: #f8dca0; --card: #fffaeb;
+  --ink: #2a0d0d; --ink-soft: #4a1d1a; --pencil: #7a4a3a; --pencil-light: #a87a68;
+  --rule: #efbfa3; --rule-faint: #f7dcc6; --margin: #c8102e; --grid: #f3d3a6; --grid-strong: #e9bd85;
+  --blue: #b3121e; --blue-dark: #8a0d17; --red: #c8102e; --highlight: #ffd34d; --gold: #e0a81e;
+  --note-yellow: #ffe7a1;
+}
+:root[data-site-theme="golden-horse"] body {
+  background-image:
+    radial-gradient(120% 50% at 50% -10%, rgba(200, 16, 46, .18), transparent 60%),
+    radial-gradient(circle at 12px 12px, rgba(224, 168, 30, .22) 0 2px, transparent 2.5px);
+  background-size: auto, 24px 24px;
+}
+:root[data-site-theme="golden-horse"] .site-footer { background: #8a0d17; --ink: #ffe9a8; --ink-soft: #ffe0a0; --pencil: #f5c77a; --blue: #ffd34d; --blue-dark: #fff0b8; color: #ffe9a8; }
+
+/* The dark ones: the page, the header and the footer */
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"]) {
+  color-scheme: dark;
+  --on-ink: #16181c;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -10px rgba(0, 0, 0, .6);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .35), 0 18px 40px -14px rgba(0, 0, 0, .7);
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 5 Q 6 1 12 5 T 24 5' fill='none' stroke='%23f1efe6' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --pen-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='6' viewBox='0 0 600 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.4 C 60 1.9 130 4.3 210 3.1 S 340 1.8 430 3.5 S 545 4.2 599 2.7' fill='none' stroke='%23f1efe6' stroke-opacity='.7' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --name-red: #ff8a95; --name-blue: #9cc0ff; --name-green: #84e3a8;
+  --name-pink: #ff7cc0; --name-orange: #ffa552; --name-purple: #c79bff;
+  --name-outline: rgba(0, 0, 0, .9);
+}
+:root[data-site-theme="chalkboard"] {
+  --paper: #28372f; --paper-deep: #1f2b25; --card: #31433a;
+  --ink: #f1efe6; --ink-soft: #dcdad0; --pencil: #b6c0ba; --pencil-light: #8e9a93;
+  --rule: rgba(241, 239, 230, .18); --rule-faint: rgba(241, 239, 230, .09); --margin: #e9a3ab;
+  --grid: rgba(241, 239, 230, .08); --grid-strong: rgba(241, 239, 230, .14);
+  --blue: #a6ccff; --blue-dark: #d0e4ff; --red: #ff9aa8; --green: #8fe0ae;
+  --surface-paper: #f7f3e8; --surface-paper-deep: #ece5d2; --surface-card: #fffdf7;
+}
+:root[data-site-theme="chalkboard"] body {
+  background-image:
+    radial-gradient(60% 40% at 20% 10%, rgba(255, 255, 255, .07), transparent 70%),
+    radial-gradient(50% 35% at 85% 55%, rgba(255, 255, 255, .05), transparent 70%),
+    radial-gradient(40% 30% at 35% 90%, rgba(255, 255, 255, .04), transparent 70%);
+  background-attachment: fixed;
+}
+:root[data-site-theme="blueprint"] {
+  --paper: #16407c; --paper-deep: #0f305f; --card: #1d4c8f;
+  --ink: #eef5ff; --ink-soft: #d3e3fa; --pencil: #a9c3e6; --pencil-light: #7fa0cc;
+  --rule: rgba(238, 245, 255, .25); --rule-faint: rgba(238, 245, 255, .12); --margin: #ffb3b3;
+  --grid: rgba(238, 245, 255, .1); --grid-strong: rgba(238, 245, 255, .18);
+  --blue: #bfe3ff; --blue-dark: #e4f3ff; --red: #ffb0b0; --green: #a5f0c0;
+  --surface-paper: #eef4fc; --surface-paper-deep: #dde8f6; --surface-card: #f8fbff;
+}
+:root[data-site-theme="blueprint"] body {
+  background-image:
+    linear-gradient(rgba(238, 245, 255, .11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 245, 255, .11) 1px, transparent 1px),
+    linear-gradient(rgba(238, 245, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 245, 255, .05) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+}
+:root[data-site-theme="neon"] {
+  --paper: #100b22; --paper-deep: #0a0717; --card: #1b1336;
+  --ink: #f6f0ff; --ink-soft: #ddd2f7; --pencil: #b4a6d8; --pencil-light: #8676b3;
+  --rule: rgba(180, 140, 255, .28); --rule-faint: rgba(180, 140, 255, .14); --margin: #ff3fa4;
+  --grid: rgba(77, 243, 255, .08); --grid-strong: rgba(77, 243, 255, .16);
+  --blue: #4df3ff; --blue-dark: #b2fbff; --red: #ff5cb3; --green: #5dffb0; --gold: #ffd23f;
+  --surface-paper: #f5f0ff; --surface-paper-deep: #e9e0fb; --surface-card: #fdfbff;
+}
+:root[data-site-theme="neon"] body {
+  background-image:
+    radial-gradient(40% 30% at 15% 0%, rgba(255, 63, 164, .25), transparent 70%),
+    radial-gradient(40% 30% at 85% 10%, rgba(77, 243, 255, .18), transparent 70%),
+    radial-gradient(60% 40% at 50% 100%, rgba(140, 80, 255, .2), transparent 70%);
+  background-attachment: fixed;
+}
+:root[data-site-theme="neon"] :is(.page-head h1, .game-title-row h1, .hero-title, .section-head h2) {
+  text-shadow: 0 0 2px #fff, 0 0 14px rgba(255, 63, 164, .8), 0 0 28px rgba(77, 243, 255, .35);
+}
+:root[data-site-theme="neon"] :is(.card, .panel) { box-shadow: 3px 3px 0 #ff3fa4, 0 0 22px rgba(77, 243, 255, .3); }
+
+/* Line art on a dark page is drawn in chalk: flipped to white lines, then screened onto the page. */
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"]) .ink {
+  mix-blend-mode: screen;
+  filter: invert(1) brightness(1.05);
+}
+
+/* The surfaces: paper again, with the usual ink. */
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"]) :is(
+  .sheet, .card, .panel, .sticky-note, .polaroid, .graph, .index-card, dialog.modal, .toast-region, .skip-link,
+  .tag, .hl, .rank-badge, .podium-block, .clicker-note, .clicker-daily, .fact, .speech, .chat-card, .cta-band,
+  .btn-highlight, .admin-link,
+  .missing-media, .missing-poster, .reward-stamp, .wx-teaser-art, .input, .field input, .field select,
+  .field textarea, .chip, .stage, .stat, kbd, .pad-btn, .segmented, .tetris-box, .board-thumb, .podium-thumb,
+  .wx-board, .wx-bubble, .tv-body, .radio-body, .admin-drawing, .shop-card, .shop-wallet
+) {
+  color-scheme: light;
+  --paper: var(--surface-paper); --paper-deep: var(--surface-paper-deep); --card: var(--surface-card);
+  --ink: #1b1b1f; --ink-soft: #33343a; --pencil: #5a5d63; --pencil-light: #8b8e94;
+  --rule: #c9d9ec; --rule-faint: #e2eaf4; --margin: #ee9aa4; --grid: #dbe6f3; --grid-strong: #c4d5ea;
+  --blue: #1f4fbf; --blue-dark: #173b90; --red: #d6334b; --green: #23824a; --gold: #f2c230;
+  --on-ink: #fff;
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 5 Q 6 1 12 5 T 24 5' fill='none' stroke='%231b1b1f' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --name-red: #c62839; --name-blue: #1f4fbf; --name-green: #1f7a44;
+  --name-pink: #ff4fa3; --name-orange: #ff8a1f; --name-purple: #a35cf0;
+  --name-outline: rgba(27, 27, 31, .85);
+  color: var(--ink);
+}
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"]) :is(
+  .sheet, .card, .panel, .sticky-note, .polaroid, .index-card, dialog.modal, .fact, .speech, .chat-card, .cta-band,
+  .stage, .wx-board, .tv-body, .radio-body, .shop-card
+) .ink {
+  mix-blend-mode: multiply;
+  filter: brightness(1.03);
+}
+
+/* =========================================================================
+   Item Shop: name styles (scripts/shop.js)
+   styleName() in scripts/site.js puts a styled name in as
+   <span class="uname" data-font data-color data-highlight><span class="uname-ink">name</span></span>.
+   The highlight goes on .uname, the font and color on .uname-ink. Pale colors get a thin outline in
+   --name-outline, which every theme sets to stand out from its own page.
+   ========================================================================= */
+:root {
+  --name-red: #c62839; --name-blue: #1f4fbf; --name-green: #1f7a44;
+  --name-pink: #ff4fa3; --name-orange: #ff8a1f; --name-purple: #a35cf0;
+  --name-outline: rgba(27, 27, 31, .85);
+}
+.uname { position: relative; color: inherit; }
+
+/* Fonts */
+.uname[data-font="typewriter"] .uname-ink { font-family: "American Typewriter", "Courier New", Courier, ui-monospace, monospace; font-weight: 700; letter-spacing: .02em; }
+.uname[data-font="bubble"] .uname-ink {
+  font-family: ui-rounded, "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-shadow: 1px 0 var(--name-outline), -1px 0 var(--name-outline), 0 1px var(--name-outline), 0 -1px var(--name-outline),
+    1px 1px var(--name-outline), -1px -1px var(--name-outline), 1px -1px var(--name-outline), -1px 1px var(--name-outline);
+}
+/* Bubble letters in the usual ink are white inside the outline, like the ones on a binder. */
+.uname[data-font="bubble"]:not([data-color]) .uname-ink { color: #fff; }
+.uname[data-font="crayon"] .uname-ink {
+  font-family: var(--font-marker);
+  font-weight: 400;
+  letter-spacing: .03em;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 0 0 0 2.6'/%3E%3C/filter%3E%3Crect width='48' height='48' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 48px 48px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 0 0 0 2.6'/%3E%3C/filter%3E%3Crect width='48' height='48' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 48px 48px;
+}
+.uname[data-font="calligraphy"] .uname-ink {
+  font-family: "Snell Roundhand", "Apple Chancery", "Segoe Script", "Lucida Calligraphy", "URW Chancery L", "Brush Script MT", cursive;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.08em;
+}
+/* Blackletter's letters are Unicode bold Fraktur (fraktur() in scripts/shop.js), already heavy. */
+.uname[data-font="blackletter"] .uname-ink { font-weight: 400; letter-spacing: .02em; }
+/* Quill writes the name in from left to right when it shows up, and again on hover. */
+.uname[data-font="quill"] .uname-ink {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.15em;
+  -webkit-mask: linear-gradient(90deg, #000 45%, transparent 55%) 0 0 / 230% 100% no-repeat;
+  mask: linear-gradient(90deg, #000 45%, transparent 55%) 0 0 / 230% 100% no-repeat;
+  animation: quill-write 2.2s .15s ease-in-out both;
+}
+.uname[data-font="quill"]:hover .uname-ink { animation-name: quill-write-again; }
+@keyframes quill-write { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+@keyframes quill-write-again { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+
+/* Colors */
+.uname[data-color="red"] .uname-ink { color: var(--name-red); }
+.uname[data-color="blue"] .uname-ink { color: var(--name-blue); }
+.uname[data-color="green"] .uname-ink { color: var(--name-green); }
+.uname[data-color="hl-pink"] .uname-ink { color: var(--name-pink); }
+.uname[data-color="hl-orange"] .uname-ink { color: var(--name-orange); }
+.uname[data-color="hl-purple"] .uname-ink { color: var(--name-purple); }
+.uname:is([data-color="hl-pink"], [data-color="hl-orange"], [data-color="hl-purple"]) .uname-ink {
+  text-shadow: .6px 0 var(--name-outline), -.6px 0 var(--name-outline), 0 .6px var(--name-outline), 0 -.6px var(--name-outline);
+}
+/* The gradient inks are the background showing through the letters, so their outline is a drop shadow (a text
+   shadow would cover the gradient). */
+.uname:is([data-color="two-tone"], [data-color="silver"], [data-color="gilded"], [data-color="rainbow"]) .uname-ink {
+  background: var(--uname-ink) 0 0 / var(--uname-size, 100%) 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.uname[data-color="two-tone"] .uname-ink { --uname-ink: linear-gradient(90deg, var(--name-blue), var(--name-red)); }
+.uname[data-color="silver"] .uname-ink {
+  --uname-ink: linear-gradient(180deg, #fbfcfd 0%, #c3cad2 42%, #7d8692 55%, #dde2e8 100%);
+  filter: drop-shadow(0 0 .6px var(--name-outline)) drop-shadow(0 0 .4px var(--name-outline));
+}
+.uname[data-color="gilded"] .uname-ink {
+  --uname-ink: linear-gradient(100deg, #9a5a0a 0%, #d18f26 30%, #fff0b8 45%, #d18f26 60%, #8a4f08 80%, #c98622 100%);
+  --uname-size: 220%;
+  filter: drop-shadow(0 0 .6px var(--name-outline)) drop-shadow(0 0 .4px var(--name-outline));
+  animation: uname-shine 4s linear infinite;
+}
+.uname[data-color="rainbow"] .uname-ink {
+  --uname-ink: linear-gradient(90deg, #ff3b3b, #ff9f1a, #ffd93b, #3bd16f, #3b8bff, #a35cf0, #ff3b3b);
+  --uname-size: 200%;
+  filter: drop-shadow(0 0 .5px var(--name-outline));
+  animation: uname-shine 3s linear infinite;
+}
+@keyframes uname-shine { from { background-position: 0 0; } to { background-position: -200% 0; } }
+
+/* Highlights. The light ones put dark ink back on top, whatever the theme. */
+.uname[data-highlight] {
+  padding: 0 .2em;
+  border-radius: .25em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.uname:is([data-highlight="yellow"], [data-highlight^="pastel-"], [data-highlight="scribble"], [data-highlight="washi"], [data-highlight="sparkle"]) {
+  --name-red: #c62839; --name-blue: #1f4fbf; --name-green: #1f7a44;
+  --name-pink: #ff4fa3; --name-orange: #ff8a1f; --name-purple: #a35cf0;
+  --name-outline: rgba(27, 27, 31, .85);
+  color: #1b1b1f;
+}
+.uname[data-highlight="yellow"] { --hl: rgba(255, 228, 92, .85); }
+.uname[data-highlight="pastel-pink"] { --hl: #ffc9da; }
+.uname[data-highlight="pastel-blue"] { --hl: #c4e0ff; }
+.uname[data-highlight="pastel-green"] { --hl: #cdeebf; }
+.uname[data-highlight="pastel-lavender"] { --hl: #e0d4ff; }
+.uname:is([data-highlight="yellow"], [data-highlight^="pastel-"]) {
+  background: linear-gradient(transparent 12%, var(--hl) 12%, var(--hl) 88%, transparent 88%);
+}
+.uname[data-highlight="scribble"] {
+  background: rgba(255, 248, 220, .85) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M2 15 L9 4 L13 17 L20 3 L25 16 L32 4 L36 17 L43 3 L48 16 L55 4 L58 14' fill='none' stroke='%23ff6fae' stroke-opacity='.6' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.uname[data-highlight="washi"] {
+  padding: 0 .5em;
+  border-radius: 0;
+  background: repeating-linear-gradient(-45deg, rgba(255, 176, 196, .8) 0 6px, rgba(255, 232, 238, .8) 6px 12px);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 3px) 25%, 100% 50%, calc(100% - 3px) 75%, 100% 100%, 0 100%, 3px 75%, 0 50%, 3px 25%);
+}
+.uname[data-highlight="glow"] {
+  filter: drop-shadow(0 0 3px rgba(255, 214, 90, .95)) drop-shadow(0 0 9px rgba(255, 160, 50, .65));
+}
+.uname[data-highlight="sparkle"] {
+  padding: 0 .4em;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .85) 48%, transparent 66%) 0 0 / 250% 100% no-repeat,
+    linear-gradient(90deg, rgba(255, 228, 120, .55), rgba(255, 190, 225, .55), rgba(190, 220, 255, .55));
+  animation: sparkle-shimmer 3.2s linear infinite;
+}
+.uname[data-highlight="sparkle"]::before, .uname[data-highlight="sparkle"]::after {
+  position: absolute;
+  font-size: .6em;
+  line-height: 1;
+  color: #f0a800;
+  text-shadow: 0 0 4px #fff4b0;
+  pointer-events: none;
+  animation: twinkle 1.6s ease-in-out infinite;
+}
+.uname[data-highlight="sparkle"]::before { content: "\2726"; top: 0; left: 0; }
+.uname[data-highlight="sparkle"]::after { content: "\2727"; right: 0; bottom: 0; animation-delay: .8s; }
+@keyframes sparkle-shimmer { from { background-position: 150% 0, 0 0; } to { background-position: -150% 0, 0 0; } }
+@keyframes twinkle { 0%, 100% { opacity: .25; scale: .7; } 50% { opacity: 1; scale: 1.15; } }
 
 /* =========================================================================
    Motion preferences

@@ -33,6 +33,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/games.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -189,7 +190,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance } from '/scripts/site.js';
+        import { h, fmt, toast, session, sessionReady, onSession, sessionExpired, loginHref, announceBalance, styleName } from '/scripts/site.js';
         import { isForeignKey, isActivationKey } from '/scripts/game-kit.js';
         import { SEATS, POKER_PROTOCOL, evaluate, describeScore } from '/scripts/poker.js';
         import { roomsOpen, connect, newCode, roomLink, roomFromHash, bankStatus, ROOM_CODE } from '/scripts/rooms.js';
@@ -518,7 +519,7 @@
             const msg = net.msg;
             if (!msg) return;
             $('table-people').replaceChildren(...msg.people.map((p) => h('li', null,
-                h('strong', null, `${short(p.name)}${p.name === msg.you ? ' (you)' : ''}`),
+                h('strong', null, styleName(h('span', null, short(p.name)), p.name, { text: short(p.name) }), p.name === msg.you ? ' (you)' : ''),
                 h('span', null, p.busy ? 'buying in…' : p.waiting ? 'sitting down next hand' : p.seat >= 0 ? `${fmt(msg.table.seats[p.seat].stack)} chips` : 'watching'))));
         }
 

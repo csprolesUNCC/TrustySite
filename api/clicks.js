@@ -3,10 +3,11 @@ import { authenticateUser } from '../utils/auth.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
+import { equippedOf, nameStyleOf } from '../scripts/shop.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
 // The server allows a little slack so network jitter doesn't reject honest clicks.
-const MAX_CLICKS = 8;
+const MAX_CLICKS = 6;
 const WINDOW_MS = 1000;
 const JITTER_MS = 100;
 
@@ -105,11 +106,14 @@ export default async (req, res) => {
         const collection = db.collection('click_game');
 
         if (req.method === 'GET') {
-            const userData = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, daily: 1 } });
+            const userData = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, daily: 1, 'shop.owned': 1, 'shop.equipped': 1 } });
+            const shop = userData && userData.shop;
             return res.status(200).json({
                 clicks: userData ? userData.clicks : 0,
                 // Whether today's bonus is still waiting for a click (the header clicker shows it).
-                daily: dailyStatus(userData && userData.daily, dayOf(new Date()))
+                daily: dailyStatus(userData && userData.daily, dayOf(new Date())),
+                // The Item Shop's theme and name style they have on (scripts/shop.js), which every page puts on.
+                shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) }
             });
         }
 

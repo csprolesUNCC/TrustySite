@@ -1,9 +1,15 @@
 // Shared chrome (header/footer), session state, and small DOM helpers for every page.
 import { rankFor, nextRank, rankProgress, dailyBonus, dayOf } from '/scripts/milestones.js';
+import { DEFAULTS as SHOP_DEFAULTS, itemById, cleanStyle, fraktur } from '/scripts/shop.js';
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
 const LS_ADMIN = 'trusty:admin';
+// The Item Shop's theme the player has on (every page's head puts it on before the page draws) and how their own
+// name looks, so neither waits for the API.
+const LS_THEME = 'trusty:theme';
+const LS_STYLE = 'trusty:name-style';
+const SHOP_PAGE = '/pages/shop.html';
 // The highest click rank the header clicker has shown on this device (its `at`), and whose it is.
 const LS_RANK = 'trusty:rank';
 const LS_RANK_OWNER = 'trusty:rank:owner';
@@ -12,7 +18,7 @@ const LS_RANK_OWNER = 'trusty:rank:owner';
 const LS_NAME_KEYS = ['trusty:trustle:owner', LS_RANK_OWNER];
 const FACE = '/images/icons/mobile-icon-96.webp';
 const ADMIN_PAGE = '/pages/admin.html';
-const CLICK_LIMIT = 8; // header clicker: clicks per second
+const CLICK_LIMIT = 6; // header clicker: clicks per second
 const NOTE_MS = 4500; // how long a rank up or daily bonus note stays under the clicker
 
 function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
@@ -65,7 +71,8 @@ export const session = {
     lsSet(LS_USER, username || '');
     if (admin) lsSet(LS_ADMIN, 'true'); else lsDel(LS_ADMIN);
   },
-  clear() { lsDel(LS_FLAG); lsDel(LS_USER); lsDel(LS_ADMIN); },
+  // Logged out, the site is back to its own look: themes and name styles belong to the account.
+  clear() { lsDel(LS_FLAG); lsDel(LS_USER); lsDel(LS_ADMIN); applyTheme(null); lsDel(LS_STYLE); },
 };
 
 function sessionState() { return { loggedIn: session.loggedIn, username: session.username, isAdmin: session.isAdmin }; }
@@ -119,6 +126,7 @@ export function sessionExpired() {
 // the header and this device's saved data switch to it too.
 export function sessionRenamed(username) {
   renameOnDevice(session.username, username);
+  if (knownStyles.has(session.username)) knownStyles.set(username, knownStyles.get(session.username));
   session.save(username, session.isAdmin);
   publishSession();
 }
@@ -145,6 +153,125 @@ export function loginHref() {
   if (location.pathname.startsWith('/pages/auth/')) return '/pages/auth/login.html';
   const next = location.pathname + location.search + location.hash;
   return `/pages/auth/login.html?next=${encodeURIComponent(next)}`;
+}
+
+/* ---------- Item Shop: themes and name styles (scripts/shop.js) ---------- */
+
+// Puts a theme on the whole site (html[data-site-theme] in styles/stylesheet.css) and remembers it for the next
+// page; null or the free Notebook takes it off. Only the player who owns a theme ever sees it.
+export function applyTheme(id) {
+  const item = itemById(id);
+  const theme = item && item.kind === 'theme' ? item.id : SHOP_DEFAULTS.theme;
+  if (theme === SHOP_DEFAULTS.theme) {
+    delete document.documentElement.dataset.siteTheme;
+    lsDel(LS_THEME);
+  } else {
+    document.documentElement.dataset.siteTheme = theme;
+    lsSet(LS_THEME, theme);
+  }
+}
+
+// How names look, by name: { font, color, highlight } or null for the plain look. Names with no answer yet are
+// asked for together, a moment after the page last asked to style one (GET ?action=shop&n=..., utils/shop.js).
+const STYLE_BATCH = 60; // utils/shop.js answers for at most this many at once
+const knownStyles = new Map();
+const waitingNames = new Map(); // name -> elements to style once it's known
+const askingNames = new Map(); // the same, for names already asked for
+let styleTimer = null;
+
+// Your own name's style, saved as { name, style } so another account on this device doesn't get it.
+function readOwnStyle() {
+  if (!session.loggedIn || !session.username) return;
+  try {
+    const saved = JSON.parse(lsGet(LS_STYLE));
+    if (saved && saved.name === session.username) knownStyles.set(session.username, cleanStyle(saved.style));
+  } catch { /* ask the API */ }
+}
+readOwnStyle();
+
+function paintName(el, name, style) {
+  el.dataset.uname = name;
+  const shown = el.dataset.unameText ?? name;
+  if (!style) {
+    if (el.dataset.styled || !el.firstChild) { el.replaceChildren(shown); delete el.dataset.styled; }
+    return;
+  }
+  const look = {};
+  for (const kind of ['font', 'color', 'highlight']) if (style[kind]) look[kind] = style[kind];
+  // Blackletter is drawn in Unicode letters, which screen readers would spell out: they get the real name.
+  const text = style.font === 'blackletter'
+    ? [h('span', { 'aria-hidden': 'true' }, fraktur(shown)), h('span', { class: 'sr-only' }, shown)]
+    : [shown];
+  el.replaceChildren(h('span', { class: 'uname', dataset: look }, h('span', { class: 'uname-ink' }, text)));
+  el.dataset.styled = '1';
+}
+
+async function fetchStyles() {
+  styleTimer = null;
+  const batch = [...waitingNames.entries()];
+  waitingNames.clear();
+  for (const [name, els] of batch) askingNames.set(name, els);
+  for (let i = 0; i < batch.length; i += STYLE_BATCH) {
+    const names = batch.slice(i, i + STYLE_BATCH).map(([name]) => name);
+    const params = new URLSearchParams({ action: 'shop' });
+    [...names].sort().forEach((name) => params.append('n', name));
+    let styles = null;
+    try {
+      const res = await fetch(`/api/leaderboard?${params}`);
+      if (res.ok) styles = (await res.json()).styles;
+    } catch { /* leave them plain */ }
+    for (const name of names) {
+      const els = askingNames.get(name) || [];
+      askingNames.delete(name);
+      // No answer: they stay plain, and the next page to show them asks again.
+      if (!styles || typeof styles !== 'object') continue;
+      const style = Object.hasOwn(styles, name) ? cleanStyle(styles[name]) : null;
+      if (!knownStyles.has(name)) knownStyles.set(name, style);
+      els.forEach((el) => paintName(el, name, knownStyles.get(name)));
+    }
+  }
+}
+
+// Shows `name` in `el` (which holds just the name) the way its owner styled it in the Item Shop. Use it wherever a
+// username is shown; it returns `el`, so it can wrap an h() call. `text` is what to show when that isn't the whole
+// name (the online tables shorten long ones).
+export function styleName(el, name, { text } = {}) {
+  if (!el || typeof name !== 'string' || !name) return el;
+  el.dataset.uname = name;
+  if (typeof text === 'string' && text !== name) el.dataset.unameText = text;
+  if (knownStyles.has(name)) {
+    paintName(el, name, knownStyles.get(name));
+    return el;
+  }
+  if (askingNames.has(name)) {
+    askingNames.get(name).push(el);
+    return el;
+  }
+  if (!waitingNames.has(name)) waitingNames.set(name, []);
+  waitingNames.get(name).push(el);
+  styleTimer ??= setTimeout(fetchStyles, 30);
+  return el;
+}
+
+// A name drawn with a given style, for previews (the Item Shop's cards): not a real player's name on the page, so
+// it never changes with anyone's style.
+export function namePreview(name, style) {
+  const el = h('span', { class: 'name-preview' });
+  paintName(el, name, cleanStyle(style));
+  delete el.dataset.uname;
+  return el;
+}
+
+// After the player's own name style changes (the shop, the profile page, or the API's word on it): every name of
+// theirs on the page changes with it.
+export function setOwnStyle(style) {
+  if (!session.loggedIn || !session.username) return;
+  const clean = cleanStyle(style);
+  knownStyles.set(session.username, clean);
+  lsSet(LS_STYLE, JSON.stringify({ name: session.username, style: clean }));
+  document.querySelectorAll('[data-uname]').forEach((el) => {
+    if (el.dataset.uname === session.username) paintName(el, session.username, clean);
+  });
 }
 
 /* ---------- Header ---------- */
@@ -209,19 +336,27 @@ const ICON_CARET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path class="icon-open" d="M4 7c5-.6 11 .4 16-.2M4 12.2c6 .4 10-.5 16 0M4 17.4c4-.4 10 .3 16-.3"/><path class="icon-close" d="M6.2 6c4 4 7.8 8.2 11.8 12.2M18 5.8C14 10 10 14 6 18.2"/></svg>';
 
-// Admins also get an Admin button: under their name in the header, so the row is no wider than anyone
-// else's, and next to Log out in the menu.
+// Under their name in the header everyone gets a small Shop button (the Item Shop), and admins an Admin button
+// in its place, so the row is no wider than the name; the menu has both next to Log out.
 function accountContent({ menu = false } = {}) {
   if (session.loggedIn) {
     const name = session.username
-      ? h('a', { class: 'account-name', href: profileHref(session.username), title: 'Your profile' }, `Hi, ${session.username}`)
+      ? h('a', { class: 'account-name', href: profileHref(session.username), title: 'Your profile' }, 'Hi, ', styleName(h('span', null, session.username), session.username))
       : h('span', { class: 'account-name' }, 'Hi, friend');
     const logOut = h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: logout }, 'Log out');
-    if (!session.isAdmin) return [name, logOut];
-    const current = normPath(location.pathname) === normPath(ADMIN_PAGE) ? 'page' : null;
-    return menu
-      ? [name, h('a', { class: 'btn btn-highlight btn-sm', href: ADMIN_PAGE, 'aria-current': current }, 'Admin panel'), logOut]
-      : [h('div', { class: 'account-who' }, name, h('a', { class: 'admin-link', href: ADMIN_PAGE, 'aria-current': current }, 'Admin')), logOut];
+    const here = (href) => (normPath(location.pathname) === normPath(href) ? 'page' : null);
+    if (menu) {
+      return [
+        name,
+        h('a', { class: 'btn btn-outline btn-sm', href: SHOP_PAGE, 'aria-current': here(SHOP_PAGE) }, 'Item Shop'),
+        session.isAdmin ? h('a', { class: 'btn btn-highlight btn-sm', href: ADMIN_PAGE, 'aria-current': here(ADMIN_PAGE) }, 'Admin panel') : null,
+        logOut,
+      ].filter(Boolean);
+    }
+    const under = session.isAdmin
+      ? h('a', { class: 'admin-link', href: ADMIN_PAGE, 'aria-current': here(ADMIN_PAGE) }, 'Admin')
+      : h('a', { class: 'admin-link shop-link', href: SHOP_PAGE, 'aria-current': here(SHOP_PAGE) }, 'Shop');
+    return [h('div', { class: 'account-who' }, name, under), logOut];
   }
   return [
     h('a', { class: 'btn btn-ghost btn-sm', href: loginHref() }, 'Log in'),
@@ -448,6 +583,11 @@ function setupClicker(button, news) {
         daily = d && typeof d.ready === 'boolean' ? { ready: d.ready, streak: Number(d.streak) || 0, next: Number(d.next) || 0 } : null;
         dailyDay = dayOf();
         checkRank();
+        // The Item Shop's theme and name style they have on, which may have changed on another device.
+        if (data && data.shop && typeof data.shop === 'object') {
+          applyTheme(data.shop.theme);
+          setOwnStyle(data.shop.style);
+        }
       }
     } catch { /* leave the counter at its last value */ }
     render();
@@ -540,7 +680,7 @@ class TrustyFooter extends HTMLElement {
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('p', null, 'Comics, games, and a state of the art AI horse. Drawn in the margins since 8th grade math.')),
         col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['The Casino', '/pages/casino.html'], ['Trusty Media', '/pages/media.html'], ['Trusty Tools', '/pages/tools.html']]),
-        col('More', [['Leaderboards', '/pages/leaderboard.html'], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
+        col('More', [['Leaderboards', '/pages/leaderboard.html'], ['Item Shop', SHOP_PAGE], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
         h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),
         h('img', { class: 'footer-trusty ink', src: '/images/trusty/trusty-v2-176.webp', alt: '', width: 88, height: 67, loading: 'lazy' }))));
@@ -550,3 +690,6 @@ class TrustyFooter extends HTMLElement {
 customElements.define('trusty-header', TrustyHeader);
 customElements.define('trusty-footer', TrustyFooter);
 document.documentElement.dataset.auth = session.loggedIn ? 'in' : 'out';
+// Every page's head puts the theme on before it draws; this covers a page without that line.
+if (session.loggedIn) applyTheme(lsGet(LS_THEME));
+else applyTheme(null);

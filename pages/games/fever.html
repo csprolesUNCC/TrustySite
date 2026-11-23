@@ -33,6 +33,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/games.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -231,7 +232,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { fmt, h, toast, session, loginHref, announceBalance } from '/scripts/site.js';
+        import { fmt, h, toast, session, loginHref, announceBalance, styleName } from '/scripts/site.js';
         import {
             setupCanvas, offscreen, drawGraphPaper, sound, bindMuteButton, bindFocusMode,
             isForeignKey, isActivationKey, fontsReady, bringIntoView,
@@ -454,7 +455,8 @@
             },
             h('span', { class: 'fever-swatch', style: { background: p.color } }),
             h('span', { class: 'fever-who' },
-                h('strong', null, p.name),
+                // Online, people's names are their usernames, so they look the way they picked in the Item Shop.
+                m.online && p.human ? styleName(h('strong', null, p.name), p.name) : h('strong', null, p.name),
                 h('small', null, whoLabel(p, m))),
             h('span', { class: 'fever-pts' }, fmt(p.score)))));
         }

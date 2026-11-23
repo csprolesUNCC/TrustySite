@@ -33,6 +33,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/daily.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -104,7 +105,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, session, sessionReady, sessionExpired, loginHref, profileHref, announceClicks } from '/scripts/site.js';
+        import { h, fmt, toast, session, sessionReady, sessionExpired, loginHref, profileHref, announceClicks, styleName } from '/scripts/site.js';
         import { dayOf, dayBefore } from '/scripts/milestones.js';
         import { GAMES, BOARD_KEYS, BOARD_NAMES, EMOJI, parseShare, describe, detail, rankOf, places, dayAfter, isDay } from '/scripts/daily-games.js';
 
@@ -158,7 +159,7 @@
                 h('span', { class: 'board-rank' }, place),
                 h('span', { class: 'daily-who' },
                     h('span', { class: 'daily-name-line' },
-                        h('a', { class: 'board-name', href: profileHref(entry.name) }, entry.name),
+                        styleName(h('a', { class: 'board-name', href: profileHref(entry.name) }, entry.name), entry.name),
                         sus ? h('span', { class: 'daily-sus', title: `${entry.flags.join('. ')}. An admin will take a look.` }, 'Sus?') : null),
                     grid(game, entry.result)),
                 h('span', { class: 'daily-result' },

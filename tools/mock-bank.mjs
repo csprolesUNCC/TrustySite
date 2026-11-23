@@ -20,7 +20,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     if (a.open.has(betId)) return { ok: true, clicks: a.clicks, net: a.net };
     if (!Number.isInteger(amount) || amount < 1 || amount > LIMITS.maxStake) return { ok: false, error: 'That’s not a bet.' };
     if (a.clicks < amount) return { ok: false, error: `You only have ${fmt(a.clicks)} clicks.` };
-    const limits = limitsFor(limitBasis(a.clicks, a.net));
+    const limits = limitsFor(limitBasis(a.clicks, a.net, a.shop ? a.shop.spent : 0));
     if (a.net >= limits.winPerDay) return { ok: false, error: `You’re ${fmt(a.net)} clicks up today: that’s your daily limit. Come back after midnight!` };
     if (a.net - amount < -limits.lossPerDay) return { ok: false, error: `That could put you more than ${fmt(limits.lossPerDay)} clicks down today, your daily limit. Bet less, or come back after midnight.` };
     a.clicks -= amount;
@@ -67,7 +67,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
 
   function status(userId) {
     const a = account(userId);
-    return { clicks: a.clicks, net: a.net, refunded: 0, limits: limitsFor(limitBasis(a.clicks, a.net)), month: { ...a.month } };
+    return { clicks: a.clicks, net: a.net, refunded: 0, limits: limitsFor(limitBasis(a.clicks, a.net, a.shop ? a.shop.spent : 0)), month: { ...a.month } };
   }
 
   // The house's side of everyone's bets (utils/house.js does the same from the real bank's stats).
