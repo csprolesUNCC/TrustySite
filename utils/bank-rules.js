@@ -16,9 +16,11 @@ export function limitsFor(basis) {
   const tier = LIMIT_TIERS.find((t) => basis >= t.at);
   return tier ? { ...LIMITS, lossPerDay: tier.perDay, winPerDay: tier.perDay } : LIMITS;
 }
-// The clicks a player's limit goes by: what they have, minus what today's bets have won or lost (`net`, today's).
-// (A Grand Jackpot isn't in `net`, so winning one today can move a player up a step straight away.)
-export const limitBasis = (clicks, net) => Math.max(0, (clicks || 0) - (net || 0));
+// The clicks a player's limit goes by: what they have, minus what today's bets have won or lost (`net`, today's),
+// plus what they spent in the Item Shop today (`spent`, utils/shop.js), so buying something doesn't drop their
+// limit mid-day either. (A Grand Jackpot isn't in `net`, so winning one today can move a player up a step straight
+// away.)
+export const limitBasis = (clicks, net, spent = 0) => Math.max(0, (clicks || 0) - (net || 0) + (spent || 0));
 export const STALE_MS = 2 * 60 * 60 * 1000;
 export const FRESH_MS = 60 * 1000;
 const BET_ID = /^[0-9a-f]{16}$/;

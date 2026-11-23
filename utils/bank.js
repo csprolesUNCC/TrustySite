@@ -46,7 +46,7 @@ export async function stake(col, { userId, betId, amount, game, solo = false }, 
   await rollover(col, userId, today);
   // The basis only goes up during a day (clicking; bets move clicks and net together), so a limit worked out
   // from this read is never more than the player's real one by the time the update runs.
-  const before = await col.findOne({ userId }, { projection: { clicks: 1, 'bank.day': 1, 'bank.net': 1 } });
+  const before = await col.findOne({ userId }, { projection: { clicks: 1, 'bank.day': 1, 'bank.net': 1, 'shop.day': 1, 'shop.today': 1 } });
   const limits = limitsOf(before, today);
   const done = unwrap(await col.findOneAndUpdate(
     {
@@ -74,10 +74,12 @@ export async function stake(col, { userId, betId, amount, game, solo = false }, 
   return { ok: false, error: `That could put you more than ${fmt(limits.lossPerDay)} clicks down today, your daily limit. Bet less, or come back after midnight.` };
 }
 
-// A player's limits, from their `click_game` document (with at least clicks and bank.day/bank.net).
+// A player's limits, from their `click_game` document (with at least clicks, bank.day/bank.net and
+// shop.day/shop.today: what they spent in the Item Shop today, utils/shop.js).
 function limitsOf(doc, today) {
   const net = doc && doc.bank && doc.bank.day === today ? doc.bank.net : 0;
-  return limitsFor(limitBasis(doc && doc.clicks, net));
+  const spent = doc && doc.shop && doc.shop.day === today ? doc.shop.today : 0;
+  return limitsFor(limitBasis(doc && doc.clicks, net, spent));
 }
 
 // Pays one open bet out, once. Returns the player's new { clicks, bank: { net } }, or null if it was already done.
@@ -182,7 +184,7 @@ export async function refundStale(col, userId, now = new Date()) {
 
 export async function status(col, userId, now = new Date()) {
   const refunded = await refundStale(col, userId, now);
-  const doc = await col.findOne({ userId }, { projection: { clicks: 1, bank: 1 } });
+  const doc = await col.findOne({ userId }, { projection: { clicks: 1, bank: 1, 'shop.day': 1, 'shop.today': 1 } });
   const bank = (doc && doc.bank) || {};
   const month = monthOf(now);
   const stats = bank.stats || {};

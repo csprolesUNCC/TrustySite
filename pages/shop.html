@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Item Shop — Trusty da Horse</title>
+    <meta name="description" content="Spend your Trusty clicks in the Item Shop: website themes, plus fonts, colors and highlights for your name on every leaderboard and profile.">
+    <link rel="canonical" href="https://trustydahorse.com/pages/shop.html">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:url" content="https://trustydahorse.com/pages/shop.html">
+    <meta property="og:title" content="Trusty's Item Shop">
+    <meta property="og:description" content="Website themes and name fonts, colors and highlights, paid for in Trusty clicks.">
+    <meta property="og:image" content="https://trustydahorse.com/images/trusty/trusty.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- Where this page sits on the site, for Google to show in place of its address -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://trustydahorse.com/"},
+                {"@type": "ListItem", "position": 2, "name": "Item Shop", "item": "https://trustydahorse.com/pages/shop.html"}
+            ]
+        }
+    </script>
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/icon-96x96.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
+    <link rel="stylesheet" href="/styles/shop.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Spend those clicks</p>
+            <h1>Item Shop</h1>
+            <p class="lead">Give the whole site a new look, or make your name stand out on every leaderboard, profile and table.</p>
+        </header>
+
+        <section class="section-tight container shop-top" aria-label="Your clicks">
+            <div class="panel shop-wallet">
+                <div class="shop-wallet-row">
+                    <div>
+                        <p class="shop-wallet-label">Your clicks</p>
+                        <p class="shop-wallet-clicks" id="wallet-clicks">–</p>
+                    </div>
+                    <div>
+                        <p class="shop-wallet-label">Your name looks like</p>
+                        <p class="shop-wallet-name" id="wallet-name">–</p>
+                    </div>
+                </div>
+                <p class="shop-wallet-note" id="wallet-note" role="status">
+                    <span data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> to shop. Every item is paid for in the clicks you earn around the site.</span>
+                    <span data-auth-show="in">Checking your clicks…</span>
+                </p>
+            </div>
+            <aside class="sticky-note green shop-how" aria-labelledby="how-title">
+                <h2 id="how-title">How it works</h2>
+                <p>Buy something and it goes on straight away. Everything you buy is yours for good: switch between them here, or pick a theme on <a href="/pages/profile.html">your profile</a>.</p>
+                <p>Buying takes the price off your clicks, so it lowers your click total on the leaderboard (but not your betting limit for the day). Themes are just for you; your name’s font, color and highlight show to everyone.</p>
+            </aside>
+        </section>
+
+        <div class="shop-preview-bar" id="preview-bar" role="status" hidden>
+            <span id="preview-text"></span>
+            <button class="btn btn-sm" type="button" id="preview-stop">Stop preview</button>
+        </div>
+
+        <section class="section-tight container" aria-labelledby="themes-title">
+            <div class="section-head"><div><h2 id="themes-title">Website themes</h2><p>New colors for the whole site. Only you see your theme.</p></div></div>
+            <div class="grid shop-grid" style="--grid-min: 250px" id="grid-theme"></div>
+        </section>
+        <section class="section-tight container" aria-labelledby="fonts-title">
+            <div class="section-head"><div><h2 id="fonts-title">Name fonts</h2><p>Your name in another hand, everywhere it shows up.</p></div></div>
+            <div class="grid shop-grid" style="--grid-min: 250px" id="grid-font"></div>
+        </section>
+        <section class="section-tight container" aria-labelledby="colors-title">
+            <div class="section-head"><div><h2 id="colors-title">Name colors</h2><p>Pale ones get an outline that matches the theme, so they never blend into the page.</p></div></div>
+            <div class="grid shop-grid" style="--grid-min: 250px" id="grid-color"></div>
+        </section>
+        <section class="section section-tight container" aria-labelledby="highlights-title">
+            <div class="section-head"><div><h2 id="highlights-title">Name highlights</h2><p>Something behind your name.</p></div></div>
+            <div class="grid shop-grid" style="--grid-min: 250px" id="grid-highlight"></div>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, session, sessionReady, sessionExpired, onSession, loginHref, announceBalance, applyTheme, setOwnStyle, namePreview } from '/scripts/site.js';
+        import { KINDS, ITEMS, DEFAULTS, itemsOf, tierOf, nameStyleOf, isFree } from '/scripts/shop.js';
+
+        const $ = (id) => document.getElementById(id);
+        // What the API says you have: { clicks, owned, equipped, house }, or null while logged out or loading.
+        let mine = null;
+        let busy = null; // the id of the item being bought or put on
+        let previewing = null;
+
+        const owns = (item) => isFree(item) || Boolean(mine && mine.owned.includes(item.id));
+        const isOn = (item) => Boolean(mine) ? mine.equipped[item.kind] === item.id : item.id === DEFAULTS[item.kind];
+        const sampleName = () => (session.loggedIn && session.username) || 'Trusty';
+        const TIER_TAGS = { free: 'tag-quiet', starter: 'tag-green', common: 'tag-blue', rare: 'tag-pink', epic: 'tag-gold', legendary: 'tag-legendary' };
+
+        // What a card shows: a theme's page and ink, or your name with just that one item on.
+        function sample(item) {
+            if (item.kind === 'theme') {
+                const [page, ink] = item.swatch;
+                return h('div', { class: 'shop-swatch', style: `--sw-page: ${page}; --sw-ink: ${ink}`, 'aria-hidden': 'true' },
+                    h('span', { class: 'shop-swatch-line' }), h('span', { class: 'shop-swatch-line short' }), h('span', { class: 'shop-swatch-card' }));
+            }
+            return h('div', { class: 'shop-sample', 'aria-hidden': 'true' }, namePreview(sampleName(), { [item.kind]: item.id }));
+        }
+
+        function action(item) {
+            if (!session.loggedIn) return h('a', { class: 'btn btn-sm btn-outline', href: loginHref() }, isFree(item) ? 'Log in' : `Log in to buy`);
+            if (!mine) return h('button', { type: 'button', class: 'btn btn-sm', disabled: true }, '…');
+            if (isOn(item)) return h('button', { type: 'button', class: 'btn btn-sm btn-outline', disabled: true }, 'On ✓');
+            if (owns(item)) return h('button', { type: 'button', class: 'btn btn-sm', disabled: Boolean(busy) || mine.house, onclick: () => equip(item) }, busy === item.id ? 'Putting on…' : isFree(item) ? 'Switch back' : 'Put on');
+            const short = item.price - mine.clicks;
+            return h('button', {
+                type: 'button',
+                class: 'btn btn-sm btn-highlight',
+                disabled: Boolean(busy) || mine.house || short > 0,
+                title: short > 0 ? `${fmt(short)} more clicks to go` : null,
+                onclick: () => buy(item),
+            }, busy === item.id ? 'Buying…' : short > 0 ? `${fmt(short)} more to go` : `Buy for ${fmt(item.price)}`);
+        }
+
+        function card(item) {
+            const tier = tierOf(item.price);
+            return h('article', { class: `card shop-card${isOn(item) ? ' is-on' : ''}${owns(item) && !isFree(item) ? ' is-owned' : ''}`, dataset: { item: item.id } },
+                h('div', { class: 'shop-card-art' }, sample(item)),
+                h('div', { class: 'card-body' },
+                    h('ul', { class: 'tags' },
+                        h('li', { class: `tag ${TIER_TAGS[tier.key]}` }, tier.name),
+                        item.dark ? h('li', { class: 'tag tag-quiet' }, 'Dark') : null,
+                        owns(item) && !isFree(item) ? h('li', { class: 'tag tag-green' }, 'Owned') : null),
+                    h('h3', { class: 'card-title' }, item.name),
+                    h('p', null, item.about),
+                    h('div', { class: 'shop-card-foot' },
+                        h('span', { class: 'shop-price' }, isFree(item) ? 'Free' : `${fmt(item.price)} clicks`),
+                        h('span', { class: 'shop-card-buttons' },
+                            item.kind === 'theme' && !isOn(item)
+                                ? h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'aria-pressed': String(previewing === item.id), onclick: () => preview(item) }, previewing === item.id ? 'Previewing' : 'Preview')
+                                : null,
+                            action(item)))));
+        }
+
+        function render() {
+            for (const kind of KINDS) $(`grid-${kind}`).replaceChildren(...itemsOf(kind).map(card));
+            $('wallet-clicks').textContent = mine ? fmt(mine.clicks) : '–';
+            const style = mine ? nameStyleOf(mine) : null;
+            $('wallet-name').replaceChildren(session.loggedIn ? namePreview(sampleName(), style) : '–');
+            const note = $('wallet-note').querySelector('[data-auth-show="in"]');
+            if (mine && mine.house) note.textContent = 'Trusty’s account is the house: it can’t shop.';
+            else if (mine) note.textContent = `You own ${fmt(mine.owned.length)} of ${fmt(ITEMS.filter((i) => !isFree(i)).length)} items${mine.spent ? `, ${fmt(mine.spent)} clicks’ worth` : ''}.`;
+        }
+
+        // Preview a theme on this page without buying it. Leaving the page, or Stop preview, puts yours back.
+        function preview(item) {
+            if (previewing === item.id) return stopPreview();
+            previewing = item.id;
+            document.documentElement.dataset.siteTheme = item.id;
+            if (item.id === DEFAULTS.theme) delete document.documentElement.dataset.siteTheme;
+            $('preview-text').textContent = `Previewing ${item.name}.`;
+            $('preview-bar').hidden = false;
+            render();
+        }
+        function stopPreview() {
+            previewing = null;
+            $('preview-bar').hidden = true;
+            applyTheme(mine ? mine.equipped.theme : null);
+            render();
+        }
+        $('preview-stop').addEventListener('click', stopPreview);
+
+        function took(data) {
+            mine = {
+                clicks: Number(data.clicks) || 0,
+                owned: Array.isArray(data.owned) ? data.owned : [],
+                equipped: { ...DEFAULTS, ...(data.equipped || {}) },
+                spent: Number(data.spent) || 0,
+                house: mine ? mine.house : Boolean(data.house),
+            };
+            if (!previewing) applyTheme(mine.equipped.theme);
+            setOwnStyle(nameStyleOf(mine));
+        }
+
+        async function send(body) {
+            const res = await fetch('/api/leaderboard?action=shop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) {
+                sessionExpired();
+                throw new Error('Your login expired. Log in again to shop.');
+            }
+            if (data && typeof data.clicks === 'number') took(data);
+            if (!res.ok) throw new Error(data.error || 'The shop couldn’t do that. Try again?');
+            return data;
+        }
+
+        async function buy(item) {
+            if (busy || !mine) return;
+            if (!confirm(`Buy ${item.name} for ${fmt(item.price)} clicks? You’ll have ${fmt(mine.clicks - item.price)} left.`)) return;
+            busy = item.id;
+            render();
+            try {
+                await send({ do: 'buy', id: item.id });
+                announceBalance(mine.clicks);
+                if (previewing) stopPreview();
+                toast(`${item.name} is yours, and it’s on!`, 'success');
+            } catch (error) {
+                toast(error.message, 'error', 4500);
+            } finally {
+                busy = null;
+                render();
+            }
+        }
+
+        async function equip(item) {
+            if (busy || !mine) return;
+            busy = item.id;
+            render();
+            try {
+                await send({ do: 'equip', id: item.id });
+                if (previewing) stopPreview();
+                toast(isFree(item) ? `Back to ${item.name}.` : `${item.name} is on.`, 'success');
+            } catch (error) {
+                toast(error.message, 'error', 4500);
+            } finally {
+                busy = null;
+                render();
+            }
+        }
+
+        async function load() {
+            render();
+            const { loggedIn } = await sessionReady;
+            if (!loggedIn) return;
+            try {
+                const res = await fetch('/api/leaderboard?action=shop');
+                if (res.status === 401) { sessionExpired(); return; }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                mine = null;
+                took(data);
+                mine.house = Boolean(data.house);
+            } catch {
+                const note = $('wallet-note').querySelector('[data-auth-show="in"]');
+                note.textContent = 'Couldn’t reach the shop. Reload to try again.';
+            }
+            render();
+        }
+
+        $('login-link').href = loginHref();
+        onSession(({ loggedIn }) => {
+            if (!loggedIn) { mine = null; render(); }
+        });
+        load();
+    </script>
+</body>
+</html>

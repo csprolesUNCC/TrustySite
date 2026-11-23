@@ -11,6 +11,28 @@
 .profile-rename-note:empty { display: none; }
 .profile-rename-dialog .field { margin-bottom: 12px; }
 
+/* Your own profile: the Item Shop's themes you own */
+.profile-look-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.profile-look-head .panel-title { margin: 0; }
+.profile-themes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.profile-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px 6px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+}
+.profile-theme:hover { background: var(--paper-deep); }
+.profile-theme[aria-pressed="true"] { background: var(--highlight); box-shadow: 2px 2px 0 var(--ink); }
+.profile-theme:disabled { opacity: .6; cursor: wait; }
+.profile-theme-swatch { width: 28px; height: 28px; border: 1.5px solid #1b1b1f; border-radius: 50%; background: linear-gradient(135deg, var(--sw-page) 55%, var(--sw-ink) 55%); }
+.profile-look-name { margin: 14px 0 0; font-weight: 650; }
+
 .profile-top {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);

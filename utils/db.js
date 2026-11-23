@@ -7,7 +7,8 @@ const client = new MongoClient(uri);
 // profiles count ranks) by score. Made once per server start; a collection that already has one is left alone, so
 // this costs a few quick commands, and it never holds up a request. An entry is a key, or [key, options].
 const INDEXES = {
-    click_game: [{ userId: 1 }, { clicks: -1 }],
+    // `username`: the Item Shop looks up how names on a page look (utils/shop.js).
+    click_game: [{ userId: 1 }, { clicks: -1 }, { username: 1 }],
     scores: [{ userId: 1 }, { score: -1, timestamp: 1 }], // Flappy Trusty
     draw_scores: [{ userId: 1 }, { grader: 1, score: -1, timestamp: 1 }],
     trustis_scores: [{ userId: 1 }, { score: -1, timestamp: 1 }],

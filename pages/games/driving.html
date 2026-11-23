@@ -33,6 +33,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/games.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
