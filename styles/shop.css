@@ -34,6 +34,12 @@
 
 .tag-legendary { background: var(--ink); color: var(--gold); border-color: var(--ink); }
 
+/* An item that has to be earned first: what it takes, and how far along you are */
+.shop-need { display: grid; gap: 6px; padding: 8px 10px; border: 1.5px dashed var(--pencil); border-radius: 8px; font-size: .9rem; color: var(--ink-soft); }
+.shop-need.is-done { border-style: solid; border-color: var(--green); }
+.shop-need-bar { height: 8px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); overflow: hidden; }
+.shop-need-bar > span { display: block; height: 100%; width: var(--done, 0%); background: var(--green); }
+
 /* A name with one item on */
 .shop-sample { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 750; font-size: 1.7rem; line-height: 1.4; }
 

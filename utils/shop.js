@@ -3,7 +3,7 @@ import { authenticateUser } from './auth.js';
 import { cachePublic } from './cache.js';
 import { dayOf } from './bank.js';
 import { isHouse } from './house.js';
-import { ITEMS, ownedSet, equippedOf, nameStyleOf, cleanOrder, isFree } from '../scripts/shop.js';
+import { ITEMS, ownedSet, equippedOf, nameStyleOf, cleanOrder, isFree, goalsOf, unlocked, needText } from '../scripts/shop.js';
 
 // The Item Shop (pages/shop.html), served from api/leaderboard.js as ?action=shop so it doesn't take up another
 // Vercel function. What's for sale is scripts/shop.js. What an account bought is kept on its `click_game` document,
@@ -12,9 +12,11 @@ import { ITEMS, ownedSet, equippedOf, nameStyleOf, cleanOrder, isFree } from '..
 //   GET &n=<name>&n=<name>... (public): how those players' names look, { styles: { [name]: { font, color,
 //     highlight } } }, only for names that aren't all the defaults. Every page that shows names asks for them
 //     (nameStyles() in scripts/site.js); themes are never in it, since only their owner sees them.
-//   GET (logged in): { clicks, owned, equipped, spent, house }: your clicks and what you have.
+//   GET (logged in): { clicks, owned, equipped, spent, goals, house }: your clicks, what you have, and how far you
+//     are towards the items that have to be earned first (`goals`, goalsOf() in scripts/shop.js).
 //   POST { do: 'buy', id }: buys an item and puts it on. One atomic update takes the price off your clicks and adds
-//     the item, and only if you have the clicks and don't own it yet, so two tabs can never pay twice.
+//     the item, and only if you have the clicks and don't own it yet, so two tabs can never pay twice. An item with
+//     `needs` is refused until its goal is reached (goals only go up, so checking first is enough).
 //   POST { do: 'equip', id }: puts on an item you own (or a kind's free one, taking the paid one off).
 // Trusty's account is the house (utils/house.js) and can't shop.
 
@@ -22,6 +24,8 @@ const MAX_NAMES = 60;
 const STYLE_SECONDS = 60;
 const unwrap = (result) => (result && 'value' in result ? result.value : result);
 const fmt = (n) => new Intl.NumberFormat('en-US').format(n);
+// What mine() needs from a click_game document.
+const MINE = { clicks: 1, shop: 1, tvSeconds: 1, 'bank.lost': 1 };
 
 function mine(doc) {
   const shop = (doc && doc.shop) || {};
@@ -30,6 +34,7 @@ function mine(doc) {
     owned: [...ownedSet(shop.owned)],
     equipped: equippedOf(shop),
     spent: Number.isSafeInteger(shop.spent) ? shop.spent : 0,
+    goals: goalsOf(doc),
   };
 }
 
@@ -49,6 +54,10 @@ async function styles(col, names) {
 
 export async function buy(col, user, item, now = new Date()) {
   const today = dayOf(now);
+  if (item.needs) {
+    const doc = await col.findOne({ userId: user.userId }, { projection: MINE });
+    if (!unlocked(item, goalsOf(doc))) return [403, { error: `${item.name} isn’t for sale to you yet. ${needText(item)}`, ...mine(doc) }];
+  }
   // The first purchase of a new day starts the day's count from zero.
   await col.updateOne({ userId: user.userId, 'shop.day': { $ne: today } }, { $set: { 'shop.day': today, 'shop.today': 0 } });
   const done = unwrap(await col.findOneAndUpdate(
@@ -58,12 +67,12 @@ export async function buy(col, user, item, now = new Date()) {
       $push: { 'shop.owned': item.id },
       $set: { [`shop.equipped.${item.kind}`]: item.id, 'shop.boughtAt': now },
     },
-    { returnDocument: 'after', projection: { clicks: 1, shop: 1 } }
+    { returnDocument: 'after', projection: MINE }
   ));
   if (done) return [200, { ...mine(done), bought: item.id }];
 
   // Why not?
-  const doc = await col.findOne({ userId: user.userId }, { projection: { clicks: 1, shop: 1 } });
+  const doc = await col.findOne({ userId: user.userId }, { projection: MINE });
   if (!doc) return [400, { error: 'You don’t have any clicks yet: click Trusty at the top of the page to earn some.' }];
   if (ownedSet(doc.shop && doc.shop.owned).has(item.id)) return [409, { error: `You already have ${item.name}.`, ...mine(doc) }];
   const short = item.price - (doc.clicks || 0);
@@ -77,7 +86,7 @@ export async function equip(col, user, item) {
   const result = isFree(item)
     ? await col.updateOne({ userId: user.userId }, { $unset: { [field]: '' } })
     : await col.updateOne({ userId: user.userId, 'shop.owned': item.id }, { $set: { [field]: item.id } });
-  const doc = await col.findOne({ userId: user.userId }, { projection: { clicks: 1, shop: 1 } });
+  const doc = await col.findOne({ userId: user.userId }, { projection: MINE });
   if (!result.matchedCount && !isFree(item)) return [403, { error: `You don’t own ${item.name} yet.`, ...mine(doc) }];
   return [200, mine(doc)];
 }
@@ -101,7 +110,7 @@ export default async function shop(req, res) {
     const user = { ...login, userId: String(login.userId) };
 
     if (req.method === 'GET') {
-      const doc = await col.findOne({ userId: user.userId }, { projection: { clicks: 1, shop: 1 } });
+      const doc = await col.findOne({ userId: user.userId }, { projection: MINE });
       return res.status(200).json({ ...mine(doc), house: isHouse(user.username), items: ITEMS.length });
     }
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
