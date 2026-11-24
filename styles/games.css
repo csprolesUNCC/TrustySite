@@ -1427,6 +1427,7 @@ kbd {
 .chip-btn[data-clicks="20"] { --chip: #7a3fb0; }
 .slots-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
 .spin-btn { min-height: 60px; font-size: 1.5rem; }
+.slots-share { max-width: 8em; white-space: normal; line-height: 1.15; }
 .paytable { display: grid; gap: 6px; min-height: 560px; margin: 0; padding: 0; list-style: none; }
 .paytable-bonus { min-height: 380px; margin-top: 10px; }
 .bonus-how { margin-top: 0; }

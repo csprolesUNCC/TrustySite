@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Games — Trusty da Horse</title>
-    <meta name="description" content="Play Trustle, Trusty Fever, Flappy Trusty, Trustis, Draw Trusty, Trusty Snake and more. Log in to get your name on the leaderboards.">
+    <meta name="description" content="Play Trustle, Trusty Fever, Flappy Trusty, Trustis, Draw Trusty, Trusty Snake and more, and compare your daily Wordle and Connections. Log in to get your name on the leaderboards.">
     <link rel="canonical" href="https://trustydahorse.com/pages/games.html">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
@@ -32,6 +32,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
@@ -105,6 +106,16 @@
                         <p>How long can you make him????</p>
                     </div>
                 </article>
+            </div>
+        </section>
+
+        <section class="section-tight container" aria-labelledby="daily-title">
+            <div class="section-head">
+                <div>
+                    <h2 id="daily-title">Daily Games</h2>
+                    <p>Today’s Trustle, plus everyone’s Wordle, Connections, Krillion and RNGdle. Paste your results and see who did best.</p>
+                </div>
+                <a class="btn btn-highlight" href="/pages/daily.html">See today’s boards</a>
             </div>
         </section>
 

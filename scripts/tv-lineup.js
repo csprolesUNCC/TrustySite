@@ -46,9 +46,16 @@ export const SPONGEBOB_LINEUP = [
   { title: 'SpongeBob: Every Episode from Season 2', link: 'https://youtu.be/CdrhLFYV2xo', length: '3:29:41' },
 ];
 
+// Regular Show, all day. It's a YouTube live stream, so it has no length (`live: true` instead): there's
+// nothing to schedule, and everyone just sees the stream as it is right now.
+export const REGULAR_SHOW_LINEUP = [
+  { title: 'Regular Show', link: 'https://www.youtube.com/live/4WSVB8B9VCw', live: true },
+];
+
 // The channel knob flips through these in order. `key` is the page's #hash for that channel (e.g. /pages/tv#snn).
 export const CHANNELS = [
   { key: 'trusty', number: 21, name: 'Trusty TV', lineup: LINEUP },
   { key: 'snn', number: 22, name: 'SNN', fullName: 'Stallion News Network', lineup: SNN_LINEUP },
   { key: 'spongebob', number: 23, name: 'SpongeBob', lineup: SPONGEBOB_LINEUP },
+  { key: 'regularshow', number: 24, name: 'Regular Show', lineup: REGULAR_SHOW_LINEUP },
 ];

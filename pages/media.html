@@ -32,6 +32,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
@@ -58,9 +59,9 @@
                 <article class="card card-link">
                     <div class="card-media"><img src="/images/thumbnails/tv.svg" alt="" width="400" height="300" fetchpriority="high" decoding="async"></div>
                     <div class="card-body">
-                        <ul class="tags"><li class="tag tag-gold">Live</li><li class="tag">3 channels</li></ul>
+                        <ul class="tags"><li class="tag tag-gold">Live</li><li class="tag">4 channels</li></ul>
                         <h3 class="card-title"><a href="/pages/tv.html">Trusty TV</a></h3>
-                        <p>Trusty's shows, SNN and SpongeBob, back to back all day. Logged in, you earn clicks while you watch.</p>
+                        <p>Trusty's shows, SNN, SpongeBob and Regular Show, back to back all day. Logged in, you earn clicks while you watch.</p>
                     </div>
                 </article>
                 <article class="card card-link">

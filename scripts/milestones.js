@@ -49,7 +49,7 @@ export const rankLevel = (rank) => RANKS.indexOf(rank) + 1;
 // The first click of each day pays DAILY.base clicks, DAILY.step more for every day in a row before it, and
 // never more than DAILY.max. A new day starts at midnight Eastern, the same moment as Trustle's new word, so
 // it's the same day for everyone. pages/leaderboard.html says the same numbers (id="daily-rule").
-export const DAILY = { base: 25, step: 5, max: 100 };
+export const DAILY = { base: 25, step: 10, max: 250 };
 
 const dayFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -84,3 +84,32 @@ export function dailyStatus(last, today) {
   const streak = Number.isSafeInteger(last.streak) && last.streak > 0 ? last.streak : 1;
   return { ready: false, streak, next: dailyBonus(streak + 1) };
 }
+
+/* ---------- Trusty gets tired ---------- */
+
+// The header clicker pays a click for each of the day's first CLICKER.full presses, then one for every
+// CLICKER.every presses after that, and nothing once it has paid CLICKER.max in the day (from midnight Eastern,
+// like the daily bonus, which doesn't count towards it). Nobody clicking by hand notices; an autoclicker held at
+// the 6-a-second limit all day would otherwise make half a million clicks. api/clicks.js counts the day's presses
+// in the account's `clicker` ({ day, n }) and pays the same way (it builds its update from these numbers).
+// pages/leaderboard.html says the same numbers (id="clicker-rule").
+export const CLICKER = { full: 10000, every: 10, max: 15000 };
+
+// The last press of a day that pays anything.
+export const CLICKER_LAST = CLICKER.full + (CLICKER.max - CLICKER.full) * CLICKER.every;
+
+// Whether the day's `n`th press (1 for the first) pays a click.
+export const pressPays = (n) => Number.isSafeInteger(n) && n >= 1
+  && (n <= CLICKER.full || (n <= CLICKER_LAST && (n - CLICKER.full) % CLICKER.every === 0));
+
+// How many clicks the day's first `n` presses paid.
+export function pressesPaid(n) {
+  const k = Math.max(0, Math.floor(Number(n) || 0));
+  return Math.min(CLICKER.max, Math.min(k, CLICKER.full) + Math.floor(Math.max(0, k - CLICKER.full) / CLICKER.every));
+}
+
+// Today's presses from an account's `clicker` ({ day, n }), 0 if they're from another day.
+export const pressesToday = (clicker, today) => (clicker && clicker.day === today && Number.isSafeInteger(clicker.n) && clicker.n > 0 ? clicker.n : 0);
+
+// How tired Trusty is after `n` presses today: 'fresh', 'tired' (one click in CLICKER.every) or 'done'.
+export const tiredness = (n) => (n >= CLICKER_LAST ? 'done' : n >= CLICKER.full ? 'tired' : 'fresh');

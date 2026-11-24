@@ -33,6 +33,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/games.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -108,7 +109,7 @@
                         <div class="stat"><span class="stat-label" id="stat-best-label">Best</span><span class="stat-value" id="stat-best">0</span></div>
                     </div>
                     <p class="side-note" data-auth-show="out">Playing as a guest, so your best only saves on this device. <a id="login-link" href="/pages/auth/login.html">Log in</a> to get on the leaderboard and earn clicks.</p>
-                    <p class="side-note" data-auth-show="in">Every flight earns 2 clicks a point, up to 2,000 clicks a day.</p>
+                    <p class="side-note" data-auth-show="in">Every flight earns 2 clicks a point, up to 500 clicks a day.</p>
                 </div>
 
                 <div class="panel">

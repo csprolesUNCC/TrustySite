@@ -3,8 +3,11 @@
 // everyone starts with `startingClicks` (the pretend API's header clicker says 12,345 too).
 
 import { LIMITS, GAMES, maxPayout, windfallOf, limitsFor, limitBasis } from '../utils/bank-rules.js';
+import { bigWin } from '../scripts/casino-feed.js';
 
-export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
+// onWins(list): big wins as they're paid (scripts/casino-feed.js), as the real bank tells the lobby. Accounts
+// are "mock-<name>" on the dev server, so that's where the name comes from.
+export function mockBank({ startingClicks = 12345, delay = 5, onWins = () => {}, nameOf = (id) => String(id).replace(/^mock-/, '') } = {}) {
   const accounts = new Map();
   const pots = new Map();
   const later = () => new Promise((r) => setTimeout(r, delay)); // the real bank is a request away
@@ -20,7 +23,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     if (a.open.has(betId)) return { ok: true, clicks: a.clicks, net: a.net };
     if (!Number.isInteger(amount) || amount < 1 || amount > LIMITS.maxStake) return { ok: false, error: 'That’s not a bet.' };
     if (a.clicks < amount) return { ok: false, error: `You only have ${fmt(a.clicks)} clicks.` };
-    const limits = limitsFor(limitBasis(a.clicks, a.net));
+    const limits = limitsFor(limitBasis(a.clicks, a.net, a.shop ? a.shop.spent : 0));
     if (a.net >= limits.winPerDay) return { ok: false, error: `You’re ${fmt(a.net)} clicks up today: that’s your daily limit. Come back after midnight!` };
     if (a.net - amount < -limits.lossPerDay) return { ok: false, error: `That could put you more than ${fmt(limits.lossPerDay)} clicks down today, your daily limit. Bet less, or come back after midnight.` };
     a.clicks -= amount;
@@ -29,7 +32,7 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     return { ok: true, clicks: a.clicks, net: a.net };
   }
 
-  function close(userId, betId, payout, balances, windfall = 0) {
+  function close(userId, betId, payout, balances, windfall = 0, wins = []) {
     const a = account(userId);
     const bet = a.open.get(betId);
     if (!bet) return;
@@ -37,16 +40,21 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     a.clicks += payout;
     a.net += payout - windfallOf(bet, payout, windfall);
     a.month[bet.game] += payout - bet.amount;
+    if (payout < bet.amount) (a.lost ||= {})[bet.game] = (a.lost[bet.game] || 0) + bet.amount - payout;
     balances[userId] = { clicks: a.clicks, net: a.net };
+    const win = bigWin({ name: nameOf(userId), game: bet.game, amount: bet.amount, payout, windfall });
+    if (win) wins.push(win);
   }
 
   async function settle(bets) {
     await later();
     const balances = {};
+    const wins = [];
     for (const { userId, betId, payout, windfall } of bets) {
       const bet = account(userId).open.get(betId);
-      if (bet && payout <= maxPayout(bet)) close(userId, betId, payout, balances, windfall);
+      if (bet && payout <= maxPayout(bet)) close(userId, betId, payout, balances, windfall, wins);
     }
+    if (wins.length) onWins(wins);
     return { ok: true, balances };
   }
 
@@ -61,13 +69,15 @@ export function mockBank({ startingClicks = 12345, delay = 5 } = {}) {
     }
     const record = pots.get(potId);
     const balances = {};
-    for (const p of [...record.payouts].sort((x, y) => x.payout - y.payout)) close(p.userId, p.betId, p.payout, balances);
+    const wins = [];
+    for (const p of [...record.payouts].sort((x, y) => x.payout - y.payout)) close(p.userId, p.betId, p.payout, balances, 0, wins);
+    if (wins.length) onWins(wins);
     return { ok: true, total: record.total, payouts: record.payouts.map(({ userId, payout }) => ({ userId, payout })), balances };
   }
 
   function status(userId) {
     const a = account(userId);
-    return { clicks: a.clicks, net: a.net, refunded: 0, limits: limitsFor(limitBasis(a.clicks, a.net)), month: { ...a.month } };
+    return { clicks: a.clicks, net: a.net, refunded: 0, limits: limitsFor(limitBasis(a.clicks, a.net, a.shop ? a.shop.spent : 0)), month: { ...a.month } };
   }
 
   // The house's side of everyone's bets (utils/house.js does the same from the real bank's stats).

@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { attachRooms, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
+import { attachRooms, localLobby, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
 import { mockBank } from './mock-bank.mjs';
 import { signTicket } from '../utils/fever-ticket.js';
 import { signedOp } from '../utils/bank-rules.js';
@@ -24,10 +24,13 @@ import { play as pokerPlay, cleanMove as pokerMove } from '../utils/solo-poker-g
 import { MACHINE as SLOT_MACHINE } from '../scripts/slots.js';
 import { memoryJackpot } from '../utils/slots-jackpot.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
-import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
+import { dayOf, dailyClaim, dailyStatus, CLICKER, CLICKER_LAST, pressPays, pressesToday } from '../scripts/milestones.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
+import { GAME_KEYS, POST_REWARD, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
+import { puzzleWord } from '../scripts/trustle.js';
+import { ITEMS, cleanOrder, equippedOf, nameStyleOf, ownedSet, isFree, goalsOf, unlocked, needText } from '../scripts/shop.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The headers vercel.json sends with every file.
@@ -47,7 +50,8 @@ const loggedIn = (req) => /(?:^|;\s*)mock=in(?:;|$)/.test(req.headers.cookie || 
 const mockUser = (req) => (/(?:^|;\s*)mockuser=([\w-]{1,32})(?:;|$)/.exec(req.headers.cookie || '') || [])[1] || 'carson';
 const today = () => new Date().toISOString().slice(0, 10);
 const FEVER_SECRET = process.env.FEVER_SECRET || 'pretend-api-secret-for-local-rooms-only';
-const bank = mockBank();
+const lobby = localLobby();
+const bank = mockBank({ onWins: (wins) => lobby.win(wins) });
 const accountOf = (req) => `mock-${mockUser(req)}`;
 // Trusty Blackjack for one player (utils/solo-blackjack.js, the real game), kept in memory and betting the
 // pretend bank.
@@ -104,6 +108,105 @@ function trustleSync(userId, body) {
   return { games: {}, rewards, added, clicks: account.clicks };
 }
 
+// The Daily Games board (utils/daily.js), kept in memory and started with a few made-up results for today, read
+// by the real parser (scripts/daily-games.js) so the samples are checked like anyone's paste.
+const dailyScores = [];
+let dailyId = 0;
+function dailyPost(name, text) {
+  const read = parseShare(text);
+  if (read.error) return [400, { error: read.error }];
+  if (dailyScores.some((s) => s.name === name && s.game === read.game && s.day === read.day)) {
+    return [409, { error: 'You’ve already posted that one. The first result you post is the one that counts.' }];
+  }
+  const history = dailyScores.filter((s) => s.name === name && s.game === read.game).reverse().map((s) => s.result);
+  const entry = { id: String(++dailyId).padStart(24, '0'), name, ...read, rank: rankOf(read.game, read.result), flags: flagsFor(read.game, read.result, history), reports: 0 };
+  dailyScores.push(entry);
+  return [201, { day: entry.day, entry }];
+}
+{
+  const n = (game) => puzzleOn(game, dayOf());
+  const W = { 3: '⬜🟨⬜⬜⬜\n🟩🟩⬜🟨⬜\n🟩🟩🟩🟩🟩', 4: '⬜⬜⬜⬜🟨\n⬜🟨⬜⬜⬜\n🟩🟩⬜🟩⬜\n🟩🟩🟩🟩🟩', 1: '🟩🟩🟩🟩🟩' };
+  [['luke', 3], ['hayhound', 4], ['stickfig', 1], ['margins', 4]].forEach(([name, g]) => dailyPost(name, `Wordle ${n('wordle')} ${g}/6\n\n${W[g]}`));
+  dailyPost('luke', `Connections\nPuzzle #${n('connections')}\n🟨🟨🟨🟨\n🟩🟦🟩🟩\n🟩🟩🟩🟩\n🟦🟦🟦🟦\n🟪🟪🟪🟪`);
+  dailyPost('gallop', `Connections\nPuzzle #${n('connections')}\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨`);
+  dailyPost('hayhound', `Krillion #${n('krillion')} 🦐\n300\n\n🌟🦑🐟🏮⬛🫧🤡`);
+  dailyPost('neigh_sayer', `Krillion #${n('krillion')} 🦐\n🐟🐟🫧🦑⬛🤡🫧`);
+  dailyPost('pencilpusher', 'RNGdle 🎲 805393\n\n⬜ COMMON • Bottom 7.5%\n\n⬜ 🏞️ Hills\n⬜ 🐫 Dunes\n⬜ 🦘 Hopscotch\n+8 more\n\n2,831 EP\nhttps://rngdle.com');
+  dailyPost('gallop', 'RNGdle 🎲 777777\n\n🟪 EPIC • Top 0.05%\n\n🟪 🎰 Jackpot\n🟪 🪞 Mirror\n\n9,120 EP\nhttps://rngdle.com');
+}
+function dailyBoards() {
+  const day = dayOf();
+  const trustleN = puzzleNumber();
+  const length = puzzleWord(trustleN).word.length;
+  const row = (tiles) => tiles.padEnd(length, 'a').slice(0, length);
+  const trustle = [
+    { name: 'carson', result: { won: true, tries: 3, grid: [row('apa'), row('ccap'), 'c'.repeat(length)] } },
+    { name: 'tractorfan', result: { won: true, tries: 5, grid: [row('a'), row('pa'), row('cpa'), row('ccpa'), 'c'.repeat(length)] } },
+    { name: 'mane_event', result: { won: false, tries: 6, grid: Array.from({ length: 6 }, () => row('pc')) } },
+  ];
+  const boards = { trustle: { n: trustleN, entries: trustle } };
+  for (const game of GAME_KEYS) {
+    boards[game] = {
+      n: puzzleOn(game, day),
+      entries: dailyScores.filter((s) => s.game === game && s.day === day).sort((a, b) => a.rank - b.rank)
+        .map(({ id, name, result, flags }) => ({ id, name, result, flags })),
+    };
+  }
+  return { day, today: day, boards };
+}
+
+// The Item Shop (utils/shop.js), buying with the pretend bank's clicks. A few of the sample players have styled
+// names, so the boards show some.
+const SAMPLE_STYLES = {
+  luke: { font: 'calligraphy', color: 'gilded' },
+  hayhound: { highlight: 'yellow' },
+  neigh_sayer: { font: 'blackletter', color: 'red' },
+  stickfig: { color: 'rainbow', highlight: 'sparkle' },
+  margins: { font: 'quill', color: 'blue', highlight: 'washi' },
+  gallop: { font: 'bubble', color: 'hl-pink' },
+  tractorfan: { font: 'ransom', highlight: 'circled' },
+  mane_event: { font: 'upside-down', color: 'fire', highlight: 'pegasus-wings' },
+};
+const shopOf = (account) => (account.shop ||= { owned: [], equipped: {}, spent: 0 });
+const shopAnswer = (account) => {
+  const shop = shopOf(account);
+  const goals = goalsOf({ bank: { lost: account.lost }, tvSeconds: account.tvSeconds });
+  return { clicks: account.clicks, owned: [...ownedSet(shop.owned)], equipped: equippedOf(shop), spent: shop.spent, goals };
+};
+function shopApi(req, url, body) {
+  const names = url.searchParams.getAll('n');
+  if (req.method === 'GET' && names.length) {
+    const styles = {};
+    for (const name of names) {
+      const style = SAMPLE_STYLES[name] || nameStyleOf(bank.account(`mock-${name}`).shop);
+      if (style) styles[name] = style;
+    }
+    return [200, { styles }];
+  }
+  if (!loggedIn(req)) return [401, { error: 'Log in to shop.' }];
+  const account = bank.account(accountOf(req));
+  if (req.method === 'GET') return [200, { ...shopAnswer(account), house: isHouse(mockUser(req)), items: ITEMS.length }];
+  const order = cleanOrder(body);
+  if (!order) return [400, { error: 'That’s not something the shop sells.' }];
+  if (isHouse(mockUser(req))) return [403, { error: 'Trusty’s account is the house: it can’t shop.' }];
+  const shop = shopOf(account);
+  const { item } = order;
+  if (order.do === 'equip') {
+    if (!isFree(item) && !shop.owned.includes(item.id)) return [403, { error: `You don’t own ${item.name} yet.`, ...shopAnswer(account) }];
+    if (isFree(item)) delete shop.equipped[item.kind];
+    else shop.equipped[item.kind] = item.id;
+    return [200, shopAnswer(account)];
+  }
+  if (shop.owned.includes(item.id)) return [409, { error: `You already have ${item.name}.`, ...shopAnswer(account) }];
+  if (!unlocked(item, shopAnswer(account).goals)) return [403, { error: `${item.name} isn’t for sale to you yet. ${needText(item)}`, ...shopAnswer(account) }];
+  if (account.clicks < item.price) return [400, { error: `${item.name} costs ${item.price} clicks: you need ${item.price - account.clicks} more.`, ...shopAnswer(account) }];
+  account.clicks -= item.price;
+  shop.spent += item.price;
+  shop.owned.push(item.id);
+  shop.equipped[item.kind] = item.id;
+  return [200, { ...shopAnswer(account), bought: item.id }];
+}
+
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
 // each game's daily cap) into the pretend bank. Saving a score is pretend: every game is a "new best".
 function gameReward(req, game, body) {
@@ -129,27 +232,43 @@ async function api(req, url, body) {
   if (p === '/api/clicks') {
     if (!me) return [401, { error: 'Authentication required' }];
     const account = bank.account(accountOf(req));
-    if (req.method !== 'POST') return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()) }];
+    if (req.method !== 'POST') {
+      const shop = shopOf(account);
+      return [200, { clicks: account.clicks, clicker: { day: dayOf(), n: pressesToday(account.clicker, dayOf()) }, daily: dailyStatus(account.daily, dayOf()), shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) } }];
+    }
     if (action === 'tv' || action === 'radio') {
-      // Trusty TV's and Trusty Radio's rewards, each with its own daily cap, as api/clicks.js pays them.
+      // Trusty TV's and Trusty Radio's rewards, sharing one daily cap, as api/clicks.js pays them.
       const { clicks, daily: cap } = WATCH_REWARD;
       const day = dayOf();
-      account.watch ||= {};
-      const counted = account.watch[action]?.day === day ? account.watch[action].clicks : 0;
+      const counted = account.watch?.day === day ? account.watch.clicks : 0;
       if (counted + clicks > cap) return [429, { error: 'That’s today’s clicks.', capped: true, day, today: counted, cap }];
-      account.watch[action] = { day, clicks: counted + clicks };
+      account.watch = { day, clicks: counted + clicks };
       account.clicks += clicks;
+      if (action === 'tv' && typeof body?.channel === 'string') {
+        account.tvSeconds ||= {};
+        account.tvSeconds[body.channel] = (account.tvSeconds[body.channel] || 0) + WATCH_REWARD.every;
+      }
       return [200, { clicks: account.clicks, added: clicks, today: counted + clicks, cap }];
     }
-    // A click, and the daily bonus with the day's first one, as api/clicks.js pays it.
-    account.clicks += 1;
-    const claim = dailyClaim(account.daily, dayOf());
-    if (!claim) return [200, { clicks: account.clicks }];
-    account.daily = { day: dayOf(), streak: claim.streak };
+    // A press, and the daily bonus with the day's first one, as api/clicks.js pays them: a click while Trusty's
+    // fresh, one in CLICKER.every once he's tired, none once he's done for the day.
+    const day = dayOf();
+    // The cookie mockclicker=tired or =done starts the day's count where Trusty gets tired or is done, to look at them.
+    const preset = /(?:^|;\s*)mockclicker=(tired|done)(?:;|$)/.exec(req.headers.cookie || '');
+    if (preset && !pressesToday(account.clicker, day)) account.clicker = { day, n: preset[1] === 'done' ? CLICKER_LAST : CLICKER.full };
+    const n = pressesToday(account.clicker, day) + 1;
+    account.clicker = { day, n };
+    const added = pressPays(n) ? 1 : 0;
+    account.clicks += added;
+    const press = { added, clicker: account.clicker };
+    const claim = dailyClaim(account.daily, day);
+    if (!claim) return [200, { clicks: account.clicks, ...press }];
+    account.daily = { day, streak: claim.streak };
     account.clicks += claim.added;
-    return [200, { clicks: account.clicks, daily: claim }];
+    return [200, { clicks: account.clicks, daily: claim, ...press }];
   }
   if (p === '/api/leaderboard') {
+    if (action === 'shop') return shopApi(req, url, body);
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
@@ -210,6 +329,17 @@ async function api(req, url, body) {
       }
       return [200, game];
     }
+    if (action === 'daily') {
+      if (req.method === 'GET') return [200, dailyBoards()];
+      if (!me) return [401, { error: 'Log in to post your results.' }];
+      if (body && body.do === 'report') return [201, { message: 'Reported' }];
+      const [status, answer] = dailyPost(mockUser(req), body && body.text);
+      if (status !== 201) return [status, answer];
+      // Posting pays its clicks into the pretend bank, as utils/daily.js does.
+      const account = bank.account(accountOf(req));
+      account.clicks += POST_REWARD;
+      return [status, { ...answer, reward: { added: POST_REWARD, clicks: account.clicks } }];
+    }
     if ((action === 'trustis' || action === 'snake') && req.method === 'POST') {
       return me ? gameReward(req, action, body) : [401, { error: 'Authentication required' }];
     }
@@ -222,6 +352,7 @@ async function api(req, url, body) {
         bio: 'Professional Trusty enjoyer.', clicks: isHouse(u) ? null : { total: 12345, rank: 3, streak: 4 }, flappy: { score: 42, rank: 2 }, draw: null,
         trustis: { score: 90000, rank: 1, lines: 120, level: 13 }, snake: { score: 40, rank: 4 },
         trustle: { played: 20, won: 18, streak: 4, best: 9, dist: [0, 2, 5, 6, 4, 1] }, tv: { trusty: 3600, snn: 600 },
+        daily: { wordle: { played: 30, streak: 6, won: 29, average: 3.9, best: 2 }, connections: { played: 12, streak: 2, won: 10, perfect: 4 }, krillion: { played: 5, streak: 0, average: 310, best: 455 }, rngdle: { played: 8, streak: 3, average: 3410, best: 6020 } },
         bets: Object.fromEntries(Object.entries(bank.status(`mock-${u}`).month).filter(([, n]) => n)),
         house: isHouse(u) ? bank.house() : null,
       }];
@@ -229,6 +360,7 @@ async function api(req, url, body) {
     if (action === 'admin') {
       if (!me) return [401, { error: 'Authentication required' }];
       const view = url.searchParams.get('view');
+      if (view === 'daily') return [200, { results: dailyScores.filter((s) => s.flags.length).map((s) => ({ ...s, at: new Date().toISOString() })) }];
       if (view === 'users') return [200, { users: NAMES.map((username, i) => ({ username, createdAt: new Date(Date.now() - i * 864e5).toISOString(), flags: [] })) }];
       return [200, { drawings: [] }];
     }
@@ -292,7 +424,7 @@ export function startServer(port = 8787) {
     res.writeHead(status, headers);
     res.end(req.method === 'HEAD' ? undefined : data);
   });
-  attachRooms(server, FEVER_SECRET, bank);
+  attachRooms(server, FEVER_SECRET, bank, lobby);
   return new Promise((resolve) => server.listen(port, () => resolve(server)));
 }
 

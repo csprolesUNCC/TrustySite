@@ -47,7 +47,7 @@
 
     <url>
         <loc>https://trustydahorse.com/pages/games.html</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-23</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -65,13 +65,13 @@
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/games/flappy.html</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/games/trustis.html</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
@@ -83,7 +83,7 @@
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/games/snake.html</loc>
-        <lastmod>2026-11-18</lastmod>
+        <lastmod>2026-11-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
@@ -150,13 +150,13 @@
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/tv.html</loc>
-        <lastmod>2026-11-18</lastmod>
+        <lastmod>2026-11-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://trustydahorse.com/pages/radio.html</loc>
-        <lastmod>2026-11-18</lastmod>
+        <lastmod>2026-11-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -167,8 +167,14 @@
         <priority>0.8</priority>
     </url>
     <url>
+        <loc>https://trustydahorse.com/pages/shop.html</loc>
+        <lastmod>2026-11-23</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
         <loc>https://trustydahorse.com/pages/media.html</loc>
-        <lastmod>2026-11-18</lastmod>
+        <lastmod>2026-11-23</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -185,8 +191,14 @@
         <priority>0.7</priority>
     </url>
     <url>
+        <loc>https://trustydahorse.com/pages/daily.html</loc>
+        <lastmod>2026-11-23</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
         <loc>https://trustydahorse.com/pages/leaderboard.html</loc>
-        <lastmod>2026-11-18</lastmod>
+        <lastmod>2026-11-24</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.6</priority>
     </url>

@@ -5,9 +5,9 @@
 // Pure, so the pages, the API and the pretend API share it.
 
 export const GAME_REWARDS = {
-  flappy: { name: 'Flappy Trusty', per: 1, clicks: 2, daily: 2000 },
-  trustis: { name: 'Trustis', per: 10000, clicks: 100, daily: 2000 },
-  snake: { name: 'Trusty Snake', per: 1, clicks: 2, daily: 2000 },
+  flappy: { name: 'Flappy Trusty', per: 1, clicks: 2, daily: 500 },
+  trustis: { name: 'Trustis', per: 10000, clicks: 100, daily: 500 },
+  snake: { name: 'Trusty Snake', per: 1, clicks: 2, daily: 500 },
 };
 
 // What a game with this score earns, before the daily cap.

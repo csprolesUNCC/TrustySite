@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Daily Games — Trusty da Horse</title>
+    <meta name="description" content="Trustle plus the rest of your daily games: post your Wordle, Connections, Krillion and RNGdle results and see how everyone did today.">
+    <link rel="canonical" href="https://trustydahorse.com/pages/daily.html">
+    <meta name="theme-color" content="#fbf8f0">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Trusty da Horse">
+    <meta property="og:url" content="https://trustydahorse.com/pages/daily.html">
+    <meta property="og:title" content="Trusty's Daily Games">
+    <meta property="og:description" content="Today's Trustle, plus everyone's Wordle, Connections, Krillion and RNGdle. Paste your results and see who did best.">
+    <meta property="og:image" content="https://trustydahorse.com/images/thumbnails/trustle.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- Where this page sits on the site, for Google to show in place of its address -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://trustydahorse.com/"},
+                {"@type": "ListItem", "position": 2, "name": "Games", "item": "https://trustydahorse.com/pages/games.html"},
+                {"@type": "ListItem", "position": 3, "name": "Daily Games", "item": "https://trustydahorse.com/pages/daily.html"}
+            ]
+        }
+    </script>
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/icon-96x96.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
+    <link rel="stylesheet" href="/styles/daily.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <header class="page-head container">
+            <p class="eyebrow">Every day, all in one place</p>
+            <h1>Daily Games</h1>
+            <p class="lead">Play today’s Trustle, then bring your Wordle, Connections, Krillion and RNGdle results here and see how everyone did.</p>
+        </header>
+
+        <section class="section-tight container daily-top" aria-label="Today">
+            <article class="card daily-headliner">
+                <div class="card-media"><img src="/images/thumbnails/trustle.webp" alt="" width="800" height="600" fetchpriority="high" decoding="async"></div>
+                <div class="card-body">
+                    <ul class="tags"><li class="tag tag-gold">Headliner</li><li class="tag tag-green">Daily</li></ul>
+                    <h2 class="daily-headliner-title"><span id="trustle-number">Trustle</span></h2>
+                    <p>Guess Trusty’s word of the day in six tries. <span data-auth-show="in">Your game goes on the board below by itself.</span><span data-auth-show="out">Log in and your game goes on the board below by itself.</span></p>
+                    <div class="btn-row">
+                        <a class="btn btn-lg" href="/pages/games/trustle.html">Play today’s Trustle</a>
+                    </div>
+                </div>
+            </article>
+
+            <section class="panel daily-post" aria-labelledby="post-title">
+                <h2 class="panel-title" id="post-title">Post a result</h2>
+                <p class="muted daily-post-lead">Press <strong>Share</strong> at the end of a game, then paste what it copied here. Each game you post earns 100 clicks.</p>
+                <form id="post-form" data-auth-show="in" novalidate>
+                    <div class="field">
+                        <label for="share-text">Share text</label>
+                        <textarea id="share-text" rows="6" maxlength="2000" spellcheck="false" autocomplete="off" placeholder="Wordle 1,983 3/6&#10;&#10;⬜🟨⬜⬜⬜&#10;🟩🟩⬜🟨⬜&#10;🟩🟩🟩🟩🟩" aria-describedby="share-preview"></textarea>
+                        <span class="hint daily-preview" id="share-preview" aria-live="polite">Wordle, Connections, Krillion or RNGdle, one game at a time.</span>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn" type="submit" id="post-btn" disabled>Post it</button>
+                        <button class="btn btn-outline" type="button" id="paste-btn" hidden>Paste from clipboard</button>
+                    </div>
+                    <p class="form-status" id="post-status" role="status"></p>
+                </form>
+                <div data-auth-show="out">
+                    <p>Log in to put your results on the board.</p>
+                    <a class="btn btn-sm" id="login-link" href="/pages/auth/login.html">Log in</a>
+                </div>
+            </section>
+        </section>
+
+        <section class="section-tight container" aria-labelledby="boards-title">
+            <div class="daily-day">
+                <button class="btn btn-outline btn-sm" type="button" id="day-prev">‹ Earlier</button>
+                <h2 class="daily-day-title" id="boards-title" aria-live="polite">Today</h2>
+                <button class="btn btn-outline btn-sm" type="button" id="day-next" disabled>Later ›</button>
+            </div>
+            <div class="grid daily-boards" style="--grid-min: 290px" id="boards"></div>
+        </section>
+
+        <section class="section container" aria-labelledby="how-title">
+            <div class="sticky-note blue daily-how">
+                <h2 id="how-title">How it works</h2>
+                <p>Trustle is played right here, so its board fills in by itself. Wordle, Connections, Krillion and RNGdle live on other sites that don’t let anyone check a score, so this board runs on the honor system: whatever you paste is what goes up. The first result you post for a puzzle is the one that counts, and only today’s puzzles (or yesterday’s) can be posted. RNGdle’s share doesn’t say which day it’s from, so a roll counts for the day you post it.</p>
+                <p>Results that are hard to believe (Wordle in one guess, a perfect Krillion, a long run of perfect Connections, a top 0.1% RNGdle roll) get a <span class="daily-sus">Sus?</span> tag until an admin takes a look. If you think someone’s fibbing, report it. Posting a result earns 100 clicks, once a day for each game, but it’s the same 100 whatever you scored, so there’s nothing to win by cheating except bragging rights.</p>
+            </div>
+        </section>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, toast, session, sessionReady, sessionExpired, loginHref, profileHref, announceClicks, styleName } from '/scripts/site.js';
+        import { dayOf, dayBefore } from '/scripts/milestones.js';
+        import { GAMES, BOARD_KEYS, BOARD_NAMES, EMOJI, parseShare, describe, detail, rankOf, places, dayAfter, isDay } from '/scripts/daily-games.js';
+
+        // Everything comes from utils/daily.js (?action=daily on api/leaderboard.js). Names and results come from
+        // other players, so they're only ever set as text.
+        const API = '/api/leaderboard?action=daily';
+        const $ = (id) => document.getElementById(id);
+        const dayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        const nameOf = (day) => dayFormat.format(new Date(`${day}T12:00:00Z`));
+
+        let today = dayOf();
+        let day = today;
+        let boards = null;
+        const reported = new Set();
+
+        /* ---------- Boards ---------- */
+
+        function grid(game, result) {
+            const line = detail(game, result);
+            if (line) return h('span', { class: 'daily-detail' }, line);
+            if (!result.grid) return null;
+            const emoji = game === 'krillion';
+            return h('span', { class: `daily-grid${emoji ? ' is-emoji' : ''}`, dataset: { game }, 'aria-hidden': 'true' },
+                result.grid.map((row) => h('span', { class: 'daily-grid-row' },
+                    [...row].map((tile) => (emoji ? EMOJI.krillion[tile] : h('span', { class: 'daily-tile', dataset: { tile } }))))));
+        }
+
+        async function report(entry, button) {
+            if (!confirm(`Report ${entry.name}’s result? An admin will take a look.`)) return;
+            button.disabled = true;
+            try {
+                const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ do: 'report', id: entry.id }) });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) { sessionExpired(); throw new Error(data.error); }
+                if (!res.ok) throw new Error(data.error);
+                reported.add(entry.id);
+                button.textContent = 'Reported';
+                toast('Thanks. An admin will take a look.', 'success');
+            } catch (err) {
+                button.disabled = false;
+                toast(err.message || 'Couldn’t send that report. Try again?', 'error');
+            }
+        }
+
+        function row(game, entry, place) {
+            const mine = session.loggedIn && entry.name === session.username;
+            const sus = entry.flags && entry.flags.length;
+            const canReport = session.loggedIn && !mine && entry.id;
+            const done = reported.has(entry.id);
+            return h('li', { class: `daily-row${mine ? ' is-me' : ''}`, dataset: { place } },
+                h('span', { class: 'board-rank' }, place),
+                h('span', { class: 'daily-who' },
+                    h('span', { class: 'daily-name-line' },
+                        styleName(h('a', { class: 'board-name', href: profileHref(entry.name) }, entry.name), entry.name),
+                        sus ? h('span', { class: 'daily-sus', title: `${entry.flags.join('. ')}. An admin will take a look.` }, 'Sus?') : null),
+                    grid(game, entry.result)),
+                h('span', { class: 'daily-result' },
+                    h('span', { class: 'board-score' }, describe(game, entry.result)),
+                    canReport ? h('button', { type: 'button', class: 'daily-report', disabled: done, 'aria-label': `Report ${entry.name}’s result`, onclick: (e) => report(entry, e.currentTarget) }, done ? 'Reported' : 'Report') : null));
+        }
+
+        function boardPanel(game, board) {
+            const n = board ? board.n : null;
+            const info = GAMES[game];
+            const title = n !== null && n !== undefined ? `${BOARD_NAMES[game]} #${fmt(n)}` : BOARD_NAMES[game];
+            const entries = board ? board.entries.map((e) => ({ ...e, rank: rankOf(game, e.result) })) : [];
+            const ranks = places(entries);
+            const played = game === 'trustle'
+                ? h('a', { class: 'text-link', href: '/pages/games/trustle.html' }, 'Play')
+                : h('a', { class: 'text-link', href: info.url, target: '_blank', rel: 'noopener' }, 'Play', h('span', { class: 'sr-only' }, ` ${info.name} on ${info.site} (opens in a new tab)`));
+            return h('section', { class: `panel daily-board${game === 'trustle' ? ' is-headliner' : ''}`, 'aria-label': title },
+                h('h3', { class: 'panel-title' }, h('span', null, title), played),
+                entries.length
+                    ? h('ol', { class: 'daily-list' }, entries.map((entry, i) => row(game, entry, ranks[i])))
+                    : h('p', { class: 'board-empty' }, game === 'trustle' ? 'Nobody’s finished this one yet.' : 'Nobody’s posted this one yet.'));
+        }
+
+        function render() {
+            $('boards').replaceChildren(...BOARD_KEYS.map((game) => boardPanel(game, boards && boards[game])));
+        }
+
+        function skeleton() {
+            $('boards').replaceChildren(...BOARD_KEYS.map(() => h('div', { class: 'panel daily-board is-loading', 'aria-hidden': 'true' })));
+        }
+
+        function showDay() {
+            $('boards-title').textContent = day === today ? `Today · ${nameOf(day)}` : day === dayBefore(today) ? `Yesterday · ${nameOf(day)}` : nameOf(day);
+            $('day-next').disabled = day >= today;
+        }
+
+        async function load({ fresh = false } = {}) {
+            showDay();
+            skeleton();
+            const want = day;
+            try {
+                const res = await fetch(`${API}&day=${want}${fresh ? '&fresh=1' : ''}`);
+                const data = await res.json();
+                if (!res.ok || !data.boards) throw new Error(data.error);
+                if (want !== day) return;
+                if (isDay(data.today) && data.today !== today) {
+                    today = data.today; // the server's clock, if this device's is off
+                    showDay();
+                }
+                boards = data.boards;
+                if (day === today && data.boards.trustle) $('trustle-number').textContent = `Trustle #${fmt(data.boards.trustle.n)}`;
+                render();
+            } catch {
+                if (want !== day) return;
+                $('boards').replaceChildren(h('p', { class: 'board-error' }, 'Couldn’t load the boards. ',
+                    h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => load() }, 'Try again')));
+            }
+        }
+
+        function go(next) {
+            if (!isDay(next) || next > today) return;
+            day = next;
+            history.replaceState(null, '', day === today ? location.pathname : `#${day}`);
+            load();
+        }
+
+        $('day-prev').addEventListener('click', () => go(dayBefore(day)));
+        $('day-next').addEventListener('click', () => go(dayAfter(day)));
+
+        /* ---------- Posting ---------- */
+
+        const text = $('share-text');
+        const preview = $('share-preview');
+        const status = $('post-status');
+        const DEFAULT_HINT = preview.textContent;
+
+        function check() {
+            status.textContent = '';
+            if (!text.value.trim()) {
+                preview.textContent = DEFAULT_HINT;
+                preview.dataset.tone = '';
+                $('post-btn').disabled = true;
+                return null;
+            }
+            const read = parseShare(text.value, today);
+            if (read.error) {
+                preview.textContent = read.error;
+                preview.dataset.tone = 'error';
+                $('post-btn').disabled = true;
+                return null;
+            }
+            preview.textContent = `Looks like ${puzzleName(read.game, read.n)}: ${describe(read.game, read.result)}.`;
+            preview.dataset.tone = 'ok';
+            $('post-btn').disabled = false;
+            return read;
+        }
+
+        text.addEventListener('input', check);
+
+        // "Wordle #1,983", or just "RNGdle", whose rolls have no number.
+        const puzzleName = (game, n) => (n === null || n === undefined ? GAMES[game].name : `${GAMES[game].name} #${fmt(n)}`);
+
+        $('post-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!check()) return;
+            const button = $('post-btn');
+            button.disabled = true;
+            status.dataset.tone = '';
+            status.textContent = 'Posting…';
+            try {
+                const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.value }) });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    throw new Error('Your login ran out. Log in again to post.');
+                }
+                if (!res.ok || !data.entry) throw new Error(data.error || 'Couldn’t post that. Try again?');
+                const { entry, reward } = data;
+                text.value = '';
+                check();
+                const earned = reward && reward.added ? ` +${fmt(reward.added)} clicks!` : '';
+                status.textContent = (entry.flags.length
+                    ? `Posted ${puzzleName(entry.game, entry.n)}. It’s marked Sus? for now (${entry.flags[0].toLowerCase()}).`
+                    : `Posted ${puzzleName(entry.game, entry.n)}: ${describe(entry.game, entry.result)}.`) + earned;
+                toast(`Your result is on the board.${earned}`, 'success');
+                if (reward && reward.added && Number.isFinite(reward.clicks)) announceClicks(reward.clicks, reward.added);
+                day = isDay(data.day) && data.day <= today ? data.day : today;
+                history.replaceState(null, '', day === today ? location.pathname : `#${day}`);
+                load({ fresh: true });
+            } catch (err) {
+                status.dataset.tone = 'error';
+                status.textContent = err.message;
+                button.disabled = false;
+            }
+        });
+
+        // Not every browser lets a page read the clipboard; the box takes a normal paste either way.
+        if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+            const paste = $('paste-btn');
+            paste.hidden = false;
+            paste.addEventListener('click', async () => {
+                try {
+                    text.value = (await navigator.clipboard.readText()).slice(0, 2000);
+                    check();
+                    text.focus();
+                } catch {
+                    toast('Couldn’t read the clipboard. Paste into the box instead.', 'error');
+                }
+            });
+        }
+
+        /* ---------- Start ---------- */
+
+        $('login-link').href = loginHref();
+        const fromHash = location.hash.slice(1);
+        if (isDay(fromHash) && fromHash <= today) day = fromHash;
+        await sessionReady;
+        load();
+    </script>
+</body>
+</html>

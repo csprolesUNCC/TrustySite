@@ -34,6 +34,7 @@
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preconnect" href="https://www.youtube-nocookie.com">
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/tv.css">
     <link rel="stylesheet" href="/styles/radio.css">
     <script type="module" src="/scripts/site.js"></script>
@@ -111,8 +112,8 @@
                     <ol class="tv-guide" id="guide"></ol>
                 </div>
                 <p class="tv-note">Every station plays back to back, all day, every day. Everyone listening hears the same moment, so tell your friends to tune in.</p>
-                <p class="tv-note" data-auth-show="in">Every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 2,500 a day.<span id="earned"></span></p>
-                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you listen earns you 10 clicks for your Trusty clicker, up to 2,500 a day.</p>
+                <p class="tv-note" data-auth-show="in">Every 10 seconds you listen earns you 5 clicks for your Trusty clicker, up to 1,250 a day from Trusty Radio and Trusty TV together.<span id="earned"></span></p>
+                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 10 seconds you listen earns you 5 clicks for your Trusty clicker, up to 1,250 a day from Trusty Radio and Trusty TV together.</p>
             </aside>
         </section>
     </main>
@@ -410,8 +411,8 @@
         /* ---------- Listening rewards ---------- */
 
         // A logged-in listener earns WATCH_REWARD.clicks for every REWARD_EVERY seconds a song is actually
-        // playing on screen, up to WATCH_REWARD.daily a day (api/clicks.js gives them out and enforces both;
-        // Trusty TV's are counted separately).
+        // playing on screen, up to WATCH_REWARD.daily a day together with Trusty TV's (api/clicks.js gives
+        // them out and enforces both).
         const REWARD_EVERY = WATCH_REWARD.every;
         let listened = 0;  // seconds listened toward the next reward
         let capped = null; // the day today's clicks ran out, if they have

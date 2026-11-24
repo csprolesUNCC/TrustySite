@@ -5,6 +5,7 @@ import { authenticateUser, isAdmin } from './auth.js';
 import { badWordsIn } from './bad-words.js';
 import { currentAccount } from './rename.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
+import { listFlagged, moderateScore } from './daily.js';
 
 // Reporting Draw Trusty drawings, and the admin panel (pages/admin.html). Both are served from existing
 // functions so they don't take up more Vercel functions:
@@ -14,6 +15,8 @@ import { GRADER_VERSION } from '../scripts/draw-grader.js';
 //     GET &view=drawing&id=&at=: one drawing as a PNG, so the list doesn't have to carry every image.
 //     GET &view=users: every username, newest first, with any bad words in it (utils/bad-words.js).
 //     POST { do: 'remove' | 'dismiss', id, at }: delete a drawing along with its score, or clear its reports.
+//     GET &view=daily: Daily Games results that were flagged or reported (utils/daily.js).
+//     POST { kind: 'daily', do: 'remove' | 'dismiss', id }: take one down, or clear its flags and reports.
 // Reports live on the drawing's document in `draw_scores`: `reportedBy` lists everyone who reported it (so
 // nobody can report it twice) and `reports` counts the ones an admin hasn't cleared yet. A new high score
 // replaces the drawing and starts both over (api/draw-api.js).
@@ -116,8 +119,17 @@ async function listUsers(res) {
     });
 }
 
+async function moderateDaily(body, res, admin) {
+    const done = await moderateScore(body);
+    if (done === null) return res.status(400).json({ error: 'Invalid request' });
+    if (!done) return res.status(409).json({ error: 'That result was already taken down.' });
+    console.log(`Admin ${admin.username}: ${body.do} daily result ${body.id}`);
+    return res.status(200).json({ ok: true });
+}
+
 async function moderate(req, res, admin) {
     const body = req.body || {};
+    if (body.kind === 'daily') return moderateDaily(body, res, admin);
     const ref = drawingRef(body);
     if (!ref || (body.do !== 'remove' && body.do !== 'dismiss')) return res.status(400).json({ error: 'Invalid request' });
 
@@ -145,6 +157,10 @@ export default async function adminApi(req, res) {
         if (req.method === 'GET' && view === 'drawings') return await listDrawings(res);
         if (req.method === 'GET' && view === 'drawing') return await sendDrawing(req, res);
         if (req.method === 'GET' && view === 'users') return await listUsers(res);
+        if (req.method === 'GET' && view === 'daily') {
+            res.setHeader('Cache-Control', 'no-store');
+            return res.status(200).json({ results: await listFlagged() });
+        }
         if (req.method === 'POST') return await moderate(req, res, user);
         return res.status(400).json({ error: 'Invalid request' });
     } catch (error) {

@@ -14,6 +14,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/admin.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -44,13 +45,14 @@
             <header class="page-head container">
                 <p class="eyebrow">Admins only</p>
                 <h1>Admin Panel</h1>
-                <p class="lead">Look over Draw Trusty drawings and usernames, and take down anything that doesn’t belong on the site.</p>
+                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, and take down anything that doesn’t belong on the site.</p>
             </header>
 
             <section class="section-tight container" aria-label="Admin tools">
                 <div class="tabs" role="tablist" aria-label="Admin tools">
                     <button class="tab" role="tab" type="button" id="tab-drawings" aria-controls="panel-drawings" aria-selected="true" data-tab="drawings">Drawings</button>
                     <button class="tab" role="tab" type="button" id="tab-users" aria-controls="panel-users" aria-selected="false" tabindex="-1" data-tab="users">Usernames</button>
+                    <button class="tab" role="tab" type="button" id="tab-daily" aria-controls="panel-daily" aria-selected="false" tabindex="-1" data-tab="daily">Daily Games</button>
                 </div>
 
                 <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
@@ -71,6 +73,13 @@
                     </div>
                     <div id="users"></div>
                 </div>
+
+                <div role="tabpanel" id="panel-daily" aria-labelledby="tab-daily" data-tab="daily" hidden>
+                    <div class="admin-head">
+                        <p class="admin-summary" id="daily-summary" role="status"></p>
+                    </div>
+                    <ul class="admin-flagged admin-daily" id="daily" aria-label="Daily Games results that were flagged or reported, newest first"></ul>
+                </div>
             </section>
         </div>
     </main>
@@ -80,6 +89,7 @@
     <script type="module">
         import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
         import { openDrawing } from '/scripts/leaderboard.js';
+        import { BOARD_NAMES, describe } from '/scripts/daily-games.js';
 
         // Everything here comes from utils/moderation.js (?action=admin on api/leaderboard.js), which checks
         // that you're an admin on every request. Names come from other users, so they're only ever set as text.
@@ -285,11 +295,76 @@
             }
         }
 
+        /* ---------- Daily Games ---------- */
+
+        // Results on the Daily Games board (utils/daily.js) that were flagged when they were posted (they show
+        // Sus? there) or that players reported. Looks fine clears both; Remove takes the result off the board for good.
+        let dailyResults = [];
+
+        function summarizeDaily() {
+            $('daily-summary').textContent = dailyResults.length
+                ? `${plural(dailyResults.length, 'result')} flagged or reported.`
+                : 'Nothing flagged or reported. Everyone’s being honest, apparently.';
+        }
+
+        function dailyItem(r) {
+            const item = h('li', null,
+                nameLink(r.name, 'admin-user-name'),
+                h('span', null, `${BOARD_NAMES[r.game] || r.game}${r.n !== null && r.n !== undefined ? ` #${fmt(r.n)}` : ''}: ${describe(r.game, r.result)}`),
+                h('span', { class: 'admin-flags' }, [...r.flags, r.reports ? plural(r.reports, 'report') : null].filter(Boolean).join(' · ')),
+                h('span', { class: 'admin-user-joined' }, formatDate(r.at)),
+                h('span', { class: 'btn-row' },
+                    h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => moderateDaily(r, item, 'dismiss') }, 'Looks fine'),
+                    h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: () => moderateDaily(r, item, 'remove') }, 'Remove')));
+            return item;
+        }
+
+        async function moderateDaily(r, item, action) {
+            if (action === 'remove' && !confirm(`Take ${r.name}’s ${BOARD_NAMES[r.game]} result off the board? They can’t post that puzzle again.`)) return;
+            const buttons = [...item.querySelectorAll('button')];
+            buttons.forEach((b) => { b.disabled = true; });
+            try {
+                const { res, data, denied } = await request('', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kind: 'daily', do: action, id: r.id }),
+                });
+                if (denied) return;
+                if (!res.ok && res.status !== 409) throw new Error(data.error);
+                const next = item.nextElementSibling || item.previousElementSibling;
+                item.remove();
+                dailyResults = dailyResults.filter((x) => x !== r);
+                summarizeDaily();
+                toast(res.status === 409 ? (data.error || 'Already taken down.') : action === 'remove' ? 'Result taken down.' : 'Cleared.', 'success');
+                next?.querySelector('button')?.focus();
+            } catch {
+                buttons.forEach((b) => { b.disabled = false; });
+                toast('Couldn’t do that. Try again?', 'error');
+            }
+        }
+
+        async function loadDaily() {
+            const summary = $('daily-summary');
+            summary.textContent = 'Loading results…';
+            try {
+                const { res, data, denied } = await request('&view=daily');
+                if (denied) return;
+                if (!res.ok || !Array.isArray(data.results)) throw new Error(`HTTP ${res.status}`);
+                dailyResults = data.results.map((r) => ({ ...r, flags: Array.isArray(r.flags) ? r.flags : [], reports: Number(r.reports) || 0 }));
+                $('daily').replaceChildren(...dailyResults.map(dailyItem));
+                summarizeDaily();
+            } catch {
+                loaded.delete('daily');
+                $('daily').replaceChildren();
+                summary.replaceChildren('Couldn’t load the results. ', retryButton('daily'));
+            }
+        }
+
         /* ---------- Tabs ---------- */
 
         const tabs = [...document.querySelectorAll('[role="tab"]')];
         const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
-        const loaders = { drawings: loadDrawings, users: loadUsers };
+        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily };
         const loaded = new Set();
 
         function load(key) {

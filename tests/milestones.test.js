@@ -1,10 +1,13 @@
-// The header clicker's click ranks and daily bonus (scripts/milestones.js), and the leaderboard page's list of them.
+// The header clicker's click ranks, daily bonus and tiredness (scripts/milestones.js), the leaderboard page's list of
+// them, and api/clicks.js's update for a press.
+import './setup-env.js'; // first, before anything that reads process.env
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   RANKS, rankFor, nextRank, rankProgress, rankLevel,
   DAILY, dayOf, dayBefore, dailyBonus, dailyClaim, dailyStatus,
+  CLICKER, CLICKER_LAST, pressPays, pressesPaid, pressesToday, tiredness,
 } from '../scripts/milestones.js';
 
 const root = new URL('../', import.meta.url);
@@ -96,5 +99,92 @@ test('the leaderboard page lists the same ranks and daily bonus', () => {
   assert.ok(rule, 'pages/leaderboard.html doesn’t explain the daily bonus (id="daily-rule")');
   for (const part of [`+${DAILY.base} `, ` ${DAILY.step} more`, `+${DAILY.max}`]) {
     assert.ok(rule[1].includes(part), `the daily bonus line says "${part.trim()}"`);
+  }
+});
+
+test('Trusty gets tired: full pay, then one in CLICKER.every, then nothing', () => {
+  assert.ok(CLICKER.full > 0 && CLICKER.every > 1 && CLICKER.max > CLICKER.full);
+  let paid = 0;
+  for (let n = 1; n <= CLICKER_LAST + 1000; n++) {
+    if (pressPays(n)) paid++;
+    if (n % 997 === 0 || n === CLICKER.full || n === CLICKER_LAST) assert.equal(pressesPaid(n), paid, `${n} presses`);
+  }
+  assert.equal(paid, CLICKER.max, 'a whole day of presses pays CLICKER.max');
+  assert.equal(pressesPaid(CLICKER.full), CLICKER.full);
+  assert.equal(pressesPaid(CLICKER_LAST), CLICKER.max);
+  assert.ok(pressPays(CLICKER_LAST) && !pressPays(CLICKER_LAST + CLICKER.every));
+  assert.ok(!pressPays(CLICKER.full + 1) && pressPays(CLICKER.full + CLICKER.every));
+  assert.ok(!pressPays(0) && !pressPays(-1) && !pressPays(1.5) && !pressPays('3'));
+  assert.equal(tiredness(CLICKER.full - 1), 'fresh');
+  assert.equal(tiredness(CLICKER.full), 'tired');
+  assert.equal(tiredness(CLICKER_LAST), 'done');
+  assert.equal(pressesToday({ day: '2026-11-24', n: 12 }, '2026-11-24'), 12);
+  assert.equal(pressesToday({ day: '2026-11-23', n: 12 }, '2026-11-24'), 0, 'a new day starts over');
+  assert.equal(pressesToday(null, '2026-11-24'), 0);
+  // An autoclicker at the server's limit all day (6 a second) gets CLICKER.max, not half a million.
+  assert.equal(pressesPaid(6 * 86400), CLICKER.max);
+});
+
+// Just enough of MongoDB's aggregation expressions to run api/clicks.js's update pipeline, so the test can check it
+// pays the way pressPays() says without a database.
+function evaluate(expr, doc) {
+  if (typeof expr === 'string' && expr.startsWith('$')) return expr.slice(1).split('.').reduce((v, k) => (v == null ? undefined : v[k]), doc);
+  if (Array.isArray(expr)) return expr.map((e) => evaluate(e, doc));
+  if (!expr || typeof expr !== 'object' || expr instanceof Date) return expr;
+  const [op, ...rest] = Object.keys(expr);
+  if (!op.startsWith('$')) return Object.fromEntries(Object.entries(expr).map(([k, v]) => [k, evaluate(v, doc)]));
+  assert.equal(rest.length, 0, 'one operator per expression');
+  if (op === '$literal') return expr.$literal;
+  // $cond only works out the branch it takes, as MongoDB does.
+  if (op === '$cond') return evaluate(expr.$cond[evaluate(expr.$cond[0], doc) ? 1 : 2], doc);
+  const args = (Array.isArray(expr[op]) ? expr[op] : [expr[op]]).map((a) => evaluate(a, doc));
+  const num = (v) => { assert.equal(typeof v, 'number', `${op} gets numbers`); return v; };
+  switch (op) {
+    case '$and': return args.every(Boolean);
+    case '$or': return args.some(Boolean);
+    case '$eq': return args[0] === args[1];
+    case '$gt': return args[0] != null && args[0] > args[1];
+    case '$lte': return args[0] != null && args[0] <= args[1];
+    case '$add': return args.reduce((a, b) => num(a) + num(b));
+    case '$subtract': return num(args[0]) - num(args[1]);
+    case '$mod': return num(args[0]) % num(args[1]);
+    case '$ifNull': return args[0] ?? args[1];
+    case '$slice': return args[0].slice(0, args[1]);
+    case '$concatArrays': return args.flat(1);
+    default: throw new Error(`the test doesn't know ${op}`);
+  }
+}
+const runPipeline = (pipeline, doc) => pipeline.reduce((d, stage) => ({ ...d, ...evaluate(stage.$set, d) }), doc);
+
+test('api/clicks.js pays a press the way pressPays() says', async () => {
+  const { pressUpdate } = await import('../api/clicks.js');
+  const today = '2026-11-24';
+  const now = new Date('2026-11-24T15:00:00Z');
+  const name = '$weird.name';
+  // An account from before presses were counted, and one with yesterday's count.
+  for (const start of [{ clicks: 40 }, { clicks: 40, clicker: { day: '2026-11-23', n: 99999 }, recent: [now, now, now] }]) {
+    const doc = runPipeline(pressUpdate(now, today, name), start);
+    assert.deepEqual(doc.clicker, { day: today, n: 1 }, 'the first press of the day starts the count over');
+    assert.equal(doc.clicks, 41);
+    assert.equal(doc.username, name, 'a username is never read as a field path');
+    assert.ok(doc.recent.length >= 1 && doc.recent.length <= 6 && doc.recent[0] === now);
+  }
+  for (const n of [1, 2, CLICKER.full - 1, CLICKER.full, CLICKER.full + 1, CLICKER.full + CLICKER.every - 1, CLICKER.full + CLICKER.every,
+    CLICKER_LAST - 1, CLICKER_LAST, CLICKER_LAST + 1, CLICKER_LAST + CLICKER.every]) {
+    const before = { clicks: 500, clicker: { day: today, n: n - 1 }, recent: [now, now, now, now, now, now] };
+    const after = runPipeline(pressUpdate(now, today, 'carson'), before);
+    assert.equal(after.clicker.n, n);
+    assert.equal(after.clicks - before.clicks, pressPays(n) ? 1 : 0, `press ${n}`);
+    assert.equal(after.recent.length, 6, 'only the last six presses are kept');
+  }
+});
+
+test('pages/leaderboard.html says how Trusty gets tired', () => {
+  const html = fs.readFileSync(new URL('pages/leaderboard.html', root), 'utf8');
+  const rule = /<p[^>]* id="clicker-rule"[^>]*>([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(rule, 'pages/leaderboard.html doesn’t explain the clicker’s daily limit (id="clicker-rule")');
+  const fmt = (n) => n.toLocaleString('en-US');
+  for (const part of [fmt(CLICKER.full), `1 in every ${CLICKER.every}`, fmt(CLICKER.max)]) {
+    assert.ok(rule[1].includes(part), `the clicker line says "${part}"`);
   }
 });

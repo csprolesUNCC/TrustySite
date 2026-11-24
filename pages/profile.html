@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Profile — Trusty da Horse</title>
-    <meta name="description" content="A Trusty fan's profile: their bio, clicks, high scores, Trustle stats and favorite Trusty TV channel.">
+    <meta name="description" content="A Trusty fan's profile: their bio, clicks, high scores, Trustle and daily games stats and favorite Trusty TV channel.">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="profile">
     <meta property="og:site_name" content="Trusty da Horse">
@@ -18,6 +18,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/profile.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -83,12 +84,27 @@
                 </aside>
             </section>
 
+            <!-- Your own profile only: the Item Shop's themes you own, to pick from (utils/shop.js) -->
+            <section class="section-tight container" id="look" aria-labelledby="look-title" hidden>
+                <div class="panel profile-look">
+                    <div class="profile-look-head">
+                        <h2 class="panel-title" id="look-title">Your themes</h2>
+                        <a class="btn btn-sm btn-highlight" href="/pages/shop.html">Item Shop</a>
+                    </div>
+                    <p class="muted">Pick the colors the site shows you. Only you see your theme; your name’s look shows to everyone.</p>
+                    <div class="profile-themes" id="look-themes" role="group" aria-label="Your themes"></div>
+                    <p class="profile-look-name" id="look-name"></p>
+                    <p class="form-status" id="look-status" role="status"></p>
+                </div>
+            </section>
+
             <section class="section-tight container" aria-labelledby="stats-title">
                 <div class="section-head">
                     <div>
                         <h2 id="stats-title">Stats</h2>
                         <p>These fill themselves in from playing while logged in.</p>
                     </div>
+                    <button class="btn btn-outline btn-sm" type="button" id="card-btn" hidden>Share as a picture</button>
                 </div>
                 <div class="profile-stats" id="stats"></div>
             </section>
@@ -119,11 +135,13 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref } from '/scripts/site.js';
+        import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref, styleName, applyTheme, namePreview } from '/scripts/site.js';
+        import { DEFAULTS as SHOP_DEFAULTS, itemsOf, nameStyleOf } from '/scripts/shop.js';
         import { safeDrawing, openDrawing, rankBadge, clickIcon } from '/scripts/leaderboard.js';
-        import { nextRank, rankProgress } from '/scripts/milestones.js';
+        import { nextRank, rankProgress, rankFor } from '/scripts/milestones.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
         import { usernameProblem } from '/scripts/username.js';
+        import { GAMES as DAILY_GAMES } from '/scripts/daily-games.js';
 
         const BIO_MAX = 300; // utils/profile.js allows the same
         const $ = (id) => document.getElementById(id);
@@ -305,18 +323,150 @@
                 h('a', { class: 'text-link', href: '/pages/games/trustle.html' }, 'Play today’s Trustle'));
         }
 
+        // The other sites' games they've posted on the Daily Games board (utils/daily.js), one line each.
+        function dailyCard() {
+            const d = profile.daily || {};
+            const pct = (s) => `${s.played ? Math.round((s.won / s.played) * 100) : 0}% won`;
+            const streak = (s) => (s.streak > 1 ? `${fmt(s.streak)}\u2011day streak` : null);
+            const lines = {
+                wordle: (s) => [pct(s), s.average !== null ? `${s.average} guesses on average` : null, streak(s)],
+                connections: (s) => [pct(s), `${fmt(s.perfect)} perfect`, streak(s)],
+                krillion: (s) => [`${fmt(s.average)} on average`, `best ${fmt(s.best)}`, streak(s)],
+                rngdle: (s) => [`${fmt(s.average)} EP on average`, `best ${fmt(s.best)} EP`, streak(s)],
+            };
+            const played = Object.keys(DAILY_GAMES).filter((game) => d[game] && d[game].played);
+            return statCard('Daily Games', 'is-daily',
+                played.length
+                    ? h('ul', { class: 'profile-daily' }, played.map((game) => h('li', null,
+                        h('span', { class: 'profile-daily-game' }, `${DAILY_GAMES[game].name} · ${fmt(d[game].played)} played`),
+                        h('span', { class: 'profile-stat-detail' }, lines[game](d[game]).filter(Boolean).join(' · ')))))
+                    : emptyLine(profile.isMe ? 'You haven’t posted a Wordle, Connections, Krillion or RNGdle yet.' : 'Hasn’t posted any daily games yet.'),
+                h('a', { class: 'text-link', href: '/pages/daily.html' }, 'See today’s boards'));
+        }
+
         function render() {
             document.title = `${profile.username} — Trusty da Horse`;
             // Trusty's own account is the house, never on the clicks board.
             const clickPlace = !profile.house && profile.clicks ? profile.clicks.rank : 0;
-            $('profile-name').replaceChildren(...[profile.username, clickIcon(clickPlace)].filter(Boolean));
+            $('profile-name').replaceChildren(...[styleName(h('span', null, profile.username), profile.username), clickIcon(clickPlace)].filter(Boolean));
             const since = new Date(profile.memberSince);
             $('profile-since').textContent = Number.isNaN(since.getTime()) ? '' : `Trusty fan since ${joinedFormat.format(since)}.`;
             renderRename();
             renderBio();
             renderTv();
-            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), snakeCard(), trustleCard());
+            loadLook();
+            $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), snakeCard(), trustleCard(), dailyCard());
+            $('card-btn').hidden = Boolean(profile.house);
             show('profile');
+        }
+
+        /* ---------- The profile as a picture (scripts/share-card.js) ---------- */
+
+        function cardLines() {
+            const p = profile;
+            const t = p.trustle;
+            const lines = [
+                p.flappy && `Flappy Trusty best: ${fmt(p.flappy.score)} (#${fmt(p.flappy.rank)})`,
+                t && t.played && `Trustle: ${Math.round((t.won / t.played) * 100)}% won${t.streak > 1 ? `, ${fmt(t.streak)}-day streak` : ''}`,
+                p.trustis && `Trustis best: ${fmt(p.trustis.score)} (#${fmt(p.trustis.rank)})`,
+                p.snake && `Trusty Snake best: ${fmt(p.snake.score)} (#${fmt(p.snake.rank)})`,
+                p.draw && `Draw Trusty best: ${fmt(p.draw.score)}% (#${fmt(p.draw.rank)})`,
+            ];
+            return lines.filter(Boolean).slice(0, 4);
+        }
+
+        $('card-btn').addEventListener('click', async () => {
+            if (!profile || profile.house) return;
+            const c = profile.clicks;
+            const rank = c ? rankFor(c.total) : null;
+            const lines = cardLines();
+            const { openShareCard } = await import('/scripts/share-card.js');
+            openShareCard({
+                eyebrow: 'Trusty fan profile',
+                title: profile.username,
+                big: fmt(c ? c.total : 0),
+                sub: `clicks${rank ? ` · ${rank.name}` : ''}${c && c.rank ? ` · #${fmt(c.rank)} on the board` : ''}`,
+                lines: lines.length ? lines : ['Just getting started!'],
+                filename: `trusty-${profile.username}.png`,
+                text: `${location.origin}${profileHref(profile.username)}`,
+                dialogTitle: profile.isMe ? 'Share your profile' : `Share ${profile.username}’s profile`,
+            });
+        });
+
+        /* ---------- Your themes (the Item Shop, utils/shop.js) ---------- */
+
+        // What the shop says you have ({ owned, equipped }), once it's answered.
+        let shop = null;
+        let switching = false;
+
+        function renderLook() {
+            const mine = profile && profile.isMe && session.loggedIn;
+            $('look').hidden = !mine || !shop;
+            if (!mine || !shop) return;
+            const themes = itemsOf('theme').filter((t) => t.id === SHOP_DEFAULTS.theme || shop.owned.includes(t.id));
+            $('look-themes').replaceChildren(...themes.map((t) => h('button', {
+                type: 'button',
+                class: 'profile-theme',
+                'aria-pressed': String(shop.equipped.theme === t.id),
+                disabled: switching,
+                onclick: () => pickTheme(t),
+            },
+            h('span', { class: 'profile-theme-swatch', style: `--sw-page: ${t.swatch[0]}; --sw-ink: ${t.swatch[1]}`, 'aria-hidden': 'true' }),
+            t.name)));
+            const style = nameStyleOf(shop);
+            $('look-name').replaceChildren(
+                themes.length > 1 ? '' : 'Only the Notebook so far: the Item Shop has more. ',
+                'Your name: ', namePreview(profile.username, style),
+                style ? '' : ' (plain for now)');
+        }
+
+        async function loadLook() {
+            if (!profile.isMe || !session.loggedIn || shop) { renderLook(); return; }
+            try {
+                const res = await fetch('/api/leaderboard?action=shop');
+                if (!res.ok) return;
+                const data = await res.json();
+                shop = { owned: Array.isArray(data.owned) ? data.owned : [], equipped: { ...SHOP_DEFAULTS, ...(data.equipped || {}) } };
+            } catch { /* no theme picker this time */ }
+            renderLook();
+        }
+
+        async function pickTheme(theme) {
+            if (switching || shop.equipped.theme === theme.id) return;
+            switching = true;
+            const status = $('look-status');
+            status.dataset.tone = 'info';
+            status.textContent = 'Switching…';
+            renderLook();
+            try {
+                const res = await fetch('/api/leaderboard?action=shop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ do: 'equip', id: theme.id }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    status.dataset.tone = 'error';
+                    status.replaceChildren('Your login expired. ', h('a', { href: loginHref() }, 'Log in again'), ' to switch themes.');
+                    return;
+                }
+                if (!res.ok) {
+                    status.dataset.tone = 'error';
+                    status.textContent = data.error || 'Couldn’t switch themes. Try again?';
+                    return;
+                }
+                shop = { owned: Array.isArray(data.owned) ? data.owned : shop.owned, equipped: { ...SHOP_DEFAULTS, ...(data.equipped || {}) } };
+                applyTheme(shop.equipped.theme);
+                status.textContent = '';
+                toast(`${theme.name} is on.`, 'success');
+            } catch {
+                status.dataset.tone = 'error';
+                status.textContent = 'Couldn’t reach the server. Check your connection and try again.';
+            } finally {
+                switching = false;
+                renderLook();
+            }
         }
 
         /* ---------- Editing your bio ---------- */
@@ -473,6 +623,7 @@
         onSession(() => {
             if (!profile) return;
             renderRename();
+            renderLook();
             if ($('bio-form').hidden) renderBio();
         });
 

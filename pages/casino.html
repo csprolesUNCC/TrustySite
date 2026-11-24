@@ -32,6 +32,7 @@
     <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
     <script defer src="/_vercel/insights/script.js"></script>
@@ -89,8 +90,59 @@
                 </article>
             </div>
         </section>
+
+        <!-- Filled in live from the lobby (scripts/presence.js); stays hidden while online play isn't set up -->
+        <section class="section-tight container" id="wins" aria-labelledby="wins-title" hidden>
+            <div class="panel wins-panel">
+                <div class="wins-head">
+                    <h2 id="wins-title">Big Wins, Live</h2>
+                    <p class="wins-here" id="wins-here"></p>
+                </div>
+                <ol class="wins-list" id="wins-list"></ol>
+                <p class="wins-empty" id="wins-empty" hidden>Nobody’s won big lately. Win 500 clicks or more on one bet and you’re up here.</p>
+            </div>
+        </section>
     </main>
 
     <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, styleName, profileHref } from '/scripts/site.js';
+        import { onLobby } from '/scripts/presence.js';
+        import { GAMES, ago } from '/scripts/casino-feed.js';
+
+        const $ = (id) => document.getElementById(id);
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+        let shown = [];
+
+        function entry(win, fresh) {
+            const game = GAMES[win.game];
+            return h('li', { class: fresh && !reduced.matches ? 'is-new' : null },
+                h('span', { class: 'wins-what' },
+                    h('a', { href: profileHref(win.name) }, styleName(h('span', null, win.name), win.name)),
+                    ` won `, h('strong', null, `${fmt(win.won)} clicks`), ' at ', h('a', { href: game.href }, game.name),
+                    win.jackpot ? h('span', { class: 'tag tag-gold' }, 'Grand Jackpot!') : null),
+                h('time', { datetime: new Date(win.at).toISOString(), dataset: { at: win.at } }, ago(win.at)));
+        }
+
+        function render(wins, fresh = new Set()) {
+            shown = wins;
+            $('wins-list').replaceChildren(...wins.map((w) => entry(w, fresh.has(w))));
+            $('wins-empty').hidden = wins.length > 0;
+        }
+
+        onLobby((state, event) => {
+            $('wins').hidden = false;
+            const { casino } = state;
+            $('wins-here').textContent = casino === 1 ? 'Just you at the casino right now' : `${fmt(casino)} at the casino right now`;
+            if (event.t === 'here') return;
+            render(state.wins, new Set(event.t === 'win' ? state.wins.slice(0, event.wins.length) : []));
+        });
+
+        // "2 minutes ago" keeps up with the clock.
+        setInterval(() => {
+            for (const time of $('wins-list').querySelectorAll('time')) time.textContent = ago(Number(time.dataset.at));
+        }, 30000);
+    </script>
 </body>
 </html>

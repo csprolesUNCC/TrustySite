@@ -1,6 +1,6 @@
 // Fetch + render the leaderboards. Names and drawings come from other users, so everything
 // is built with DOM APIs (never innerHTML) and drawings must be PNG data URLs.
-import { h, fmt, session, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
+import { h, fmt, session, sessionExpired, loginHref, profileHref, styleName } from '/scripts/site.js';
 import { referenceCanvas } from '/scripts/draw-reference.js';
 import { rankFor, rankLevel } from '/scripts/milestones.js';
 
@@ -71,10 +71,10 @@ export async function fetchBoard(key, { fresh = false } = {}) {
 
 const isMe = (entry) => session.loggedIn && session.username && entry.name === session.username;
 
-// A name links to that player's profile page.
+// A name links to that player's profile page, in the font, color and highlight they picked in the Item Shop.
 function nameTag(entry, className) {
   return entry.profile
-    ? h('a', { class: className, href: entry.profile, title: `${entry.name}'s profile` }, entry.name)
+    ? styleName(h('a', { class: className, href: entry.profile, title: `${entry.name}'s profile` }, entry.name), entry.name)
     : h('span', { class: className, title: entry.name }, entry.name);
 }
 

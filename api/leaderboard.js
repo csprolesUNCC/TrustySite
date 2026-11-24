@@ -12,6 +12,8 @@ import soloBlackjack from '../utils/solo-blackjack.js';
 import soloCraps from '../utils/solo-craps.js';
 import soloSlots from '../utils/solo-slots.js';
 import soloPoker from '../utils/solo-poker.js';
+import daily from '../utils/daily.js';
+import shop from '../utils/shop.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), changing your username (?action=rename, see
@@ -21,7 +23,8 @@ export default async (req, res) => {
     // bank for betting clicks there (?action=bank, see utils/bank.js), Trusty Blackjack for one player
     // (?action=blackjack, see utils/solo-blackjack.js), Trusty Craps (?action=craps, see utils/solo-craps.js),
     // Trusty Slots (?action=slots, see utils/solo-slots.js) and Trusty Poker against the bots (?action=poker, see
-    // utils/solo-poker.js) live here too to save Vercel functions.
+    // utils/solo-poker.js), the Daily Games board (?action=daily, see utils/daily.js) and the Item Shop
+    // (?action=shop, see utils/shop.js) live here too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
     }
@@ -57,6 +60,12 @@ export default async (req, res) => {
     }
     if (req.query.action === 'poker') {
         return soloPoker(req, res);
+    }
+    if (req.query.action === 'daily') {
+        return daily(req, res);
+    }
+    if (req.query.action === 'shop') {
+        return shop(req, res);
     }
 
     if (req.method !== 'GET') {

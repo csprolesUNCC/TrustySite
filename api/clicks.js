@@ -2,24 +2,26 @@ import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { CHANNELS } from '../scripts/tv-lineup.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
-import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
+import { dayOf, dailyClaim, dailyStatus, CLICKER, CLICKER_LAST, pressPays, pressesToday } from '../scripts/milestones.js';
+import { equippedOf, nameStyleOf } from '../scripts/shop.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
 // The server allows a little slack so network jitter doesn't reject honest clicks.
-const MAX_CLICKS = 8;
+const MAX_CLICKS = 6;
 const WINDOW_MS = 1000;
 const JITTER_MS = 100;
 
 // Watching Trusty TV (POST ?action=tv) or listening to Trusty Radio (POST ?action=radio) earns WATCH_REWARD.clicks
 // every WATCH_REWARD.every seconds, at most once per window for the account no matter how many tabs are open, and at
-// most WATCH_REWARD.daily clicks a day (midnight Eastern) from each, counted in the account's `tvDaily` /
-// `radioDaily` ({ day, clicks }). The slack covers timer and network jitter.
+// most WATCH_REWARD.daily clicks a day (midnight Eastern) from the two together, counted in the account's
+// `mediaDaily` ({ day, clicks }). The slack covers timer and network jitter.
 const WATCH_SLACK_MS = 500;
+const MEDIA_DAILY = 'mediaDaily';
 const WATCH = {
     // Each TV reward also adds its seconds to the account's watch time for the channel that was on
     // (`tvSeconds.<channel key>`), which the profile page uses to pick a favorite channel.
-    tv: { name: 'Trusty TV', last: 'lastTvReward', daily: 'tvDaily', seconds: 'tvSeconds', keys: new Set(CHANNELS.map((c) => c.key)) },
-    radio: { name: 'Trusty Radio', last: 'lastRadioReward', daily: 'radioDaily' }
+    tv: { name: 'Trusty TV', last: 'lastTvReward', daily: MEDIA_DAILY, seconds: 'tvSeconds', keys: new Set(CHANNELS.map((c) => c.key)) },
+    radio: { name: 'Trusty Radio', last: 'lastRadioReward', daily: MEDIA_DAILY }
 };
 
 // Pays one watch reward if the last one was long enough ago and today's are under the cap. Returns [status, body].
@@ -70,9 +72,44 @@ async function payWatch(collection, user, source, body) {
     const doc = await collection.findOne({ userId: user.userId }, { projection: { [source.daily]: 1 } });
     const counted = doc && doc[source.daily];
     if (counted && counted.day === today && counted.clicks > CAP - CLICKS) {
-        return [429, { error: `That's today's ${CAP} clicks from ${source.name}. More from midnight Eastern.`, capped: true, day: today, today: counted.clicks, cap: CAP }];
+        return [429, { error: `That's today's ${CAP} clicks from Trusty TV and Trusty Radio. More from midnight Eastern.`, capped: true, day: today, today: counted.clicks, cap: CAP }];
     }
     return [429, { error: `${source.name} gives ${CLICKS} clicks every ${every} seconds.` }];
+}
+
+// One press of the header clicker, as an update pipeline so it's a single atomic update: it counts the day's
+// presses in `clicker` ({ day, n }, starting over each day) and pays a click only when pressPays() says that
+// press does (scripts/milestones.js: every press up to CLICKER.full, then one in CLICKER.every, then none), and
+// keeps `recent` (the times of the last MAX_CLICKS presses, newest first) for the rate limit.
+export function pressUpdate(now, today, username) {
+    const n = '$clicker.n';
+    const pays = {
+        $or: [
+            { $lte: [n, CLICKER.full] },
+            { $and: [{ $lte: [n, CLICKER_LAST] }, { $eq: [{ $mod: [{ $subtract: [n, CLICKER.full] }, CLICKER.every] }, 0] }] }
+        ]
+    };
+    return [
+        {
+            $set: {
+                clicker: {
+                    $cond: [
+                        { $and: [{ $eq: ['$clicker.day', today] }, { $gt: [{ $ifNull: ['$clicker.n', 0] }, 0] }] },
+                        { day: today, n: { $add: ['$clicker.n', 1] } },
+                        { day: today, n: 1 }
+                    ]
+                }
+            }
+        },
+        {
+            $set: {
+                clicks: { $add: [{ $ifNull: ['$clicks', 0] }, { $cond: [pays, 1, 0] }] },
+                username: { $literal: username },
+                lastClicked: now,
+                recent: { $slice: [{ $concatArrays: [[now], { $ifNull: ['$recent', []] }] }, MAX_CLICKS] }
+            }
+        }
+    ];
 }
 
 // The first click of each day (from midnight Eastern) also pays the daily bonus, which grows with every day in a
@@ -105,11 +142,17 @@ export default async (req, res) => {
         const collection = db.collection('click_game');
 
         if (req.method === 'GET') {
-            const userData = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, daily: 1 } });
+            const userData = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, daily: 1, clicker: 1, 'shop.owned': 1, 'shop.equipped': 1 } });
+            const shop = userData && userData.shop;
+            const today = dayOf(new Date());
             return res.status(200).json({
                 clicks: userData ? userData.clicks : 0,
+                // Today's presses, so the header knows how tired Trusty is (CLICKER in scripts/milestones.js).
+                clicker: { day: today, n: pressesToday(userData && userData.clicker, today) },
                 // Whether today's bonus is still waiting for a click (the header clicker shows it).
-                daily: dailyStatus(userData && userData.daily, dayOf(new Date()))
+                daily: dailyStatus(userData && userData.daily, today),
+                // The Item Shop's theme and name style they have on (scripts/shop.js), which every page puts on.
+                shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) }
             });
         }
 
@@ -122,16 +165,12 @@ export default async (req, res) => {
             const now = new Date();
             const today = dayOf(now);
             const cutoff = new Date(now.getTime() - WINDOW_MS + JITTER_MS);
-            // `recent` keeps the times of the last MAX_CLICKS clicks, newest first. A click only
-            // counts if the oldest of those is outside the window (or there aren't that many yet).
+            // A press only counts if the oldest of the last MAX_CLICKS is outside the window (or there aren't that
+            // many yet).
             const result = await collection.findOneAndUpdate(
                 { userId: user.userId, [`recent.${MAX_CLICKS - 1}`]: { $not: { $gt: cutoff } } },
-                {
-                    $inc: { clicks: 1 },
-                    $set: { username: user.username, lastClicked: now },
-                    $push: { recent: { $each: [now], $position: 0, $slice: MAX_CLICKS } }
-                },
-                { returnDocument: 'after', projection: { clicks: 1, daily: 1 } }
+                pressUpdate(now, today, user.username),
+                { returnDocument: 'after', projection: { clicks: 1, daily: 1, clicker: 1 } }
             );
             const doc = result && 'value' in result ? result.value : result;
             if (doc) {
@@ -140,7 +179,10 @@ export default async (req, res) => {
                     console.error('Daily bonus error:', error);
                     return null;
                 });
-                return res.status(200).json(bonus || { clicks: doc.clicks });
+                // `added` is 0 once Trusty's tired and this press didn't pay; `clicker` is today's presses so far.
+                const n = pressesToday(doc.clicker, today);
+                const press = { added: pressPays(n) ? 1 : 0, clicker: { day: today, n } };
+                return res.status(200).json(bonus ? { ...bonus, ...press } : { clicks: doc.clicks, ...press });
             }
 
             // No match: either this is the user's first click ever (which gets the first day's bonus too),
@@ -148,11 +190,11 @@ export default async (req, res) => {
             const first = dailyClaim(null, today);
             const inserted = await collection.updateOne(
                 { userId: user.userId },
-                { $setOnInsert: { clicks: 1 + first.added, username: user.username, lastClicked: now, recent: [now], daily: { day: today, streak: first.streak } } },
+                { $setOnInsert: { clicks: 1 + first.added, username: user.username, lastClicked: now, recent: [now], daily: { day: today, streak: first.streak }, clicker: { day: today, n: 1 } } },
                 { upsert: true }
             );
             if (inserted.upsertedCount) {
-                return res.status(200).json({ clicks: 1 + first.added, daily: first });
+                return res.status(200).json({ clicks: 1 + first.added, daily: first, added: 1, clicker: { day: today, n: 1 } });
             }
             return res.status(429).json({ error: `Slow down! Max ${MAX_CLICKS} clicks per second.` });
         }

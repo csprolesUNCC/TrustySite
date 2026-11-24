@@ -6,9 +6,9 @@
 export const ON_AIR_SINCE = Date.UTC(2026, 0, 1);
 
 // What a logged-in viewer or listener earns: `clicks` for every `every` seconds something is playing on screen,
-// up to `daily` clicks a day (from midnight Eastern) from Trusty TV and another `daily` from Trusty Radio.
+// up to `daily` clicks a day (from midnight Eastern) from Trusty TV and Trusty Radio together.
 // api/clicks.js pays them out and enforces all three; the pages' notes say the same numbers.
-export const WATCH_REWARD = { clicks: 10, every: 5, daily: 2500 };
+export const WATCH_REWARD = { clicks: 5, every: 10, daily: 1250 };
 
 // Takes a YouTube link (watch, youtu.be, shorts, embed or live) or a bare 11-character video id.
 export function videoId(link) {
@@ -26,17 +26,22 @@ export function toSeconds(length) {
   return parts.reduce((total, p) => total * 60 + Number(p), 0);
 }
 
+// A live stream (`live: true` in a lineup, with no length) is scheduled as one airing a day, so the schedule's
+// math still works; the page plays it as it is instead of seeking to a second.
+export const LIVE_SECONDS = 24 * 60 * 60;
+
 export function buildSchedule(lineup) {
   const shows = [];
   let total = 0;
   for (const entry of lineup) {
     const id = videoId(entry.link);
-    const seconds = toSeconds(entry.length);
+    const live = entry.live === true;
+    const seconds = live ? LIVE_SECONDS : toSeconds(entry.length);
     if (!id || !(seconds > 0)) {
       console.warn('Trusty TV: skipping a show with a bad link or length', entry);
       continue;
     }
-    shows.push({ id, title: entry.title || '', seconds });
+    shows.push(live ? { id, title: entry.title || '', seconds, live } : { id, title: entry.title || '', seconds });
     total += seconds;
   }
   return { shows, total };

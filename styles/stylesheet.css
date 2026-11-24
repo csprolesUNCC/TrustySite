@@ -70,6 +70,7 @@
   --green: #23824a;
   --highlight: #ffe45c;
   --gold: #f2c230;
+  --on-ink: #fff; /* text on an ink-colored button: dark themes turn ink light, so this turns dark */
 
   --note-yellow: #fff1a1;
   --note-pink: #ffd3de;
@@ -426,7 +427,7 @@ img[src$="/trusty.png"] { clip-path: inset(0 2%); }
 /* ---------- Buttons ---------- */
 .btn {
   --btn-bg: var(--ink);
-  --btn-fg: #fff;
+  --btn-fg: var(--on-ink);
   --btn-border: var(--ink);
   --btn-shadow: rgba(27, 27, 31, .28);
   display: inline-flex;
@@ -462,7 +463,7 @@ img[src$="/trusty.png"] { clip-path: inset(0 2%); }
 }
 .btn-outline { --btn-bg: var(--card); --btn-fg: var(--ink); --btn-shadow: var(--ink); }
 .btn-highlight { --btn-bg: var(--highlight); --btn-fg: var(--ink); --btn-shadow: var(--ink); }
-.btn-blue { --btn-bg: var(--blue); --btn-fg: #fff; --btn-border: var(--blue-dark); --btn-shadow: var(--blue-dark); }
+.btn-blue { --btn-bg: var(--blue); --btn-fg: var(--on-ink); --btn-border: var(--blue-dark); --btn-shadow: var(--blue-dark); }
 .btn-ghost {
   --btn-bg: transparent;
   --btn-fg: var(--ink);
@@ -722,6 +723,21 @@ dialog.modal::backdrop { background: rgba(20, 20, 24, .6); backdrop-filter: blur
 .modal-head h2 { margin: 0; font-size: 1.4rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .modal-body { padding: 20px 22px 22px; }
 
+/* Share cards (scripts/share-card.js) */
+.share-card-preview {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(516px, 58dvh);
+  aspect-ratio: 1;
+  margin: 0 auto 16px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fbf8f0;
+}
+.share-card-actions { justify-content: center; }
+
 /* ---------- Toasts ---------- */
 .toast-region {
   position: fixed;
@@ -788,6 +804,7 @@ trusty-footer { display: block; }
   position: relative;
   height: var(--header-h);
   background: rgba(251, 248, 240, .92);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
   -webkit-backdrop-filter: saturate(1.2) blur(10px);
   backdrop-filter: saturate(1.2) blur(10px);
 }
@@ -863,7 +880,7 @@ trusty-footer { display: block; }
 .site-nav a[aria-current] { color: var(--ink); }
 .site-nav a[aria-current]::after { opacity: 1; transform: scaleX(1); }
 
-/* Dropdown group (Games, Trusty Media, Trusty Tools): the page link, a caret, and a card of links under them */
+/* Dropdown group (Games, Casino, Trusty Tools): the page link, a caret, and a card of links under them */
 .nav-drop { position: relative; display: flex; align-items: center; }
 .nav-drop > a { padding-right: 2px; }
 .nav-drop > a::after { right: 2px; }
@@ -938,7 +955,8 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   text-decoration: none;
   white-space: nowrap;
 }
-.admin-link:hover, .admin-link[aria-current] { color: #fff; background: var(--ink); }
+.admin-link:hover, .admin-link[aria-current] { color: var(--on-ink); background: var(--ink); }
+.shop-link { background: var(--note-green); }
 
 /* The Trusty clicker (logged-in only) */
 .clicker {
@@ -1058,6 +1076,8 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
 }
 @keyframes plus-one { to { transform: translateY(-26px) rotate(-8deg); opacity: 0; } }
 .plus-one.slow-down { left: 4px; font-size: .85rem; white-space: nowrap; animation-duration: 1s; }
+/* A press that didn't pay: Trusty's tired (CLICKER in scripts/milestones.js). */
+.plus-one.is-tired { color: var(--pencil); font-size: .8rem; }
 
 .menu-toggle {
   display: none;
@@ -1197,6 +1217,18 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   color: var(--pencil);
 }
 .footer-bottom p { margin: 0; }
+.footer-here { display: block; margin-top: 4px; }
+.footer-here[hidden] { display: none; }
+.footer-here::before {
+  content: "";
+  display: inline-block;
+  width: .55em;
+  height: .55em;
+  margin-right: .45em;
+  border-radius: 50%;
+  background: var(--green);
+  vertical-align: .05em;
+}
 .footer-trusty { width: 88px; margin-bottom: -6px; }
 
 @media (max-width: 720px) {
@@ -1797,6 +1829,24 @@ dialog.reader::backdrop { background: #1e1f23; }
 }
 .chat-input textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(31, 79, 191, .18); }
 .chat-input .btn { min-height: 48px; }
+.chat-mic[hidden], .chat-speak[hidden] { display: none; }
+.chat-mic { flex: none; }
+.chat-mic[aria-pressed="true"] {
+  background: var(--red);
+  border-color: var(--ink);
+  color: var(--on-ink);
+  animation: mic-listen 1.4s ease-in-out infinite;
+}
+@keyframes mic-listen {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 51, 75, .45); }
+  50% { box-shadow: 0 0 0 8px rgba(214, 51, 75, 0); }
+}
+.chat-speak .speak-off { display: none; }
+.chat-speak[aria-pressed="false"] .speak-waves { display: none; }
+.chat-speak[aria-pressed="false"] .speak-off { display: inline; }
+.chat-speak.is-speaking .speak-waves { display: inline; animation: speak-pulse .9s ease-in-out infinite; }
+.chat-speak.is-speaking .speak-off { display: none; }
+@keyframes speak-pulse { 50% { opacity: .35; } }
 
 @media (max-width: 900px) {
   .chat-layout { grid-template-columns: 1fr; gap: 16px; padding-top: 16px; }
@@ -1955,6 +2005,716 @@ dialog.reader::backdrop { background: #1e1f23; }
 }
 
 /* =========================================================================
+   Item Shop: website themes (scripts/shop.js)
+   html[data-site-theme] is the theme the logged-in player has on: every page's head sets it from localStorage
+   before the page draws, and scripts/site.js keeps it in step with the account. A light theme only swaps the
+   tokens. A dark one turns the page dark with light ink, and puts the paper back inside every surface listed
+   below (cards, sheets, panels, notes, dialogs, form fields, game stages...), so whatever sits on white keeps its
+   dark ink. A new kind of box with its own light background goes in that list.
+   ========================================================================= */
+:root[data-site-theme="legal-pad"] {
+  --paper: #fbf0b4; --paper-deep: #f3e28c; --card: #fffbe3;
+  --rule: #a7c3e2; --rule-faint: #e6e2c2; --margin: #e2737e; --grid: #ecdf9f; --grid-strong: #e0cf7c;
+  --note-yellow: #fff8d2;
+}
+:root[data-site-theme="legal-pad"] body {
+  background-image: linear-gradient(90deg, transparent 31px, rgba(226, 115, 126, .55) 31px 33px, transparent 33px);
+}
+
+:root[data-site-theme="graph-paper"] {
+  --paper: #f4f8fd; --paper-deep: #e4edf8; --card: #fff;
+  --rule: #b3c9e6; --grid: #cfdcef; --grid-strong: #b3c9e6; --blue: #2a62c9;
+}
+:root[data-site-theme="graph-paper"] body {
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+:root[data-site-theme="sunset"] {
+  --paper: #fde2cf; --paper-deep: #f8cbb3; --card: #fff8f2;
+  --ink: #2b1a24; --ink-soft: #4a3240; --pencil: #7a5a66; --pencil-light: #a68893;
+  --rule: #f1c0ac; --rule-faint: #f8dccf; --margin: #c9507a; --grid: #f6d2c2; --grid-strong: #eebba6;
+  --blue: #8f2f62; --blue-dark: #6b2149; --note-blue: #e8dcff;
+}
+:root[data-site-theme="sunset"] body {
+  background-image: linear-gradient(180deg, #ffe8cc 0%, #fdd6d0 55%, #f6c5da 100%);
+  background-attachment: fixed;
+}
+
+:root[data-site-theme="hay-day"] {
+  --paper: #f6e3a3; --paper-deep: #ecd27f; --card: #fffaf0;
+  --rule: #e0c46e; --rule-faint: #efdca0; --margin: #c8553d; --grid: #ead58e; --grid-strong: #dcc070;
+  --blue: #2c45b0; --blue-dark: #1d2c82; --red: #c8553d;
+}
+:root[data-site-theme="hay-day"] body {
+  background-image:
+    repeating-linear-gradient(115deg, rgba(178, 132, 30, .10) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(62deg, rgba(178, 132, 30, .07) 0 2px, transparent 2px 13px);
+}
+:root[data-site-theme="hay-day"] .site-footer { background: #3550c4; --ink: #fff; --ink-soft: #e6ebff; --pencil: #ccd5ff; --blue: #ffe45c; --blue-dark: #fff3a8; color: #fff; }
+
+:root[data-site-theme="golden-horse"] {
+  --paper: #fff0cf; --paper-deep: #f8dca0; --card: #fffaeb;
+  --ink: #2a0d0d; --ink-soft: #4a1d1a; --pencil: #7a4a3a; --pencil-light: #a87a68;
+  --rule: #efbfa3; --rule-faint: #f7dcc6; --margin: #c8102e; --grid: #f3d3a6; --grid-strong: #e9bd85;
+  --blue: #b3121e; --blue-dark: #8a0d17; --red: #c8102e; --highlight: #ffd34d; --gold: #e0a81e;
+  --note-yellow: #ffe7a1;
+}
+:root[data-site-theme="golden-horse"] body {
+  background-image:
+    radial-gradient(120% 50% at 50% -10%, rgba(200, 16, 46, .18), transparent 60%),
+    radial-gradient(circle at 12px 12px, rgba(224, 168, 30, .22) 0 2px, transparent 2.5px);
+  background-size: auto, 24px 24px;
+}
+:root[data-site-theme="golden-horse"] .site-footer { background: #8a0d17; --ink: #ffe9a8; --ink-soft: #ffe0a0; --pencil: #f5c77a; --blue: #ffd34d; --blue-dark: #fff0b8; color: #ffe9a8; }
+
+:root[data-site-theme="kraft"] {
+  --paper: #dcbf94; --paper-deep: #cdac7c; --card: #f6ead4;
+  --ink: #2a1a0e; --ink-soft: #432c19; --pencil: #5b4330; --pencil-light: #7d6448;
+  --rule: #c4a272; --rule-faint: #d3b486; --margin: #9c3b22; --grid: #d1b282; --grid-strong: #c3a06d;
+  --blue: #5a3416; --blue-dark: #3b200b; --red: #9c3b22;
+  --note-yellow: #fbefc0;
+}
+:root[data-site-theme="kraft"] body {
+  background-image:
+    repeating-linear-gradient(93deg, rgba(90, 52, 22, .06) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(4deg, rgba(255, 255, 255, .07) 0 2px, transparent 2px 9px);
+}
+
+:root[data-site-theme="pasture"] {
+  --paper: #e4f0cf; --paper-deep: #d2e5b3; --card: #fbfdf5;
+  --rule: #bcd59d; --rule-faint: #d9eac2; --margin: #b8433a; --grid: #d3e6b8; --grid-strong: #bfd99f;
+  --blue: #a3291f; --blue-dark: #7d1d15; --red: #a3291f; --green: #2f6e2a;
+  --note-green: #d3efc0;
+}
+:root[data-site-theme="pasture"] body {
+  background-image:
+    linear-gradient(180deg, rgba(186, 222, 255, .6), transparent 280px),
+    repeating-linear-gradient(98deg, rgba(70, 130, 40, .07) 0 2px, transparent 2px 11px);
+}
+:root[data-site-theme="pasture"] .site-footer { background: #a3291f; --ink: #fff; --ink-soft: #ffe9e4; --pencil: #ffd0c6; --blue: #fff3b0; --blue-dark: #fff; color: #fff; }
+
+/* Newsprint: grey paper, black ink, a dot screen behind it and serif headlines. */
+:root[data-site-theme="trusty-times"] {
+  --paper: #ebeae3; --paper-deep: #dedcd2; --card: #f8f7f2;
+  --ink: #111; --ink-soft: #2b2b2b; --pencil: #4f4f4f; --pencil-light: #7a7a7a;
+  --rule: #c9c7bd; --rule-faint: #dcdad1; --margin: #8c8c8c; --grid: #dddbd2; --grid-strong: #cfcdc3;
+  --blue: #1a1a1a; --blue-dark: #000; --red: #8b1a1a;
+  --note-yellow: #f4f0d8;
+}
+:root[data-site-theme="trusty-times"] body {
+  background-image: radial-gradient(rgba(0, 0, 0, .07) 1px, transparent 1.4px);
+  background-size: 6px 6px;
+}
+:root[data-site-theme="trusty-times"] :is(h1, .h1, h2, .h2) {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+/* Snowflakes down both margins of the page. */
+:root[data-site-theme="snow-day"] {
+  --paper: #f2f8ff; --paper-deep: #e1eefa; --card: #fff;
+  --rule: #bcd6ef; --rule-faint: #dfeaf6; --margin: #8fb8e0; --grid: #d9e8f6; --grid-strong: #c3d9ef;
+  --blue: #2366a8; --blue-dark: #174a7d;
+  --note-blue: #dcefff;
+  --snow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='260' viewBox='0 0 96 260'%3E%3Cg fill='none' stroke='%239fc3e8' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M28 22v20M18 32h20M21 25l14 14M35 25 21 39'/%3E%3Cpath d='M70 92v14M63 99h14M65 94l10 10M75 94 65 104'/%3E%3Cpath d='M36 160v24M24 172h24M27.5 163.5l17 17M44.5 163.5l-17 17'/%3E%3Cpath d='M74 226v12M68 232h12M70 228l8 8M78 228l-8 8'/%3E%3C/g%3E%3C/svg%3E");
+}
+:root[data-site-theme="snow-day"] body {
+  background-image: var(--snow), var(--snow), linear-gradient(180deg, #fff, transparent 320px);
+  background-position: left 0 top 0, right 0 top 130px, 0 0;
+  background-size: 96px 260px, 96px 260px, auto;
+  background-repeat: repeat-y, repeat-y, no-repeat;
+  background-attachment: fixed;
+}
+
+/* Comic panels: square corners, thick borders and a big drop shadow, on yellow with a dot screen. */
+:root[data-site-theme="tractor-crew"] {
+  --paper: #fff3b0; --paper-deep: #f6e37d; --card: #fffdf0;
+  --rule: #e6d27a; --rule-faint: #f3e7a8; --margin: #2b7a30; --grid: #f0e08e; --grid-strong: #e3cf6a;
+  --blue: #2b7a30; --blue-dark: #1d5821; --green: #2b7a30;
+  --note-yellow: #fff8cf;
+  --radius-card: 3px;
+  --shadow-ink: 5px 5px 0 var(--ink);
+}
+:root[data-site-theme="tractor-crew"] body {
+  background-image: radial-gradient(rgba(43, 122, 48, .14) 1.3px, transparent 1.8px);
+  background-size: 11px 11px;
+}
+:root[data-site-theme="tractor-crew"] :is(.card, .panel) { border-width: 3px; }
+:root[data-site-theme="tractor-crew"] .site-footer { background: #2b7a30; --ink: #fff; --ink-soft: #f2ffe9; --pencil: #d9f2cf; --blue: #ffe45c; --blue-dark: #fff3a8; color: #fff; }
+
+/* Clouds, and a wing drawn in each margin. */
+:root[data-site-theme="pegasus"] {
+  --paper: #eef6ff; --paper-deep: #dcebfb; --card: #fff;
+  --rule: #c3dcf5; --rule-faint: #e2eefb; --margin: #e0b04a; --grid: #d7e7f8; --grid-strong: #c1d8f2;
+  --blue: #2463b0; --blue-dark: #194a87; --gold: #e0b04a;
+  --note-blue: #e3f0ff;
+  /* The left wing; the right one is the same drawing turned around. */
+  --wing-l: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='90' viewBox='0 0 120 90'%3E%3Cpath d='M112 70C92 28 58 10 8 14c14 8 26 14 34 20-14-2-26 0-36 4 16 4 28 9 36 15-12 0-22 3-30 8 18 2 34 5 46 10-8 2-14 5-18 9 30-4 52-4 72-10Z' fill='%23fff' stroke='%2393b8e0' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M50 36c14 4 30 12 44 26M44 54c16 2 32 8 46 14' fill='none' stroke='%23b9d2ee' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  --wing-r: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='90' viewBox='0 0 120 90'%3E%3Cg transform='matrix(-1 0 0 1 120 0)'%3E%3Cpath d='M112 70C92 28 58 10 8 14c14 8 26 14 34 20-14-2-26 0-36 4 16 4 28 9 36 15-12 0-22 3-30 8 18 2 34 5 46 10-8 2-14 5-18 9 30-4 52-4 72-10Z' fill='%23fff' stroke='%2393b8e0' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M50 36c14 4 30 12 44 26M44 54c16 2 32 8 46 14' fill='none' stroke='%23b9d2ee' stroke-width='1.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+}
+:root[data-site-theme="pegasus"] body {
+  background-image:
+    var(--wing-l),
+    var(--wing-r),
+    radial-gradient(30% 14% at 15% 12%, rgba(255, 255, 255, .95), transparent 70%),
+    radial-gradient(26% 12% at 80% 30%, rgba(255, 255, 255, .9), transparent 70%),
+    radial-gradient(34% 14% at 40% 75%, rgba(255, 255, 255, .85), transparent 70%),
+    linear-gradient(180deg, #dcedff, #f3f8ff 60%);
+  background-position: left 6px center, right 6px center, 0 0, 0 0, 0 0, 0 0;
+  background-size: 120px 90px, 120px 90px, auto, auto, auto, auto;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* The dark ones: the page, the header and the footer */
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"], [data-site-theme="late-night-tv"], [data-site-theme="high-roller"]) {
+  color-scheme: dark;
+  --on-ink: #16181c;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -10px rgba(0, 0, 0, .6);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, .35), 0 18px 40px -14px rgba(0, 0, 0, .7);
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 5 Q 6 1 12 5 T 24 5' fill='none' stroke='%23f1efe6' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --pen-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='6' viewBox='0 0 600 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.4 C 60 1.9 130 4.3 210 3.1 S 340 1.8 430 3.5 S 545 4.2 599 2.7' fill='none' stroke='%23f1efe6' stroke-opacity='.7' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --name-red: #ff8a95; --name-blue: #9cc0ff; --name-green: #84e3a8;
+  --name-pink: #ff7cc0; --name-orange: #ffa552; --name-purple: #c79bff;
+  --name-gray: #c3c7cd; --name-brown: #dba574; --name-violet: #c6a6ff;
+  --name-outline: #000;
+}
+:root[data-site-theme="chalkboard"] {
+  --paper: #28372f; --paper-deep: #1f2b25; --card: #31433a;
+  --ink: #f1efe6; --ink-soft: #dcdad0; --pencil: #b6c0ba; --pencil-light: #8e9a93;
+  --rule: rgba(241, 239, 230, .18); --rule-faint: rgba(241, 239, 230, .09); --margin: #e9a3ab;
+  --grid: rgba(241, 239, 230, .08); --grid-strong: rgba(241, 239, 230, .14);
+  --blue: #a6ccff; --blue-dark: #d0e4ff; --red: #ff9aa8; --green: #8fe0ae;
+  --surface-paper: #f7f3e8; --surface-paper-deep: #ece5d2; --surface-card: #fffdf7;
+}
+:root[data-site-theme="chalkboard"] body {
+  background-image:
+    radial-gradient(60% 40% at 20% 10%, rgba(255, 255, 255, .07), transparent 70%),
+    radial-gradient(50% 35% at 85% 55%, rgba(255, 255, 255, .05), transparent 70%),
+    radial-gradient(40% 30% at 35% 90%, rgba(255, 255, 255, .04), transparent 70%);
+  background-attachment: fixed;
+}
+:root[data-site-theme="blueprint"] {
+  --paper: #16407c; --paper-deep: #0f305f; --card: #1d4c8f;
+  --ink: #eef5ff; --ink-soft: #d3e3fa; --pencil: #a9c3e6; --pencil-light: #7fa0cc;
+  --rule: rgba(238, 245, 255, .25); --rule-faint: rgba(238, 245, 255, .12); --margin: #ffb3b3;
+  --grid: rgba(238, 245, 255, .1); --grid-strong: rgba(238, 245, 255, .18);
+  --blue: #bfe3ff; --blue-dark: #e4f3ff; --red: #ffb0b0; --green: #a5f0c0;
+  --surface-paper: #eef4fc; --surface-paper-deep: #dde8f6; --surface-card: #f8fbff;
+}
+:root[data-site-theme="blueprint"] body {
+  background-image:
+    linear-gradient(rgba(238, 245, 255, .11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 245, 255, .11) 1px, transparent 1px),
+    linear-gradient(rgba(238, 245, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 245, 255, .05) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+}
+:root[data-site-theme="neon"] {
+  --paper: #100b22; --paper-deep: #0a0717; --card: #1b1336;
+  --ink: #f6f0ff; --ink-soft: #ddd2f7; --pencil: #b4a6d8; --pencil-light: #8676b3;
+  --rule: rgba(180, 140, 255, .28); --rule-faint: rgba(180, 140, 255, .14); --margin: #ff3fa4;
+  --grid: rgba(77, 243, 255, .08); --grid-strong: rgba(77, 243, 255, .16);
+  --blue: #4df3ff; --blue-dark: #b2fbff; --red: #ff5cb3; --green: #5dffb0; --gold: #ffd23f;
+  --surface-paper: #f5f0ff; --surface-paper-deep: #e9e0fb; --surface-card: #fdfbff;
+}
+:root[data-site-theme="neon"] body {
+  background-image:
+    radial-gradient(40% 30% at 15% 0%, rgba(255, 63, 164, .25), transparent 70%),
+    radial-gradient(40% 30% at 85% 10%, rgba(77, 243, 255, .18), transparent 70%),
+    radial-gradient(60% 40% at 50% 100%, rgba(140, 80, 255, .2), transparent 70%);
+  background-attachment: fixed;
+}
+:root[data-site-theme="neon"] :is(.page-head h1, .game-title-row h1, .hero-title, .section-head h2) {
+  text-shadow: 0 0 2px #fff, 0 0 14px rgba(255, 63, 164, .8), 0 0 28px rgba(77, 243, 255, .35);
+}
+:root[data-site-theme="neon"] :is(.card, .panel) { box-shadow: 3px 3px 0 #ff3fa4, 0 0 22px rgba(77, 243, 255, .3); }
+
+/* An old green-screen TV after midnight: phosphor glow and scanlines over everything. */
+:root[data-site-theme="late-night-tv"] {
+  --paper: #06170c; --paper-deep: #031008; --card: #0b2214;
+  --ink: #d8ffe4; --ink-soft: #b5f0c8; --pencil: #86c79c; --pencil-light: #5e9a74;
+  --rule: rgba(93, 255, 143, .22); --rule-faint: rgba(93, 255, 143, .1); --margin: #ffb35c;
+  --grid: rgba(93, 255, 143, .07); --grid-strong: rgba(93, 255, 143, .13);
+  --blue: #5dff8f; --blue-dark: #b8ffcf; --red: #ff9a85; --green: #5dff8f; --gold: #ffd56b;
+  --surface-paper: #f2f8f3; --surface-paper-deep: #e1ede4; --surface-card: #fbfefb;
+}
+:root[data-site-theme="late-night-tv"] body {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px),
+    radial-gradient(70% 55% at 50% 40%, rgba(93, 255, 143, .13), transparent 75%),
+    radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(0, 0, 0, .55));
+  background-attachment: fixed;
+}
+:root[data-site-theme="late-night-tv"] :is(.page-head h1, .game-title-row h1, .hero-title, .section-head h2) {
+  text-shadow: 0 0 2px #d8ffe4, 0 0 12px rgba(93, 255, 143, .7), 0 0 26px rgba(93, 255, 143, .3);
+}
+:root[data-site-theme="late-night-tv"] :is(.card, .panel) { box-shadow: 3px 3px 0 #1f7a43, 0 0 20px rgba(93, 255, 143, .22); }
+
+/* The casino's back room: green felt under a lamp, with gold trim. */
+:root[data-site-theme="high-roller"] {
+  --paper: #0d3b26; --paper-deep: #082a1a; --card: #124a30;
+  --ink: #f6efd9; --ink-soft: #e6dcc0; --pencil: #c2b894; --pencil-light: #94906f;
+  --rule: rgba(230, 185, 74, .25); --rule-faint: rgba(230, 185, 74, .12); --margin: #e6b94a;
+  --grid: rgba(246, 239, 217, .06); --grid-strong: rgba(246, 239, 217, .11);
+  --blue: #f0c85a; --blue-dark: #ffe3a0; --red: #ff9a8a; --green: #9be7b0; --gold: #e6b94a;
+  --surface-paper: #fbf6e8; --surface-paper-deep: #f1e7cc; --surface-card: #fffdf6;
+}
+:root[data-site-theme="high-roller"] body {
+  background-image:
+    radial-gradient(60% 45% at 50% 0%, rgba(255, 236, 170, .16), transparent 70%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, .05) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .025) 0 2px, transparent 2px 5px),
+    radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, .45));
+  background-attachment: fixed;
+}
+:root[data-site-theme="high-roller"] :is(.page-head h1, .game-title-row h1, .hero-title, .section-head h2) {
+  color: #f3d27a;
+  text-shadow: 0 1px 0 #7a5a12, 0 0 18px rgba(230, 185, 74, .35);
+}
+:root[data-site-theme="high-roller"] :is(.card, .panel) { box-shadow: 0 0 0 2px #e6b94a, 4px 4px 0 2px #8a6a1e; }
+
+/* Line art on a dark page is drawn in chalk: flipped to white lines, then screened onto the page. */
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"], [data-site-theme="late-night-tv"], [data-site-theme="high-roller"]) .ink {
+  mix-blend-mode: screen;
+  filter: invert(1) brightness(1.05);
+}
+
+/* The surfaces: paper again, with the usual ink. */
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"], [data-site-theme="late-night-tv"], [data-site-theme="high-roller"]) :is(
+  .sheet, .card, .panel, .sticky-note, .polaroid, .graph, .index-card, dialog.modal, .toast-region, .skip-link,
+  .tag, .hl, .rank-badge, .podium-block, .clicker-note, .clicker-daily, .fact, .speech, .chat-card, .cta-band,
+  .btn-highlight, .admin-link,
+  .missing-media, .missing-poster, .reward-stamp, .wx-teaser-art, .input, .field input, .field select,
+  .field textarea, .chip, .stage, .stat, kbd, .pad-btn, .segmented, .tetris-box, .board-thumb, .podium-thumb,
+  .wx-board, .wx-bubble, .tv-body, .radio-body, .admin-drawing, .shop-card, .shop-wallet
+) {
+  color-scheme: light;
+  --paper: var(--surface-paper); --paper-deep: var(--surface-paper-deep); --card: var(--surface-card);
+  --ink: #1b1b1f; --ink-soft: #33343a; --pencil: #5a5d63; --pencil-light: #8b8e94;
+  --rule: #c9d9ec; --rule-faint: #e2eaf4; --margin: #ee9aa4; --grid: #dbe6f3; --grid-strong: #c4d5ea;
+  --blue: #1f4fbf; --blue-dark: #173b90; --red: #d6334b; --green: #23824a; --gold: #f2c230;
+  --on-ink: #fff;
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 5 Q 6 1 12 5 T 24 5' fill='none' stroke='%231b1b1f' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --name-red: #c62839; --name-blue: #1f4fbf; --name-green: #1f7a44;
+  --name-pink: #ff4fa3; --name-orange: #ff8a1f; --name-purple: #ae6cf2;
+  --name-gray: #5d6168; --name-brown: #8b4513; --name-violet: #6a2fb8;
+  --name-outline: #1b1b1f;
+  color: var(--ink);
+}
+:root:is([data-site-theme="chalkboard"], [data-site-theme="blueprint"], [data-site-theme="neon"], [data-site-theme="late-night-tv"], [data-site-theme="high-roller"]) :is(
+  .sheet, .card, .panel, .sticky-note, .polaroid, .index-card, dialog.modal, .fact, .speech, .chat-card, .cta-band,
+  .stage, .wx-board, .tv-body, .radio-body, .shop-card
+) .ink {
+  mix-blend-mode: multiply;
+  filter: brightness(1.03);
+}
+
+/* =========================================================================
+   Item Shop: name styles (scripts/shop.js)
+   styleName() in scripts/site.js puts a styled name in as
+   <span class="uname" data-font data-color data-highlight><span class="uname-ink">name</span></span>.
+   The highlight goes on .uname, the font and color on .uname-ink. Pale colors get a solid outline in
+   --name-outline, which every theme sets to stand out from its own page. The outline is --name-stroke wide:
+   over 1.5px, or contrast checkers (axe-core in the smoke test) count it as a see-through grey wash rather than
+   an edge, and pale letters on it fail.
+   ========================================================================= */
+:root {
+  --name-red: #c62839; --name-blue: #1f4fbf; --name-green: #1f7a44;
+  --name-pink: #ff4fa3; --name-orange: #ff8a1f; --name-purple: #ae6cf2;
+  --name-gray: #5d6168; --name-brown: #8b4513; --name-violet: #6a2fb8;
+  --name-outline: #1b1b1f;
+  --name-stroke: max(1.6px, .06em);
+}
+.uname { position: relative; color: inherit; }
+
+/* Fonts */
+.uname[data-font="typewriter"] .uname-ink { font-family: "American Typewriter", "Courier New", Courier, ui-monospace, monospace; font-weight: 700; letter-spacing: .02em; }
+.uname[data-font="bubble"] .uname-ink {
+  font-family: ui-rounded, "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: .05em;
+  --w: var(--name-stroke);
+  text-shadow: var(--w) 0 var(--name-outline), calc(-1 * var(--w)) 0 var(--name-outline), 0 var(--w) var(--name-outline), 0 calc(-1 * var(--w)) var(--name-outline),
+    var(--w) var(--w) var(--name-outline), calc(-1 * var(--w)) calc(-1 * var(--w)) var(--name-outline), var(--w) calc(-1 * var(--w)) var(--name-outline), calc(-1 * var(--w)) var(--w) var(--name-outline);
+}
+/* Bubble letters in the usual ink are white inside the outline, like the ones on a binder. */
+.uname[data-font="bubble"]:not([data-color]) .uname-ink { color: #fff; }
+.uname[data-font="crayon"] .uname-ink {
+  font-family: var(--font-marker);
+  font-weight: 400;
+  letter-spacing: .03em;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 0 0 0 2.6'/%3E%3C/filter%3E%3Crect width='48' height='48' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 48px 48px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 0 0 0 2.6'/%3E%3C/filter%3E%3Crect width='48' height='48' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 48px 48px;
+}
+.uname[data-font="calligraphy"] .uname-ink {
+  font-family: "Snell Roundhand", "Apple Chancery", "Segoe Script", "Lucida Calligraphy", "URW Chancery L", "Brush Script MT", cursive;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.08em;
+}
+/* Blackletter's letters are Unicode bold Fraktur (fraktur() in scripts/shop.js), already heavy. */
+.uname[data-font="blackletter"] .uname-ink { font-weight: 400; letter-spacing: .02em; }
+/* Quill writes the name in from left to right when it shows up, and again on hover. */
+.uname[data-font="quill"] .uname-ink {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.15em;
+  -webkit-mask: linear-gradient(90deg, #000 45%, transparent 55%) 0 0 / 230% 100% no-repeat;
+  mask: linear-gradient(90deg, #000 45%, transparent 55%) 0 0 / 230% 100% no-repeat;
+  animation: quill-write 2.2s .15s ease-in-out both;
+}
+.uname[data-font="quill"]:hover .uname-ink { animation-name: quill-write-again; }
+@keyframes quill-write { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+@keyframes quill-write-again { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+.uname[data-font="scrawl"] .uname-ink { font-family: var(--font-hand); font-weight: 600; font-size: 1.15em; letter-spacing: .01em; }
+.uname[data-font="small-caps"] .uname-ink {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-variant-caps: small-caps;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+.uname[data-font="headline"] .uname-ink {
+  font-family: "Bodoni 72", Didot, "Bodoni MT", "Times New Roman", Georgia, serif;
+  font-weight: 800;
+  font-stretch: condensed;
+  letter-spacing: -.01em;
+}
+/* Upside Down and Double-Struck are Unicode letters too (upsideDown() and doubleStruck() in scripts/shop.js). */
+.uname[data-font="upside-down"] .uname-ink { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 600; }
+.uname[data-font="double-struck"] .uname-ink { font-family: "Cambria Math", "STIX Two Math", "Noto Sans Math", system-ui, sans-serif; font-weight: 400; letter-spacing: .03em; }
+/* Wobbly and Ransom Note get a span per letter (.uname-ch, with its place in the name as --i). */
+.uname:is([data-font="wobbly"], [data-font="ransom"]) .uname-ch { display: inline-block; }
+.uname[data-font="wobbly"] .uname-ch {
+  animation: name-wobble 1.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -.17s);
+}
+@keyframes name-wobble {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-.07em) rotate(-5deg); }
+  75% { transform: translateY(.05em) rotate(4deg); }
+}
+/* Ransom Note: every letter cut out of a different magazine, in five looks that take turns. The scraps are light
+   paper, so the name goes back to dark ink on every theme (with the highlights' light ones, below). Under a gradient
+   ink the scraps are left out, since a scrap would cover the gradient showing through the letters. */
+.uname[data-font="ransom"] .uname-ink { font-weight: 700; }
+.uname[data-font="ransom"] .uname-ch {
+  margin: 0 .04em;
+  padding: 0 .12em;
+  line-height: 1.15;
+  font-family: Georgia, "Times New Roman", serif;
+  background: #fffdf6;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .25);
+  rotate: -4deg;
+}
+.uname[data-font="ransom"] .uname-ch:nth-child(5n + 2) { font-family: Impact, "Arial Black", sans-serif; font-weight: 400; background: #ffe36e; rotate: 3deg; font-size: 1.1em; text-transform: uppercase; }
+.uname[data-font="ransom"] .uname-ch:nth-child(5n + 3) { font-family: "Courier New", Courier, monospace; background: #d9c3a0; rotate: -2deg; font-size: .9em; }
+.uname[data-font="ransom"] .uname-ch:nth-child(5n + 4) { font-family: var(--font-marker); font-weight: 400; background: #ffd1e0; rotate: 5deg; font-size: 1.05em; }
+.uname[data-font="ransom"] .uname-ch:nth-child(5n) { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 900; background: #cfe6ff; rotate: -6deg; font-size: .95em; font-style: italic; }
+.uname[data-font="ransom"]:is([data-color="two-tone"], [data-color="silver"], [data-color="gilded"], [data-color="rainbow"], [data-color="sunset-ombre"], [data-color="holographic"], [data-color="fire"], [data-color="galaxy"]) .uname-ch {
+  background: none;
+  box-shadow: none;
+}
+
+/* Colors */
+.uname[data-color="red"] .uname-ink { color: var(--name-red); }
+.uname[data-color="blue"] .uname-ink { color: var(--name-blue); }
+.uname[data-color="green"] .uname-ink { color: var(--name-green); }
+.uname[data-color="hl-pink"] .uname-ink { color: var(--name-pink); }
+.uname[data-color="hl-orange"] .uname-ink { color: var(--name-orange); }
+.uname[data-color="hl-purple"] .uname-ink { color: var(--name-purple); }
+.uname[data-color="pencil"] .uname-ink { color: var(--name-gray); }
+.uname[data-color="saddle"] .uname-ink { color: var(--name-brown); }
+.uname[data-color="purple-ink"] .uname-ink { color: var(--name-violet); }
+.uname[data-color="glow-green"] .uname-ink { color: #5cff6e; }
+.uname:is([data-color="hl-pink"], [data-color="hl-orange"], [data-color="hl-purple"], [data-color="glow-green"]) .uname-ink {
+  --w: var(--name-stroke);
+  text-shadow: var(--w) 0 var(--name-outline), calc(-1 * var(--w)) 0 var(--name-outline), 0 var(--w) var(--name-outline), 0 calc(-1 * var(--w)) var(--name-outline),
+    var(--w) var(--w) var(--name-outline), calc(-1 * var(--w)) calc(-1 * var(--w)) var(--name-outline), var(--w) calc(-1 * var(--w)) var(--name-outline), calc(-1 * var(--w)) var(--w) var(--name-outline);
+}
+/* Glow Green glows a little around its outline, like glow-in-the-dark stars. */
+.uname[data-color="glow-green"] .uname-ink { filter: drop-shadow(0 0 4px rgba(92, 255, 110, .55)); }
+/* The gradient inks are the background showing through the letters, so their outline is a drop shadow (a text
+   shadow would cover the gradient). */
+.uname:is([data-color="two-tone"], [data-color="silver"], [data-color="gilded"], [data-color="rainbow"], [data-color="sunset-ombre"], [data-color="holographic"], [data-color="fire"], [data-color="galaxy"]) .uname-ink {
+  background: var(--uname-ink) 0 0 / var(--uname-size, 100%) 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.uname[data-color="two-tone"] .uname-ink { --uname-ink: linear-gradient(90deg, var(--name-blue), var(--name-red)); }
+.uname[data-color="silver"] .uname-ink {
+  --uname-ink: linear-gradient(180deg, #fbfcfd 0%, #c3cad2 42%, #7d8692 55%, #dde2e8 100%);
+  filter: drop-shadow(0 0 .6px var(--name-outline)) drop-shadow(0 0 .4px var(--name-outline));
+}
+.uname[data-color="gilded"] .uname-ink {
+  --uname-ink: linear-gradient(100deg, #9a5a0a 0%, #d18f26 30%, #fff0b8 45%, #d18f26 60%, #8a4f08 80%, #c98622 100%);
+  --uname-size: 220%;
+  filter: drop-shadow(0 0 .6px var(--name-outline)) drop-shadow(0 0 .4px var(--name-outline));
+  animation: uname-shine 4s linear infinite;
+}
+.uname[data-color="rainbow"] .uname-ink {
+  --uname-ink: linear-gradient(90deg, #ff3b3b, #ff9f1a, #ffd93b, #3bd16f, #3b8bff, #a35cf0, #ff3b3b);
+  --uname-size: 200%;
+  filter: drop-shadow(0 0 .5px var(--name-outline));
+  animation: uname-shine 3s linear infinite;
+}
+@keyframes uname-shine { from { background-position: 0 0; } to { background-position: -200% 0; } }
+.uname[data-color="sunset-ombre"] .uname-ink {
+  --uname-ink: linear-gradient(90deg, #f59a68, #e0607a 45%, #9a3577 75%, #6e2a6e);
+  filter: drop-shadow(0 0 .6px var(--name-outline)) drop-shadow(0 0 .4px var(--name-outline));
+}
+.uname[data-color="holographic"] .uname-ink {
+  --uname-ink: linear-gradient(110deg, #9fe8ff, #c9a9ff 20%, #ffb4e4 35%, #fff6c2 50%, #b4ffd8 65%, #a9c4ff 80%, #9fe8ff);
+  --uname-size: 200%;
+  filter: drop-shadow(0 0 .6px var(--name-outline)) drop-shadow(0 0 .4px var(--name-outline));
+  animation: uname-shine 5s linear infinite;
+}
+/* Fire rises up through the letters and flickers. */
+.uname[data-color="fire"] .uname-ink {
+  background: linear-gradient(0deg, #ffd23a, #ff8a1a 30%, #e3261b 60%, #ff8a1a 80%, #ffd23a) 0 0 / 100% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 .5px var(--name-outline)) drop-shadow(0 0 3px rgba(255, 110, 20, .6));
+  animation: fire-rise 1.4s linear infinite, fire-flicker 1.1s steps(1) infinite;
+}
+@keyframes fire-rise { from { background-position: 0 0; } to { background-position: 0 -200%; } }
+@keyframes fire-flicker {
+  0%, 100% { filter: drop-shadow(0 0 .5px var(--name-outline)) drop-shadow(0 0 3px rgba(255, 110, 20, .6)); }
+  30% { filter: drop-shadow(0 0 .5px var(--name-outline)) drop-shadow(0 0 5px rgba(255, 150, 30, .8)); }
+  55% { filter: drop-shadow(0 0 .5px var(--name-outline)) drop-shadow(0 0 2px rgba(255, 80, 20, .5)); }
+  80% { filter: drop-shadow(0 0 .5px var(--name-outline)) drop-shadow(0 0 4px rgba(255, 130, 30, .7)); }
+}
+/* Galaxy: two layers of tiny stars drift at different speeds over deep purple space. Its soft purple glow keeps
+   the dark letters apart from a dark page. */
+.uname[data-color="galaxy"] .uname-ink {
+  background:
+    radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 1.6px) 0 0 / 14px 11px,
+    radial-gradient(circle at 70% 70%, #ffe9a8 0 .8px, transparent 1.4px) 0 0 / 23px 17px,
+    linear-gradient(120deg, #2b0b63, #5a20ad 45%, #3a127a 70%, #1c0a4d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 .5px var(--name-outline)) drop-shadow(0 0 2px rgba(178, 130, 255, .75));
+  animation: galaxy-drift 9s linear infinite;
+}
+@keyframes galaxy-drift { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 28px 22px, -23px 17px, 0 0; } }
+
+/* Highlights. The light ones put dark ink back on top, whatever the theme. */
+.uname[data-highlight] {
+  padding: 0 .2em;
+  border-radius: .25em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.uname:is([data-highlight="yellow"], [data-highlight^="pastel-"], [data-highlight="scribble"], [data-highlight="washi"], [data-highlight="sparkle"],
+  [data-highlight="sticky-note"], [data-highlight="hay-bale"], [data-highlight="firecrackers"], [data-font="ransom"]) {
+  --name-red: #c62839; --name-blue: #1f4fbf; --name-green: #1f7a44;
+  --name-pink: #ff4fa3; --name-orange: #ff8a1f; --name-purple: #ae6cf2;
+  --name-gray: #5d6168; --name-brown: #8b4513; --name-violet: #6a2fb8;
+  --name-outline: #1b1b1f;
+  color: #1b1b1f;
+}
+.uname[data-highlight="yellow"] { --hl: rgba(255, 228, 92, .85); }
+.uname[data-highlight="pastel-pink"] { --hl: #ffc9da; }
+.uname[data-highlight="pastel-blue"] { --hl: #c4e0ff; }
+.uname[data-highlight="pastel-green"] { --hl: #cdeebf; }
+.uname[data-highlight="pastel-lavender"] { --hl: #e0d4ff; }
+.uname:is([data-highlight="yellow"], [data-highlight^="pastel-"]) {
+  background: linear-gradient(transparent 12%, var(--hl) 12%, var(--hl) 88%, transparent 88%);
+}
+.uname[data-highlight="scribble"] {
+  background: rgba(255, 248, 220, .85) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M2 15 L9 4 L13 17 L20 3 L25 16 L32 4 L36 17 L43 3 L48 16 L55 4 L58 14' fill='none' stroke='%23ff6fae' stroke-opacity='.6' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.uname[data-highlight="washi"] {
+  padding: 0 .5em;
+  border-radius: 0;
+  background: repeating-linear-gradient(-45deg, rgba(255, 176, 196, .8) 0 6px, rgba(255, 232, 238, .8) 6px 12px);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 3px) 25%, 100% 50%, calc(100% - 3px) 75%, 100% 100%, 0 100%, 3px 75%, 0 50%, 3px 25%);
+}
+.uname[data-highlight="glow"] {
+  filter: drop-shadow(0 0 3px rgba(255, 214, 90, .95)) drop-shadow(0 0 9px rgba(255, 160, 50, .65));
+}
+.uname[data-highlight="sparkle"] {
+  padding: 0 .4em;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .85) 48%, transparent 66%) 0 0 / 250% 100% no-repeat,
+    linear-gradient(90deg, rgba(255, 228, 120, .55), rgba(255, 190, 225, .55), rgba(190, 220, 255, .55));
+  animation: sparkle-shimmer 3.2s linear infinite;
+}
+.uname[data-highlight="sparkle"]::before, .uname[data-highlight="sparkle"]::after {
+  position: absolute;
+  font-size: .6em;
+  line-height: 1;
+  color: #f0a800;
+  text-shadow: 0 0 4px #fff4b0;
+  pointer-events: none;
+  animation: twinkle 1.6s ease-in-out infinite;
+}
+.uname[data-highlight="sparkle"]::before { content: "\2726"; top: 0; left: 0; }
+.uname[data-highlight="sparkle"]::after { content: "\2727"; right: 0; bottom: 0; animation-delay: .8s; }
+@keyframes sparkle-shimmer { from { background-position: 150% 0, 0 0; } to { background-position: -150% 0, 0 0; } }
+@keyframes twinkle { 0%, 100% { opacity: .25; scale: .7; } 50% { opacity: 1; scale: 1.15; } }
+/* Double Underline: two quick strokes in the name's own ink, the second a bit shorter. */
+.uname[data-highlight="double-underline"] {
+  padding-bottom: .12em;
+  background:
+    linear-gradient(currentColor, currentColor) 0 calc(100% - .14em) / 100% max(1.5px, .07em) no-repeat,
+    linear-gradient(currentColor, currentColor) .25em 100% / calc(100% - .4em) max(1.5px, .07em) no-repeat;
+  border-radius: 0;
+}
+/* Sticky Note: a yellow square stuck on a little crooked, with its shadow drawn in. */
+.uname[data-highlight="sticky-note"] {
+  padding: .05em .4em;
+  border-radius: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='3,6 100,1 98,100 1,96' fill='%23000' fill-opacity='.18'/%3E%3Cpolygon points='1,3 98,0 97,95 0,92' fill='%23ffe873'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+/* Circled in Red: a hand-drawn loop of red pen that doesn't quite meet where it started. */
+.uname[data-highlight="circled"] {
+  padding: .1em .5em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40' preserveAspectRatio='none'%3E%3Cpath d='M58 4 C 82 3 98 10 97 20 C 96 31 76 37 50 37 C 22 37 3 31 3 20 C 3 9 24 3 48 3 C 62 3 72 5 78 8' fill='none' stroke='%23d6334b' stroke-width='2.4' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+/* Gold Star Sticker: a teacher's star stuck on after the name (decoration only, so screen readers skip it). */
+.uname[data-highlight="gold-star"] { padding-right: 0; }
+.uname[data-highlight="gold-star"]::after {
+  content: "\2605";
+  content: "\2605" / "";
+  display: inline-block;
+  margin-left: .2em;
+  color: #f5b800;
+  -webkit-text-fill-color: #f5b800;
+  text-shadow: 1px 1px 0 #a66b00, -1px -1px 0 #a66b00, 1px -1px 0 #a66b00, -1px 1px 0 #a66b00;
+  rotate: -14deg;
+}
+/* Hay Bale: strands of straw going every which way. */
+.uname[data-highlight="hay-bale"] {
+  padding: .02em .35em;
+  border-radius: .15em;
+  background:
+    repeating-linear-gradient(78deg, rgba(178, 128, 24, .5) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(103deg, rgba(140, 96, 14, .38) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(88deg, rgba(255, 246, 196, .7) 0 1px, transparent 1px 4px),
+    #efd27e;
+  box-shadow: inset 0 -2px 0 rgba(140, 96, 14, .35);
+}
+/* Spotlight: the name on a little dark stage, with a beam sweeping across it. The ink goes light, like the dark
+   themes'. */
+.uname[data-highlight="spotlight"] {
+  --name-red: #ff8a95; --name-blue: #9cc0ff; --name-green: #84e3a8;
+  --name-pink: #ff7cc0; --name-orange: #ffa552; --name-purple: #c79bff;
+  --name-gray: #c3c7cd; --name-brown: #dba574; --name-violet: #c6a6ff;
+  --name-outline: #000;
+  color: #fff8e4;
+  padding: .02em .45em;
+  background:
+    radial-gradient(closest-side, rgba(255, 238, 170, .4), rgba(255, 238, 170, 0)) 50% 50% / 45% 220% no-repeat,
+    linear-gradient(#24202e, #15131c);
+  animation: spotlight-sweep 3.6s ease-in-out infinite alternate;
+}
+@keyframes spotlight-sweep { from { background-position: -60% 50%, 0 0; } to { background-position: 160% 50%, 0 0; } }
+/* Firecrackers 爆竹: a string of red firecrackers on each side (.uname's ::before and ::after), and the bangs going
+   off above them in turn (.uname-ink's). */
+.uname[data-highlight="firecrackers"] {
+  padding: 0 .75em;
+  background: linear-gradient(90deg, rgba(255, 224, 138, .25), #ffe7a3 25%, #ffe7a3 75%, rgba(255, 224, 138, .25));
+}
+.uname[data-highlight="firecrackers"]::before, .uname[data-highlight="firecrackers"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: .26em;
+  height: .62em;
+  margin-top: -.31em;
+  border-radius: .06em;
+  background: linear-gradient(#e8b400 0 16%, #c8102e 16% 84%, #e8b400 84%);
+  box-shadow: 0 0 0 1px rgba(90, 0, 0, .35);
+  pointer-events: none;
+  animation: firecracker-shake .9s ease-in-out infinite;
+}
+.uname[data-highlight="firecrackers"]::before { left: .2em; rotate: -12deg; }
+.uname[data-highlight="firecrackers"]::after { right: .2em; rotate: 12deg; animation-delay: -.45s; }
+.uname[data-highlight="firecrackers"] .uname-ink::before, .uname[data-highlight="firecrackers"] .uname-ink::after {
+  content: "\2738";
+  content: "\2738" / "";
+  position: absolute;
+  top: -.45em;
+  font-size: .7em;
+  line-height: 1;
+  color: #ff5a1f;
+  -webkit-text-fill-color: #ff5a1f;
+  text-shadow: 0 0 4px #ffd34d;
+  pointer-events: none;
+  opacity: 0;
+  animation: firecracker-bang 1.8s ease-out infinite;
+}
+.uname[data-highlight="firecrackers"] .uname-ink::before { left: 0; }
+.uname[data-highlight="firecrackers"] .uname-ink::after { right: 0; color: #f0b400; -webkit-text-fill-color: #f0b400; animation-delay: .9s; }
+@keyframes firecracker-shake { 0%, 100% { translate: 0 0; } 25% { translate: -.03em .02em; } 75% { translate: .03em -.02em; } }
+@keyframes firecracker-bang {
+  0%, 55% { opacity: 0; scale: .2; }
+  65% { opacity: 1; scale: 1.25; }
+  100% { opacity: 0; scale: 1.6; }
+}
+/* Pegasus Wings: a little drawn wing on each side, flapping slowly from where it meets the name. */
+.uname[data-highlight="pegasus-wings"] { padding: 0 1.15em; }
+.uname[data-highlight="pegasus-wings"]::before, .uname[data-highlight="pegasus-wings"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 1.05em;
+  height: .85em;
+  margin-top: -.55em;
+  background: center / contain no-repeat;
+  pointer-events: none;
+}
+.uname[data-highlight="pegasus-wings"]::before {
+  left: 0;
+  transform-origin: 100% 70%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 32'%3E%3Cpath d='M39 24 C 30 26 18 24 10 18 C 6 15 2 10 1 4 C 6 7 10 8 14 8 C 12 6 11 4 11 2 C 16 6 21 8 26 9 C 25 7 25 5 26 4 C 30 9 35 14 39 24 Z' fill='%23fff' stroke='%231b1b1f' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M36 21 C 28 21 20 18 13 13 M33 16 C 27 15 22 13 18 10' fill='none' stroke='%231b1b1f' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E");
+  animation: wing-flap-left 2.4s ease-in-out infinite;
+}
+.uname[data-highlight="pegasus-wings"]::after {
+  right: 0;
+  transform-origin: 0 70%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 32'%3E%3Cg transform='matrix(-1 0 0 1 40 0)'%3E%3Cpath d='M39 24 C 30 26 18 24 10 18 C 6 15 2 10 1 4 C 6 7 10 8 14 8 C 12 6 11 4 11 2 C 16 6 21 8 26 9 C 25 7 25 5 26 4 C 30 9 35 14 39 24 Z' fill='%23fff' stroke='%231b1b1f' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M36 21 C 28 21 20 18 13 13 M33 16 C 27 15 22 13 18 10' fill='none' stroke='%231b1b1f' stroke-width='1' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+  animation: wing-flap-right 2.4s ease-in-out infinite;
+}
+@keyframes wing-flap-left { 0%, 100% { rotate: 8deg; } 50% { rotate: -14deg; } }
+@keyframes wing-flap-right { 0%, 100% { rotate: -8deg; } 50% { rotate: 14deg; } }
+
+/* =========================================================================
+   Page turns: going from one page of the site to the next flips the old one away like a notebook page,
+   turning on its left edge to show the new one under it. Browsers without cross-document view transitions
+   just change pages; reduced motion turns it off.
+   ========================================================================= */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+::view-transition-group(root) { animation-duration: .4s; }
+::view-transition-old(root) {
+  z-index: 1;
+  transform-origin: left center;
+  animation: page-turn .4s cubic-bezier(.45, 0, .25, 1) both;
+}
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation: page-under .4s ease-out both;
+}
+@keyframes page-turn {
+  0% { transform: perspective(2600px) rotateY(0); filter: brightness(1); }
+  100% { transform: perspective(2600px) rotateY(-100deg); filter: brightness(.78); }
+}
+@keyframes page-under {
+  from { filter: brightness(.9); }
+  to { filter: brightness(1); }
+}
+
+/* =========================================================================
    Motion preferences
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
@@ -1965,3 +2725,42 @@ dialog.reader::backdrop { background: #1e1f23; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- The Casino page: big wins, live (pages/casino.html) ---------- */
+.wins-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.wins-head h2 { margin: 0; }
+.wins-here { margin: 0; color: var(--pencil); }
+.wins-here::before {
+  content: "";
+  display: inline-block;
+  width: .55em;
+  height: .55em;
+  margin-right: .45em;
+  border-radius: 50%;
+  background: var(--green);
+  vertical-align: .05em;
+}
+.wins-list { margin: 12px 0 0; padding: 0; list-style: none; }
+.wins-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 8px 6px;
+  border-top: 1.5px dashed var(--grid-strong);
+  border-radius: 4px;
+}
+.wins-list li:first-child { border-top: 0; }
+.wins-what .tag { margin-left: 8px; vertical-align: .1em; }
+.wins-list time { color: var(--pencil); font-size: .9rem; white-space: nowrap; }
+.wins-list li.is-new { animation: win-in 2.4s var(--ease-out); }
+@keyframes win-in {
+  0% { background: var(--highlight); transform: translateY(-6px); opacity: 0; }
+  15% { transform: none; opacity: 1; }
+  60% { background: var(--highlight); }
+  100% { background: transparent; }
+}
+.wins-empty { margin: 12px 0 0; color: var(--pencil); }
+.wins-empty[hidden] { display: none; }
+

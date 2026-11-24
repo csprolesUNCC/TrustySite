@@ -10,7 +10,7 @@ import { signTicket, SECRET_MIN } from './fever-ticket.js';
 //   POST: { rooms, ticket } for the logged-in player: a ticket the room server checks (utils/fever-ticket.js),
 //     since the login cookie doesn't reach it.
 
-function roomsUrl() {
+export function roomsUrl() {
   const url = process.env.FEVER_ROOMS_URL;
   const secret = process.env.FEVER_SECRET;
   if (!url || !secret) return null;

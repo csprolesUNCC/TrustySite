@@ -34,6 +34,7 @@
     <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preconnect" href="https://www.youtube-nocookie.com">
     <link rel="stylesheet" href="/styles/stylesheet.css">
+    <script>/* Item Shop theme, before the page draws (scripts/site.js) */ try { if (localStorage.getItem('isUserLoggedIn') === 'true' && localStorage.getItem('trusty:theme')) document.documentElement.dataset.siteTheme = localStorage.getItem('trusty:theme'); } catch (e) {}</script>
     <link rel="stylesheet" href="/styles/tv.css">
     <script type="module" src="/scripts/site.js"></script>
     <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
@@ -107,8 +108,8 @@
                     <ol class="tv-guide" id="guide"></ol>
                 </div>
                 <p class="tv-note">Shows play back to back, all day, every day. Everyone watching sees the same moment, so tell your friends to tune in.</p>
-                <p class="tv-note" data-auth-show="in">Every 5 seconds you watch earns you 10 clicks for your Trusty clicker, up to 2,500 a day.<span id="earned"></span></p>
-                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you watch earns you 10 clicks for your Trusty clicker, up to 2,500 a day.</p>
+                <p class="tv-note" data-auth-show="in">Every 10 seconds you watch earns you 5 clicks for your Trusty clicker, up to 1,250 a day from Trusty TV and Trusty Radio together.<span id="earned"></span></p>
+                <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 10 seconds you watch earns you 5 clicks for your Trusty clicker, up to 1,250 a day from Trusty TV and Trusty Radio together.</p>
             </aside>
         </section>
     </main>
@@ -230,6 +231,17 @@
         /* ---------- Schedule ---------- */
 
         function renderInfo(air) {
+            // A live stream has no end to count down to: it's on all day.
+            if (air.show.live) {
+                if (guideFor !== air.slot) {
+                    guideFor = air.slot;
+                    $('now-title').textContent = air.show.title || 'Mystery show';
+                    $('guide').replaceChildren(h('li', null, h('span', { class: 'tv-guide-when' }, 'All day'), h('span', null, `More ${air.show.title || 'TV'}, live`)));
+                }
+                $('now-bar').style.transform = 'scaleX(1)';
+                $('now-meta').textContent = 'Live, all day';
+                return;
+            }
             if (guideFor !== air.slot) {
                 guideFor = air.slot;
                 $('now-title').textContent = air.show.title || 'Mystery show';
@@ -253,14 +265,15 @@
                 currentShow = air.show;
                 broken = -1;
                 hideStatic();
-                player.loadVideoById({ videoId: air.show.id, startSeconds: air.offset });
+                // A live stream plays from where it is now; seeking into one would jump back in it.
+                player.loadVideoById(air.show.live ? { videoId: air.show.id } : { videoId: air.show.id, startSeconds: air.offset });
                 return;
             }
             if (broken === current) return;
             const state = player.getPlayerState();
             if (state === STATE.CUED) player.playVideo();
             // Pausing is allowed; pressing play again jumps back to what's airing now.
-            if (checkDrift && state === STATE.PLAYING && Math.abs(player.getCurrentTime() - air.offset) > DRIFT_LIMIT) {
+            if (checkDrift && !air.show.live && state === STATE.PLAYING && Math.abs(player.getCurrentTime() - air.offset) > DRIFT_LIMIT) {
                 player.seekTo(air.offset, true);
             }
         }
@@ -269,7 +282,7 @@
         function checkLength() {
             const show = currentShow;
             const real = player.getDuration();
-            if (!show || !(real > 0) || warned.has(show.id)) return;
+            if (!show || show.live || !(real > 0) || warned.has(show.id)) return;
             if (Math.abs(real - show.seconds) > 2) {
                 warned.add(show.id);
                 console.warn(`Trusty TV: "${show.title || show.id}" is ${length(real)} long, but the lineup says ${length(show.seconds)}. Fix it in scripts/tv-lineup.js to keep the schedule right.`);
@@ -318,7 +331,7 @@
                 playerVars: {
                     autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3,
                     cc_load_policy: 0,
-                    start: Math.floor(air.offset), origin: location.origin,
+                    ...(air.show.live ? {} : { start: Math.floor(air.offset) }), origin: location.origin,
                 },
                 events: {
                     onReady: () => {
@@ -344,6 +357,9 @@
                                 // Some browsers keep it muted without pausing; show the cue then too.
                                 setTimeout(() => { if (soundOn && player.isMuted()) setSound(false); }, 1000);
                             }
+                        } else if (e.data === STATE.ENDED && currentShow && currentShow.live) {
+                            // The stream stopped (or it was a finished one): start it again.
+                            player.loadVideoById({ videoId: currentShow.id });
                         } else if (e.data === STATE.ENDED) {
                             showStatic('Stay tuned!');
                         } else if (e.data === STATE.PAUSED && soundOn && performance.now() - soundAskedAt < 1500) {
@@ -363,7 +379,8 @@
         /* ---------- Watch rewards ---------- */
 
         // A logged-in viewer earns WATCH_REWARD.clicks for every REWARD_EVERY seconds a show is actually
-        // playing on screen, up to WATCH_REWARD.daily a day (api/clicks.js gives them out and enforces both).
+        // playing on screen, up to WATCH_REWARD.daily a day together with Trusty Radio's (api/clicks.js gives
+        // them out and enforces both).
         const REWARD_EVERY = WATCH_REWARD.every;
         let watched = 0;   // seconds watched toward the next reward
         let capped = null; // the day today's clicks ran out, if they have

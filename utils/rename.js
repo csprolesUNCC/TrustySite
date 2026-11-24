@@ -28,6 +28,7 @@ const NAME_COPIES = [
     ['snake_scores', 'name'],
     ['trustle', 'username'],
     ['profiles', 'username'],
+    ['daily_scores', 'name'],
 ];
 
 /**
