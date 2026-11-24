@@ -1,6 +1,6 @@
 // Shared chrome (header/footer), session state, and small DOM helpers for every page.
 import { rankFor, nextRank, rankProgress, dailyBonus, dayOf } from '/scripts/milestones.js';
-import { DEFAULTS as SHOP_DEFAULTS, itemById, cleanStyle, fraktur } from '/scripts/shop.js';
+import { DEFAULTS as SHOP_DEFAULTS, itemById, cleanStyle, LETTER_FONTS, BY_LETTER } from '/scripts/shop.js';
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
@@ -198,10 +198,13 @@ function paintName(el, name, style) {
   }
   const look = {};
   for (const kind of ['font', 'color', 'highlight']) if (style[kind]) look[kind] = style[kind];
-  // Blackletter is drawn in Unicode letters, which screen readers would spell out: they get the real name.
-  const text = style.font === 'blackletter'
-    ? [h('span', { 'aria-hidden': 'true' }, fraktur(shown)), h('span', { class: 'sr-only' }, shown)]
-    : [shown];
+  // Blackletter, Double-Struck and Upside Down are drawn in Unicode letters, which screen readers would spell out,
+  // and Wobbly and Ransom Note in a span per letter: screen readers get the real name.
+  const swap = Object.hasOwn(LETTER_FONTS, style.font) ? LETTER_FONTS[style.font] : null;
+  const drawn = swap ? swap(shown)
+    : BY_LETTER.has(style.font) ? Array.from(shown, (ch, i) => h('span', { class: 'uname-ch', style: `--i: ${i}` }, ch))
+      : null;
+  const text = drawn ? [h('span', { 'aria-hidden': 'true' }, drawn), h('span', { class: 'sr-only' }, shown)] : [shown];
   el.replaceChildren(h('span', { class: 'uname', dataset: look }, h('span', { class: 'uname-ink' }, text)));
   el.dataset.styled = '1';
 }

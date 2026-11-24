@@ -150,6 +150,8 @@ const SAMPLE_STYLES = {
   stickfig: { color: 'rainbow', highlight: 'sparkle' },
   margins: { font: 'quill', color: 'blue', highlight: 'washi' },
   gallop: { font: 'bubble', color: 'hl-pink' },
+  tractorfan: { font: 'ransom', highlight: 'circled' },
+  mane_event: { font: 'upside-down', color: 'fire', highlight: 'pegasus-wings' },
 };
 const shopOf = (account) => (account.shop ||= { owned: [], equipped: {}, spent: 0 });
 const shopAnswer = (account) => {

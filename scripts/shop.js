@@ -43,42 +43,67 @@ export const ITEMS = [
   { id: 'golden-horse', kind: 'theme', name: 'Golden Horse 金馬', price: 75000, about: 'Red and gold for the Year of the Horse.', swatch: ['#fff0cf', '#b3121e'] },
   { id: 'high-roller', kind: 'theme', name: 'High Roller', price: 100000, dark: true, needs: { goal: 'casino', at: 50000 }, about: 'Casino-felt green with gold trim. The house knows your name.', swatch: ['#0d3b26', '#e6b94a'] },
   { id: 'neon', kind: 'theme', name: 'Midnight Neon', price: 150000, dark: true, about: 'Pink and cyan neon on a midnight sky.', swatch: ['#100b22', '#4df3ff'] },
-  { id: 'pegasus', kind: 'theme', name: 'Pegasus', price: 300000, about: 'Cloud white and sky blue, with wings drawn in the margin. Trusty, but higher. The shop’s most expensive item.', swatch: ['#eef6ff', '#2463b0'] },
+  { id: 'pegasus', kind: 'theme', name: 'Pegasus', price: 300000, about: 'Cloud white and sky blue, with wings drawn in the margin. Trusty, but higher. The shop’s most expensive theme.', swatch: ['#eef6ff', '#2463b0'] },
 
   // Name fonts. None of them downloads a new font: they're the site's own two, system fonts and Unicode letters.
+  // Blackletter, Upside Down and Double-Struck are Unicode letters (LETTER_FONTS below); Wobbly and Ransom Note put
+  // each letter in a box of its own (BY_LETTER).
   { id: 'standard', kind: 'font', name: 'Standard', price: 0, about: 'The site’s usual lettering.' },
+  { id: 'scrawl', kind: 'font', name: 'Scrawl', price: 500, about: 'Quick handwriting in the margin.' },
   { id: 'typewriter', kind: 'font', name: 'Typewriter', price: 1000, about: 'Clack, clack, ding.' },
   { id: 'bubble', kind: 'font', name: 'Bubble Letters', price: 2500, about: 'Puffy outlined letters, like the back of a binder.' },
+  { id: 'small-caps', kind: 'font', name: 'Small Caps', price: 2500, about: 'Dignified little capitals, like the credits of an old film.' },
   { id: 'crayon', kind: 'font', name: 'Crayon', price: 5000, about: 'Waxy and a bit smudged.' },
+  { id: 'headline', kind: 'font', name: 'Headline', price: 5000, about: 'Bold condensed serif, for front-page news.' },
+  { id: 'upside-down', kind: 'font', name: 'Upside Down', price: 7500, about: 'Your name, flipped on its head. Turn your phone around.' },
   { id: 'calligraphy', kind: 'font', name: 'Calligraphy', price: 15000, about: 'Fancy pen, fancy horse.' },
+  { id: 'double-struck', kind: 'font', name: 'Double-Struck', price: 20000, about: 'Chalkboard math letters, every stroke drawn twice.' },
   { id: 'blackletter', kind: 'font', name: 'Blackletter', price: 50000, about: 'Ye olde horse.' },
+  { id: 'wobbly', kind: 'font', name: 'Wobbly', price: 75000, about: 'Every letter jiggles a little, like Jell-O.' },
   { id: 'quill', kind: 'font', name: 'Quill', price: 150000, about: 'Your name writes itself in, a letter at a time.' },
+  { id: 'ransom', kind: 'font', name: 'Ransom Note', price: 175000, about: 'Every letter cut out of a different magazine. We have your horse.' },
 
   // Name colors. Pale ones (`outline`) get a thin outline in the theme's own ink so they never blend into the page.
   { id: 'ink', kind: 'color', name: 'Black Ink', price: 0, about: 'The usual.' },
   { id: 'red', kind: 'color', name: 'Red Ink', price: 500, about: 'Like a teacher’s pen.' },
   { id: 'blue', kind: 'color', name: 'Blue Ink', price: 500, about: 'Ballpoint blue.' },
   { id: 'green', kind: 'color', name: 'Green Ink', price: 500, about: 'Fresh grass.' },
+  { id: 'pencil', kind: 'color', name: 'Pencil Gray', price: 500, about: 'Plain graphite, sharpened this morning.' },
+  { id: 'saddle', kind: 'color', name: 'Saddle Brown', price: 500, about: 'Worn leather brown.' },
+  { id: 'purple-ink', kind: 'color', name: 'Purple Ink', price: 500, about: 'The gel pen everyone wanted to borrow.' },
   { id: 'hl-pink', kind: 'color', name: 'Highlighter Pink', price: 2500, outline: true, about: 'Hot pink, outlined so it pops.' },
   { id: 'hl-orange', kind: 'color', name: 'Highlighter Orange', price: 2500, outline: true, about: 'Traffic-cone orange.' },
   { id: 'hl-purple', kind: 'color', name: 'Highlighter Purple', price: 2500, outline: true, about: 'Grape soda purple.' },
+  { id: 'glow-green', kind: 'color', name: 'Glow Green', price: 5000, outline: true, about: 'Glow-in-the-dark green, like the stars on a bedroom ceiling.' },
   { id: 'two-tone', kind: 'color', name: 'Two-Tone Ink', price: 10000, about: 'The four-color pen, blue fading into red.' },
+  { id: 'sunset-ombre', kind: 'color', name: 'Sunset Ombré', price: 15000, outline: true, about: 'Peach fading into plum, like Sunset Sketchbook.' },
   { id: 'silver', kind: 'color', name: 'Silver', price: 25000, outline: true, about: 'Shiny metal letters.' },
+  { id: 'holographic', kind: 'color', name: 'Holographic', price: 75000, outline: true, about: 'A trading-card shine, the colors shifting as you look.' },
   // Amber rather than bright gold, so it's never mistaken for the clicks board's #1 gold $.
   { id: 'gilded', kind: 'color', name: 'Gilded', price: 100000, outline: true, about: 'Old amber gold with a shine running through it.' },
+  { id: 'fire', kind: 'color', name: 'Fire', price: 100000, about: 'Flickering orange and red. Your name is on fire.' },
+  { id: 'galaxy', kind: 'color', name: 'Galaxy', price: 175000, about: 'Deep purple space with stars drifting through the letters.' },
   { id: 'rainbow', kind: 'color', name: 'Rainbow', price: 200000, about: 'Every marker in the pack, always moving.' },
 
   // Name highlights
   { id: 'none', kind: 'highlight', name: 'No Highlight', price: 0, about: 'Just your name.' },
   { id: 'yellow', kind: 'highlight', name: 'Yellow Highlighter', price: 1000, about: 'One swipe of the highlighter.' },
+  { id: 'double-underline', kind: 'highlight', name: 'Double Underline', price: 1000, about: 'Two quick pen strokes under your name. Important!' },
   { id: 'pastel-pink', kind: 'highlight', name: 'Pastel Pink', price: 2500, about: 'A soft pink swipe.' },
   { id: 'pastel-blue', kind: 'highlight', name: 'Pastel Blue', price: 2500, about: 'A soft blue swipe.' },
   { id: 'pastel-green', kind: 'highlight', name: 'Pastel Green', price: 2500, about: 'A soft green swipe.' },
   { id: 'pastel-lavender', kind: 'highlight', name: 'Pastel Lavender', price: 2500, about: 'A soft lavender swipe.' },
+  { id: 'sticky-note', kind: 'highlight', name: 'Sticky Note', price: 5000, about: 'Your name on a little yellow sticky note, stuck on a bit crooked.' },
   { id: 'scribble', kind: 'highlight', name: 'Marker Scribble', price: 7500, about: 'Scribbled in behind your name.' },
+  { id: 'circled', kind: 'highlight', name: 'Circled in Red', price: 10000, about: 'A red-pen loop around your name. See me after class.' },
+  { id: 'gold-star', kind: 'highlight', name: 'Gold Star Sticker', price: 15000, about: 'A teacher’s gold star after your name. Good job!' },
+  { id: 'hay-bale', kind: 'highlight', name: 'Hay Bale', price: 20000, about: 'Strands of straw behind your name. Trusty’s favorite snack.' },
   { id: 'washi', kind: 'highlight', name: 'Washi Tape', price: 20000, about: 'A strip of striped tape.' },
   { id: 'glow', kind: 'highlight', name: 'Glow', price: 60000, about: 'A warm glow all around.' },
-  { id: 'sparkle', kind: 'highlight', name: 'Sparkle', price: 250000, about: 'Twinkling stars and a shimmer. The shop’s most expensive name item.' },
+  { id: 'spotlight', kind: 'highlight', name: 'Spotlight', price: 100000, about: 'Your name on a little stage, with a spotlight sweeping across it.' },
+  { id: 'firecrackers', kind: 'highlight', name: 'Firecrackers 爆竹', price: 150000, about: 'Red and gold, with firecrackers popping on both sides. Goes with Golden Horse.' },
+  { id: 'sparkle', kind: 'highlight', name: 'Sparkle', price: 250000, about: 'Twinkling stars and a shimmer.' },
+  { id: 'pegasus-wings', kind: 'highlight', name: 'Pegasus Wings', price: 400000, about: 'Little drawn wings on both sides of your name, flapping slowly. The shop’s most expensive item.' },
 ];
 
 export const DEFAULTS = { theme: 'notebook', font: 'standard', color: 'ink', highlight: 'none' };
@@ -181,3 +206,38 @@ export function fraktur(text) {
     return ch;
   }).join('');
 }
+
+// Double-Struck names are Unicode's double-struck math letters (𝕋𝕣𝕦𝕤𝕥𝕪) and digits. Seven capitals were in Unicode
+// before the rest and sit elsewhere (ℂ ℍ ℕ ℙ ℚ ℝ ℤ).
+const DOUBLE_CAPS = { C: 0x2102, H: 0x210D, N: 0x2115, P: 0x2119, Q: 0x211A, R: 0x211D, Z: 0x2124 };
+export function doubleStruck(text) {
+  return Array.from(String(text), (ch) => {
+    const code = ch.charCodeAt(0);
+    if (DOUBLE_CAPS[ch]) return String.fromCodePoint(DOUBLE_CAPS[ch]);
+    if (code >= 65 && code <= 90) return String.fromCodePoint(0x1D538 + code - 65);
+    if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D552 + code - 97);
+    if (code >= 48 && code <= 57) return String.fromCodePoint(0x1D7D8 + code - 48);
+    return ch;
+  }).join('');
+}
+
+// Upside Down names are written backwards in letters that look turned over (ʎʇsnɹ⊥), picked from ones nearly every
+// device has a font for. Anything without one stays as it is.
+const FLIPPED = {
+  a: 'ɐ', b: 'q', c: 'ɔ', d: 'p', e: 'ǝ', f: 'ɟ', g: 'ƃ', h: 'ɥ', i: 'ᴉ', j: 'ɾ', k: 'ʞ', l: 'l', m: 'ɯ',
+  n: 'u', o: 'o', p: 'd', q: 'b', r: 'ɹ', s: 's', t: 'ʇ', u: 'n', v: 'ʌ', w: 'ʍ', x: 'x', y: 'ʎ', z: 'z',
+  A: '∀', B: 'ᗺ', C: 'Ɔ', D: 'ᗡ', E: 'Ǝ', F: 'Ⅎ', G: '⅁', H: 'H', I: 'I', J: 'ſ', K: 'ʞ', L: '˥', M: 'W',
+  N: 'N', O: 'O', P: 'Ԁ', Q: 'Ό', R: 'ᴚ', S: 'S', T: '⊥', U: '∩', V: 'Λ', W: 'M', X: 'X', Y: '⅄', Z: 'Z',
+  1: 'Ɩ', 2: 'ᄅ', 3: 'Ɛ', 4: 'ㄣ', 5: 'ϛ', 6: '9', 7: 'ㄥ', 8: '8', 9: '6', 0: '0',
+  '.': '˙', ',': '\'', '\'': ',', '!': '¡', '?': '¿', '_': '‾', '(': ')', ')': '(', '[': ']', ']': '[',
+  '{': '}', '}': '{', '<': '>', '>': '<', '&': '⅋',
+};
+export function upsideDown(text) {
+  return Array.from(String(text), (ch) => FLIPPED[ch] ?? ch).reverse().join('');
+}
+
+// Fonts drawn in other Unicode letters, by font id. Screen readers would spell those out, so styleName() in
+// scripts/site.js gives them the real name too.
+export const LETTER_FONTS = { blackletter: fraktur, 'double-struck': doubleStruck, 'upside-down': upsideDown };
+// Fonts that style each letter on its own (each one in a span of its own, the real name for screen readers).
+export const BY_LETTER = new Set(['wobbly', 'ransom']);
