@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <!-- Served at /h/<anything> (vercel.json). Until the server says the address is a real door, this is the 404 page. -->
+    <title>Page not found — Trusty da Horse</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#fbf8f0">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/mobile-icon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/icon-96x96.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/icon-16x16.png">
+    <link rel="preload" href="/fonts/permanent-marker-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles/stylesheet.css">
+    <link rel="stylesheet" href="/styles/hayloft.css">
+    <script type="module" src="/scripts/site.js"></script>
+    <script> window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+    <trusty-header></trusty-header>
+
+    <main id="main">
+        <div class="page-state" id="state-loading" aria-busy="true"></div>
+
+        <!-- The same as 404.html, so a wrong address looks like any other missing page. -->
+        <div class="container notfound" id="state-404" hidden>
+            <div class="sheet notfound-sheet">
+                <img class="ink" src="/images/trusty/seahorse-768.webp" alt="Seahorse Trusty, looking lost" width="768" height="587">
+                <div>
+                    <p class="eyebrow">Error 404</p>
+                    <h1>This page got erased.</h1>
+                    <p class="lead">Trusty looked everywhere for it. Even underwater. It's just not here.</p>
+                    <div class="btn-row btn-row-stack">
+                        <a class="btn btn-lg" href="/">Back to the homepage</a>
+                        <a class="btn btn-lg btn-outline" href="/pages/games.html">Play a game instead</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container section-tight page-state hay-wrap" id="state-login" hidden>
+            <div class="sheet hay-door">
+                <p class="eyebrow">Something creaks</p>
+                <h1>You found a door.</h1>
+                <p class="lead">There's a ladder behind it, up into the hay. Only people with an account can climb it, so Trusty knows who got here first.</p>
+                <div class="btn-row">
+                    <a class="btn btn-lg" id="login-link" href="/pages/auth/login.html">Log in to climb up</a>
+                    <a class="btn btn-lg btn-outline" href="/pages/auth/register.html">Make an account</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="container section-tight page-state hay-wrap" id="state-found" hidden>
+            <div class="sheet hay-door">
+                <p class="eyebrow">You found the box</p>
+                <h1>Trusty's hay!</h1>
+                <p class="lead">Take one card, type its code in here, and put the box back exactly where it was for the next person.</p>
+                <div id="redeem-slot"></div>
+            </div>
+        </div>
+
+        <div class="page-state" id="state-hayloft" hidden>
+            <header class="page-head container hay-head">
+                <p class="eyebrow">You found the hayloft</p>
+                <h1 id="hay-title">The Hayloft</h1>
+                <p class="lead">Trusty hid something real, somewhere real. Every page of his notebook up here gets you closer. Pages open on their own days, so nobody can rush it.</p>
+                <p class="hay-board" id="hay-board"></p>
+            </header>
+            <section class="container section-tight hay-steps" id="hay-steps" aria-label="Trusty's notebook"></section>
+        </div>
+    </main>
+
+    <trusty-footer></trusty-footer>
+
+    <script type="module">
+        import { h, fmt, session, sessionReady, sessionExpired, announceClicks, loginHref, toast } from '/scripts/site.js';
+
+        const API = '/api/leaderboard?action=hunt';
+        const $ = (id) => document.getElementById(id);
+        const slug = decodeURIComponent((location.pathname.match(/^\/h\/([^/?#]+)/) || [])[1] || '');
+        const when = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+        function show(state) {
+            for (const id of ['loading', '404', 'login', 'found', 'hayloft']) $(`state-${id}`).hidden = id !== state;
+            if (state !== '404') document.title = 'The Hayloft — Trusty da Horse';
+        }
+
+        async function call(body, query = '') {
+            const res = await fetch(API + query, {
+                method: body ? 'POST' : 'GET',
+                credentials: 'same-origin',
+                headers: body ? { 'Content-Type': 'application/json' } : {},
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            const data = await res.json().catch(() => ({}));
+            return { status: res.status, data };
+        }
+
+        function rewardNote(reward) {
+            if (!reward || !reward.added) return;
+            announceClicks(reward.clicks, reward.added);
+            toast(`+${fmt(reward.added)} clicks`, 'success');
+        }
+
+        /* ---------- A page of the notebook ---------- */
+
+        function block(b) {
+            if (b.h) return h('h3', null, b.h);
+            if (b.pre) return h('pre', { class: 'hay-pre', tabindex: '0' }, b.pre);
+            if (b.img) return h('img', { class: 'hay-img', src: b.img, alt: b.alt, loading: 'lazy' });
+            return h('p', null, b.p);
+        }
+
+        function card({ rank, suit }) {
+            const red = suit === '♥' || suit === '♦';
+            return h('span', { class: `hay-card${red ? ' is-red' : ''}` }, h('span', { class: 'hay-card-rank' }, rank), h('span', { class: 'hay-card-suit' }, suit));
+        }
+
+        function mapRow(row) {
+            const label = row.hemi === 'N' || row.hemi === 'S' ? 'Latitude' : 'Longitude';
+            const spoken = [...row.whole, ...row.frac].map((c) => c.rank).join(' ');
+            return h('div', { class: 'hay-map-row', role: 'group', 'aria-label': `${label}, ${row.hemi}: ${spoken}` },
+                h('span', { class: 'hay-hemi', 'aria-hidden': 'true' }, row.hemi),
+                h('span', { class: 'hay-cards', 'aria-hidden': 'true' }, row.whole.map(card)),
+                h('span', { class: 'hay-point', 'aria-hidden': 'true' }, '.'),
+                h('span', { class: 'hay-cards', 'aria-hidden': 'true' }, row.frac.map(card)));
+        }
+
+        function answerForm(step) {
+            const input = h('input', { id: `answer-${step.id}`, name: 'answer', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', maxlength: '200', required: true });
+            const status = h('p', { class: 'form-status', role: 'status' });
+            const button = h('button', { class: 'btn', type: 'submit' }, 'Write it in');
+            const form = h('form', { class: 'hay-answer' },
+                h('div', { class: 'field' }, h('label', { for: input.id }, 'Your answer'), input,
+                    h('span', { class: 'hint' }, 'Spaces, capitals and punctuation don’t matter.')),
+                status, button);
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                button.disabled = true;
+                status.dataset.tone = 'info';
+                status.textContent = 'Checking…';
+                try {
+                    const { status: code, data } = await call({ do: 'answer', stage: step.id, answer: input.value });
+                    if (code === 401) return sessionExpired();
+                    if (data.ok) {
+                        rewardNote(data.reward);
+                        render(data.hayloft, step.id);
+                        return;
+                    }
+                    status.dataset.tone = 'error';
+                    status.textContent = code === 200 ? 'Not that. Trusty shakes his head.' : (data.error || 'Something went wrong.');
+                    input.setAttribute('aria-invalid', 'true');
+                } catch {
+                    status.dataset.tone = 'error';
+                    status.textContent = 'Couldn’t reach the hayloft. Try again.';
+                } finally {
+                    button.disabled = false;
+                }
+            });
+            return form;
+        }
+
+        function checkForm(view, step) {
+            const lat = h('input', { id: 'check-lat', name: 'lat', inputmode: 'decimal', autocomplete: 'off', placeholder: '35.12345', required: true });
+            const lng = h('input', { id: 'check-lng', name: 'lng', inputmode: 'decimal', autocomplete: 'off', placeholder: '-80.12345', required: true });
+            const status = h('p', { class: 'form-status', role: 'status' });
+            const left = h('p', { class: 'hay-small' }, view.checks === undefined ? '' : `${view.checks} ${view.checks === 1 ? 'try' : 'tries'} left today.`);
+            const button = h('button', { class: 'btn', type: 'submit' }, 'Check the spot');
+            const form = h('form', { class: 'hay-answer hay-check' },
+                h('p', { class: 'hay-small' }, `Decimal degrees, south and west negative. Within ${view.radius ?? 30} m counts.`),
+                h('div', { class: 'hay-check-fields' },
+                    h('div', { class: 'field' }, h('label', { for: lat.id }, 'Latitude'), lat),
+                    h('div', { class: 'field' }, h('label', { for: lng.id }, 'Longitude'), lng)),
+                status, left, button);
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                button.disabled = true;
+                try {
+                    const { status: code, data } = await call({ do: 'check', lat: lat.value.trim(), lng: lng.value.trim() });
+                    if (code === 401) return sessionExpired();
+                    if (data.ok) {
+                        rewardNote(data.reward);
+                        render(data.hayloft, step.id);
+                        return;
+                    }
+                    status.dataset.tone = 'error';
+                    status.textContent = code === 200 ? 'Nothing there. Trusty’s map says otherwise.' : (data.error || 'Something went wrong.');
+                    if (typeof data.checks === 'number') left.textContent = `${data.checks} ${data.checks === 1 ? 'try' : 'tries'} left today.`;
+                } catch {
+                    status.dataset.tone = 'error';
+                    status.textContent = 'Couldn’t reach the hayloft. Try again.';
+                } finally {
+                    button.disabled = false;
+                }
+            });
+            return form;
+        }
+
+        function redeemForm() {
+            const input = h('input', { id: 'redeem-code', name: 'code', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', placeholder: 'XXXX-XXXX-XXXX', maxlength: '20', required: true });
+            const status = h('p', { class: 'form-status', role: 'status' });
+            const button = h('button', { class: 'btn btn-lg', type: 'submit' }, 'Claim it');
+            const form = h('form', { class: 'hay-answer' },
+                h('div', { class: 'field' }, h('label', { for: input.id }, 'The code on your card'), input), status, button);
+            if (!session.loggedIn) {
+                return h('div', { class: 'btn-row' }, h('a', { class: 'btn btn-lg', href: loginHref() }, 'Log in to claim it'));
+            }
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                button.disabled = true;
+                try {
+                    const { status: code, data } = await call({ do: 'redeem', code: input.value });
+                    if (code === 401) return sessionExpired();
+                    if (data.ok) {
+                        if (data.reward) announceClicks(data.reward.clicks, data.reward.added);
+                        form.replaceWith(h('div', { class: 'sticky-note green hay-win' },
+                            h('h2', null, data.first ? 'You got there first!' : 'You found it!'),
+                            h('p', null, `${fmt(data.reward.added)} clicks are yours. Put the box back just as you found it.`)));
+                        return;
+                    }
+                    status.dataset.tone = 'error';
+                    status.textContent = data.error || 'Something went wrong.';
+                } catch {
+                    status.dataset.tone = 'error';
+                    status.textContent = 'Couldn’t reach the hayloft. Try again.';
+                } finally {
+                    button.disabled = false;
+                }
+            });
+            return form;
+        }
+
+        function stepPage(view, step, index) {
+            const page = h('article', { class: `sheet hay-page${step.solved ? ' is-solved' : ''}`, id: `page-${step.id}` },
+                h('p', { class: 'eyebrow' }, `Page ${index}`),
+                h('h2', { class: 'hay-page-title' }, step.title),
+                step.solved ? h('p', { class: 'hay-stamp' }, 'Solved') : null,
+                step.body.map(block));
+            if (step.map) {
+                page.append(h('div', { class: 'hay-map' }, step.map.map(mapRow)));
+            } else if (step.id === 'final') {
+                page.append(h('p', { class: 'hay-small' }, 'Trusty hasn’t finished drawing the map. Check back soon.'));
+            }
+            if (step.hints.length) {
+                page.append(h('div', { class: 'hay-hints' }, step.hints.map((text, i) =>
+                    h('div', { class: `sticky-note ${['', 'pink', 'blue'][i % 3]}` }, h('h3', null, `Hint ${i + 1}`), h('p', null, text)))));
+            }
+            if (!step.solved) {
+                if (step.id === 'final') { if (step.map) page.append(checkForm(view, step)); }
+                else page.append(answerForm(step));
+            } else if (step.id === 'final') {
+                page.append(h('div', { class: 'sticky-note green hay-field' },
+                    h('h3', null, 'That’s the spot.'),
+                    view.found ? h('p', null, 'You’ve already found the box. Nice work.') : h('p', null, step.note || 'Go and find it. Take one card from the box and type its code in below.')));
+                if (!view.found) page.append(redeemForm());
+            }
+            return page;
+        }
+
+        function render(view, focusAfter) {
+            show('hayloft');
+            $('hay-title').textContent = view.title;
+            const climbed = view.board.solved[0] || 0;
+            const finders = view.board.finders.length;
+            $('hay-board').textContent = `${fmt(climbed)} ${climbed === 1 ? 'person has' : 'people have'} climbed up here. `
+                + (finders ? `${fmt(finders)} found the box, ${view.board.finders[0]} first.` : 'Nobody has found the box yet.')
+                + ` Every page pays ${fmt(view.rewards.stage)} clicks; first to the box gets ${fmt(view.rewards.first)}, everyone after ${fmt(view.rewards.finder)}.`;
+            const pages = view.steps.filter((s) => s.id !== 'door').map((s, i) => stepPage(view, s, i + 1));
+            if (view.next) {
+                pages.push(h('div', { class: 'sheet sheet-plain hay-next' },
+                    h('p', { class: 'eyebrow' }, 'The next page'),
+                    h('p', { class: 'lead' }, `Opens ${when.format(new Date(view.next.opensAt))}.`)));
+            } else if (!pages.length) {
+                pages.push(h('div', { class: 'sheet sheet-plain hay-next' }, h('p', { class: 'lead' }, 'The notebook is empty for now.')));
+            }
+            $('hay-steps').replaceChildren(...pages);
+            const target = focusAfter && document.getElementById(`page-${focusAfter}`);
+            const next = target && target.nextElementSibling;
+            if (next) next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /* ---------- Go ---------- */
+
+        await sessionReady;
+        $('login-link').href = loginHref();
+        if (slug.toLowerCase() === 'found') {
+            show('found');
+            $('redeem-slot').replaceChildren(redeemForm());
+        } else if (slug.toLowerCase() === 'preview' && session.isAdmin) {
+            const { status, data } = await call(null, '&preview=1').catch(() => ({ status: 0 }));
+            if (status === 200) render(data); else show('404');
+        } else if (!slug) {
+            show('404');
+        } else {
+            try {
+                const { status, data } = await call({ do: 'door', slug });
+                if (status === 401) sessionExpired();
+                if (status === 200 && data.login) show('login');
+                else if (status === 200 && data.hayloft) {
+                    rewardNote(data.reward);
+                    render(data.hayloft);
+                } else {
+                    show('404');
+                }
+            } catch {
+                show('404');
+            }
+        }
+    </script>
+</body>
+</html>

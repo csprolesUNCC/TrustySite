@@ -24,6 +24,8 @@ const PAGES = [
   ...sitemapPages,
   '/a-page-that-does-not-exist', '/pages/admin.html', '/pages/auth/login.html', '/pages/auth/register.html',
   '/pages/auth/forgot-password.html', '/pages/auth/reset-password.html?token=abc', '/pages/profile.html?u=carson', '/pages/profile.html',
+  // The Hayloft (the pretend hunt in tools/sample-hunt.mjs): a real door, a wrong one, the box's code page and an admin's preview.
+  '/h/sample-door', '/h/not-a-door', '/h/found', '/h/preview', '/pages/radio.html#95.5',
 ];
 // Third parties the pages embed (and that may be unreachable from wherever this runs).
 const THIRD_PARTY = /youtube|ytimg|googlevideo|open-meteo|bigdatacloud|ajax\.googleapis|gstatic|onlinegames|retrogames|itch\.io|doubleclick/;
@@ -446,6 +448,52 @@ async function twoPeople(found) {
   if (found.length) problems.push(`Trusty Poker table\n    ${[...new Set(found)].join('\n    ')}`);
 }
 
+// The real-world hunt, with the pretend one from tools/sample-hunt.mjs: through the door, both answers, the map's
+// geochecker and a card from the box, at both widths, with the same checks on every page of it.
+for (const width of [375, 1280]) {
+  const found = [];
+  const name = `hunter${width}`;
+  const context = await browser.newContext({ viewport: { width, height: 800 } });
+  await context.addCookies([{ name: 'mock', value: 'in', url: BASE }, { name: 'mockuser', value: name, url: BASE }]);
+  await context.addInitScript((n) => { try { localStorage.setItem('isUserLoggedIn', 'true'); localStorage.setItem('username', n); } catch { /* */ } }, name);
+  const page = await context.newPage();
+  page.on('pageerror', (e) => found.push(`threw: ${e.message}`));
+  const check = async (what) => found.push(...(await axeProblems(page)).map((v) => `${what}: ${v}`));
+  try {
+    await page.goto(`${BASE}/h/sample-door`, { waitUntil: 'networkidle' });
+    for (const [stage, answer] of [['radio', 'nope'], ['radio', 'Sample radio!'], ['shares', 'sample shares']]) {
+      await page.fill(`#answer-${stage}`, answer);
+      await page.click(`#page-${stage} button[type="submit"]`);
+      await page.waitForTimeout(400);
+      if (answer === 'nope' && !/Not that/.test(await page.textContent(`#page-${stage} .form-status`))) found.push('a wrong answer didn’t say so');
+    }
+    await check('the map');
+    await page.fill('#check-lat', '35.22709');
+    await page.fill('#check-lng', '-80.84313');
+    await page.click('.hay-check button[type="submit"]');
+    await page.waitForSelector('#redeem-code', { timeout: 5000 });
+    // A card from the box: the admin makes the codes.
+    const made = await fetch(`${BASE}/api/leaderboard?action=hunt`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: 'mock=in; mockuser=carson' }, body: JSON.stringify({ do: 'codes', count: 1 }),
+    }).then((r) => r.json());
+    const code = made.codes && made.codes[0];
+    if (!code) {
+      found.push('carson couldn’t make a code for the box');
+    } else {
+      await page.fill('#redeem-code', code);
+      await page.click('.hay-answer:has(#redeem-code) button[type="submit"]');
+      await page.waitForSelector('.hay-win', { timeout: 5000 });
+    }
+    await page.waitForTimeout(3000); // the answers' toasts fade out
+    await check('after finding the box');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)) found.push('scrolls sideways');
+  } catch (e) {
+    found.push(`didn't get through the hunt: ${e.message.split('\n')[0]}`);
+  }
+  await context.close();
+  if (found.length) problems.push(`The hunt (${width}px)\n    ${[...new Set(found)].join('\n    ')}`);
+}
+
 for (const href of links) {
   const res = await fetch(href);
   if (res.status >= 400) problems.push(`broken link: ${href.replace(BASE, '')} (${res.status})`);
@@ -453,7 +501,7 @@ for (const href of links) {
 
 await browser.close();
 server.close();
-console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins, a Golden Horse bonus and a Grand Jackpot on the Slots, Poker hands (against the bots and at a table)${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
+console.log(`${PAGES.length} pages x 4 (phone/desktop, logged out/in), ${links.size} links, an online Trusty Fever game, hands of Blackjack for clicks (solo and at a table), Craps for clicks (solo and at a table), spins, a Golden Horse bonus and a Grand Jackpot on the Slots, Poker hands (against the bots and at a table), the hunt from the door to the box${axePath ? '' : ' (axe-core not installed: no accessibility checks)'}`);
 if (problems.length) {
   console.log(`\n${problems.length} problem(s):\n\n${problems.join('\n\n')}`);
   process.exit(1);

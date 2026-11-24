@@ -30,6 +30,10 @@ import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
 import { GAME_KEYS, POST_REWARD, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
 import { puzzleWord } from '../scripts/trustle.js';
+import { handle as huntHandle } from '../utils/hunt-game.js';
+import { memoryHunt } from '../utils/hunt-store.js';
+import { importHunt } from '../utils/hunt-rules.js';
+import { SAMPLE_HUNT } from './sample-hunt.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The headers vercel.json sends with every file.
@@ -71,6 +75,11 @@ function slotsFor(req) {
   const stops = BONUS_STOPS.map((stop) => (stop + 0.5) / SLOT_MACHINE.strip.length);
   return { ...slots, random: () => (stops.length ? stops.shift() : slots.random()) };
 }
+
+// The real-world hunt (utils/hunt-game.js, the real API) with the pretend one from tools/sample-hunt.mjs, started a
+// month ago so every page is open: /h/sample-door. It pays into the pretend bank.
+const hunt = memoryHunt({ bank });
+await hunt.saveHunt({ ...importHunt(SAMPLE_HUNT), live: true, startsAt: new Date(Date.now() - 30 * 864e5).toISOString() });
 
 // Trustle's clicks, paid like api/trustle-api.js pays them (once a puzzle, within a day of today's) into the
 // pretend bank. It keeps no games, so only the ones a page sends can pay.
@@ -185,6 +194,15 @@ async function api(req, url, body) {
     return [200, { clicks: account.clicks, daily: claim }];
   }
   if (p === '/api/leaderboard') {
+    if (action === 'hunt') {
+      const name = mockUser(req);
+      const [status, answer] = await huntHandle(hunt, {
+        method: req.method, query: Object.fromEntries(url.searchParams), body, now: Date.now(),
+        user: me ? { userId: accountOf(req), username: name } : null, admin: me && ['carson', 'luke'].includes(name),
+        ip: req.socket.remoteAddress || 'local',
+      });
+      return [status, answer];
+    }
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
@@ -319,7 +337,8 @@ export function startServer(port = 8787) {
       res.end('');
       return;
     }
-    let file = path.join(ROOT, decodeURIComponent(url.pathname));
+    // vercel.json's rewrite: every /h/<door> is the Hayloft, which looks like the 404 page until it's a real door.
+    let file = /^\/h\/[^/]+$/.test(url.pathname) ? path.join(ROOT, 'pages/hayloft.html') : path.join(ROOT, decodeURIComponent(url.pathname));
     if (!file.startsWith(ROOT + path.sep) && file !== ROOT) { res.writeHead(403); res.end(); return; }
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
     let status = 200;

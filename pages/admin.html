@@ -44,7 +44,7 @@
             <header class="page-head container">
                 <p class="eyebrow">Admins only</p>
                 <h1>Admin Panel</h1>
-                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, and take down anything that doesn’t belong on the site.</p>
+                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, and run the real-world hunt.</p>
             </header>
 
             <section class="section-tight container" aria-label="Admin tools">
@@ -52,6 +52,7 @@
                     <button class="tab" role="tab" type="button" id="tab-drawings" aria-controls="panel-drawings" aria-selected="true" data-tab="drawings">Drawings</button>
                     <button class="tab" role="tab" type="button" id="tab-users" aria-controls="panel-users" aria-selected="false" tabindex="-1" data-tab="users">Usernames</button>
                     <button class="tab" role="tab" type="button" id="tab-daily" aria-controls="panel-daily" aria-selected="false" tabindex="-1" data-tab="daily">Daily Games</button>
+                    <button class="tab" role="tab" type="button" id="tab-hunt" aria-controls="panel-hunt" aria-selected="false" tabindex="-1" data-tab="hunt">Hunt</button>
                 </div>
 
                 <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
@@ -78,6 +79,65 @@
                         <p class="admin-summary" id="daily-summary" role="status"></p>
                     </div>
                     <ul class="admin-flagged admin-daily" id="daily" aria-label="Daily Games results that were flagged or reported, newest first"></ul>
+                </div>
+
+                <div role="tabpanel" id="panel-hunt" aria-labelledby="tab-hunt" data-tab="hunt" hidden>
+                    <div class="admin-head">
+                        <p class="admin-summary" id="hunt-summary" role="status"></p>
+                    </div>
+                    <div class="admin-hunt" id="hunt">
+                        <div class="panel admin-hunt-status" id="hunt-status"></div>
+
+                        <form class="panel" id="hunt-launch">
+                            <h2 class="panel-title">Launch</h2>
+                            <p class="admin-note">Every page opens a set number of days after this. Nothing shows anywhere, not even the intermissions, until it’s live and this time has come.</p>
+                            <div class="field"><label for="hunt-start">Starts</label><input type="datetime-local" id="hunt-start"></div>
+                            <label class="admin-check"><input type="checkbox" id="hunt-live"> Live</label>
+                            <button class="btn" type="submit">Save</button>
+                        </form>
+
+                        <form class="panel" id="hunt-coords">
+                            <h2 class="panel-title">Coordinates</h2>
+                            <p class="admin-note">Where everything leads. The map is dealt from these and the answers, so it changes the moment you save.</p>
+                            <div class="admin-hunt-pair">
+                                <div class="field"><label for="hunt-lat">Latitude</label><input id="hunt-lat" inputmode="decimal" autocomplete="off" placeholder="35.12345"></div>
+                                <div class="field"><label for="hunt-lng">Longitude</label><input id="hunt-lng" inputmode="decimal" autocomplete="off" placeholder="-80.12345"></div>
+                            </div>
+                            <div class="field"><label for="hunt-radius">How close counts (m)</label><input id="hunt-radius" type="number" min="5" max="500" step="1" value="30"></div>
+                            <div class="field"><label for="hunt-note">Field note</label><textarea id="hunt-note" rows="3" maxlength="1000" placeholder="Shown once the geochecker says yes: where exactly the box is."></textarea></div>
+                            <div class="btn-row">
+                                <button class="btn" type="submit">Save</button>
+                                <button class="btn btn-outline" type="button" id="hunt-clear-coords">Clear</button>
+                            </div>
+                        </form>
+
+                        <form class="panel" id="hunt-codes">
+                            <h2 class="panel-title">The box’s cards</h2>
+                            <p class="admin-note">Each card gets one code; one per player. They’re only shown once, right after you make them, so copy them straight away.</p>
+                            <div class="field"><label for="hunt-count">How many</label><input id="hunt-count" type="number" min="1" max="50" step="1" value="10"></div>
+                            <div class="btn-row">
+                                <button class="btn" type="submit">Make codes</button>
+                                <button class="btn btn-outline" type="button" id="hunt-void">Void unused codes</button>
+                            </div>
+                            <div id="hunt-new-codes"></div>
+                        </form>
+
+                        <form class="panel" id="hunt-import">
+                            <h2 class="panel-title">Import the hunt</h2>
+                            <p class="admin-note">Paste the hunt’s JSON (it never goes in the repo: anyone can read that). Importing again keeps the coordinates, launch, printed codes and everyone’s progress.</p>
+                            <div class="field"><label for="hunt-json">Hunt JSON</label><textarea id="hunt-json" rows="8" spellcheck="false"></textarea></div>
+                            <button class="btn" type="submit">Import</button>
+                        </form>
+
+                        <div class="panel">
+                            <h2 class="panel-title">Try it</h2>
+                            <div class="btn-row">
+                                <a class="btn btn-outline btn-sm" href="/h/preview">See every page</a>
+                                <a class="btn btn-outline btn-sm" id="hunt-test-tv" href="/pages/tv.html?signal=test">Test an intermission</a>
+                                <button class="btn btn-outline btn-sm" type="button" id="hunt-reset">Reset my progress</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
@@ -359,11 +419,140 @@
             }
         }
 
+        /* ---------- The real-world hunt ---------- */
+
+        // utils/hunt-game.js (?action=hunt on api/leaderboard.js), which checks you're an admin on every request.
+        const HUNT_API = '/api/leaderboard?action=hunt';
+        const when = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        let huntData = null;
+
+        async function huntCall(body) {
+            const res = await fetch(body ? HUNT_API : `${HUNT_API}&do=admin`, {
+                method: body ? 'POST' : 'GET',
+                headers: body ? { 'Content-Type': 'application/json' } : {},
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) { sessionExpired(); needLogin(); }
+            else if (res.status === 403) notAdmin();
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            return data;
+        }
+
+        const localInput = (iso) => {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        };
+
+        function renderHunt(data) {
+            huntData = data.hunt;
+            const hunt = huntData;
+            const summary = $('hunt-summary');
+            if (!hunt) {
+                summary.textContent = 'No hunt yet. Import one below.';
+                $('hunt-status').replaceChildren(h('p', { class: 'admin-note' }, 'Nothing to show until a hunt is imported.'));
+                return;
+            }
+            summary.textContent = `${hunt.title}: ${hunt.on ? 'running' : hunt.live ? 'live, waiting for its start' : 'not live'}. `
+                + `${plural(hunt.codes.used, 'card')} of ${fmt(hunt.codes.total)} taken.`;
+            const rows = hunt.steps.map((s) => h('tr', null,
+                h('td', null, s.title || s.id, s.mhz ? ` (${s.mhz} FM)` : ''),
+                h('td', null, s.opensAt ? when.format(new Date(s.opensAt)) : `day ${s.day}`),
+                h('td', null, fmt(s.solved))));
+            const problems = [];
+            if (!hunt.coords) problems.push('No coordinates yet: the map stays blank and nobody can finish.');
+            else if (!hunt.mapOk) problems.push('The map doesn’t read back to the coordinates. Re-import the hunt.');
+            if (!hunt.startsAt) problems.push('No start time yet.');
+            if (!hunt.codes.total) problems.push('No codes made for the box yet.');
+            $('hunt-status').replaceChildren(
+                h('h2', { class: 'panel-title' }, 'How it’s going'),
+                problems.length ? h('ul', { class: 'admin-hunt-problems' }, problems.map((p) => h('li', null, p))) : h('p', { class: 'admin-note' }, 'Everything’s in place.'),
+                h('div', { class: 'admin-hunt-table' }, h('table', null,
+                    h('thead', null, h('tr', null, h('th', null, 'Page'), h('th', null, 'Opens'), h('th', null, 'Solved'))),
+                    h('tbody', null, rows))),
+                h('p', { class: 'admin-note' }, `${fmt(hunt.cards)} intermission cards, about one every ${fmt(hunt.every)} minutes on their channels. `
+                    + (hunt.finders.length ? `Found by ${hunt.finders.join(', ')} (${hunt.firstFinder} first).` : 'Nobody has found the box yet.')));
+            $('hunt-start').value = localInput(hunt.startsAt);
+            $('hunt-live').checked = hunt.live;
+            if (hunt.coords) {
+                $('hunt-lat').value = hunt.coords.lat;
+                $('hunt-lng').value = hunt.coords.lng;
+            }
+            $('hunt-radius').value = hunt.radius;
+            $('hunt-note').value = hunt.note || '';
+        }
+
+        async function loadHunt() {
+            $('hunt-summary').textContent = 'Loading the hunt…';
+            try {
+                renderHunt(await huntCall());
+            } catch {
+                loaded.delete('hunt');
+                $('hunt-summary').replaceChildren('Couldn’t load the hunt. ', retryButton('hunt'));
+            }
+        }
+
+        function huntForm(id, body, done) {
+            $(id).addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = e.submitter || $(id).querySelector('button[type="submit"]');
+                button.disabled = true;
+                try {
+                    const data = await huntCall(body());
+                    renderHunt(data);
+                    if (done) done(data);
+                    toast('Saved', 'success');
+                } catch (error) {
+                    toast(error.message, 'error', 5000);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        }
+
+        huntForm('hunt-launch', () => ({
+            do: 'launch', live: $('hunt-live').checked,
+            startsAt: $('hunt-start').value ? new Date($('hunt-start').value).toISOString() : null,
+        }));
+        huntForm('hunt-coords', () => ({
+            do: 'coords', lat: $('hunt-lat').value.trim(), lng: $('hunt-lng').value.trim(),
+            radius: Number($('hunt-radius').value), note: $('hunt-note').value,
+        }));
+        huntForm('hunt-codes', () => ({ do: 'codes', count: Number($('hunt-count').value) }), (data) => {
+            const text = data.codes.join('\n');
+            const copy = h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: async () => {
+                try { await navigator.clipboard.writeText(text); toast('Copied', 'success'); } catch { toast('Couldn’t copy: select them instead.', 'error'); }
+            } }, 'Copy');
+            $('hunt-new-codes').replaceChildren(
+                h('p', { class: 'admin-note' }, 'New codes. Print one on each card with the address trustydahorse.com/h/found:'),
+                h('pre', { class: 'admin-hunt-codes', tabindex: '0' }, text), copy);
+        });
+        huntForm('hunt-import', () => {
+            let hunt;
+            try { hunt = JSON.parse($('hunt-json').value); } catch { throw new Error('That isn’t valid JSON.'); }
+            if (huntData && !confirm('Replace the hunt’s pages and answers? Coordinates, launch, codes and progress stay.')) throw new Error('Not imported.');
+            return { do: 'import', hunt };
+        }, () => { $('hunt-json').value = ''; });
+
+        async function huntAction(body, question) {
+            if (question && !confirm(question)) return;
+            try {
+                renderHunt(await huntCall(body));
+                toast('Done', 'success');
+            } catch (error) {
+                toast(error.message, 'error', 5000);
+            }
+        }
+        $('hunt-clear-coords').addEventListener('click', () => huntAction({ do: 'coords', clear: true }, 'Clear the coordinates? The map goes blank.'));
+        $('hunt-void').addEventListener('click', () => huntAction({ do: 'void' }, 'Void every code nobody has used? Printed cards stop working.'));
+        $('hunt-reset').addEventListener('click', () => huntAction({ do: 'reset-me' }, 'Start the hunt over yourself? Clicks already paid stay paid.'));
+
         /* ---------- Tabs ---------- */
 
         const tabs = [...document.querySelectorAll('[role="tab"]')];
         const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
-        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily };
+        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily, hunt: loadHunt };
         const loaded = new Set();
 
         function load(key) {

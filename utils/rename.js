@@ -29,6 +29,7 @@ const NAME_COPIES = [
     ['trustle', 'username'],
     ['profiles', 'username'],
     ['daily_scores', 'name'],
+    ['hunt_progress', 'name'], // the real-world hunt (utils/hunt-store.js)
 ];
 
 /**

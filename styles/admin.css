@@ -106,3 +106,18 @@ a.admin-user-name:hover { color: var(--blue); }
 }
 .admin-names a:hover { color: var(--blue); text-decoration: underline; }
 .admin-daily .btn-row { margin-left: auto; gap: 8px; }
+
+/* The Hunt tab: the real-world hunt's settings (utils/hunt-game.js). */
+.admin-hunt { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: start; }
+.admin-hunt-status { grid-column: 1 / -1; }
+.admin-note { margin: 0 0 14px; color: var(--ink-soft); font-size: .95rem; }
+.admin-check { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; font-weight: 700; }
+.admin-check input { width: 20px; height: 20px; }
+.admin-hunt-pair { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.admin-hunt textarea { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9rem; resize: vertical; }
+.admin-hunt-problems { margin: 0 0 14px; padding-left: 1.2em; color: var(--red); font-weight: 650; }
+.admin-hunt-table { overflow-x: auto; margin-bottom: 14px; }
+.admin-hunt-table table { width: 100%; border-collapse: collapse; }
+.admin-hunt-table th, .admin-hunt-table td { padding: 8px 10px; border-bottom: 1.5px dashed var(--pencil-light); text-align: left; }
+.admin-hunt-table td:last-child, .admin-hunt-table th:last-child { text-align: right; }
+.admin-hunt-codes { margin: 0 0 10px; padding: 12px; overflow-x: auto; border: 2px dashed var(--pencil-light); border-radius: 10px; background: #fff; font-size: 1rem; }

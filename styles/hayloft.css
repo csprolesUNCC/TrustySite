@@ -1,0 +1,84 @@
+/* The Hayloft (pages/hayloft.html, served at /h/<door>): the real-world hunt's notebook. */
+
+.hay-wrap { display: grid; align-content: start; }
+.hay-door { max-width: 760px; }
+.hay-door h1 { margin-bottom: .3em; }
+
+.hay-head .lead { margin-bottom: 12px; }
+.hay-board { margin: 0; max-width: 70ch; color: var(--pencil); font-size: .95rem; }
+
+.hay-steps { display: grid; gap: clamp(20px, 3vw, 32px); max-width: 860px; }
+.hay-page { position: relative; overflow-wrap: anywhere; }
+.hay-page-title { margin: 0 0 .6em; }
+.hay-page > p:not(.eyebrow) { max-width: 66ch; }
+.hay-page.is-solved { background-color: var(--paper-deep); }
+
+.hay-stamp {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  margin: 0;
+  padding: 2px 12px;
+  border: 3px solid var(--green);
+  border-radius: 8px;
+  color: var(--green);
+  font-family: var(--font-marker);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  transform: rotate(6deg);
+}
+
+/* Share text and other things that have to keep their spacing; scrolls inside itself on phones. */
+.hay-pre {
+  margin: 0 0 1em;
+  padding: 14px 16px;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 2px dashed var(--pencil-light);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .6);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: .95rem;
+  line-height: 1.35;
+  white-space: pre;
+}
+.hay-img { display: block; max-width: 100%; height: auto; margin: 0 0 1em; border: 2px solid var(--ink); border-radius: 8px; }
+
+/* The map: the coordinates dealt as playing cards. */
+.hay-map { display: grid; gap: 14px; margin: 8px 0 20px; }
+.hay-map-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.hay-hemi { width: 1.4em; font-family: var(--font-marker); font-size: 1.6rem; }
+.hay-cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.hay-point { font-family: var(--font-marker); font-size: 2rem; line-height: 1; align-self: flex-end; }
+.hay-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 2.6em;
+  height: 3.6em;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 2px 3px 0 rgba(27, 27, 31, .15);
+  line-height: 1;
+}
+.hay-card.is-red { color: var(--red); }
+.hay-card-rank { font-weight: 800; font-size: 1.15rem; }
+.hay-card-suit { font-size: 1.05rem; }
+@media (max-width: 480px) {
+  .hay-card { width: 2.15em; height: 3em; }
+  .hay-card-rank { font-size: 1rem; }
+}
+
+.hay-hints { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); margin: 8px 0 20px; }
+.hay-hints .sticky-note p { margin: 0; }
+
+.hay-answer { max-width: 440px; margin-top: 12px; }
+.hay-answer input { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .04em; }
+.hay-check-fields { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.hay-small { margin: 0 0 12px; color: var(--pencil); font-size: .92rem; }
+.hay-field, .hay-win { max-width: 520px; margin: 12px 0 18px; }
+.hay-field p, .hay-win p { margin: 0; }
+.hay-next { text-align: center; }
+.hay-next .lead { margin: 0 auto; }

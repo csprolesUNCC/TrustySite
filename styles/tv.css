@@ -87,7 +87,10 @@
   container-type: inline-size;
 }
 .tv-screen > iframe, .tv-screen > #player { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; }
-.tv-static, .tv-message { display: none; }
+.tv-static, .tv-message, .tv-intermission { display: none; }
+/* A split-second station card now and then (pages/tv.html, Intermissions): the player is hidden, not covered. */
+.tv-screen.is-intermission .tv-static { display: none; }
+.tv-screen.is-static.is-intermission .tv-intermission { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
 .tv-screen.is-static > iframe { visibility: hidden; }
 .tv-screen.is-static .tv-static { display: block; position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 .tv-screen.is-static .tv-message:not([hidden]) {

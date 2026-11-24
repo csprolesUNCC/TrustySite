@@ -31,6 +31,9 @@
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ],
+  "rewrites": [
+    { "source": "/h/:door", "destination": "/pages/hayloft.html" }
+  ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true },
     { "source": "/api/:path(.*)\\.js", "destination": "/api/:path", "permanent": false },

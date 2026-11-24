@@ -60,6 +60,7 @@
                                 <div class="tv-screen is-static" id="screen">
                                     <div id="player"></div>
                                     <canvas class="tv-static" id="static" width="160" height="90" aria-hidden="true"></canvas>
+                                    <canvas class="tv-intermission" id="intermission" width="640" height="360" aria-hidden="true"></canvas>
                                     <p class="tv-message" id="message" role="status">Tuning in&hellip;</p>
                                 </div>
                             </div>
@@ -106,6 +107,7 @@
                     <h2 class="panel-title">Coming up</h2>
                     <ol class="tv-guide" id="guide"></ol>
                 </div>
+                <p class="tv-note tv-signal-note" id="signal-note" hidden></p>
                 <p class="tv-note">Shows play back to back, all day, every day. Everyone watching sees the same moment, so tell your friends to tune in.</p>
                 <p class="tv-note" data-auth-show="in">Every 5 seconds you watch earns you 10 clicks for your Trusty clicker, up to 2,500 a day.<span id="earned"></span></p>
                 <p class="tv-note" data-auth-show="out"><a id="login-link" href="/pages/auth/login.html">Log in</a> and every 5 seconds you watch earns you 10 clicks for your Trusty clicker, up to 2,500 a day.</p>
@@ -206,7 +208,7 @@
         }
 
         function hideStatic() {
-            screen.classList.remove('is-static');
+            screen.classList.remove('is-static', 'is-intermission');
             $('message').hidden = true;
         }
 
@@ -436,6 +438,143 @@
             }
         }
 
+        /* ---------- Intermissions ---------- */
+
+        // Now and then the picture cuts out for a split second to a station card (the real-world hunt, utils/hunt-game.js).
+        // When, and what's on the card, only comes from the server, a minute or so ahead and never further, so reading
+        // this page gives nothing away. The player is hidden while the card shows (YouTube's rules: never covered).
+        const SIGNAL_API = '/api/leaderboard?action=hunt&do=tv';
+        const signalTest = new URLSearchParams(location.search).get('signal') === 'test';
+        const asked = new Set();     // `${channel}:${minute}` already fetched
+        let signalOff = 0;           // when to ask again after the server says there's no hunt on
+        const timers = new Set();
+
+        async function askSignal(minute) {
+            const key = CHANNELS[channel].key;
+            const id = `${key}:${minute}`;
+            if (asked.has(id) || performance.now() < signalOff) return;
+            asked.add(id);
+            try {
+                const res = await fetch(`${SIGNAL_API}&ch=${key}&m=${minute}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.on) {
+                    signalOff = performance.now() + 10 * 60000;
+                    return;
+                }
+                showSignalHints(data.hints || []);
+                if (data.air) scheduleCard(data.air, key);
+            } catch { /* offline: no intermission */ }
+        }
+
+        function showSignalHints(hints) {
+            const note = $('signal-note');
+            note.hidden = !hints.length;
+            note.textContent = hints.length ? hints[hints.length - 1] : '';
+        }
+
+        function scheduleCard(air, key) {
+            const wait = air.at - now();
+            if (wait < -200 || wait > 4 * 60000) return;
+            const timer = setTimeout(() => {
+                timers.delete(timer);
+                if (CHANNELS[channel].key === key) playCard(air);
+            }, Math.max(0, wait));
+            timers.add(timer);
+        }
+
+        function signalTick() {
+            const minute = Math.floor(now() / 60000);
+            askSignal(minute);
+            if (now() % 60000 > 20000) askSignal(minute + 1);
+        }
+
+        function drawCard(card) {
+            const c = $('intermission').getContext('2d');
+            const W = 640;
+            const H = 360;
+            const bars = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0'];
+            bars.forEach((color, i) => { c.fillStyle = color; c.fillRect((i * W) / 7, 0, W / 7 + 1, H * 0.68); });
+            const low = ['#0000c0', '#131313', '#c000c0', '#131313', '#00c0c0', '#131313', '#c0c0c0'];
+            low.forEach((color, i) => { c.fillStyle = color; c.fillRect((i * W) / 7, H * 0.68, W / 7 + 1, H * 0.08); });
+            c.fillStyle = '#101014';
+            c.fillRect(0, H * 0.76, W, H * 0.24);
+            // The card itself.
+            c.fillStyle = '#fbf8f0';
+            c.strokeStyle = '#1b1b1f';
+            c.lineWidth = 6;
+            c.beginPath();
+            c.roundRect(70, 62, W - 140, 196, 18);
+            c.fill();
+            c.stroke();
+            c.fillStyle = '#1b1b1f';
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.font = '28px "Permanent Marker", cursive';
+            c.fillText('INTERMISSION', W / 2, 96);
+            c.font = 'bold 64px ui-monospace, Menlo, Consolas, monospace';
+            c.fillText(card.text, W / 2, 162, W - 180);
+            c.font = '22px "Permanent Marker", cursive';
+            c.fillStyle = '#d6334b';
+            c.fillText('PLEASE STAND BY', W / 2, 226);
+            // The channel's ident, top left, and the card's mark, top right.
+            c.fillStyle = '#1b1b1f';
+            c.beginPath();
+            c.arc(54, 46, 34, 0, Math.PI * 2);
+            c.fill();
+            c.fillStyle = '#fbf8f0';
+            c.font = '30px "Permanent Marker", cursive';
+            c.fillText(String(CHANNELS[channel].number), 54, 48);
+            if (card.mark) {
+                c.fillStyle = '#1b1b1f';
+                c.font = 'bold 26px Georgia, serif';
+                c.textAlign = 'right';
+                c.fillText(card.mark, W - 92, 96);
+            }
+            c.fillStyle = '#fbf8f0';
+            c.textAlign = 'center';
+            c.font = '20px ui-monospace, Menlo, Consolas, monospace';
+            c.fillText('TRUSTY TV', W / 2, H * 0.88);
+        }
+
+        function beep(ms) {
+            if (!soundOn) return;
+            try {
+                const ctx = new AudioContext();
+                const tone = ctx.createOscillator();
+                const gain = ctx.createGain();
+                tone.frequency.value = 1000;
+                gain.gain.value = 0.08 * (volume / 100);
+                tone.connect(gain).connect(ctx.destination);
+                tone.start();
+                tone.stop(ctx.currentTime + ms / 1000);
+                tone.onended = () => ctx.close();
+            } catch { /* no Web Audio */ }
+        }
+
+        function playCard(air) {
+            if (document.hidden || !player || typeof player.mute !== 'function' || broken === current || screen.classList.contains('is-static')) return;
+            drawCard(air.card);
+            const wasMuted = !soundOn;
+            player.mute();
+            screen.classList.add('is-static', 'is-intermission');
+            beep(air.ms);
+            setTimeout(() => {
+                screen.classList.remove('is-static', 'is-intermission');
+                if (!wasMuted && soundOn) player.unMute();
+            }, air.ms);
+        }
+
+        async function testSignal() {
+            try {
+                const res = await fetch(`${SIGNAL_API}&test=1&ch=${CHANNELS[channel].key}`, { credentials: 'same-origin' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.air) scheduleCard(data.air, CHANNELS[channel].key);
+                }
+            } catch { /* offline */ }
+        }
+
         /* ---------- Controls ---------- */
 
         function setSound(on, remember = false) {
@@ -570,6 +709,9 @@
             }
             showStatic();
             holdUntil = performance.now() + 400;
+            for (const timer of timers) clearTimeout(timer);
+            timers.clear();
+            signalTick();
             tune(); // the guide updates now; the picture after the static
             setTimeout(() => tune(), 400);
         });
@@ -600,11 +742,13 @@
             setInterval(() => {
                 tune(++ticks % 5 === 0);
                 watchTick();
+                if (ticks % 10 === 1) signalTick();
             }, 1000);
             try {
                 const YT = await loadYouTube();
                 await halfVisible(screen);
                 startPlayer(YT);
+                if (signalTest) setTimeout(testSignal, 3000);
             } catch {
                 showStatic('Trusty TV can’t reach YouTube right now.');
             }
