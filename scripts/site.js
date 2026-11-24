@@ -1,5 +1,5 @@
 // Shared chrome (header/footer), session state, and small DOM helpers for every page.
-import { rankFor, nextRank, rankProgress, dailyBonus, dayOf } from '/scripts/milestones.js';
+import { rankFor, nextRank, rankProgress, dailyBonus, dayOf, CLICKER, pressPays, pressesPaid, pressesToday, tiredness } from '/scripts/milestones.js';
 import { DEFAULTS as SHOP_DEFAULTS, itemById, cleanStyle, fraktur } from '/scripts/shop.js';
 
 const LS_FLAG = 'isUserLoggedIn';
@@ -450,8 +450,17 @@ function setupMenu(toggle, menu) {
 
 const clicksWord = (n) => `${fmt(n)} ${n === 1 ? 'click' : 'clicks'}`;
 
-// The clicker's tooltip: the player's click rank, how far the next one is, and the daily bonus while it waits.
-function clickerTitle(count, daily) {
+// What the tooltip and notes say about Trusty being tired after `n` presses today (CLICKER in scripts/milestones.js).
+function tiredLine(n) {
+  const state = tiredness(n);
+  if (state === 'done') return `Trusty’s worn out: that’s today’s ${fmt(CLICKER.max)} clicks. Clicking pays again from midnight Eastern.`;
+  if (state === 'tired') return `Trusty’s tired: only 1 in every ${CLICKER.every} clicks counts until midnight Eastern (${clicksWord(CLICKER.max - pressesPaid(n))} left today).`;
+  return null;
+}
+
+// The clicker's tooltip: the player's click rank, how far the next one is, the daily bonus while it waits, and
+// whether Trusty's tired.
+function clickerTitle(count, daily, pressed = 0) {
   const rank = rankFor(count);
   const next = nextRank(count);
   return [
@@ -459,6 +468,7 @@ function clickerTitle(count, daily) {
     rank ? `Rank: ${rank.name}.` : null,
     next ? `${clicksWord(next.at - count)} to ${next.name}.` : 'That’s the top rank!',
     daily && daily.ready ? `Today’s first click earns a +${fmt(daily.next)} bonus.` : null,
+    tiredLine(pressed),
   ].filter(Boolean).join(' ');
 }
 
@@ -490,12 +500,17 @@ function setupClicker(button, news) {
   // The daily bonus as GET /api/clicks last told it ({ ready, streak, next }), and the day that was.
   let daily = null;
   let dailyDay = null;
+  // Today's presses as the server last counted them ({ day, n }), and presses whose POST hasn't answered yet:
+  // together they say whether the next press pays (Trusty gets tired, CLICKER in scripts/milestones.js).
+  let pressed = null;
+  let pressing = 0;
+  const pressedToday = () => pressesToday(pressed, dayOf());
   const render = () => {
     const count = serverCount + inFlight;
     countEl.textContent = fmt(count);
     // The ring around Trusty fills up toward the next click rank (scripts/milestones.js).
     face.style.setProperty('--progress', rankProgress(count).toFixed(3));
-    button.title = clickerTitle(count, daily);
+    button.title = clickerTitle(count, daily, pressedToday() + pressing);
     const ready = Boolean(daily && daily.ready);
     dailyBadge.hidden = !ready;
     dailyBadge.textContent = ready ? `+${fmt(daily.next)}` : '';
@@ -504,6 +519,11 @@ function setupClicker(button, news) {
   const accept = (data) => {
     const clicks = Number(data && data.clicks) || 0;
     serverCount = data && data.exact ? clicks : Math.max(serverCount, clicks);
+    const c = data && data.clicker;
+    if (c && typeof c.day === 'string' && Number.isSafeInteger(c.n)) {
+      // Answers can arrive out of order, so within a day the count only goes up.
+      pressed = pressed && pressed.day === c.day ? { day: c.day, n: Math.max(pressed.n, c.n) } : { day: c.day, n: c.n };
+    }
   };
 
   // +1 for a click, +N for clicks earned another way, or "Slow down!", floating up off Trusty.
@@ -559,6 +579,17 @@ function setupClicker(button, news) {
     button.classList.add('is-ranking-up');
     clearTimeout(spinTimer);
     spinTimer = setTimeout(() => button.classList.remove('is-ranking-up'), 1200);
+  };
+
+  // Once a press shows Trusty is tired (or done for the day), a note says so, once per page for each.
+  let toldTired = 'fresh';
+  const checkTired = () => {
+    const state = tiredness(pressedToday());
+    if (state === toldTired) return;
+    const was = toldTired;
+    toldTired = state;
+    if (state === 'tired' && was === 'fresh') showNote('Trusty’s tired', `1 click in ${CLICKER.every}`, `${fmt(CLICKER.full)} today! Full clicks again at midnight Eastern`);
+    else if (state === 'done') showNote('Trusty’s worn out', 'That’s today’s clicks', 'Clicking pays again from midnight Eastern');
   };
 
   // The day's first click came back with the daily bonus (api/clicks.js pays it).
@@ -619,9 +650,12 @@ function setupClicker(button, news) {
       }
       return;
     }
-    inFlight += 1;
+    // Whether this press pays: always while Trusty's fresh, one in CLICKER.every once he's tired.
+    const pays = pressPays(pressedToday() + pressing + 1);
+    pressing += 1;
+    if (pays) inFlight += 1;
     render();
-    floatUp('+1');
+    floatUp(pays ? '+1' : 'z', pays ? 'plus-one' : 'plus-one is-tired');
     try {
       const res = await fetch('/api/clicks', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       if (res.status === 401) {
@@ -635,10 +669,12 @@ function setupClicker(button, news) {
         if (data && data.daily) gotDaily(data.daily);
         else if (daily && daily.ready) daily = { ...daily, ready: false };
         checkRank();
+        checkTired();
       }
     } catch { /* the click didn't land; drop it from the optimistic count */ }
     finally {
-      inFlight -= 1;
+      pressing -= 1;
+      if (pays) inFlight -= 1;
       render();
     }
   });

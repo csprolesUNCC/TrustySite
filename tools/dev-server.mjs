@@ -24,7 +24,7 @@ import { play as pokerPlay, cleanMove as pokerMove } from '../utils/solo-poker-g
 import { MACHINE as SLOT_MACHINE } from '../scripts/slots.js';
 import { memoryJackpot } from '../utils/slots-jackpot.js';
 import { puzzleNumber, cleanGame, rewardFor, rewardable } from '../scripts/trustle.js';
-import { dayOf, dailyClaim, dailyStatus } from '../scripts/milestones.js';
+import { dayOf, dailyClaim, dailyStatus, CLICKER, CLICKER_LAST, pressPays, pressesToday } from '../scripts/milestones.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
@@ -216,7 +216,7 @@ async function api(req, url, body) {
     const account = bank.account(accountOf(req));
     if (req.method !== 'POST') {
       const shop = shopOf(account);
-      return [200, { clicks: account.clicks, daily: dailyStatus(account.daily, dayOf()), shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) } }];
+      return [200, { clicks: account.clicks, clicker: { day: dayOf(), n: pressesToday(account.clicker, dayOf()) }, daily: dailyStatus(account.daily, dayOf()), shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) } }];
     }
     if (action === 'tv' || action === 'radio') {
       // Trusty TV's and Trusty Radio's rewards, sharing one daily cap, as api/clicks.js pays them.
@@ -228,13 +228,22 @@ async function api(req, url, body) {
       account.clicks += clicks;
       return [200, { clicks: account.clicks, added: clicks, today: counted + clicks, cap }];
     }
-    // A click, and the daily bonus with the day's first one, as api/clicks.js pays it.
-    account.clicks += 1;
-    const claim = dailyClaim(account.daily, dayOf());
-    if (!claim) return [200, { clicks: account.clicks }];
-    account.daily = { day: dayOf(), streak: claim.streak };
+    // A press, and the daily bonus with the day's first one, as api/clicks.js pays them: a click while Trusty's
+    // fresh, one in CLICKER.every once he's tired, none once he's done for the day.
+    const day = dayOf();
+    // The cookie mockclicker=tired or =done starts the day's count where Trusty gets tired or is done, to look at them.
+    const preset = /(?:^|;\s*)mockclicker=(tired|done)(?:;|$)/.exec(req.headers.cookie || '');
+    if (preset && !pressesToday(account.clicker, day)) account.clicker = { day, n: preset[1] === 'done' ? CLICKER_LAST : CLICKER.full };
+    const n = pressesToday(account.clicker, day) + 1;
+    account.clicker = { day, n };
+    const added = pressPays(n) ? 1 : 0;
+    account.clicks += added;
+    const press = { added, clicker: account.clicker };
+    const claim = dailyClaim(account.daily, day);
+    if (!claim) return [200, { clicks: account.clicks, ...press }];
+    account.daily = { day, streak: claim.streak };
     account.clicks += claim.added;
-    return [200, { clicks: account.clicks, daily: claim }];
+    return [200, { clicks: account.clicks, daily: claim, ...press }];
   }
   if (p === '/api/leaderboard') {
     if (action === 'shop') return shopApi(req, url, body);

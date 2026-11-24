@@ -1076,6 +1076,8 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
 }
 @keyframes plus-one { to { transform: translateY(-26px) rotate(-8deg); opacity: 0; } }
 .plus-one.slow-down { left: 4px; font-size: .85rem; white-space: nowrap; animation-duration: 1s; }
+/* A press that didn't pay: Trusty's tired (CLICKER in scripts/milestones.js). */
+.plus-one.is-tired { color: var(--pencil); font-size: .8rem; }
 
 .menu-toggle {
   display: none;
