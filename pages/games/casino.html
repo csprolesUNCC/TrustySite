@@ -201,6 +201,9 @@
         // solo.game: the API's last answer; busy: a move is on its way; reveal: what's shown while Trusty turns
         // his cards over one at a time.
         const solo = { game: null, busy: false, reveal: null, failed: false };
+        // While a split is being dealt out: how many cards each of your hands shows so far ({ counts, aces }).
+        let held = null;
+        let splitRun = 0;
 
         /* ---------- Rendering ---------- */
 
@@ -324,8 +327,12 @@
             const table = currentTable();
             const round = table && table.round;
             const seatIndex = round ? round.seats.findIndex((s) => s.you) : -1;
-            const seat = seatIndex >= 0 ? round.seats[seatIndex] : null;
-            const myTurn = Boolean(round) && round.phase === 'player' && round.turn === seatIndex && seatIndex >= 0;
+            const all = seatIndex >= 0 ? round.seats[seatIndex] : null;
+            const seat = all && held ? {
+                ...all,
+                hands: all.hands.map((x, i) => (held.counts[i] < x.cards.length ? { ...x, cards: x.cards.slice(0, held.counts[i]), result: null } : x)),
+            } : all;
+            const myTurn = !held && Boolean(round) && round.phase === 'player' && round.turn === seatIndex && seatIndex >= 0;
             return {
                 table,
                 round,
@@ -368,7 +375,7 @@
             // Controls
             const betting = Boolean(table) && (table.phase === 'betting' || table.phase === 'over');
             const placed = Boolean(me && me.bet);
-            const busy = Boolean(me && me.busy) || Boolean(solo.reveal && !atTable);
+            const busy = Boolean(me && me.busy) || Boolean(solo.reveal && !atTable) || Boolean(held);
             const insuring = Boolean(round) && round.phase === 'insurance' && Boolean(seat) && !seat.decided;
             $('controls').dataset.phase = insuring ? 'insurance' : (betting || !table) && !placed ? 'bet' : 'play';
             $('bank').textContent = wallet.clicks != null ? fmt(wallet.clicks) : '…';
@@ -425,6 +432,7 @@
             const atTable = mode === 'table';
             if (atTable && net.status) return net.status;
             if (!table) return atTable ? 'Finding you a seat…' : solo.failed ? 'Trusty can’t find the cards. Reload to try again.' : 'Pulling up a chair…';
+            if (held) return held.aces ? 'Splitting Aces…' : 'Splitting…';
             const others = table.people.length > 1;
             if (table.phase === 'betting' || table.phase === 'over') {
                 if (me && me.bet) return others ? 'Bet placed. Waiting for the others…' : 'Bet placed.';
@@ -502,6 +510,8 @@
         }
 
         function clearFelt() {
+            held = null;
+            splitRun++;
             $('others').replaceChildren();
             $('hands').replaceChildren();
             $('dealer-cards').replaceChildren();
@@ -571,6 +581,39 @@
             };
         }
 
+        // If going from one round to the next was your split: the card counts to deal your hands out by, one card
+        // at a time, from the pair pulled apart (one card each) to what the round has now.
+        function splitShow(before, after) {
+            const mine = (r) => r && r.seats.find((s) => s.you);
+            const a = mine(before);
+            const b = mine(after);
+            if (!a || !b || before.phase !== 'player' || b.hands.length !== a.hands.length + 1) return null;
+            const at = before.active;
+            const counts = b.hands.map((x, i) => Math.min(x.cards.length,
+                i < at ? x.cards.length : i <= at + 1 ? 1 : a.hands[i - 1].cards.length));
+            const steps = [counts.slice()];
+            for (let i = at; i < b.hands.length; i++) {
+                while (counts[i] < b.hands[i].cards.length) {
+                    counts[i]++;
+                    steps.push(counts.slice());
+                }
+            }
+            const card = a.hands[at] && a.hands[at].cards[0];
+            return steps.length > 1 ? { steps, aces: Boolean(card) && card.rank === 'A' } : null;
+        }
+
+        // A split's cards come one at a time, REVEAL.splitCard apart, rather than all at once.
+        async function dealSplit(show) {
+            const run = ++splitRun;
+            for (const counts of show.steps.slice(0, -1)) {
+                held = { counts, aces: show.aces };
+                render();
+                await sleep(REVEAL.splitCard);
+                if (run !== splitRun) return;
+            }
+            held = null;
+        }
+
         const cardsIn = (round) => round.seats.reduce((n, s) => n + s.hands.reduce((m, x) => m + x.cards.length, 0), 0);
 
         // The API plays Trusty's whole turn at once; show it a card at a time, then the results and the clicks.
@@ -579,6 +622,13 @@
             const sameHand = Boolean(before && before.round) && before.hand === next.hand;
             const wasLive = sameHand && before.round.phase !== 'over';
             solo.game = next;
+            const show = wasLive && r && splitShow(before.round, r);
+            if (show) {
+                // Split Aces end the turn: Trusty's results wait until both have their cards.
+                solo.reveal = r.phase === 'over' ? partial(r, 1) : null;
+                await dealSplit(show);
+                solo.reveal = null;
+            }
             if (r && r.phase === 'over' && (wasLive || !sameHand)) {
                 const start = wasLive ? before.round.dealer.filter(Boolean).length : 1;
                 const first = !wasLive ? REVEAL.afterDeal : cardsIn(r) > cardsIn(before.round) ? REVEAL.afterCard : REVEAL.afterStand;
@@ -620,6 +670,8 @@
 
         function onMessage(msg) {
             if (msg.t === 'table') {
+                const show = net.table && net.table.round && msg.round && splitShow(net.table.round, msg.round);
+                if (show) dealSplit(show).then(render);
                 net.table = msg;
                 net.code = msg.code;
                 net.deadline = msg.left ? performance.now() + msg.left : 0;

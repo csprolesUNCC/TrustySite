@@ -175,7 +175,7 @@ export class Table {
     const stake = { id: this.newId(), amount: raiseCost(r) };
     if (!(await this.charge(person, stake))) return;
     const same = this.round === r && r.phase === 'player' && `${r.turn}:${r.active}:${r.seats[r.turn].hands.length}` === spot;
-    if (same && (action === 'double' ? double(r, stake) : split(r, stake))) this.advance('afterCard');
+    if (same && (action === 'double' ? double(r, stake) : split(r, stake))) this.advance(action === 'double' ? 'afterCard' : 'afterSplit');
     else this.refund(person.id, stake);
     this.sendAll();
   }

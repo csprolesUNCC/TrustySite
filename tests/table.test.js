@@ -67,6 +67,21 @@ test('Trusty waits before turning his hole card over, then draws a card at a tim
   assert.equal(table.phase, 'over');
 });
 
+test('after split Aces, Trusty waits for the page to deal both their cards', async () => {
+  const { table, people: [carson], run } = openTable(['carson']);
+  // carson's Aces get a 9 and an 8; Trusty's 17 stands.
+  table.shoe = rigged('A♠', '10♦', 'A♣', '7♥', '9♠', '8♣');
+  await carson.say(table, { t: 'bet', amount: 100 });
+  await carson.say(table, { t: 'split' });
+  assert.equal(table.phase, 'dealer');
+  assert.equal(REVEAL.afterSplit, REVEAL.afterCard + 2 * REVEAL.splitCard);
+  const dealer = () => carson.last('table').round.dealer;
+  run(REVEAL.afterSplit - 100);
+  assert.equal(dealer()[1], null, 'still down while the split hands get their cards');
+  run(100);
+  assert.deepEqual(dealer().map((c) => c.rank), ['10', '7']);
+});
+
 test('everyone bets, the hand is dealt at once, and the winners get paid', async () => {
   const { table, people: [carson, luke], run, settled, clicksOf } = openTable(['carson', 'luke']);
   // carson 20, luke 17 against Trusty's 18.

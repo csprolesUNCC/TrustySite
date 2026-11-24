@@ -52,6 +52,20 @@ const accountOf = (req) => `mock-${mockUser(req)}`;
 // Trusty Blackjack for one player (utils/solo-blackjack.js, the real game), kept in memory and betting the
 // pretend bank.
 const solo = { ...soloDefaults, ...memoryGames(), bank };
+// The cookie mockblackjack=aces deals every hand a pair of Aces against Trusty's 17 (then a 9 and an 8 for the
+// split), so there's a way to look at a split without dealing until a pair comes.
+const RIGGED_ACES = ['A♠', '10♦', 'A♣', '7♥', '9♠', '8♣'].map((c) => ({ rank: c.slice(0, -1), suit: c.slice(-1) })).reverse();
+function blackjackFor(req, move) {
+  if (!move || move.do !== 'deal' || !/(?:^|;\s*)mockblackjack=aces(?:;|$)/.test(req.headers.cookie || '')) return solo;
+  return {
+    ...solo,
+    async load(id) {
+      const doc = await solo.load(id);
+      if (doc && doc.shoe) doc.shoe.push(...structuredClone(RIGGED_ACES));
+      return doc;
+    },
+  };
+}
 // Trusty Craps (utils/solo-craps.js, the real game), the same way.
 const craps = { ...soloDefaults, ...memoryGames(), bank };
 // Trusty Poker against the bots (utils/solo-poker.js, the real game), the same way.
@@ -156,7 +170,7 @@ async function api(req, url, body) {
       if (!me) return [401, { error: 'Authentication required' }];
       const move = req.method === 'POST' ? cleanMove(body) : null;
       if (req.method === 'POST' && !move) return [400, { error: 'That’s not a move.' }];
-      const game = await soloPlay(solo, accountOf(req), move);
+      const game = await soloPlay(blackjackFor(req, move), accountOf(req), move);
       if (!move) {
         const mine = bank.status(accountOf(req));
         Object.assign(game, { bank: { clicks: mine.clicks, net: mine.net }, limits: mine.limits, refunded: 0 });

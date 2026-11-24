@@ -21,8 +21,11 @@ export const TABLE_PROTOCOL = 1;
 export const BETS = { min: 10, max: 500, step: 10 };
 // How long (ms) Trusty waits before turning his hole card over, by what ended the players' turn: a card (a hit
 // to 21, a double, a bust, a split), a stand, or the deal itself (a blackjack); then between the cards he draws,
-// so everyone can count along. The solo game (in the page) and the tables both go by these.
-export const REVEAL = { afterCard: 1000, afterStand: 500, afterDeal: 1200, perCard: 850 };
+// so everyone can count along. After a split the page deals the new hands their cards one at a time,
+// `splitCard` apart, so after one that ends the turn (split Aces) Trusty waits for both cards and then afterCard.
+// The solo game (in the page) and the tables both go by these.
+export const REVEAL = { afterCard: 1000, afterStand: 500, afterDeal: 1200, perCard: 850, splitCard: 900 };
+REVEAL.afterSplit = REVEAL.afterCard + 2 * REVEAL.splitCard;
 export const isBet = (amount) => Number.isInteger(amount) && amount >= BETS.min && amount <= BETS.max && amount % BETS.step === 0;
 
 // What each kind of finished hand gives back, as a multiple of what was bet on it.
