@@ -256,9 +256,16 @@
             return plain.match(/[^.!?\n]+[.!?]*/g)?.map((t) => t.trim()).filter(Boolean) || [];
         }
 
+        // Browsers don't say which voices are men's, so go by the names they ship under
+        // (Chrome's "Google UK English Male", Windows' David and Guy, Apple's Daniel and Fred...).
+        const MALE = /\b(male|man|david|mark|guy|andrew|brian|christopher|eric|roger|steffan|ryan|thomas|william|liam|davis|tony|jason|james|george|richard|sean|alex|daniel|fred|aaron|arthur|gordon|rishi|tom|oliver|evan|nathan|reed|ralph|albert|bruce|lee|junior)\b/i;
+        const FEMALE = /\b(female|woman|samantha|victoria|karen|moira|tessa|fiona|veena|zira|hazel|susan|aria|jenny|michelle|emma|ava|allison|kate|serena|libby|sonia|natasha|catherine|heera|linda|heather|zoe|nicky|shelley|sandy|flo|grandma)\b/i;
         function voice() {
             const voices = synth.getVoices().filter((v) => /^en(-|_|$)/i.test(v.lang));
-            return voices.find((v) => v.default) || voices.find((v) => /en-US/i.test(v.lang)) || voices[0] || null;
+            const men = voices.filter((v) => MALE.test(v.name) && !FEMALE.test(v.name));
+            const pick = (list) => list.find((v) => /en-US/i.test(v.lang) && v.localService)
+                || list.find((v) => /en-US/i.test(v.lang)) || list[0];
+            return pick(men) || pick(voices.filter((v) => !FEMALE.test(v.name))) || pick(voices) || null;
         }
 
         function say(text, { listenAfter = false } = {}) {
@@ -270,8 +277,8 @@
                 const u = new SpeechSynthesisUtterance(part);
                 if (v) u.voice = v;
                 u.lang = v ? v.lang : 'en-US';
-                u.pitch = 0.8; // a horse's voice is lower than a person's, probably
-                u.rate = 1.05;
+                u.pitch = 0.7; // low and unbothered
+                u.rate = 0.95;
                 if (i === parts.length - 1) {
                     u.onend = () => {
                         speakBtn.classList.remove('is-speaking');

@@ -69,6 +69,7 @@
                 <h2 id="how-title">How it works</h2>
                 <p>Buy something and it goes on straight away. Everything you buy is yours for good: switch between them here, or pick a theme on <a href="/pages/profile.html">your profile</a>.</p>
                 <p>Buying takes the price off your clicks, so it lowers your click total on the leaderboard (but not your betting limit for the day). Themes are just for you; your name’s font, color and highlight show to everyone.</p>
+                <p>A few have to be earned before you can buy them: Late Night TV takes 5 hours of Trusty TV (watched while it’s paying clicks), and High Roller takes 50,000 clicks spent at the Casino (every click you lose on a bet counts, even if you win it back later).</p>
             </aside>
         </section>
 
@@ -99,10 +100,10 @@
 
     <script type="module">
         import { h, fmt, toast, session, sessionReady, sessionExpired, onSession, loginHref, announceBalance, applyTheme, setOwnStyle, namePreview } from '/scripts/site.js';
-        import { KINDS, ITEMS, DEFAULTS, itemsOf, tierOf, nameStyleOf, isFree } from '/scripts/shop.js';
+        import { KINDS, ITEMS, DEFAULTS, GOALS, itemsOf, tierOf, nameStyleOf, isFree, unlocked, needText } from '/scripts/shop.js';
 
         const $ = (id) => document.getElementById(id);
-        // What the API says you have: { clicks, owned, equipped, house }, or null while logged out or loading.
+        // What the API says you have: { clicks, owned, equipped, goals, house }, or null while logged out or loading.
         let mine = null;
         let busy = null; // the id of the item being bought or put on
         let previewing = null;
@@ -127,6 +128,7 @@
             if (!mine) return h('button', { type: 'button', class: 'btn btn-sm', disabled: true }, '…');
             if (isOn(item)) return h('button', { type: 'button', class: 'btn btn-sm btn-outline', disabled: true }, 'On ✓');
             if (owns(item)) return h('button', { type: 'button', class: 'btn btn-sm', disabled: Boolean(busy) || mine.house, onclick: () => equip(item) }, busy === item.id ? 'Putting on…' : isFree(item) ? 'Switch back' : 'Put on');
+            if (!unlocked(item, mine.goals)) return h('button', { type: 'button', class: 'btn btn-sm', disabled: true }, 'Locked');
             const short = item.price - mine.clicks;
             return h('button', {
                 type: 'button',
@@ -137,6 +139,18 @@
             }, busy === item.id ? 'Buying…' : short > 0 ? `${fmt(short)} more to go` : `Buy for ${fmt(item.price)}`);
         }
 
+        // What an item that has to be earned first takes, and (logged in) how far along you are.
+        function need(item) {
+            if (!item.needs || owns(item)) return null;
+            const goal = GOALS[item.needs.goal];
+            const have = mine && !mine.house ? Math.min(mine.goals[item.needs.goal] || 0, item.needs.at) : null;
+            if (have === item.needs.at) return h('div', { class: 'shop-need is-done' }, `Unlocked: you’ve reached ${goal.say(item.needs.at)}.`);
+            return h('div', { class: 'shop-need' },
+                h('span', null, `${needText(item)} `, h('a', { href: goal.href }, goal.go)),
+                have == null ? null : h('span', null, `You’re at ${goal.say(have)}.`),
+                have == null ? null : h('span', { class: 'shop-need-bar', 'aria-hidden': 'true' }, h('span', { style: `--done: ${(100 * have / item.needs.at).toFixed(1)}%` })));
+        }
+
         function card(item) {
             const tier = tierOf(item.price);
             return h('article', { class: `card shop-card${isOn(item) ? ' is-on' : ''}${owns(item) && !isFree(item) ? ' is-owned' : ''}`, dataset: { item: item.id } },
@@ -145,9 +159,11 @@
                     h('ul', { class: 'tags' },
                         h('li', { class: `tag ${TIER_TAGS[tier.key]}` }, tier.name),
                         item.dark ? h('li', { class: 'tag tag-quiet' }, 'Dark') : null,
+                        item.needs && !owns(item) ? h('li', { class: 'tag tag-quiet' }, 'Earn it') : null,
                         owns(item) && !isFree(item) ? h('li', { class: 'tag tag-green' }, 'Owned') : null),
                     h('h3', { class: 'card-title' }, item.name),
                     h('p', null, item.about),
+                    need(item),
                     h('div', { class: 'shop-card-foot' },
                         h('span', { class: 'shop-price' }, isFree(item) ? 'Free' : `${fmt(item.price)} clicks`),
                         h('span', { class: 'shop-card-buttons' },
@@ -191,6 +207,7 @@
                 owned: Array.isArray(data.owned) ? data.owned : [],
                 equipped: { ...DEFAULTS, ...(data.equipped || {}) },
                 spent: Number(data.spent) || 0,
+                goals: data.goals && typeof data.goals === 'object' ? data.goals : {},
                 house: mine ? mine.house : Boolean(data.house),
             };
             if (!previewing) applyTheme(mine.equipped.theme);
