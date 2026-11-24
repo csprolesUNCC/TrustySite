@@ -1,4 +1,5 @@
 // The Item Shop's catalog and rules (scripts/shop.js), from CLAUDE.md's "Item Shop".
+import './setup-env.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
