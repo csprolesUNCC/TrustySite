@@ -90,6 +90,10 @@
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M5 12.5V20h14v-7.5"/></svg>
                             Share
                         </button>
+                        <button class="btn btn-outline btn-lg" type="button" id="card-btn">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 16l5-5 4 4 3-3 5 5"/><circle cx="15.5" cy="9" r="1.5"/></svg>
+                            Picture
+                        </button>
                         <button class="btn btn-outline btn-lg" type="button" id="everyone-btn">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-8M12 20V4M19 20v-5"/></svg>
                             How everyone did
@@ -771,6 +775,21 @@
             } catch {
                 toast('Couldn’t copy. Your browser said no.', 'error');
             }
+        });
+
+        // The same game as a picture (scripts/share-card.js): the colors only, never the letters.
+        $('card-btn').addEventListener('click', async () => {
+            const won = guesses[guesses.length - 1] === answer;
+            const { openShareCard } = await import('/scripts/share-card.js');
+            openShareCard({
+                eyebrow: 'Trustle, Trusty’s daily word game',
+                title: `Trustle #${n}  ${won ? guesses.length : 'X'}/${MAX_GUESSES}`,
+                by: session.loggedIn && session.username ? `by ${session.username}` : '',
+                grid: guesses.map((guess) => grade(guess, answer)),
+                filename: `trustle-${n}.png`,
+                text: `Trustle #${n} ${won ? guesses.length : 'X'}/${MAX_GUESSES} ${location.origin}/pages/games/trustle.html`,
+                dialogTitle: 'Share your Trustle',
+            });
         });
 
         // A tab left open overnight moves on to the new word, unless a game is half played.

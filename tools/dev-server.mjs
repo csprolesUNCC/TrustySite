@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { attachRooms, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
+import { attachRooms, localLobby, LOCAL_ROOMS_PATH } from './local-rooms.mjs';
 import { mockBank } from './mock-bank.mjs';
 import { signTicket } from '../utils/fever-ticket.js';
 import { signedOp } from '../utils/bank-rules.js';
@@ -50,7 +50,8 @@ const loggedIn = (req) => /(?:^|;\s*)mock=in(?:;|$)/.test(req.headers.cookie || 
 const mockUser = (req) => (/(?:^|;\s*)mockuser=([\w-]{1,32})(?:;|$)/.exec(req.headers.cookie || '') || [])[1] || 'carson';
 const today = () => new Date().toISOString().slice(0, 10);
 const FEVER_SECRET = process.env.FEVER_SECRET || 'pretend-api-secret-for-local-rooms-only';
-const bank = mockBank();
+const lobby = localLobby();
+const bank = mockBank({ onWins: (wins) => lobby.win(wins) });
 const accountOf = (req) => `mock-${mockUser(req)}`;
 // Trusty Blackjack for one player (utils/solo-blackjack.js, the real game), kept in memory and betting the
 // pretend bank.
@@ -392,7 +393,7 @@ export function startServer(port = 8787) {
     res.writeHead(status, headers);
     res.end(req.method === 'HEAD' ? undefined : data);
   });
-  attachRooms(server, FEVER_SECRET, bank);
+  attachRooms(server, FEVER_SECRET, bank, lobby);
   return new Promise((resolve) => server.listen(port, () => resolve(server)));
 }
 

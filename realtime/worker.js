@@ -7,15 +7,19 @@
 //   wss://<this worker>/table/<CODE>?v=<TABLE_PROTOCOL>&ticket=<ticket>[&make=1]  Trusty Blackjack
 //   wss://<this worker>/craps/<CODE>?v=<CRAPS_PROTOCOL>&ticket=<ticket>[&make=1]  Trusty Craps
 //   wss://<this worker>/poker/<CODE>?v=<POKER_PROTOCOL>&ticket=<ticket>[&make=1]  Trusty Poker
+//   wss://<this worker>/lobby?v=<LOBBY_PROTOCOL>&at=<site|casino>                 everyone (realtime/lobby.js)
 // Deploy with `npm run deploy` in this folder (see "Trusty Fever online" in CLAUDE.md for the whole setup). The
 // deploy bundles its own copy of the game files it imports (scripts/fever-engine.js, scripts/fever-net.js,
-// scripts/blackjack.js, scripts/craps.js, scripts/poker.js, scripts/poker-bots.js), so deploy again whenever those or this folder change.
+// scripts/blackjack.js, scripts/craps.js, scripts/poker.js, scripts/poker-bots.js, scripts/casino-feed.js), so deploy again whenever those or this folder change.
 import { Room, ROOM_CODE, versionProblem as feverVersion } from './room.js';
 import { Table, versionProblem as tableVersion } from './table.js';
 import { CrapsTable as Craps, versionProblem as crapsVersion } from './craps-table.js';
 import { PokerTable as Poker, versionProblem as pokerVersion } from './poker-table.js';
 import { CLOSE } from './common.js';
 import { bankClient } from './bank.js';
+import { lobbyFetch } from './lobby.js';
+
+export { Lobby } from './lobby.js';
 import { verifyTicket } from '../utils/fever-ticket.js';
 
 const KINDS = {
@@ -119,6 +123,8 @@ function refuse(code, message) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const lobby = await lobbyFetch(request, env);
+    if (lobby) return lobby;
     const [, kind, code] = url.pathname.match(/^\/(room|table|craps|poker)\/([A-Z]{4})$/) || [];
     if (!kind || !ROOM_CODE.test(code)) {
       return url.pathname === '/'

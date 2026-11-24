@@ -5,12 +5,15 @@
 //   ws://localhost:<port>/fever-rooms/table/<CODE>?v=<TABLE_PROTOCOL>&ticket=...[&make=1]
 //   ws://localhost:<port>/fever-rooms/craps/<CODE>?v=<CRAPS_PROTOCOL>&ticket=...[&make=1]
 //   ws://localhost:<port>/fever-rooms/poker/<CODE>?v=<POKER_PROTOCOL>&ticket=...[&make=1]
+//   ws://localhost:<port>/fever-rooms/lobby?v=<LOBBY_PROTOCOL>&at=<site|casino>   (realtime/lobby.js's local twin)
 import crypto from 'node:crypto';
 import { Room, ROOM_CODE, versionProblem as feverVersion } from '../realtime/room.js';
 import { Table, versionProblem as tableVersion } from '../realtime/table.js';
 import { CrapsTable, versionProblem as crapsVersion } from '../realtime/craps-table.js';
 import { PokerTable, versionProblem as pokerVersion } from '../realtime/poker-table.js';
 import { CLOSE } from '../realtime/common.js';
+import { lobbyVersionProblem } from '../realtime/lobby.js';
+import { addWins, counts, COUNT_EVERY } from '../scripts/casino-feed.js';
 import { verifyTicket } from '../utils/fever-ticket.js';
 
 const KINDS = {
@@ -110,8 +113,47 @@ function accept(req, socket) {
   return { conn, on };
 }
 
+// The lobby (realtime/lobby.js does the same on Cloudflare): who's here and the casino's big wins. The pretend
+// bank tells it about wins with win(list).
+export function localLobby({ every = COUNT_EVERY } = {}) {
+  const conns = new Map(); // conn -> area
+  let wins = [];
+  let timer = null;
+  const now = () => counts([...conns.values()]);
+  const sendAll = (msg) => { for (const conn of conns.keys()) conn.send(JSON.stringify(msg)); };
+  const soon = () => {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      sendAll(now());
+    }, every);
+    timer.unref?.();
+  };
+  return {
+    join(conn, area) {
+      conns.set(conn, area === 'casino' ? 'casino' : 'site');
+      const { here, casino } = now();
+      conn.send(JSON.stringify({ t: 'lobby', here, casino, wins }));
+      soon();
+    },
+    leave(conn) {
+      if (conns.delete(conn)) soon();
+    },
+    receive(conn, text) {
+      if (text === '{"t":"ping"}') conn.send('{"t":"pong"}');
+      else conn.close(1008, 'The lobby only listens.');
+    },
+    win(list) {
+      if (!list.length) return;
+      wins = addWins(wins, list);
+      sendAll({ t: 'win', wins: list.slice().sort((a, b) => a.at - b.at) });
+    },
+    get wins() { return wins; },
+  };
+}
+
 // Sends room and table connections on `server` to local ones. Tickets are checked with `secret`; bets go to `bank`.
-export function attachRooms(server, secret, bank) {
+export function attachRooms(server, secret, bank, lobby = localLobby()) {
   const rooms = new Map(); // "<kind>/<code>" -> { room, timer, every }
 
   function run(entry, key, fn) {
@@ -132,6 +174,20 @@ export function attachRooms(server, secret, bank) {
 
   server.on('upgrade', async (req, socket) => {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === `${LOCAL_ROOMS_PATH}/lobby`) {
+      const ws = accept(req, socket);
+      if (!ws) return;
+      const outdated = lobbyVersionProblem(url.searchParams.get('v'));
+      if (outdated) {
+        ws.conn.send(JSON.stringify({ t: 'error', message: outdated }));
+        ws.conn.close(CLOSE.version, 'Outdated');
+        return;
+      }
+      ws.on.message = (text) => lobby.receive(ws.conn, text);
+      ws.on.close = () => lobby.leave(ws.conn);
+      lobby.join(ws.conn, url.searchParams.get('at'));
+      return;
+    }
     const [, kind, code] = url.pathname.match(new RegExp(`^${LOCAL_ROOMS_PATH}/(room|table|craps|poker)/([A-Z]{4})$`)) || [];
     if (!kind || !ROOM_CODE.test(code)) {
       socket.end('HTTP/1.1 404 Not Found\r\n\r\n');

@@ -172,6 +172,7 @@
 
                     <div class="slots-actions">
                         <button class="btn btn-highlight spin-btn" type="button" id="spin-btn" disabled>Spin</button>
+                        <button class="btn btn-outline btn-sm slots-share" type="button" id="share-win" hidden>Share this win</button>
                     </div>
                 </div>
                 <div class="panel">
@@ -1108,6 +1109,7 @@
             $('win-meter').textContent = fmt(spin.payout);
             setWallet(bank);
             setStatus(payout ? `The Golden Horse paid ${clicksText(payout)}!` : 'The Golden Horse kept it all. Spin again!');
+            if (won >= 20) offerShare({ title: 'Golden Horse 金馬', won: payout, amount: spin.amount, sub: `${won} times the bet on 8 free spins` });
         }
 
         /* ---------- Your clicks ---------- */
@@ -1195,6 +1197,7 @@
             }
             state.busy = true;
             clearShow();
+            offerShare(null);
             setStatus('Spinning…');
             $('win-meter').textContent = '0';
             if (!reduceMotion.matches) for (const strip of strips) loop(strip, MACHINE);
@@ -1228,6 +1231,8 @@
                 if (last.times) {
                     countUp($('win-meter'), last.times * last.amount, { box: $('win-box') });
                     await celebrate(MACHINE, last, last.amount);
+                    const tier = tierOf(MACHINE, last);
+                    if (tier && tier !== 'win') offerShare({ title: tier === 'jackpot' ? 'MEGA WIN!' : 'BIG WIN!', won: last.times * last.amount, amount: last.amount, sub: `${last.times} times the bet` });
                 } else if (!last.bonus && !grand) {
                     setStatus(pick(LOSSES));
                 }
@@ -1242,6 +1247,7 @@
                     setPot(next.jackpot);
                     $('win-meter').textContent = fmt(last.times * last.amount + grand);
                     setStatus(`Grand Jackpot! The whole pot is yours: ${clicksText(grand)}!`);
+                    offerShare({ title: 'GRAND JACKPOT!', won: last.times * last.amount + grand, amount: last.amount, sub: 'The whole pot, on one spin', jackpot: true });
                 }
                 if (last.bonus) await startBonus(last, next.bank);
             } catch {
@@ -1253,6 +1259,30 @@
                 render();
             }
         }
+
+        /* ---------- Share a big win (scripts/share-card.js) ---------- */
+
+        let brag = null;
+        function offerShare(win) {
+            brag = win;
+            $('share-win').hidden = !win;
+        }
+        $('share-win').addEventListener('click', async () => {
+            if (!brag) return;
+            const { openShareCard } = await import('/scripts/share-card.js');
+            openShareCard({
+                eyebrow: 'Trusty Slots',
+                title: brag.title,
+                by: session.username ? `by ${session.username}` : '',
+                big: `+${fmt(brag.won)}`,
+                bigColor: brag.jackpot ? '#b8860b' : '#d6334b',
+                sub: `clicks on a ${fmt(brag.amount)}-click spin`,
+                lines: [brag.sub],
+                filename: 'trusty-slots-win.png',
+                text: `I just won ${fmt(brag.won)} clicks on Trusty Slots! ${location.origin}/pages/games/slots.html`,
+                dialogTitle: 'Share your win',
+            });
+        });
 
         /* ---------- Buttons and keys ---------- */
 

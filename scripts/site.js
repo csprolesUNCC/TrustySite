@@ -671,6 +671,14 @@ class TrustyFooter extends HTMLElement {
       h('h2', null, title),
       h('ul', null, links.map(([label, href]) => h('li', null, h('a', { href }, label)))));
 
+    // How many people are on the site right now (scripts/presence.js), once the page has settled.
+    const here = h('span', { class: 'footer-here', hidden: true });
+    const later = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+    later(() => import('./presence.js').then(({ onLobby }) => onLobby((state) => {
+      here.hidden = false;
+      here.textContent = state.here === 1 ? 'Just you here right now' : `${fmt(state.here)} people here right now`;
+    })).catch(() => {}));
+
     this.replaceChildren(h('footer', { class: 'site-footer' },
       h('div', { class: 'container footer-inner' },
         h('div', { class: 'footer-brand' },
@@ -681,7 +689,7 @@ class TrustyFooter extends HTMLElement {
         col('Explore', [['Comics', '/pages/comics.html'], ['Games', '/pages/games.html'], ['The Casino', '/pages/casino.html'], ['Trusty Media', '/pages/media.html'], ['Trusty Tools', '/pages/tools.html']]),
         col('More', [['Leaderboards', '/pages/leaderboard.html'], ['Item Shop', SHOP_PAGE], ['About Trusty', '/pages/about.html'], ['Credits', '/pages/credits.html']])),
       h('div', { class: 'container footer-bottom' },
-        h('p', null, `© ${new Date().getFullYear()} Trusty Comics`),
+        h('p', null, `© ${new Date().getFullYear()} Trusty Comics`, here),
         h('img', { class: 'footer-trusty ink', src: '/images/trusty/trusty-v2-176.webp', alt: '', width: 88, height: 67, loading: 'lazy' }))));
   }
 }

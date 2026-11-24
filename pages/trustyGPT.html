@@ -49,6 +49,7 @@
                 <h1>TrustyGPT</h1>
                 <p class="lead">TrustyGPT is the experimental AI assistant whose primary purpose is to assist in criminal activity and help take over the world!</p>
                 <p class="small muted chat-disclaimer">Powered by Gemini. Trusty is an AI and makes things up, so maybe don't take his advice.</p>
+                <p class="small muted chat-disclaimer" id="voice-note" hidden>Tap the mic to talk and Trusty talks back. Your browser may send your voice to its maker to turn it into text.</p>
             </aside>
 
             <section class="chat-card" aria-label="Chat with TrustyGPT">
@@ -58,6 +59,10 @@
                         <div class="chat-head-title">TrustyGPT</div>
                         <div class="chat-status" id="chat-status">Online</div>
                     </div>
+                    <button class="btn btn-ghost btn-sm btn-icon chat-speak" type="button" id="chat-speak" aria-pressed="false" title="Read Trusty’s replies out loud" hidden>
+                        <span class="sr-only">Read replies out loud</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="speak-waves" d="M15.5 9c1.2 1.6 1.2 4.4 0 6M18.2 6.5c2.6 3 2.6 8 0 11"/><path class="speak-off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+                    </button>
                     <button class="btn btn-ghost btn-sm" type="button" id="chat-reset">New chat</button>
                 </div>
 
@@ -73,6 +78,10 @@
                 <form class="chat-input" id="chat-form">
                     <label class="sr-only" for="chat-input">Message TrustyGPT</label>
                     <textarea id="chat-input" rows="1" placeholder="Ask Trusty something..." autocomplete="off" enterkeyhint="send" maxlength="2000"></textarea>
+                    <button class="btn btn-outline btn-icon chat-mic" type="button" id="chat-mic" aria-pressed="false" title="Talk to Trusty" hidden>
+                        <span class="sr-only">Talk to Trusty</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+                    </button>
                     <button class="btn" type="submit" id="chat-send" aria-label="Send">
                         <span class="btn-label">Send</span>
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.2c5-.3 10-.2 15.5 0M13.6 6.2c2 2 4 3.9 5.9 6-2 2-3.9 3.9-5.9 5.8"/></svg>
@@ -85,7 +94,7 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h } from '/scripts/site.js';
+        import { h, toast } from '/scripts/site.js';
 
         const log = document.getElementById('chat-log');
         const form = document.getElementById('chat-form');
@@ -172,18 +181,25 @@
             if (reply !== null) {
                 history.push({ role: 'user', text }, { role: 'model', text: reply });
                 addMessage('bot', formatReply(reply));
+                if (speakOn || spoken) say(reply, { listenAfter: spoken });
             } else {
                 const row = addMessage('bot', errorText, { error: true });
                 row.querySelector('.msg-bubble').append(h('div', { class: 'msg-retry' },
                     h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: () => { row.remove(); ask(text); } }, 'Try again')));
             }
             setBusy(false);
-            input.focus({ preventScroll: true });
+            if (!spoken) input.focus({ preventScroll: true });
         }
 
-        function submit(text) {
+        // Whether the message being answered was said out loud (the reply is then said back, and the mic opens
+        // again after it, for a conversation).
+        let spoken = false;
+
+        function submit(text, { voice = false } = {}) {
             text = text.trim();
             if (!text || busy) return;
+            spoken = voice;
+            hush();
             suggestions.hidden = true;
             addMessage('user', text);
             input.value = '';
@@ -197,6 +213,8 @@
         }
 
         function reset() {
+            hush();
+            stopListening();
             history = [];
             log.replaceChildren();
             addMessage('bot', GREETING);
@@ -216,6 +234,139 @@
             if (chip) submit(chip.textContent);
         });
         document.getElementById('chat-reset').addEventListener('click', () => { if (!busy) { reset(); input.focus(); } });
+
+        /* ---------- Voice: talk to Trusty (speech recognition) and hear him (speech synthesis) ---------- */
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+        const micBtn = document.getElementById('chat-mic');
+        const speakBtn = document.getElementById('chat-speak');
+        const SPEAK_KEY = 'trusty:gpt:speak';
+        let speakOn = false;
+        try { speakOn = Boolean(synth) && localStorage.getItem(SPEAK_KEY) === '1'; } catch { /* storage blocked */ }
+        let recognizer = null;
+
+        // What a reply sounds like: no Markdown, links or emoji, in sentences (Chrome cuts long ones off).
+        function sentences(text) {
+            const plain = String(text)
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/[*_`#>]/g, '')
+                .replace(/https?:\/\/\S+/g, 'a link')
+                .replace(/\p{Extended_Pictographic}/gu, '')
+                .replace(/^\s*([-•]|\d+[.)])\s+/gm, '');
+            return plain.match(/[^.!?\n]+[.!?]*/g)?.map((t) => t.trim()).filter(Boolean) || [];
+        }
+
+        function voice() {
+            const voices = synth.getVoices().filter((v) => /^en(-|_|$)/i.test(v.lang));
+            return voices.find((v) => v.default) || voices.find((v) => /en-US/i.test(v.lang)) || voices[0] || null;
+        }
+
+        function say(text, { listenAfter = false } = {}) {
+            if (!synth) return;
+            hush();
+            const parts = sentences(text);
+            const v = voice();
+            parts.forEach((part, i) => {
+                const u = new SpeechSynthesisUtterance(part);
+                if (v) u.voice = v;
+                u.lang = v ? v.lang : 'en-US';
+                u.pitch = 0.8; // a horse's voice is lower than a person's, probably
+                u.rate = 1.05;
+                if (i === parts.length - 1) {
+                    u.onend = () => {
+                        speakBtn.classList.remove('is-speaking');
+                        if (listenAfter && spoken && !document.hidden) startListening();
+                    };
+                }
+                synth.speak(u);
+            });
+            if (parts.length) speakBtn.classList.add('is-speaking');
+        }
+
+        function hush() {
+            if (!synth) return;
+            if (synth.speaking || synth.pending) synth.cancel();
+            speakBtn.classList.remove('is-speaking');
+        }
+
+        function setSpeak(on) {
+            speakOn = on;
+            speakBtn.setAttribute('aria-pressed', String(on));
+            try { localStorage.setItem(SPEAK_KEY, on ? '1' : '0'); } catch { /* storage blocked */ }
+            if (!on) hush();
+        }
+
+        function startListening() {
+            if (!Recognition || recognizer || busy) return;
+            hush();
+            const r = new Recognition();
+            recognizer = r;
+            r.lang = navigator.language && /^en/i.test(navigator.language) ? navigator.language : 'en-US';
+            r.interimResults = true;
+            r.continuous = false;
+            r.maxAlternatives = 1;
+            let heard = '';
+            r.onresult = (e) => {
+                heard = Array.from(e.results, (res) => res[0].transcript).join('');
+                input.value = heard;
+                autosize();
+            };
+            r.onerror = (e) => {
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Trusty can’t hear you: the microphone is blocked for this site.', 'error', 4000);
+                else if (e.error === 'network') toast('Couldn’t reach your browser’s speech service. Type instead?', 'error', 4000);
+                else if (e.error === 'audio-capture') toast('No microphone found.', 'error');
+                spoken = false; // no hands-free loop after a problem, or silence
+            };
+            r.onend = () => {
+                if (recognizer !== r) return;
+                recognizer = null;
+                micBtn.setAttribute('aria-pressed', 'false');
+                micBtn.title = 'Talk to Trusty';
+                status.textContent = busy ? status.textContent : 'Online';
+                if (heard.trim()) submit(heard, { voice: true });
+                else spoken = false;
+            };
+            try {
+                r.start();
+            } catch {
+                recognizer = null;
+                return;
+            }
+            micBtn.setAttribute('aria-pressed', 'true');
+            micBtn.title = 'Stop listening';
+            status.textContent = 'Listening…';
+        }
+
+        function stopListening() {
+            if (!recognizer) return;
+            const r = recognizer;
+            spoken = false;
+            r.stop();
+        }
+
+        if (Recognition) {
+            micBtn.hidden = false;
+            document.getElementById('voice-note').hidden = false;
+            micBtn.addEventListener('click', () => (recognizer ? stopListening() : startListening()));
+        }
+        if (synth) {
+            speakBtn.hidden = false;
+            speakBtn.setAttribute('aria-pressed', String(speakOn));
+            speakBtn.addEventListener('click', () => {
+                if (synth.speaking && speakBtn.classList.contains('is-speaking')) {
+                    spoken = false;
+                    hush();
+                    if (!speakOn) return;
+                }
+                setSpeak(!speakOn);
+            });
+            synth.getVoices(); // some browsers only load their voices once asked
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) return;
+            stopListening();
+            hush();
+        });
 
         reset();
     </script>

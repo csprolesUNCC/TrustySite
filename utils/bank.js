@@ -1,6 +1,8 @@
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
 import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, windfallOf, limitsFor, limitBasis } from './bank-rules.js';
+import { bigWin } from '../scripts/casino-feed.js';
+import { announceWins } from './lobby-feed.js';
 
 // The click bank: betting site clicks at Trusty Blackjack (on your own and at the online tables), Trusty Craps,
 // Trusty Slots, Trusty Poker (a buy-in is one bet; the stack is its payout) and on online Trusty Fever games,
@@ -14,6 +16,7 @@ import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, windfallOf, limi
 //   POST { payload, sig }: only from the room server (realtime/), which signs the JSON payload with FEVER_SECRET
 //     (utils/fever-ticket.js), so nobody else can move clicks. The payload has `ts` (refused when over a
 //     minute old) and an `op`:
+//   Big wins (scripts/casino-feed.js) are told to the casino's live feed as they're paid (utils/lobby-feed.js).
 //     stake { userId, betId, amount, game }: takes a bet off the player's clicks, within the limits.
 //     settle { bets: [{ userId, betId, payout }] }: pays bets out (0 for a lost one), once each.
 //     pot { potId, stakes: [{ userId, betId }], winners: [userId] }: a Trusty Fever pot. The bank adds up what it
@@ -98,9 +101,12 @@ async function close(col, userId, betId, bet, payout, now, windfall = 0) {
         [`bank.stats.${bet.game}.${monthOf(now)}`]: payout - bet.amount,
       },
     },
-    { returnDocument: 'after', projection: { clicks: 1, 'bank.net': 1 } },
+    { returnDocument: 'after', projection: { clicks: 1, 'bank.net': 1, username: 1 } },
   ));
 }
+
+// The feed's entry for a payout that went in, or null.
+const winOf = (after, bet, payout, windfall, now) => bigWin({ name: after.username, game: bet.game, amount: bet.amount, payout, windfall }, now.getTime());
 
 async function openBet(col, userId, betId) {
   const doc = await col.findOne({ userId, [`bank.open.${betId}`]: { $exists: true } }, { projection: { [`bank.open.${betId}`]: 1 } });
@@ -113,6 +119,7 @@ async function openBet(col, userId, betId) {
 // midnight. Only the site's own Slots game can say so: the room server's settles never carry one (signedOp).
 export async function settle(col, bets, now = new Date()) {
   const balances = {};
+  const wins = [];
   for (const { userId, betId, payout, windfall } of bets) {
     const bet = await openBet(col, userId, betId);
     if (!bet) continue; // already settled (a retry), or given back
@@ -121,8 +128,12 @@ export async function settle(col, bets, now = new Date()) {
       continue;
     }
     const after = await close(col, userId, betId, bet, payout, now, windfallOf(bet, payout, windfall));
-    if (after) balances[userId] = { clicks: after.clicks, net: after.bank.net };
+    if (!after) continue;
+    balances[userId] = { clicks: after.clicks, net: after.bank.net };
+    const win = winOf(after, bet, payout, windfall, now);
+    if (win) wins.push(win);
   }
+  await announceWins(wins);
   return { ok: true, balances };
 }
 
@@ -153,12 +164,17 @@ export async function settlePot(col, pots, { potId, stakes, winners }, now = new
   }
   // Losers first: if this stops halfway, a retry finishes it, and it can never pay out more than the pot.
   const balances = {};
+  const wins = [];
   for (const p of [...record.payouts].sort((a, b) => a.payout - b.payout)) {
     const bet = await openBet(col, p.userId, p.betId);
     if (!bet) continue;
     const after = await close(col, p.userId, p.betId, bet, p.payout, now);
-    if (after) balances[p.userId] = { clicks: after.clicks, net: after.bank.net };
+    if (!after) continue;
+    balances[p.userId] = { clicks: after.clicks, net: after.bank.net };
+    const win = winOf(after, bet, p.payout, 0, now);
+    if (win) wins.push(win);
   }
+  await announceWins(wins);
   return { ok: true, total: record.total, payouts: record.payouts.map(({ userId, payout }) => ({ userId, payout })), balances };
 }
 

@@ -723,6 +723,21 @@ dialog.modal::backdrop { background: rgba(20, 20, 24, .6); backdrop-filter: blur
 .modal-head h2 { margin: 0; font-size: 1.4rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .modal-body { padding: 20px 22px 22px; }
 
+/* Share cards (scripts/share-card.js) */
+.share-card-preview {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(516px, 58dvh);
+  aspect-ratio: 1;
+  margin: 0 auto 16px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fbf8f0;
+}
+.share-card-actions { justify-content: center; }
+
 /* ---------- Toasts ---------- */
 .toast-region {
   position: fixed;
@@ -1200,6 +1215,18 @@ a.account-name:hover { color: var(--blue); text-decoration: underline; }
   color: var(--pencil);
 }
 .footer-bottom p { margin: 0; }
+.footer-here { display: block; margin-top: 4px; }
+.footer-here[hidden] { display: none; }
+.footer-here::before {
+  content: "";
+  display: inline-block;
+  width: .55em;
+  height: .55em;
+  margin-right: .45em;
+  border-radius: 50%;
+  background: var(--green);
+  vertical-align: .05em;
+}
 .footer-trusty { width: 88px; margin-bottom: -6px; }
 
 @media (max-width: 720px) {
@@ -1800,6 +1827,24 @@ dialog.reader::backdrop { background: #1e1f23; }
 }
 .chat-input textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(31, 79, 191, .18); }
 .chat-input .btn { min-height: 48px; }
+.chat-mic[hidden], .chat-speak[hidden] { display: none; }
+.chat-mic { flex: none; }
+.chat-mic[aria-pressed="true"] {
+  background: var(--red);
+  border-color: var(--ink);
+  color: var(--on-ink);
+  animation: mic-listen 1.4s ease-in-out infinite;
+}
+@keyframes mic-listen {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 51, 75, .45); }
+  50% { box-shadow: 0 0 0 8px rgba(214, 51, 75, 0); }
+}
+.chat-speak .speak-off { display: none; }
+.chat-speak[aria-pressed="false"] .speak-waves { display: none; }
+.chat-speak[aria-pressed="false"] .speak-off { display: inline; }
+.chat-speak.is-speaking .speak-waves { display: inline; animation: speak-pulse .9s ease-in-out infinite; }
+.chat-speak.is-speaking .speak-off { display: none; }
+@keyframes speak-pulse { 50% { opacity: .35; } }
 
 @media (max-width: 900px) {
   .chat-layout { grid-template-columns: 1fr; gap: 16px; padding-top: 16px; }
@@ -2268,6 +2313,33 @@ dialog.reader::backdrop { background: #1e1f23; }
 @keyframes twinkle { 0%, 100% { opacity: .25; scale: .7; } 50% { opacity: 1; scale: 1.15; } }
 
 /* =========================================================================
+   Page turns: going from one page of the site to the next flips the old one away like a notebook page,
+   turning on its left edge to show the new one under it. Browsers without cross-document view transitions
+   just change pages; reduced motion turns it off.
+   ========================================================================= */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+::view-transition-group(root) { animation-duration: .4s; }
+::view-transition-old(root) {
+  z-index: 1;
+  transform-origin: left center;
+  animation: page-turn .4s cubic-bezier(.45, 0, .25, 1) both;
+}
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation: page-under .4s ease-out both;
+}
+@keyframes page-turn {
+  0% { transform: perspective(2600px) rotateY(0); filter: brightness(1); }
+  100% { transform: perspective(2600px) rotateY(-100deg); filter: brightness(.78); }
+}
+@keyframes page-under {
+  from { filter: brightness(.9); }
+  to { filter: brightness(1); }
+}
+
+/* =========================================================================
    Motion preferences
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
@@ -2278,3 +2350,42 @@ dialog.reader::backdrop { background: #1e1f23; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- The Casino page: big wins, live (pages/casino.html) ---------- */
+.wins-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.wins-head h2 { margin: 0; }
+.wins-here { margin: 0; color: var(--pencil); }
+.wins-here::before {
+  content: "";
+  display: inline-block;
+  width: .55em;
+  height: .55em;
+  margin-right: .45em;
+  border-radius: 50%;
+  background: var(--green);
+  vertical-align: .05em;
+}
+.wins-list { margin: 12px 0 0; padding: 0; list-style: none; }
+.wins-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 8px 6px;
+  border-top: 1.5px dashed var(--grid-strong);
+  border-radius: 4px;
+}
+.wins-list li:first-child { border-top: 0; }
+.wins-what .tag { margin-left: 8px; vertical-align: .1em; }
+.wins-list time { color: var(--pencil); font-size: .9rem; white-space: nowrap; }
+.wins-list li.is-new { animation: win-in 2.4s var(--ease-out); }
+@keyframes win-in {
+  0% { background: var(--highlight); transform: translateY(-6px); opacity: 0; }
+  15% { transform: none; opacity: 1; }
+  60% { background: var(--highlight); }
+  100% { background: transparent; }
+}
+.wins-empty { margin: 12px 0 0; color: var(--pencil); }
+.wins-empty[hidden] { display: none; }
+

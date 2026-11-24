@@ -104,6 +104,7 @@
                         <h2 id="stats-title">Stats</h2>
                         <p>These fill themselves in from playing while logged in.</p>
                     </div>
+                    <button class="btn btn-outline btn-sm" type="button" id="card-btn" hidden>Share as a picture</button>
                 </div>
                 <div class="profile-stats" id="stats"></div>
             </section>
@@ -137,7 +138,7 @@
         import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref, styleName, applyTheme, namePreview } from '/scripts/site.js';
         import { DEFAULTS as SHOP_DEFAULTS, itemsOf, nameStyleOf } from '/scripts/shop.js';
         import { safeDrawing, openDrawing, rankBadge, clickIcon } from '/scripts/leaderboard.js';
-        import { nextRank, rankProgress } from '/scripts/milestones.js';
+        import { nextRank, rankProgress, rankFor } from '/scripts/milestones.js';
         import { CHANNELS } from '/scripts/tv-lineup.js';
         import { usernameProblem } from '/scripts/username.js';
         import { GAMES as DAILY_GAMES } from '/scripts/daily-games.js';
@@ -355,8 +356,42 @@
             renderTv();
             loadLook();
             $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), snakeCard(), trustleCard(), dailyCard());
+            $('card-btn').hidden = Boolean(profile.house);
             show('profile');
         }
+
+        /* ---------- The profile as a picture (scripts/share-card.js) ---------- */
+
+        function cardLines() {
+            const p = profile;
+            const t = p.trustle;
+            const lines = [
+                p.flappy && `Flappy Trusty best: ${fmt(p.flappy.score)} (#${fmt(p.flappy.rank)})`,
+                t && t.played && `Trustle: ${Math.round((t.won / t.played) * 100)}% won${t.streak > 1 ? `, ${fmt(t.streak)}-day streak` : ''}`,
+                p.trustis && `Trustis best: ${fmt(p.trustis.score)} (#${fmt(p.trustis.rank)})`,
+                p.snake && `Trusty Snake best: ${fmt(p.snake.score)} (#${fmt(p.snake.rank)})`,
+                p.draw && `Draw Trusty best: ${fmt(p.draw.score)}% (#${fmt(p.draw.rank)})`,
+            ];
+            return lines.filter(Boolean).slice(0, 4);
+        }
+
+        $('card-btn').addEventListener('click', async () => {
+            if (!profile || profile.house) return;
+            const c = profile.clicks;
+            const rank = c ? rankFor(c.total) : null;
+            const lines = cardLines();
+            const { openShareCard } = await import('/scripts/share-card.js');
+            openShareCard({
+                eyebrow: 'Trusty fan profile',
+                title: profile.username,
+                big: fmt(c ? c.total : 0),
+                sub: `clicks${rank ? ` · ${rank.name}` : ''}${c && c.rank ? ` · #${fmt(c.rank)} on the board` : ''}`,
+                lines: lines.length ? lines : ['Just getting started!'],
+                filename: `trusty-${profile.username}.png`,
+                text: `${location.origin}${profileHref(profile.username)}`,
+                dialogTitle: profile.isMe ? 'Share your profile' : `Share ${profile.username}’s profile`,
+            });
+        });
 
         /* ---------- Your themes (the Item Shop, utils/shop.js) ---------- */
 
