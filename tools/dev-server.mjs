@@ -30,7 +30,7 @@ import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { isHouse } from '../utils/house.js';
 import { GAME_KEYS, POST_REWARD, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
 import { puzzleWord } from '../scripts/trustle.js';
-import { ITEMS, cleanOrder, equippedOf, nameStyleOf, ownedSet, isFree } from '../scripts/shop.js';
+import { ITEMS, cleanOrder, equippedOf, nameStyleOf, ownedSet, isFree, goalsOf, unlocked, needText } from '../scripts/shop.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The headers vercel.json sends with every file.
@@ -154,7 +154,8 @@ const SAMPLE_STYLES = {
 const shopOf = (account) => (account.shop ||= { owned: [], equipped: {}, spent: 0 });
 const shopAnswer = (account) => {
   const shop = shopOf(account);
-  return { clicks: account.clicks, owned: [...ownedSet(shop.owned)], equipped: equippedOf(shop), spent: shop.spent };
+  const goals = goalsOf({ bank: { lost: account.lost }, tvSeconds: account.tvSeconds });
+  return { clicks: account.clicks, owned: [...ownedSet(shop.owned)], equipped: equippedOf(shop), spent: shop.spent, goals };
 };
 function shopApi(req, url, body) {
   const names = url.searchParams.getAll('n');
@@ -181,6 +182,7 @@ function shopApi(req, url, body) {
     return [200, shopAnswer(account)];
   }
   if (shop.owned.includes(item.id)) return [409, { error: `You already have ${item.name}.`, ...shopAnswer(account) }];
+  if (!unlocked(item, shopAnswer(account).goals)) return [403, { error: `${item.name} isn’t for sale to you yet. ${needText(item)}`, ...shopAnswer(account) }];
   if (account.clicks < item.price) return [400, { error: `${item.name} costs ${item.price} clicks: you need ${item.price - account.clicks} more.`, ...shopAnswer(account) }];
   account.clicks -= item.price;
   shop.spent += item.price;
@@ -226,6 +228,10 @@ async function api(req, url, body) {
       if (counted + clicks > cap) return [429, { error: 'That’s today’s clicks.', capped: true, day, today: counted, cap }];
       account.watch = { day, clicks: counted + clicks };
       account.clicks += clicks;
+      if (action === 'tv' && typeof body?.channel === 'string') {
+        account.tvSeconds ||= {};
+        account.tvSeconds[body.channel] = (account.tvSeconds[body.channel] || 0) + WATCH_REWARD.every;
+      }
       return [200, { clicks: account.clicks, added: clicks, today: counted + clicks, cap }];
     }
     // A click, and the daily bonus with the day's first one, as api/clicks.js pays it.

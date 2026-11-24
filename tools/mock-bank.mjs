@@ -40,6 +40,7 @@ export function mockBank({ startingClicks = 12345, delay = 5, onWins = () => {},
     a.clicks += payout;
     a.net += payout - windfallOf(bet, payout, windfall);
     a.month[bet.game] += payout - bet.amount;
+    if (payout < bet.amount) (a.lost ||= {})[bet.game] = (a.lost[bet.game] || 0) + bet.amount - payout;
     balances[userId] = { clicks: a.clicks, net: a.net };
     const win = bigWin({ name: nameOf(userId), game: bet.game, amount: bet.amount, payout, windfall });
     if (win) wins.push(win);

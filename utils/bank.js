@@ -90,6 +90,7 @@ function limitsOf(doc, today) {
 async function close(col, userId, betId, bet, payout, now, windfall = 0) {
   const today = dayOf(now);
   await rollover(col, userId, today);
+  const lost = Math.max(0, bet.amount - payout);
   return unwrap(await col.findOneAndUpdate(
     { userId, [`bank.open.${betId}.at`]: bet.at },
     {
@@ -99,6 +100,9 @@ async function close(col, userId, betId, bet, payout, now, windfall = 0) {
         // A bet from an earlier day was already counted against that day.
         'bank.net': (bet.day === today ? payout : payout - bet.amount) - windfall,
         [`bank.stats.${bet.game}.${monthOf(now)}`]: payout - bet.amount,
+        // Every click ever lost on a bet, per game, which unlocks the Item Shop's High Roller (goalsOf() in
+        // scripts/shop.js). Unlike the stats, a win never takes it back off.
+        ...(lost ? { [`bank.lost.${bet.game}`]: lost } : {}),
       },
     },
     { returnDocument: 'after', projection: { clicks: 1, 'bank.net': 1, username: 1 } },

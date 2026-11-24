@@ -29,12 +29,21 @@ export const ITEMS = [
   { id: 'notebook', kind: 'theme', name: 'Notebook', price: 0, about: 'The classic: ruled notebook paper.', swatch: ['#fbf8f0', '#1f4fbf'] },
   { id: 'legal-pad', kind: 'theme', name: 'Legal Pad', price: 1000, about: 'Yellow legal paper with a red margin.', swatch: ['#fbf0b4', '#1f4fbf'] },
   { id: 'graph-paper', kind: 'theme', name: 'Graph Paper', price: 1000, about: 'A blue grid behind everything.', swatch: ['#f4f8fd', '#2a62c9'] },
+  { id: 'kraft', kind: 'theme', name: 'Kraft Paper', price: 1000, about: 'A brown paper bag, written on in dark brown pen.', swatch: ['#dcbf94', '#5a3416'] },
   { id: 'chalkboard', kind: 'theme', name: 'Chalkboard', price: 2500, dark: true, about: 'Chalk on a green board, with the pages pinned on top. Easy on the eyes at night.', swatch: ['#28372f', '#f1efe6'] },
+  { id: 'pasture', kind: 'theme', name: 'Pasture', price: 5000, about: 'Pale grass green with barn-red trim. Trusty’s home turf.', swatch: ['#e4f0cf', '#a3291f'] },
+  { id: 'trusty-times', kind: 'theme', name: 'The Trusty Times', price: 7500, about: 'Grey newsprint and black serif headlines. Extra! Extra!', swatch: ['#ebeae3', '#161616'] },
   { id: 'blueprint', kind: 'theme', name: 'Blueprint', price: 10000, dark: true, about: 'White lines on blueprint blue, like Trusty’s plans for world domination.', swatch: ['#16407c', '#e9f2ff'] },
   { id: 'sunset', kind: 'theme', name: 'Sunset Sketchbook', price: 10000, about: 'Peach paper and plum ink, from a sketchbook left out at golden hour.', swatch: ['#fde2cf', '#8f2f62'] },
+  { id: 'snow-day', kind: 'theme', name: 'Snow Day ❄️', price: 10000, about: 'White and ice blue, with snowflakes all down the margins. No school today.', swatch: ['#f2f8ff', '#2366a8'] },
+  { id: 'tractor-crew', kind: 'theme', name: 'Da Tractor Crew', price: 15000, about: 'Tractor green and yellow with comic-panel borders, straight out of the comics.', swatch: ['#fff3b0', '#2b7a30'] },
   { id: 'hay-day', kind: 'theme', name: 'Hay Day', price: 25000, about: 'Straw and Slots-cabinet blue, from Trusty’s Hay Day.', swatch: ['#f6e3a3', '#2c45b0'] },
+  // Late Night TV and High Roller have to be earned first (`needs`, GOALS below).
+  { id: 'late-night-tv', kind: 'theme', name: 'Late Night TV', price: 50000, dark: true, needs: { goal: 'tv', at: 5 * 3600 }, about: 'Green phosphor glow and faint scanlines, for when Trusty TV is the only thing on.', swatch: ['#06170c', '#5dff8f'] },
   { id: 'golden-horse', kind: 'theme', name: 'Golden Horse 金馬', price: 75000, about: 'Red and gold for the Year of the Horse.', swatch: ['#fff0cf', '#b3121e'] },
+  { id: 'high-roller', kind: 'theme', name: 'High Roller', price: 100000, dark: true, needs: { goal: 'casino', at: 50000 }, about: 'Casino-felt green with gold trim. The house knows your name.', swatch: ['#0d3b26', '#e6b94a'] },
   { id: 'neon', kind: 'theme', name: 'Midnight Neon', price: 150000, dark: true, about: 'Pink and cyan neon on a midnight sky.', swatch: ['#100b22', '#4df3ff'] },
+  { id: 'pegasus', kind: 'theme', name: 'Pegasus', price: 300000, about: 'Cloud white and sky blue, with wings drawn in the margin. Trusty, but higher. The shop’s most expensive item.', swatch: ['#eef6ff', '#2463b0'] },
 
   // Name fonts. None of them downloads a new font: they're the site's own two, system fonts and Unicode letters.
   { id: 'standard', kind: 'font', name: 'Standard', price: 0, about: 'The site’s usual lettering.' },
@@ -69,10 +78,38 @@ export const ITEMS = [
   { id: 'scribble', kind: 'highlight', name: 'Marker Scribble', price: 7500, about: 'Scribbled in behind your name.' },
   { id: 'washi', kind: 'highlight', name: 'Washi Tape', price: 20000, about: 'A strip of striped tape.' },
   { id: 'glow', kind: 'highlight', name: 'Glow', price: 60000, about: 'A warm glow all around.' },
-  { id: 'sparkle', kind: 'highlight', name: 'Sparkle', price: 250000, about: 'Twinkling stars and a shimmer. The shop’s most expensive item.' },
+  { id: 'sparkle', kind: 'highlight', name: 'Sparkle', price: 250000, about: 'Twinkling stars and a shimmer. The shop’s most expensive name item.' },
 ];
 
 export const DEFAULTS = { theme: 'notebook', font: 'standard', color: 'ink', highlight: 'none' };
+
+// Some items have to be earned before they can be bought (`needs: { goal, at }`): `at` of a goal, which goalsOf()
+// works out from the account's click_game document. Goals only ever go up, so an unlocked item stays unlocked.
+//   casino  clicks spent at the Casino: what every Blackjack, Craps, Slots and Poker bet lost, bet by bet (a bet
+//           that paid back less than it cost counts the difference, and winning it back on another bet doesn't take
+//           it off). The bank adds it up as it settles (`bank.lost.<game>` in utils/bank.js), from when that began.
+//   tv      seconds of Trusty TV watched while it was paying clicks, every channel together (`tvSeconds.<channel>`,
+//           api/clicks.js).
+export const CASINO_GAMES = ['blackjack', 'craps', 'slots', 'poker'];
+const fmtN = (n) => new Intl.NumberFormat('en-US').format(n);
+export const GOALS = {
+  casino: { href: '/pages/casino.html', go: 'To the Casino', say: (n) => `${fmtN(n)} clicks spent at the Casino` },
+  tv: { href: '/pages/tv.html', go: 'Watch Trusty TV', say: (n) => `${fmtN(Math.floor(n / 360) / 10)} ${n === 3600 ? 'hour' : 'hours'} of Trusty TV` },
+};
+const counted = (n) => (Number.isFinite(n) && n > 0 ? n : 0);
+
+export function goalsOf(doc) {
+  const lost = (doc && doc.bank && doc.bank.lost) || {};
+  const watched = (doc && doc.tvSeconds && typeof doc.tvSeconds === 'object') ? doc.tvSeconds : {};
+  return {
+    casino: CASINO_GAMES.reduce((sum, game) => sum + counted(lost[game]), 0),
+    tv: Object.values(watched).reduce((sum, n) => sum + counted(n), 0),
+  };
+}
+
+// Whether an account with these goals (goalsOf()) may buy the item.
+export const unlocked = (item, goals) => !item.needs || counted(goals && goals[item.needs.goal]) >= item.needs.at;
+export const needText = (item) => (item.needs ? `Unlocks after ${GOALS[item.needs.goal].say(item.needs.at)}.` : '');
 
 const BY_ID = new Map(ITEMS.map((item) => [item.id, item]));
 export const itemById = (id) => (typeof id === 'string' && BY_ID.get(id)) || null;
