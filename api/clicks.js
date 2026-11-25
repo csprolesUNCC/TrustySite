@@ -4,6 +4,8 @@ import { CHANNELS } from '../scripts/tv-lineup.js';
 import { WATCH_REWARD } from '../scripts/tv-schedule.js';
 import { dayOf, dailyClaim, dailyStatus, CLICKER, CLICKER_LAST, pressPays, pressesToday } from '../scripts/milestones.js';
 import { equippedOf, nameStyleOf } from '../scripts/shop.js';
+import { boost } from '../utils/events.js';
+import golden from '../utils/golden.js';
 
 // At most MAX_CLICKS clicks per WINDOW_MS (the header clicker enforces the same limit).
 // The server allows a little slack so network jitter doesn't reject honest clicks.
@@ -27,17 +29,20 @@ const WATCH = {
 // Pays one watch reward if the last one was long enough ago and today's are under the cap. Returns [status, body].
 async function payWatch(collection, user, source, body) {
     const { clicks: CLICKS, every, daily: CAP } = WATCH_REWARD;
+    // An event can multiply what's paid (utils/events.js); the day's count and its cap stay in plain clicks, so
+    // reaching the cap takes as long as ever.
+    const PAID = CLICKS * await boost('watch');
     const now = new Date();
     const today = dayOf(now);
     const ready = { [source.last]: { $not: { $gt: new Date(now.getTime() - every * 1000 + WATCH_SLACK_MS) } } };
     const key = source.seconds && body && source.keys.has(body.channel) ? body.channel : null;
-    const inc = { clicks: CLICKS };
+    const inc = { clicks: PAID };
     if (key) inc[`${source.seconds}.${key}`] = every;
     const set = { username: user.username, [source.last]: now };
     const options = { returnDocument: 'after', projection: { clicks: 1, [source.daily]: 1 } };
     const paid = (result) => {
         const doc = result && 'value' in result ? result.value : result;
-        return doc ? { clicks: doc.clicks, added: CLICKS, today: doc[source.daily].clicks, cap: CAP } : null;
+        return doc ? { clicks: doc.clicks, added: PAID, today: doc[source.daily].clicks, cap: CAP } : null;
     };
 
     // Already paid some today: only while that's under the cap.
@@ -59,7 +64,7 @@ async function payWatch(collection, user, source, body) {
         { userId: user.userId },
         {
             $setOnInsert: {
-                clicks: CLICKS, username: user.username, [source.last]: now, recent: [],
+                clicks: PAID, username: user.username, [source.last]: now, recent: [],
                 [source.daily]: { day: today, clicks: CLICKS },
                 ...(source.seconds && { [source.seconds]: key ? { [key]: every } : {} })
             }
@@ -67,7 +72,7 @@ async function payWatch(collection, user, source, body) {
         { upsert: true }
     );
     if (inserted.upsertedCount) {
-        return [200, { clicks: CLICKS, added: CLICKS, today: CLICKS, cap: CAP }];
+        return [200, { clicks: PAID, added: PAID, today: CLICKS, cap: CAP }];
     }
     const doc = await collection.findOne({ userId: user.userId }, { projection: { [source.daily]: 1 } });
     const counted = doc && doc[source.daily];
@@ -117,8 +122,10 @@ export function pressUpdate(now, today, username) {
 // paid, and the bonus only goes in if that's still the day this click read, so two clicks at once can't both
 // collect it. Returns { clicks, daily: { streak, added } }, or null if there's nothing to pay.
 async function payDaily(collection, userId, last, today) {
-    const claim = dailyClaim(last, today);
-    if (!claim) return null;
+    const base = dailyClaim(last, today);
+    if (!base) return null;
+    // An event can multiply it (utils/events.js).
+    const claim = { ...base, added: base.added * await boost('daily') };
     const result = await collection.findOneAndUpdate(
         { userId, 'daily.day': last && typeof last.day === 'string' ? last.day : { $exists: false } },
         {
@@ -141,16 +148,25 @@ export default async (req, res) => {
         const  db  = await connectToDatabase();
         const collection = db.collection('click_game');
 
+        // Golden Trusties (utils/golden.js): GET asks whether one is due, POST catches one.
+        if (req.query.action === 'golden') {
+            const [status, answer] = await golden(collection, user, req.method, req.body);
+            return res.status(status).json(answer);
+        }
+
         if (req.method === 'GET') {
             const userData = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, daily: 1, clicker: 1, 'shop.owned': 1, 'shop.equipped': 1 } });
             const shop = userData && userData.shop;
             const today = dayOf(new Date());
+            const daily = dailyStatus(userData && userData.daily, today);
+            // While it's waiting, the bonus shown is what today's event (if any) makes it.
+            if (daily.ready) daily.next *= await boost('daily');
             return res.status(200).json({
                 clicks: userData ? userData.clicks : 0,
                 // Today's presses, so the header knows how tired Trusty is (CLICKER in scripts/milestones.js).
                 clicker: { day: today, n: pressesToday(userData && userData.clicker, today) },
                 // Whether today's bonus is still waiting for a click (the header clicker shows it).
-                daily: dailyStatus(userData && userData.daily, today),
+                daily,
                 // The Item Shop's theme and name style they have on (scripts/shop.js), which every page puts on.
                 shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) }
             });

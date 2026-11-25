@@ -91,6 +91,17 @@
             </aside>
         </section>
 
+        <section class="section-tight container" aria-labelledby="quests-title">
+            <div class="panel quests">
+                <div class="quests-head">
+                    <h2 class="panel-title" id="quests-title">Daily Quests</h2>
+                    <p class="muted">Three new jobs every midnight Eastern, the same for everyone: 150 clicks for each one, and 300 more for doing all three.</p>
+                </div>
+                <!-- Filled in by scripts/quests-panel.js -->
+                <div class="quests-body" id="quests"></div>
+            </div>
+        </section>
+
         <section class="section container" aria-labelledby="games-title">
             <div class="section-head">
                 <div>
@@ -211,6 +222,10 @@
 
     <trusty-footer></trusty-footer>
 
+    <script type="module">
+        import { mountQuests } from '/scripts/quests-panel.js';
+        mountQuests(document.getElementById('quests'));
+    </script>
     <script type="module">
         import { h, toast, session, sessionExpired, onSession, loginHref } from '/scripts/site.js';
 

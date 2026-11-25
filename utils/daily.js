@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
 import { cachePublic } from './cache.js';
+import { boost } from './events.js';
 import { dayOf } from '../scripts/milestones.js';
 import { GAME_KEYS, BOARD_KEYS, POST_REWARD, isDay, dayAfter, puzzleOn, parseShare, rankOf, flagsFor, cleanResult, statsFor } from '../scripts/daily-games.js';
 import { puzzleNumber, puzzleWord, cleanGame, outcome, grade } from '../scripts/trustle.js';
@@ -123,13 +124,15 @@ async function postScore(req, res, user) {
 // game pays once per day without any counting of its own.
 async function payPost(db, user) {
     try {
+        // An event can multiply it (utils/events.js).
+        const added = POST_REWARD * await boost('dailyGames');
         const paid = await db.collection('click_game').findOneAndUpdate(
             { userId: user.userId },
-            { $inc: { clicks: POST_REWARD }, $set: { username: user.username }, $setOnInsert: { recent: [] } },
+            { $inc: { clicks: added }, $set: { username: user.username }, $setOnInsert: { recent: [] } },
             { upsert: true, returnDocument: 'after', projection: { clicks: 1 } }
         );
         const after = paid && 'value' in paid ? paid.value : paid;
-        return { added: POST_REWARD, clicks: after ? after.clicks : null };
+        return { added, clicks: after ? after.clicks : null };
     } catch (error) {
         console.error('Daily Games reward error:', error);
         return null;

@@ -106,3 +106,13 @@ a.admin-user-name:hover { color: var(--blue); }
 }
 .admin-names a:hover { color: var(--blue); text-decoration: underline; }
 .admin-daily .btn-row { margin-left: auto; gap: 8px; }
+
+/* Events tab (scripts/events.js) */
+.admin-event-form { max-width: 640px; }
+.admin-event-boosts { margin: 0 0 14px; padding: 0; border: 0; }
+.admin-event-boosts legend { padding: 0; margin-bottom: 6px; font-weight: 700; }
+.admin-event-boosts > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; }
+.admin-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.admin-check input { width: 18px; height: 18px; accent-color: var(--blue); }
+.admin-event-row { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.admin-event-row .field { flex: 1 1 140px; }
