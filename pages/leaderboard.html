@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Leaderboards — Trusty da Horse</title>
-    <meta name="description" content="Are you the ultimate Trusty fan? See the top clickers and the best Flappy Trusty, Draw Trusty, Trustis and Trusty Snake players.">
+    <meta name="description" content="Are you the ultimate Trusty fan? See the top clickers, the best Flappy Trusty, Draw Trusty, Trustis and Trusty Snake players, and this week's prize race.">
     <link rel="canonical" href="https://trustydahorse.com/pages/leaderboard.html">
     <meta name="theme-color" content="#fbf8f0">
     <meta property="og:type" content="website">
@@ -51,6 +51,7 @@
         <section class="section-tight container" aria-label="Leaderboards">
             <div class="tabs" role="tablist" aria-label="Choose a leaderboard">
                 <button class="tab" role="tab" type="button" id="tab-clicks" aria-controls="panel-clicks" aria-selected="true" data-board="clicks">Top Clickers</button>
+                <button class="tab" role="tab" type="button" id="tab-weekly" aria-controls="panel-weekly" aria-selected="false" tabindex="-1" data-board="weekly">This Week</button>
                 <button class="tab" role="tab" type="button" id="tab-flappy" aria-controls="panel-flappy" aria-selected="false" tabindex="-1" data-board="flappy">Flappy Trusty</button>
                 <button class="tab" role="tab" type="button" id="tab-draw" aria-controls="panel-draw" aria-selected="false" tabindex="-1" data-board="draw">Draw Trusty</button>
                 <button class="tab" role="tab" type="button" id="tab-trustis" aria-controls="panel-trustis" aria-selected="false" tabindex="-1" data-board="trustis">Trustis</button>
@@ -90,6 +91,18 @@
                     <h2 class="panel-title">The rest of the herd</h2>
                     <ol class="board" data-list aria-label="Top Clickers, rank 4 and below"></ol>
                 </div>
+            </div>
+
+            <!-- This week's boards (scripts/weekly.js, utils/weekly.js); the prizes come from the API, since admins set them -->
+            <div class="lb-panel lb-weekly" role="tabpanel" id="panel-weekly" aria-labelledby="tab-weekly" data-board="weekly" hidden>
+                <h2 class="sr-only">This week</h2>
+                <div class="sticky-note pink lb-note weekly-note">
+                    <h3>Weekly prizes</h3>
+                    <p id="weekly-rule">Every game’s board starts over each week, at midnight Eastern on Sunday night. When it does, the top 3 on each board win clicks.</p>
+                    <p data-weekly-when></p>
+                    <p data-me-note>Your best game this week is what counts, so it doesn’t have to beat your all-time best.</p>
+                </div>
+                <div class="weekly-grid" data-weekly></div>
             </div>
 
             <div class="lb-panel" role="tabpanel" id="panel-flappy" aria-labelledby="tab-flappy" data-board="flappy" hidden>
@@ -161,9 +174,10 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, session, sessionReady } from '/scripts/site.js';
-        import { BOARDS, fetchBoard, renderList, renderPodium, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
+        import { h, fmt, session, sessionReady, profileHref, styleName } from '/scripts/site.js';
+        import { BOARDS, fetchBoard, fetchWeekly, renderList, renderPodium, renderSkeleton, renderStatus } from '/scripts/leaderboard.js';
         import { rankFor } from '/scripts/milestones.js';
+        import { WEEKLY_BOARDS, PLACES, prizeLine, weekLine, dateLine } from '/scripts/weekly.js';
 
         const MAX_ROWS = 50;
         const tabs = [...document.querySelectorAll('[role="tab"]')];
@@ -202,7 +216,80 @@
                 : 'You haven’t clicked Trusty yet. He’s up in the header, waiting.';
         }
 
+        /* ---------- This week (scripts/weekly.js): all four boards from one request ---------- */
+
+        const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+        const nameLink = (name) => styleName(h('a', { href: profileHref(name), title: `${name}'s profile` }, name), name);
+
+        function weeklyBoard(game) {
+            const list = h('ol', { class: 'board', 'aria-label': `${BOARDS[game].label} this week` });
+            const players = h('span', { class: 'weekly-players' });
+            const last = h('p', { class: 'weekly-last', hidden: true });
+            renderSkeleton(list, 5);
+            const section = h('section', { class: 'panel weekly-board', 'aria-labelledby': `weekly-${game}` },
+                h('h3', { class: 'panel-title', id: `weekly-${game}` }, BOARDS[game].label, players),
+                list, last);
+            return { section, list, players, last };
+        }
+
+        // What last week paid on this board.
+        function lastLine(game, last) {
+            if (!last) return null;
+            const when = `Last week (${weekLine(last.week)})`;
+            if (!last.winners.length) {
+                return [h('strong', null, `${when}:`), last.on === false
+                    ? ' no prizes that week.'
+                    : ` nobody won, since only ${plural(last.players, 'player')} played (it takes ${fmt(last.minPlayers || 1)}).`];
+            }
+            return [h('strong', null, `${when}:`), ' ', ...last.winners.flatMap((w, i) => [
+                i ? ' · ' : '', `${['1st', '2nd', '3rd'][w.place - 1] || `#${w.place}`} `, nameLink(w.name),
+                ` (${BOARDS[game].format(w.score)}) won ${fmt(w.prize)}`])];
+        }
+
+        async function loadWeekly() {
+            const panel = panels.weekly;
+            const grid = panel.querySelector('[data-weekly]');
+            const boards = Object.fromEntries(WEEKLY_BOARDS.map((game) => [game, weeklyBoard(game)]));
+            grid.replaceChildren(...Object.values(boards).map((b) => b.section));
+            loaded.add('weekly');
+            try {
+                const data = await fetchWeekly();
+                const { settings } = data;
+                const people = settings.minPlayers === 1 ? '1 person' : `${fmt(settings.minPlayers)} people`;
+                panel.querySelector('#weekly-rule').textContent = settings.on
+                    ? `Every game’s board starts over each week, at midnight Eastern on Sunday night. When it does, the top ${PLACES} on each board win ${prizeLine(settings)} (1st / 2nd / 3rd), as long as at least ${people} played it that week.`
+                    : 'Every game’s board starts over each week, at midnight Eastern on Sunday night. Weekly prizes are taking a break right now, but the boards still count.';
+                panel.querySelector('[data-weekly-when]').textContent = `This week is ${weekLine(data.week)}: it ends at midnight after ${dateLine(data.ends)}.`;
+                for (const game of WEEKLY_BOARDS) {
+                    const b = boards[game];
+                    const board = data.boards[game] || { players: 0, entries: [], last: null };
+                    b.players.textContent = plural(board.players, 'player');
+                    if (board.entries.length) renderList(b.list, board.entries, { key: game, thumbs: false });
+                    else renderStatus(b.list, 'Nobody has played this week yet. Be the first!');
+                    const line = lastLine(game, board.last);
+                    b.last.hidden = !line;
+                    b.last.replaceChildren(...(line || []));
+                }
+                await sessionReady;
+                if (session.loggedIn) {
+                    const mine = WEEKLY_BOARDS.flatMap((game) => {
+                        const at = (data.boards[game]?.entries || []).findIndex((e) => e.name === session.username);
+                        return at === -1 ? [] : [`#${at + 1} on ${BOARDS[game].label}`];
+                    });
+                    panel.querySelector('[data-me-note]').textContent = mine.length
+                        ? `This week you’re ${mine.join(', ')}.${mine.some((m) => /^#[1-3] /.test(m)) ? ' Hold on to it until Sunday night!' : ''}`
+                        : 'You’re not on a board this week yet. Every game you finish counts.';
+                }
+            } catch {
+                loaded.delete('weekly');
+                grid.replaceChildren(h('p', { class: 'board-error' },
+                    'Couldn’t load this week’s boards. ',
+                    h('button', { type: 'button', class: 'btn btn-outline btn-sm', onclick: loadWeekly }, 'Try again')));
+            }
+        }
+
         async function load(key) {
+            if (key === 'weekly') return loadWeekly();
             const panel = panels[key];
             const list = panel.querySelector('[data-list]');
             const podium = panel.querySelector('[data-podium]');

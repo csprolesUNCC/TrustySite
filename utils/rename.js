@@ -29,6 +29,7 @@ const NAME_COPIES = [
     ['trustle', 'username'],
     ['profiles', 'username'],
     ['daily_scores', 'name'],
+    ['weekly_scores', 'name'],
 ];
 
 /**

@@ -57,16 +57,35 @@ export async function fetchBoard(key, { fresh = false } = {}) {
   if (!res.ok) throw new Error(`Leaderboard request failed (${res.status})`);
   const data = await res.json();
   if (!Array.isArray(data)) throw new Error('Unexpected leaderboard response');
-  return data.map((raw) => {
-    const entry = board.normalize(raw || {});
-    const named = typeof entry.name === 'string' && entry.name.trim() !== '';
-    return {
-      ...entry,
-      name: named ? entry.name : 'Anonymous',
-      profile: named ? profileHref(entry.name) : null,
-      score: Number(entry.score) || 0,
-    };
-  });
+  return data.map((raw) => cleanEntry(board.normalize(raw || {})));
+}
+
+function cleanEntry(entry) {
+  const named = typeof entry.name === 'string' && entry.name.trim() !== '';
+  return {
+    ...entry,
+    name: named ? entry.name : 'Anonymous',
+    profile: named ? profileHref(entry.name) : null,
+    score: Number(entry.score) || 0,
+  };
+}
+
+// This week's boards for every game (utils/weekly.js, rules in scripts/weekly.js): { week, ends, settings,
+// boards: { [game]: { players, entries, last } } }. Weekly entries have no drawings, just names and scores.
+export async function fetchWeekly({ fresh = false, admin = false } = {}) {
+  const res = await fetch(`/api/leaderboard?action=weekly${admin ? '&admin=1' : fresh ? '&fresh=1' : ''}`);
+  if (!res.ok) {
+    const error = new Error(`Weekly boards request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
+  const data = await res.json();
+  if (!data || typeof data.boards !== 'object' || !data.settings) throw new Error('Unexpected weekly response');
+  for (const board of Object.values(data.boards)) {
+    board.entries = (Array.isArray(board.entries) ? board.entries : []).map((e) => cleanEntry({ ...e, name: e && e.name, score: e && e.score }));
+    board.players = Number(board.players) || 0;
+  }
+  return data;
 }
 
 const isMe = (entry) => session.loggedIn && session.username && entry.name === session.username;
@@ -112,16 +131,17 @@ function drawingThumb(entry, className) {
   }, h('img', { src: entry.drawing, alt: '', loading: 'lazy' }));
 }
 
-export function renderList(list, entries, { key, startRank = 1 }) {
+// `thumbs`: show Draw Trusty's drawings (the weekly boards have none).
+export function renderList(list, entries, { key, startRank = 1, thumbs = key === 'draw' }) {
   const board = BOARDS[key];
   list.replaceChildren(...entries.map((entry, i) => {
     const rank = startRank + i;
     return h('li', {
-      class: `board-row${key === 'draw' ? ' has-thumb' : ''}${isMe(entry) ? ' is-me' : ''}`,
+      class: `board-row${thumbs ? ' has-thumb' : ''}${isMe(entry) ? ' is-me' : ''}`,
       dataset: { rank },
     },
     h('span', { class: 'board-rank' }, rank),
-    key === 'draw' ? drawingThumb(entry, 'board-thumb') : null,
+    thumbs ? drawingThumb(entry, 'board-thumb') : null,
     key === 'clicks' ? h('span', { class: 'board-who' }, nameWithIcon(entry, 'board-name', key, rank), rankBadge(entry.score)) : nameTag(entry, 'board-name'),
     h('span', { class: 'board-score' }, board.format(entry.score)));
   }));

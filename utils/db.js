@@ -19,6 +19,9 @@ const INDEXES = {
     daily_scores: [[{ userId: 1, game: 1, day: 1 }, { unique: true }], { day: 1, rank: 1, savedAt: 1 }, { savedAt: -1 }],
     updates: [{ savedAt: -1 }],
     events: [{ savedAt: -1 }], // utils/events.js
+    // The weekly boards (utils/weekly.js): each player's best per board per week.
+    weekly_scores: [[{ game: 1, week: 1, userId: 1 }, { unique: true }], { game: 1, week: 1, score: -1, timestamp: 1 }, { userId: 1 }],
+    weekly_settings: [{ savedAt: -1 }],
 };
 
 let indexed = false;

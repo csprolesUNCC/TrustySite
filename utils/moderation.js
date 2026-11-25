@@ -135,9 +135,22 @@ async function moderate(req, res, admin) {
 
     const db = await connectToDatabase();
     const drawings = db.collection('draw_scores');
-    const done = body.do === 'remove'
-        ? (await drawings.deleteOne(ref)).deletedCount
-        : (await drawings.updateOne(ref, { $set: { reports: 0 } })).matchedCount;
+    let done;
+    if (body.do === 'remove') {
+        const result = await drawings.findOneAndDelete(ref, { projection: { userId: 1 } });
+        const removed = result && 'value' in result ? result.value : result;
+        done = Boolean(removed);
+        // The same drawing on this week's board (utils/weekly.js saves it with the drawing's timestamp) comes
+        // down too, so it can't win a prize.
+        if (removed) {
+            await db.collection('weekly_scores').updateMany(
+                { game: 'draw', userId: removed.userId, timestamp: ref.timestamp },
+                { $set: { removed: true, removedBy: admin.username } }
+            );
+        }
+    } else {
+        done = (await drawings.updateOne(ref, { $set: { reports: 0 } })).matchedCount;
+    }
     if (!done) {
         return res.status(409).json({ error: 'That drawing was replaced or taken down since the page loaded.' });
     }

@@ -34,6 +34,7 @@ import { ITEMS, cleanOrder, equippedOf, nameStyleOf, ownedSet, isFree, goalsOf, 
 import { cleanEvent, boostFor } from '../scripts/events.js';
 import { QUEST_REWARD, ALL_BONUS, factsOf, paidToday, questStatus, toClaim } from '../scripts/quests.js';
 import { GOLDEN, TOKEN, decide as goldenDecide, prize as goldenPrize } from '../scripts/golden.js';
+import { WEEKLY_BOARDS, DEFAULT_SETTINGS as WEEKLY_DEFAULTS, cleanSettings as cleanWeekly, weekOf, weekBefore, weekEnds, winnersOf } from '../scripts/weekly.js';
 import { randomBytes } from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -291,6 +292,45 @@ function goldenApi(req, body) {
   return [200, { added, clicks: account.clicks, left: GOLDEN.perDay - g.n }];
 }
 
+// The weekly boards (utils/weekly.js): sample boards, with last week paid out by the same rules, and prizes
+// that admins can change (forgotten on restart). Taking a score down drops it from the sample board.
+const WEEKLY_TOPS = { flappy: 40, draw: 88, trustis: 60000, snake: 90 };
+let weeklySettings = { ...WEEKLY_DEFAULTS, prizes: [...WEEKLY_DEFAULTS.prizes] };
+const weeklyDown = new Set();
+
+function weeklyApi(req, url, body) {
+  const me = loggedIn(req);
+  const week = weekOf();
+  if (req.method === 'POST') {
+    if (!me) return [401, { error: 'Authentication required' }];
+    if (body?.do === 'remove' && typeof body.id === 'string') {
+      if (weeklyDown.has(body.id)) return [409, { error: 'That score was already taken down, or its week is over.' }];
+      weeklyDown.add(body.id);
+      return [200, { ok: true }];
+    }
+    const settings = body?.do === 'settings' ? cleanWeekly(body) : null;
+    if (!settings) return [400, { error: 'Invalid request' }];
+    weeklySettings = settings;
+    return [200, { settings }];
+  }
+  if (url.searchParams.get('admin') && !me) return [401, { error: 'Authentication required' }];
+  const boards = {};
+  for (const game of WEEKLY_BOARDS) {
+    const top = WEEKLY_TOPS[game];
+    const entries = board('score', 'name', top)
+      .map((e, i) => ({ ...e, id: `${game}${i}`.padEnd(24, '0'), at: new Date().toISOString() }))
+      .filter((e) => !weeklyDown.has(e.id));
+    const winners = winnersOf(board('score', 'name', top).slice(2), 8, weeklySettings)
+      .map(({ name, score, place, prize }) => ({ name, score, place, prize }));
+    boards[game] = {
+      players: entries.length,
+      entries: url.searchParams.get('admin') ? entries : entries.map(({ name, score }) => ({ name, score })),
+      last: { week: weekBefore(week), players: 8, on: weeklySettings.on, minPlayers: weeklySettings.minPlayers, winners },
+    };
+  }
+  return [200, { week, ends: weekEnds(week), settings: weeklySettings, boards }];
+}
+
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
 // each game's daily cap) into the pretend bank. Saving a score is pretend: every game is a "new best".
 function gameReward(req, game, body) {
@@ -358,6 +398,7 @@ async function api(req, url, body) {
     if (action === 'shop') return shopApi(req, url, body);
     if (action === 'event') return eventApi(req, body);
     if (action === 'quests') return questsApi(req, body);
+    if (action === 'weekly') return weeklyApi(req, url, body);
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;

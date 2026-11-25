@@ -2,6 +2,7 @@ import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
 import { cachePublic } from '../utils/cache.js';
 import { rewardGame } from '../utils/game-rewards.js';
+import { recordWeekly } from '../utils/weekly.js';
 
 // Far past anything a person can reach (a pencil every ~1.5 seconds is ~2,400 an hour).
 const MAX_SCORE = 100000;
@@ -25,8 +26,9 @@ export default async (req, res) => {
                 return res.status(400).json({ error: 'Invalid score' });
             }
 
-            // Every finished game earns clicks (utils/game-rewards.js), best or not.
-            const reward = await rewardGame(user, 'flappy', score);
+            // Every finished game earns clicks (utils/game-rewards.js), best or not, and goes on this week's board
+            // (utils/weekly.js) if it's their best this week.
+            const [reward] = await Promise.all([rewardGame(user, 'flappy', score), recordWeekly(user, 'flappy', score)]);
             const existingScore = await collection.findOne({ userId: user.userId });
 
             if (existingScore && score <= existingScore.score) {

@@ -1693,8 +1693,21 @@ dialog.reader::backdrop { background: #1e1f23; }
 .podium-spot.is-me .podium-name { padding: 0 6px; background: linear-gradient(transparent 12%, rgba(255, 228, 92, .7) 12%, rgba(255, 228, 92, .7) 88%, transparent 88%); }
 .podium-spot.is-me .podium-name::after { content: " (you)"; font-weight: 500; color: var(--pencil); }
 
+/* This week's boards (scripts/weekly.js): the note, then a board per game, two to a row */
+.lb-panel.lb-weekly { grid-template-columns: minmax(0, 1fr); }
+.weekly-note { max-width: 760px; }
+.weekly-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 3vw, 32px); align-items: start; }
+.weekly-grid:empty { min-height: 960px; }
+.weekly-board .panel-title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+.weekly-board .board { min-height: 96px; }
+.weekly-players { font-family: var(--font-body); font-size: .9rem; font-weight: 600; color: var(--pencil); }
+.weekly-last { margin: 8px 12px 6px; padding-top: 8px; border-top: 1.5px dashed var(--rule); font-size: .95rem; color: var(--pencil); }
+.weekly-last strong { color: var(--ink); }
+
 @media (max-width: 860px) {
   .lb-panel { grid-template-columns: 1fr; }
+  .weekly-grid { grid-template-columns: minmax(0, 1fr); }
+  .weekly-grid:empty { min-height: 1880px; }
 }
 
 /* Drawing viewer */
