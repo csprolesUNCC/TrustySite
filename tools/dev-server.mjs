@@ -31,6 +31,10 @@ import { isHouse } from '../utils/house.js';
 import { GAME_KEYS, POST_REWARD, parseShare, puzzleOn, rankOf, flagsFor } from '../scripts/daily-games.js';
 import { puzzleWord } from '../scripts/trustle.js';
 import { ITEMS, cleanOrder, equippedOf, nameStyleOf, ownedSet, isFree, goalsOf, unlocked, needText } from '../scripts/shop.js';
+import { cleanEvent, boostFor } from '../scripts/events.js';
+import { QUEST_REWARD, ALL_BONUS, factsOf, paidToday, questStatus, toClaim } from '../scripts/quests.js';
+import { GOLDEN, TOKEN, decide as goldenDecide, prize as goldenPrize } from '../scripts/golden.js';
+import { randomBytes } from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The headers vercel.json sends with every file.
@@ -119,7 +123,7 @@ function dailyPost(name, text) {
     return [409, { error: 'You’ve already posted that one. The first result you post is the one that counts.' }];
   }
   const history = dailyScores.filter((s) => s.name === name && s.game === read.game).reverse().map((s) => s.result);
-  const entry = { id: String(++dailyId).padStart(24, '0'), name, ...read, rank: rankOf(read.game, read.result), flags: flagsFor(read.game, read.result, history), reports: 0 };
+  const entry = { id: String(++dailyId).padStart(24, '0'), name, ...read, rank: rankOf(read.game, read.result), flags: flagsFor(read.game, read.result, history), reports: 0, postedOn: dayOf() };
   dailyScores.push(entry);
   return [201, { day: entry.day, entry }];
 }
@@ -207,6 +211,86 @@ function shopApi(req, url, body) {
   return [200, { ...shopAnswer(account), bought: item.id }];
 }
 
+// Events and boosts (utils/events.js): whatever an admin saves here lasts until a restart. The cookie mockevent=on
+// shows a sample event that's on today (2x TV and Radio, Daily Quests and Golden Trusties), to look at the banner.
+let savedEvent = null;
+const plusDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+function eventFor(req) {
+  if (/(?:^|;\s*)mockevent=on(?:;|$)/.test(req.headers.cookie || '')) {
+    return { name: 'Pretend Weekend', text: 'This is tools/dev-server.mjs talking.', boosts: ['watch', 'quests', 'golden'], times: 2, from: dayOf(), to: plusDays(dayOf(), 2) };
+  }
+  return savedEvent;
+}
+const boostOf = (req, key) => boostFor(eventFor(req), key, dayOf());
+function eventApi(req, body) {
+  if (req.method === 'GET') {
+    const event = eventFor(req);
+    return [200, { event: event && event.to >= dayOf() ? event : null }];
+  }
+  if (!loggedIn(req)) return [401, { error: 'Authentication required' }];
+  if (body && body.do === 'end') { savedEvent = null; return [200, { event: null }]; }
+  const event = cleanEvent(body);
+  if (!event) return [400, { error: 'That’s not an event.' }];
+  savedEvent = event;
+  return [200, { event }];
+}
+
+// Daily Quests (utils/quests.js), worked out from the pretend bank's accounts the same way: the clicker's presses,
+// TV and Radio's day, the games' days, Trustle's paid puzzles and today's Daily Games posts.
+function questsApi(req, body) {
+  if (!loggedIn(req)) return [401, { error: 'Log in to do Daily Quests.' }];
+  const account = bank.account(accountOf(req));
+  const today = dayOf();
+  const times = boostOf(req, 'quests');
+  const look = () => {
+    const trustle = Boolean(trustlePaid.get(accountOf(req))?.[puzzleNumber()]);
+    const posts = dailyScores.filter((s) => s.name === mockUser(req) && s.postedOn === today).length;
+    const doc = { clicker: account.clicker, mediaDaily: account.watch, gameDaily: account.games };
+    const paid = paidToday(account.quests, today);
+    return { paid, status: questStatus(today, factsOf(doc, today, { trustle, posts }), paid) };
+  };
+  const answer = (status, paid, extra = {}) => ({ day: today, quests: status, reward: QUEST_REWARD * times, bonus: ALL_BONUS * times, bonusPaid: paid.bonus, times, ...extra });
+  const { paid, status } = look();
+  if (req.method === 'GET') return [200, answer(status, paid)];
+  if (!body || body.do !== 'claim') return [400, { error: 'That’s not something quests do.' }];
+  const owed = toClaim(status, paid);
+  if (!owed.added) return [200, answer(status, paid, { added: 0, clicks: account.clicks })];
+  const added = owed.added * times;
+  account.quests = { day: today, done: [...paid.done, ...owed.ids], bonus: paid.bonus || owed.bonus };
+  account.clicks += added;
+  const done = status.map((q) => ({ ...q, paid: q.paid || owed.ids.includes(q.id) }));
+  return [200, answer(done, account.quests, { added, clicks: account.clicks })];
+}
+
+// Golden Trusties (utils/golden.js) with the real rules. The cookie mockgolden=now makes one due whenever a page
+// asks, to look at him without waiting.
+function goldenApi(req, body) {
+  const account = bank.account(accountOf(req));
+  const today = dayOf();
+  const now = Date.now();
+  if (req.method === 'GET') {
+    const token = () => randomBytes(16).toString('hex');
+    let next = goldenDecide(account.golden, today, now, Math.random, token);
+    if (next.state) account.golden = next.state;
+    if (/(?:^|;\s*)mockgolden=now(?:;|$)/.test(req.headers.cookie || '') && !next.show && next.left) {
+      account.golden = { ...account.golden, next: now };
+      next = goldenDecide(account.golden, today, now, Math.random, token);
+      if (next.state) account.golden = next.state;
+    }
+    return [200, { show: next.show, wait: next.wait, left: next.left }];
+  }
+  const g = account.golden;
+  const token = body && body.token;
+  if (typeof token !== 'string' || !TOKEN.test(token)) return [400, { error: 'That’s not a Golden Trusty.' }];
+  if (!g || g.day !== today || g.token !== token || !(g.until > now) || g.n >= GOLDEN.perDay) return [410, { error: 'Too slow! That Golden Trusty got away.' }];
+  const added = goldenPrize(Math.random) * boostOf(req, 'golden');
+  delete g.token;
+  delete g.until;
+  g.n += 1;
+  account.clicks += added;
+  return [200, { added, clicks: account.clicks, left: GOLDEN.perDay - g.n }];
+}
+
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
 // each game's daily cap) into the pretend bank. Saving a score is pretend: every game is a "new best".
 function gameReward(req, game, body) {
@@ -218,8 +302,9 @@ function gameReward(req, game, body) {
   const counted = account.games[game]?.day === day ? account.games[game].clicks : 0;
   const added = payable(game, score, counted);
   account.games[game] = { day, clicks: counted + added };
-  account.clicks += added;
-  return [201, { message: 'Score saved!', reward: { added, clicks: account.clicks, today: counted + added, cap: GAME_REWARDS[game].daily } }];
+  const paid = added * boostOf(req, 'games');
+  account.clicks += paid;
+  return [201, { message: 'Score saved!', reward: { added: paid, clicks: account.clicks, today: counted + added, cap: GAME_REWARDS[game].daily } }];
 }
 
 async function api(req, url, body) {
@@ -232,6 +317,7 @@ async function api(req, url, body) {
   if (p === '/api/clicks') {
     if (!me) return [401, { error: 'Authentication required' }];
     const account = bank.account(accountOf(req));
+    if (action === 'golden') return goldenApi(req, body);
     if (req.method !== 'POST') {
       const shop = shopOf(account);
       return [200, { clicks: account.clicks, clicker: { day: dayOf(), n: pressesToday(account.clicker, dayOf()) }, daily: dailyStatus(account.daily, dayOf()), shop: { theme: equippedOf(shop).theme, style: nameStyleOf(shop) } }];
@@ -243,12 +329,13 @@ async function api(req, url, body) {
       const counted = account.watch?.day === day ? account.watch.clicks : 0;
       if (counted + clicks > cap) return [429, { error: 'That’s today’s clicks.', capped: true, day, today: counted, cap }];
       account.watch = { day, clicks: counted + clicks };
-      account.clicks += clicks;
+      const paid = clicks * boostOf(req, 'watch');
+      account.clicks += paid;
       if (action === 'tv' && typeof body?.channel === 'string') {
         account.tvSeconds ||= {};
         account.tvSeconds[body.channel] = (account.tvSeconds[body.channel] || 0) + WATCH_REWARD.every;
       }
-      return [200, { clicks: account.clicks, added: clicks, today: counted + clicks, cap }];
+      return [200, { clicks: account.clicks, added: paid, today: counted + clicks, cap }];
     }
     // A press, and the daily bonus with the day's first one, as api/clicks.js pays them: a click while Trusty's
     // fresh, one in CLICKER.every once he's tired, none once he's done for the day.
@@ -269,6 +356,8 @@ async function api(req, url, body) {
   }
   if (p === '/api/leaderboard') {
     if (action === 'shop') return shopApi(req, url, body);
+    if (action === 'event') return eventApi(req, body);
+    if (action === 'quests') return questsApi(req, body);
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
@@ -337,8 +426,9 @@ async function api(req, url, body) {
       if (status !== 201) return [status, answer];
       // Posting pays its clicks into the pretend bank, as utils/daily.js does.
       const account = bank.account(accountOf(req));
-      account.clicks += POST_REWARD;
-      return [status, { ...answer, reward: { added: POST_REWARD, clicks: account.clicks } }];
+      const added = POST_REWARD * boostOf(req, 'dailyGames');
+      account.clicks += added;
+      return [status, { ...answer, reward: { added, clicks: account.clicks } }];
     }
     if ((action === 'trustis' || action === 'snake') && req.method === 'POST') {
       return me ? gameReward(req, action, body) : [401, { error: 'Authentication required' }];

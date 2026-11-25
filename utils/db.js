@@ -18,6 +18,7 @@ const INDEXES = {
     // The Daily Games board (utils/daily.js): one result per player per game per day.
     daily_scores: [[{ userId: 1, game: 1, day: 1 }, { unique: true }], { day: 1, rank: 1, savedAt: 1 }, { savedAt: -1 }],
     updates: [{ savedAt: -1 }],
+    events: [{ savedAt: -1 }], // utils/events.js
 };
 
 let indexed = false;

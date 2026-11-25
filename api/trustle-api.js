@@ -1,5 +1,6 @@
 import { connectToDatabase } from '../utils/db.js';
 import { authenticateUser } from '../utils/auth.js';
+import { boost } from '../utils/events.js';
 import { MAX_GUESSES, puzzleNumber, cleanGame, outcome, mergeGame, sameGame, rewardFor, rewardable } from '../scripts/trustle.js';
 
 // Keeps a logged-in player's Trustle history so it follows them between devices, and pays the clicks a
@@ -31,9 +32,13 @@ async function payRewards(db, user, games) {
     let doc = await col.findOne({ userId: user.userId }, fields);
     let added = 0;
     const today = puzzleNumber();
+    // An event can multiply what a game pays (utils/events.js); only asked when there's something to pay.
+    let times = null;
     for (const key of Object.keys(games)) {
         const n = Number(key);
-        const clicks = rewardable(n, today) ? rewardFor(n, cleanGame(n, games[key])) : 0;
+        const base = rewardable(n, today) ? rewardFor(n, cleanGame(n, games[key])) : 0;
+        if (base && times === null) times = await boost('trustle');
+        const clicks = base * (times || 1);
         if (!clicks || ((doc && doc.trustleRewards) || []).some((r) => r.n === n)) continue;
         const paid = { n, clicks };
         const after = unwrap(await col.findOneAndUpdate(

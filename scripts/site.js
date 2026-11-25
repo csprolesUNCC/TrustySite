@@ -1,6 +1,7 @@
 // Shared chrome (header/footer), session state, and small DOM helpers for every page.
 import { rankFor, nextRank, rankProgress, dailyBonus, dayOf, CLICKER, pressPays, pressesPaid, pressesToday, tiredness } from '/scripts/milestones.js';
 import { DEFAULTS as SHOP_DEFAULTS, itemById, cleanStyle, LETTER_FONTS, BY_LETTER } from '/scripts/shop.js';
+import { cleanEvent, isOn, boostLine, whenLine } from '/scripts/events.js';
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
@@ -733,9 +734,68 @@ class TrustyFooter extends HTMLElement {
   }
 }
 
+/* ---------- Events and boosts (scripts/events.js) ---------- */
+
+// While an admin's event is on (or coming up), a banner at the top of every page says what it boosts and until
+// when. The page keeps the last event it got (trusty:event) and shows it at once, so the banner only waits for the
+// API (utils/events.js, CDN-cached a minute; admins skip the CDN) on a first visit.
+const LS_EVENT = 'trusty:event';
+
+function eventBanner(event) {
+  const today = dayOf();
+  if (!event || event.to < today) return null;
+  const on = isOn(event, today);
+  return h('div', { class: 'event-banner', dataset: { state: on ? 'on' : 'soon' } },
+    h('p', { class: 'container' },
+      h('span', { 'aria-hidden': 'true' }, on ? '🎉 ' : '📅 '),
+      on ? null : 'Coming up: ',
+      h('strong', null, event.name), ': ',
+      `${boostLine(event)}, ${whenLine(event, today)}.`,
+      event.text ? ` ${event.text}` : null));
+}
+
+function showEvent(event) {
+  const main = document.getElementById('main');
+  if (!main) return;
+  main.querySelector(':scope > .event-banner')?.remove();
+  const banner = eventBanner(event);
+  if (banner) main.prepend(banner);
+}
+
+// For the admin panel after starting or ending one: the banner and the saved copy change right away.
+export function eventChanged(raw) {
+  const event = cleanEvent(raw);
+  if (event) lsSet(LS_EVENT, JSON.stringify(event)); else lsDel(LS_EVENT);
+  showEvent(event);
+}
+
+function setupEvent() {
+  let saved = null;
+  try { saved = cleanEvent(JSON.parse(lsGet(LS_EVENT))); } catch { /* ask the API */ }
+  showEvent(saved);
+  fetch(`/api/leaderboard?action=event${session.isAdmin ? '&fresh=1' : ''}`)
+    .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+    .then((data) => eventChanged(data && data.event))
+    .catch(() => { /* keep showing the saved one */ });
+}
+
+/* ---------- Golden Trusties (scripts/golden-trusty.js) ---------- */
+
+// Logged-in players get them everywhere but the games (one popping up mid-game would cost someone their run) and
+// the account and admin pages.
+const NO_GOLDEN = /^\/pages\/(games\/|auth\/|admin)/;
+function loadGolden() {
+  if (!session.loggedIn || NO_GOLDEN.test(location.pathname)) return;
+  const later = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+  later(() => import('./golden-trusty.js').then(({ startGolden }) => startGolden()).catch(() => {}));
+}
+
 customElements.define('trusty-header', TrustyHeader);
 customElements.define('trusty-footer', TrustyFooter);
 document.documentElement.dataset.auth = session.loggedIn ? 'in' : 'out';
 // Every page's head puts the theme on before it draws; this covers a page without that line.
 if (session.loggedIn) applyTheme(lsGet(LS_THEME));
 else applyTheme(null);
+setupEvent();
+sessionReady.then(({ loggedIn }) => { if (loggedIn) loadGolden(); });
+document.addEventListener('trusty:session', (e) => { if (e.detail.loggedIn) loadGolden(); });

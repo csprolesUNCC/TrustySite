@@ -1,11 +1,14 @@
 import { connectToDatabase } from './db.js';
 import { GAME_REWARDS, payable } from '../scripts/game-rewards.js';
 import { dayOf } from '../scripts/milestones.js';
+import { boost } from './events.js';
 
 // Pays the clicks for a finished Flappy Trusty, Trustis or Trusty Snake game (rules in scripts/game-rewards.js),
 // called by each game's score POST once it has checked the score. What each game has paid today is counted in
 // `gameDaily.<game>` ({ day, clicks }) on the account's `click_game` document, and the update only goes in if
 // that count is still what was read, so two tabs or a retried request can't go past the cap.
+// An event (utils/events.js) can multiply what's paid; `gameDaily` still counts plain clicks, so the cap takes as
+// much playing as ever (and Daily Quests, utils/quests.js, read the day's scores from it).
 // Returns { added, clicks, today, cap }; `added` is 0 when there's nothing to pay or today's cap is reached.
 
 const TRIES = 3;
@@ -16,6 +19,7 @@ export async function payGame(user, game, score) {
     const today = dayOf(new Date());
     const field = `gameDaily.${game}`;
     const collection = (await connectToDatabase()).collection('click_game');
+    const times = await boost('games');
 
     for (let tries = 0; tries < TRIES; tries++) {
         const doc = await collection.findOne({ userId: user.userId }, { projection: { clicks: 1, [field]: 1 } });
@@ -23,15 +27,16 @@ export async function payGame(user, game, score) {
         const sofar = counted && counted.day === today ? counted.clicks : 0;
         const added = payable(game, score, sofar);
         if (!added) return { added: 0, clicks: doc ? doc.clicks : 0, today: sofar, cap };
+        const pays = added * times;
 
         if (!doc) {
             // Their first clicks ever.
             const inserted = await collection.updateOne(
                 { userId: user.userId },
-                { $setOnInsert: { clicks: added, username: user.username, recent: [], gameDaily: { [game]: { day: today, clicks: added } } } },
+                { $setOnInsert: { clicks: pays, username: user.username, recent: [], gameDaily: { [game]: { day: today, clicks: added } } } },
                 { upsert: true }
             );
-            if (inserted.upsertedCount) return { added, clicks: added, today: added, cap };
+            if (inserted.upsertedCount) return { added: pays, clicks: pays, today: added, cap };
             continue;
         }
 
@@ -40,11 +45,11 @@ export async function payGame(user, game, score) {
             : { [field]: { $exists: false } };
         const result = await collection.findOneAndUpdate(
             { userId: user.userId, ...unchanged },
-            { $inc: { clicks: added }, $set: { username: user.username, [field]: { day: today, clicks: sofar + added } } },
+            { $inc: { clicks: pays }, $set: { username: user.username, [field]: { day: today, clicks: sofar + added } } },
             { returnDocument: 'after', projection: { clicks: 1 } }
         );
         const paid = result && 'value' in result ? result.value : result;
-        if (paid) return { added, clicks: paid.clicks, today: sofar + added, cap };
+        if (paid) return { added: pays, clicks: paid.clicks, today: sofar + added, cap };
         // Another request paid this game in between: read it again.
     }
     return { added: 0, today: null, cap };

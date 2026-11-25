@@ -45,7 +45,7 @@
             <header class="page-head container">
                 <p class="eyebrow">Admins only</p>
                 <h1>Admin Panel</h1>
-                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, and take down anything that doesn’t belong on the site.</p>
+                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, and start events that boost the site’s rewards.</p>
             </header>
 
             <section class="section-tight container" aria-label="Admin tools">
@@ -53,6 +53,7 @@
                     <button class="tab" role="tab" type="button" id="tab-drawings" aria-controls="panel-drawings" aria-selected="true" data-tab="drawings">Drawings</button>
                     <button class="tab" role="tab" type="button" id="tab-users" aria-controls="panel-users" aria-selected="false" tabindex="-1" data-tab="users">Usernames</button>
                     <button class="tab" role="tab" type="button" id="tab-daily" aria-controls="panel-daily" aria-selected="false" tabindex="-1" data-tab="daily">Daily Games</button>
+                    <button class="tab" role="tab" type="button" id="tab-events" aria-controls="panel-events" aria-selected="false" tabindex="-1" data-tab="events">Events</button>
                 </div>
 
                 <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
@@ -80,6 +81,47 @@
                     </div>
                     <ul class="admin-flagged admin-daily" id="daily" aria-label="Daily Games results that were flagged or reported, newest first"></ul>
                 </div>
+
+                <div role="tabpanel" id="panel-events" aria-labelledby="tab-events" data-tab="events" hidden>
+                    <div class="admin-head">
+                        <p class="admin-summary" id="events-summary" role="status"></p>
+                        <button class="btn btn-danger btn-sm" type="button" id="event-end" hidden>End it now</button>
+                    </div>
+                    <form class="panel admin-event-form" id="event-form" novalidate>
+                        <h2 class="panel-title">Start an event</h2>
+                        <p class="muted">An event multiplies what the rewards you pick pay (never their daily caps, so reaching a cap takes as long as ever), from midnight Eastern on its first day to midnight after its last. Everyone sees a banner at the top of every page while it’s on or coming up. Starting one replaces any other.</p>
+                        <div class="field">
+                            <label for="event-name">Name</label>
+                            <input type="text" id="event-name" maxlength="60" required placeholder="Thanksgiving Feast">
+                        </div>
+                        <div class="field">
+                            <label for="event-text">Message (optional)</label>
+                            <textarea id="event-text" rows="2" maxlength="200" placeholder="Happy Thanksgiving from Trusty!"></textarea>
+                        </div>
+                        <fieldset class="field admin-event-boosts">
+                            <legend>What it boosts</legend>
+                            <div id="event-boosts"></div>
+                        </fieldset>
+                        <div class="admin-event-row">
+                            <div class="field">
+                                <label for="event-times">By</label>
+                                <select id="event-times"></select>
+                            </div>
+                            <div class="field">
+                                <label for="event-from">First day</label>
+                                <input type="date" id="event-from" required>
+                            </div>
+                            <div class="field">
+                                <label for="event-to">Last day</label>
+                                <input type="date" id="event-to" required>
+                            </div>
+                        </div>
+                        <div class="btn-row">
+                            <button class="btn" type="submit" id="event-save">Start event</button>
+                        </div>
+                        <p class="form-status" id="event-status" role="status"></p>
+                    </form>
+                </div>
             </section>
         </div>
     </main>
@@ -87,9 +129,11 @@
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref } from '/scripts/site.js';
+        import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref, eventChanged } from '/scripts/site.js';
         import { openDrawing } from '/scripts/leaderboard.js';
         import { BOARD_NAMES, describe } from '/scripts/daily-games.js';
+        import { BOOSTS, BOOST_KEYS, TIMES, MAX_DAYS, cleanEvent, boostLine, whenLine, isOn, daysIn } from '/scripts/events.js';
+        import { dayOf } from '/scripts/milestones.js';
 
         // Everything here comes from utils/moderation.js (?action=admin on api/leaderboard.js), which checks
         // that you're an admin on every request. Names come from other users, so they're only ever set as text.
@@ -360,11 +404,116 @@
             }
         }
 
+        /* ---------- Events ---------- */
+
+        // Events and boosts (scripts/events.js), from utils/events.js (?action=event on api/leaderboard.js, which
+        // checks you're an admin when you save). Loaded past the CDN, so a change shows here at once.
+        const EVENT_API = '/api/leaderboard?action=event';
+        const plusDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+        let currentEvent = null;
+
+        $('event-boosts').replaceChildren(...BOOST_KEYS.map((key) => h('label', { class: 'admin-check' },
+            h('input', { type: 'checkbox', name: 'boost', value: key }), ` ${BOOSTS[key][0].toUpperCase()}${BOOSTS[key].slice(1)}`)));
+        $('event-times').replaceChildren(...TIMES.map((n) => h('option', { value: n }, `${n}x`)));
+        $('event-from').value = dayOf();
+        $('event-to').value = plusDays(dayOf(), 2);
+
+        function summarizeEvent() {
+            const today = dayOf();
+            const e = currentEvent;
+            $('events-summary').textContent = e
+                ? `${isOn(e, today) ? 'On now' : 'Coming up'}: “${e.name}”, ${boostLine(e)}, ${whenLine(e, today)}.`
+                : 'No event on or coming up. Rewards pay their usual amounts.';
+            $('event-end').hidden = !e;
+        }
+
+        async function eventRequest(body) {
+            const res = await fetch(EVENT_API + (body ? '' : '&fresh=1'), body ? {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            } : undefined);
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) { sessionExpired(); needLogin(); }
+            else if (res.status === 403) notAdmin();
+            return { res, data, denied: res.status === 401 || res.status === 403 };
+        }
+
+        async function loadEvents() {
+            $('events-summary').textContent = 'Loading the event…';
+            try {
+                const { res, data, denied } = await eventRequest();
+                if (denied) return;
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                currentEvent = cleanEvent(data.event);
+                summarizeEvent();
+            } catch {
+                loaded.delete('events');
+                $('events-summary').replaceChildren('Couldn’t load the event. ', retryButton('events'));
+            }
+        }
+
+        $('event-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = $('event-status');
+            const event = {
+                name: $('event-name').value,
+                text: $('event-text').value,
+                boosts: [...document.querySelectorAll('#event-boosts input:checked')].map((box) => box.value),
+                times: Number($('event-times').value),
+                from: $('event-from').value,
+                to: $('event-to').value,
+            };
+            status.dataset.tone = 'error';
+            if (!event.name.trim()) { status.textContent = 'Give the event a name.'; return; }
+            if (!event.boosts.length) { status.textContent = 'Pick at least one thing for it to boost.'; return; }
+            if (!event.from || !event.to || event.to < event.from) { status.textContent = 'The last day can’t be before the first.'; return; }
+            if (daysIn(event.from, event.to) > MAX_DAYS) { status.textContent = `An event can run ${MAX_DAYS} days at most.`; return; }
+            if (event.to < dayOf()) { status.textContent = 'That event would already be over.'; return; }
+            if (currentEvent && !confirm(`Replace “${currentEvent.name}” with this event?`)) return;
+            $('event-save').disabled = true;
+            status.textContent = 'Saving…';
+            delete status.dataset.tone;
+            try {
+                const { res, data, denied } = await eventRequest(event);
+                if (denied) return;
+                if (!res.ok) throw new Error(data.error || 'Couldn’t save the event.');
+                currentEvent = cleanEvent(data.event);
+                eventChanged(currentEvent);
+                summarizeEvent();
+                status.dataset.tone = 'success';
+                status.textContent = 'Event saved. Other visitors see it within a minute.';
+            } catch (error) {
+                status.dataset.tone = 'error';
+                status.textContent = error.message;
+            } finally {
+                $('event-save').disabled = false;
+            }
+        });
+
+        $('event-end').addEventListener('click', async () => {
+            if (!currentEvent || !confirm(`End “${currentEvent.name}” now? Rewards go back to their usual amounts.`)) return;
+            $('event-end').disabled = true;
+            try {
+                const { res, denied } = await eventRequest({ do: 'end' });
+                if (denied) return;
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                currentEvent = null;
+                eventChanged(null);
+                summarizeEvent();
+                toast('Event ended.', 'success');
+            } catch {
+                toast('Couldn’t end the event. Try again?', 'error');
+            } finally {
+                $('event-end').disabled = false;
+            }
+        });
+
         /* ---------- Tabs ---------- */
 
         const tabs = [...document.querySelectorAll('[role="tab"]')];
         const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
-        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily };
+        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily, events: loadEvents };
         const loaded = new Set();
 
         function load(key) {
