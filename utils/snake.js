@@ -2,6 +2,7 @@ import { connectToDatabase } from './db.js';
 import { authenticateUser } from './auth.js';
 import { cachePublic } from './cache.js';
 import { rewardGame } from './game-rewards.js';
+import { recordWeekly } from './weekly.js';
 
 // The Trusty Snake leaderboard (pages/games/snake.html), served from api/leaderboard.js as ?action=snake so it
 // doesn't take up another Vercel function. `snake_scores` keeps each player's best game.
@@ -51,8 +52,9 @@ async function saveScore(req, res) {
     const db = await connectToDatabase();
     const collection = db.collection('snake_scores');
     const saved = { ...game, name: user.username, timestamp: new Date() };
-    // Every finished game earns clicks (utils/game-rewards.js), best or not.
-    const reward = await rewardGame(user, 'snake', game.score);
+    // Every finished game earns clicks (utils/game-rewards.js), best or not, and goes on this week's board
+    // (utils/weekly.js) if it's their best this week.
+    const [reward] = await Promise.all([rewardGame(user, 'snake', game.score), recordWeekly(user, 'snake', game.score)]);
 
     // Only ever raise a player's best: replace a lower one, or save their first game.
     const raised = await collection.updateOne({ userId: user.userId, score: { $lt: game.score } }, { $set: saved });

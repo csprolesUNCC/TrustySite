@@ -290,7 +290,6 @@ const NAV = [
     { href: '/pages/games/draw.html', label: 'Draw Trusty' },
     { href: '/pages/games/snake.html', label: 'Trusty Snake' },
     { href: '/pages/daily.html', label: 'Daily Games' },
-    { href: '/pages/leaderboard.html', label: 'Leaderboards' },
   ] },
   { href: '/pages/casino.html', label: 'Casino', items: [
     { href: '/pages/games/casino.html', label: 'Trusty Blackjack' },
@@ -305,7 +304,7 @@ const NAV = [
     { href: '/pages/tv.html', label: 'Trusty TV' },
     { href: '/pages/radio.html', label: 'Trusty Radio' },
   ] },
-  { href: '/pages/shop.html', label: 'Item Shop' },
+  { href: '/pages/leaderboard.html', label: 'Leaderboards' },
   { href: '/pages/about.html', label: 'About' },
 ];
 

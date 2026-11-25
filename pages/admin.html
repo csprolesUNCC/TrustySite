@@ -45,7 +45,7 @@
             <header class="page-head container">
                 <p class="eyebrow">Admins only</p>
                 <h1>Admin Panel</h1>
-                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, and start events that boost the site’s rewards.</p>
+                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, start events that boost the site’s rewards, and set what the weekly leaderboards pay.</p>
             </header>
 
             <section class="section-tight container" aria-label="Admin tools">
@@ -54,6 +54,7 @@
                     <button class="tab" role="tab" type="button" id="tab-users" aria-controls="panel-users" aria-selected="false" tabindex="-1" data-tab="users">Usernames</button>
                     <button class="tab" role="tab" type="button" id="tab-daily" aria-controls="panel-daily" aria-selected="false" tabindex="-1" data-tab="daily">Daily Games</button>
                     <button class="tab" role="tab" type="button" id="tab-events" aria-controls="panel-events" aria-selected="false" tabindex="-1" data-tab="events">Events</button>
+                    <button class="tab" role="tab" type="button" id="tab-weekly" aria-controls="panel-weekly" aria-selected="false" tabindex="-1" data-tab="weekly">Weekly</button>
                 </div>
 
                 <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
@@ -122,6 +123,40 @@
                         <p class="form-status" id="event-status" role="status"></p>
                     </form>
                 </div>
+
+                <div role="tabpanel" id="panel-weekly" aria-labelledby="tab-weekly" data-tab="weekly" hidden>
+                    <div class="admin-head">
+                        <p class="admin-summary" id="weekly-summary" role="status"></p>
+                    </div>
+                    <form class="panel admin-event-form" id="weekly-form" novalidate>
+                        <h2 class="panel-title">Weekly prizes</h2>
+                        <p class="muted">When a week ends (midnight Eastern on Sunday night), the top 3 on each game’s weekly board (Flappy Trusty, Draw Trusty, Trustis and Trusty Snake) are paid these clicks, if enough people played it that week. A change counts for the week that’s on now. Flappy, Trustis and Snake scores come from the browser and could be made up, so take a fake one down below before the week ends.</p>
+                        <label class="admin-check"><input type="checkbox" id="weekly-on"> Pay weekly prizes</label>
+                        <div class="admin-event-row">
+                            <div class="field">
+                                <label for="weekly-prize-1">1st place</label>
+                                <input type="number" id="weekly-prize-1" min="0" step="1" inputmode="numeric" required>
+                            </div>
+                            <div class="field">
+                                <label for="weekly-prize-2">2nd place</label>
+                                <input type="number" id="weekly-prize-2" min="0" step="1" inputmode="numeric" required>
+                            </div>
+                            <div class="field">
+                                <label for="weekly-prize-3">3rd place</label>
+                                <input type="number" id="weekly-prize-3" min="0" step="1" inputmode="numeric" required>
+                            </div>
+                            <div class="field">
+                                <label for="weekly-min">Fewest players</label>
+                                <input type="number" id="weekly-min" min="1" step="1" inputmode="numeric" required>
+                            </div>
+                        </div>
+                        <div class="btn-row">
+                            <button class="btn" type="submit" id="weekly-save">Save prizes</button>
+                        </div>
+                        <p class="form-status" id="weekly-status" role="status"></p>
+                    </form>
+                    <div class="admin-weekly" id="weekly-boards"></div>
+                </div>
             </section>
         </div>
     </main>
@@ -130,10 +165,11 @@
 
     <script type="module">
         import { h, fmt, toast, sessionReady, sessionExpired, loginHref, profileHref, eventChanged } from '/scripts/site.js';
-        import { openDrawing } from '/scripts/leaderboard.js';
+        import { openDrawing, BOARDS, fetchWeekly } from '/scripts/leaderboard.js';
         import { BOARD_NAMES, describe } from '/scripts/daily-games.js';
         import { BOOSTS, BOOST_KEYS, TIMES, MAX_DAYS, cleanEvent, boostLine, whenLine, isOn, daysIn } from '/scripts/events.js';
         import { dayOf } from '/scripts/milestones.js';
+        import { WEEKLY_BOARDS, PLACES, MAX_PRIZE, MAX_MIN_PLAYERS, cleanSettings, prizeLine, weekLine, dateLine } from '/scripts/weekly.js';
 
         // Everything here comes from utils/moderation.js (?action=admin on api/leaderboard.js), which checks
         // that you're an admin on every request. Names come from other users, so they're only ever set as text.
@@ -509,11 +545,131 @@
             }
         });
 
+        /* ---------- Weekly ---------- */
+
+        // The weekly boards and their prizes (scripts/weekly.js), from utils/weekly.js (?action=weekly on
+        // api/leaderboard.js, which checks you're an admin for &admin=1 and every POST).
+        const WEEKLY_API = '/api/leaderboard?action=weekly';
+        const prizeInputs = Array.from({ length: PLACES }, (_, i) => $(`weekly-prize-${i + 1}`));
+        prizeInputs.forEach((input) => { input.max = MAX_PRIZE; });
+        $('weekly-min').max = MAX_MIN_PLAYERS;
+        let weeklySettings = null;
+
+        function showWeeklySettings(settings) {
+            weeklySettings = settings;
+            $('weekly-on').checked = settings.on;
+            prizeInputs.forEach((input, i) => { input.value = settings.prizes[i]; });
+            $('weekly-min').value = settings.minPlayers;
+        }
+
+        function weeklyLine(data) {
+            const s = data.settings;
+            return `This week is ${weekLine(data.week)} and ends at midnight after ${dateLine(data.ends)}. ${s.on
+                ? `Each board pays its top ${PLACES} ${prizeLine(s)}, with at least ${plural(s.minPlayers, 'player')}.`
+                : 'Weekly prizes are off.'}`;
+        }
+
+        function weeklyItem(game, entry, place) {
+            const item = h('li', null,
+                nameLink(entry.name, 'admin-user-name'),
+                h('span', null, `#${place}: ${BOARDS[game].format(entry.score)}`),
+                h('span', { class: 'admin-user-joined' }, formatDate(entry.at)),
+                h('span', { class: 'btn-row' },
+                    h('button', { type: 'button', class: 'btn btn-danger btn-sm', onclick: () => removeWeekly(game, entry, item) }, 'Take down')));
+            return item;
+        }
+
+        function weeklySection(game, board) {
+            const last = board.last;
+            const lastText = !last ? null
+                : last.winners.length ? `Last week (${weekLine(last.week)}) paid ${last.winners.map((w) => `${w.name} ${fmt(w.prize)}`).join(', ')}.`
+                : `Last week (${weekLine(last.week)}) paid nobody (${plural(last.players, 'player')}${last.on === false ? ', prizes off' : ''}).`;
+            return h('section', { class: 'admin-users', 'aria-labelledby': `weekly-title-${game}` },
+                h('h2', { class: 'admin-subhead', id: `weekly-title-${game}` }, `${BOARDS[game].label} (${plural(board.players, 'player')})`),
+                lastText ? h('p', { class: 'muted' }, lastText) : null,
+                board.entries.length
+                    ? h('ul', { class: 'admin-flagged' }, board.entries.map((entry, i) => weeklyItem(game, entry, i + 1)))
+                    : h('p', { class: 'muted' }, 'Nobody has played this week yet.'));
+        }
+
+        async function loadWeekly() {
+            const summary = $('weekly-summary');
+            summary.textContent = 'Loading the weekly boards…';
+            try {
+                const data = await fetchWeekly({ admin: true });
+                showWeeklySettings(cleanSettings(data.settings));
+                summary.textContent = weeklyLine(data);
+                $('weekly-boards').replaceChildren(...WEEKLY_BOARDS.map((game) => weeklySection(game, data.boards[game] || { players: 0, entries: [], last: null })));
+            } catch (error) {
+                if (error.status === 401) { sessionExpired(); return needLogin(); }
+                if (error.status === 403) return notAdmin();
+                loaded.delete('weekly');
+                $('weekly-boards').replaceChildren();
+                summary.replaceChildren('Couldn’t load the weekly boards. ', retryButton('weekly'));
+            }
+        }
+
+        async function weeklyPost(body) {
+            const res = await fetch(WEEKLY_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) { sessionExpired(); needLogin(); }
+            else if (res.status === 403) notAdmin();
+            return { res, data, denied: res.status === 401 || res.status === 403 };
+        }
+
+        async function removeWeekly(game, entry, item) {
+            if (!confirm(`Take ${entry.name}’s ${BOARDS[game].format(entry.score)} off this week’s ${BOARDS[game].label} board? They can’t get back on it until next week. Their all-time best stays.`)) return;
+            const buttons = [...item.querySelectorAll('button')];
+            buttons.forEach((b) => { b.disabled = true; });
+            try {
+                const { res, data, denied } = await weeklyPost({ do: 'remove', id: entry.id });
+                if (denied) return;
+                if (!res.ok && res.status !== 409) throw new Error(data.error);
+                toast(res.status === 409 ? (data.error || 'Already taken down.') : 'Score taken down.', 'success');
+                loadWeekly();
+            } catch {
+                buttons.forEach((b) => { b.disabled = false; });
+                toast('Couldn’t take that score down. Try again?', 'error');
+            }
+        }
+
+        $('weekly-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = $('weekly-status');
+            const settings = cleanSettings({
+                on: $('weekly-on').checked,
+                prizes: prizeInputs.map((input) => Number(input.value)),
+                minPlayers: Number($('weekly-min').value),
+            });
+            status.dataset.tone = 'error';
+            if (!settings) {
+                status.textContent = `Each place pays a whole number of clicks from 0 to ${fmt(MAX_PRIZE)}, and it takes from 1 to ${fmt(MAX_MIN_PLAYERS)} players.`;
+                return;
+            }
+            $('weekly-save').disabled = true;
+            status.textContent = 'Saving…';
+            delete status.dataset.tone;
+            try {
+                const { res, data, denied } = await weeklyPost({ do: 'settings', ...settings });
+                if (denied) return;
+                if (!res.ok) throw new Error(data.error || 'Couldn’t save the prizes.');
+                showWeeklySettings(cleanSettings(data.settings) || settings);
+                status.dataset.tone = 'success';
+                status.textContent = 'Saved. The leaderboard page shows the new prizes within a minute.';
+                loadWeekly();
+            } catch (error) {
+                status.dataset.tone = 'error';
+                status.textContent = error.message;
+            } finally {
+                $('weekly-save').disabled = false;
+            }
+        });
+
         /* ---------- Tabs ---------- */
 
         const tabs = [...document.querySelectorAll('[role="tab"]')];
         const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
-        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily, events: loadEvents };
+        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily, events: loadEvents, weekly: loadWeekly };
         const loaded = new Set();
 
         function load(key) {

@@ -116,3 +116,10 @@ a.admin-user-name:hover { color: var(--blue); }
 .admin-check input { width: 18px; height: 18px; accent-color: var(--blue); }
 .admin-event-row { display: flex; flex-wrap: wrap; gap: 0 16px; }
 .admin-event-row .field { flex: 1 1 140px; }
+
+/* Weekly tab (scripts/weekly.js): this week's boards, plain cards rather than flagged pink ones */
+#weekly-form { margin-bottom: clamp(28px, 4vw, 44px); }
+#weekly-form .admin-check { margin: 0 0 14px; font-weight: 700; }
+.admin-weekly .admin-flagged li { background: var(--card); border-color: var(--ink); }
+.admin-weekly .btn-row { margin-left: auto; gap: 8px; }
+.admin-weekly .admin-user-joined { margin-left: 0; }

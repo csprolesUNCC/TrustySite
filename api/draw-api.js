@@ -3,6 +3,7 @@ import { authenticateUser } from '../utils/auth.js';
 import { cachePublic } from '../utils/cache.js';
 import { decodePngDataUrl } from '../utils/png.js';
 import { reportDrawing } from '../utils/moderation.js';
+import { recordWeekly } from '../utils/weekly.js';
 import { gradeDrawing, GRADER_VERSION } from '../scripts/draw-grader.js';
 
 // Drawings are shown to every visitor, so only accept a real PNG data URL of sane size.
@@ -70,6 +71,11 @@ export default async (req, res) => {
                 return res.status(400).json({ error: 'Invalid image' });
             }
 
+            // Every drawing goes on this week's board (utils/weekly.js) if it's the player's best this week. It
+            // shares its timestamp with the saved drawing, so taking that drawing down takes this down too.
+            const timestamp = new Date();
+            await recordWeekly(user, 'draw', graded, timestamp);
+
             const existingScore = await collection.findOne(
                 { userId: user.userId, ...CURRENT },
                 { sort: { score: -1 } }
@@ -89,7 +95,7 @@ export default async (req, res) => {
                         score: graded,
                         drawing: image,
                         grader: GRADER_VERSION,
-                        timestamp: new Date()
+                        timestamp
                     },
                     $unset: { reports: '', reportedBy: '' }
                 },
