@@ -31,7 +31,9 @@ export function amountProblem(amount) {
 }
 
 // Letters, numbers and everyday punctuation stay; control and invisible characters go, and runs of spaces become one.
-const INVISIBLE = /[\u0000-\u001f\u007f-\u009f­​-‏ -‮⁠-⁯﻿]/g;
+// Keep them as escapes, never the characters typed in: U+2028 and U+2029 are line breaks to JavaScript, so a literal
+// one ends the regex early and this module (and every API that imports it) fails to load.
+const INVISIBLE = /[\u{0}-\u{1f}\u{7f}-\u{9f}\u{ad}\u{200b}-\u{200f}\u{2028}-\u{202e}\u{2060}-\u{206f}\u{feff}]/gu;
 export const cleanNote = (note) => (typeof note === 'string' ? note.replace(INVISIBLE, ' ').replace(/\s+/g, ' ').trim() : '');
 
 /**
