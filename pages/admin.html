@@ -45,7 +45,7 @@
             <header class="page-head container">
                 <p class="eyebrow">Admins only</p>
                 <h1>Admin Panel</h1>
-                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, start events that boost the site’s rewards, and set what the weekly leaderboards pay.</p>
+                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, start events that boost the site’s rewards, set what the weekly leaderboards pay, and see who’s sending big Trusty Venmo payments.</p>
             </header>
 
             <section class="section-tight container" aria-label="Admin tools">
@@ -55,6 +55,7 @@
                     <button class="tab" role="tab" type="button" id="tab-daily" aria-controls="panel-daily" aria-selected="false" tabindex="-1" data-tab="daily">Daily Games</button>
                     <button class="tab" role="tab" type="button" id="tab-events" aria-controls="panel-events" aria-selected="false" tabindex="-1" data-tab="events">Events</button>
                     <button class="tab" role="tab" type="button" id="tab-weekly" aria-controls="panel-weekly" aria-selected="false" tabindex="-1" data-tab="weekly">Weekly</button>
+                    <button class="tab" role="tab" type="button" id="tab-payments" aria-controls="panel-payments" aria-selected="false" tabindex="-1" data-tab="payments">Payments</button>
                 </div>
 
                 <div role="tabpanel" id="panel-drawings" aria-labelledby="tab-drawings" data-tab="drawings">
@@ -157,6 +158,13 @@
                     </form>
                     <div class="admin-weekly" id="weekly-boards"></div>
                 </div>
+
+                <div role="tabpanel" id="panel-payments" aria-labelledby="tab-payments" data-tab="payments" hidden>
+                    <div class="admin-head">
+                        <p class="admin-summary" id="payments-summary" role="status"></p>
+                    </div>
+                    <ul class="admin-flagged" id="payments" aria-label="Big Trusty Venmo payments, newest first"></ul>
+                </div>
             </section>
         </div>
     </main>
@@ -170,6 +178,7 @@
         import { BOOSTS, BOOST_KEYS, TIMES, MAX_DAYS, cleanEvent, boostLine, whenLine, isOn, daysIn } from '/scripts/events.js';
         import { dayOf } from '/scripts/milestones.js';
         import { WEEKLY_BOARDS, PLACES, MAX_PRIZE, MAX_MIN_PLAYERS, cleanSettings, prizeLine, weekLine, dateLine } from '/scripts/weekly.js';
+        import { TRANSFER } from '/scripts/transfer.js';
 
         // Everything here comes from utils/moderation.js (?action=admin on api/leaderboard.js), which checks
         // that you're an admin on every request. Names come from other users, so they're only ever set as text.
@@ -665,11 +674,41 @@
             }
         });
 
+        /* ---------- Payments ---------- */
+
+        // Trusty Venmo payments of TRANSFER.review clicks or more (utils/transfer.js), newest first. They can't be
+        // undone from here: this is for seeing who's passing clicks to whom.
+        const STATUS_NAMES = { pending: 'didn’t finish', refunded: 'refunded' };
+
+        async function loadPayments() {
+            const summary = $('payments-summary');
+            summary.textContent = 'Loading payments…';
+            try {
+                const { res, data, denied } = await request('&view=transfers');
+                if (denied) return;
+                if (!res.ok || !Array.isArray(data.payments)) throw new Error(`HTTP ${res.status}`);
+                const payments = data.payments;
+                const total = payments.filter((p) => p.status === 'done').reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                summary.textContent = payments.length
+                    ? `${plural(payments.length, 'payment')} of ${fmt(TRANSFER.review)} clicks or more, ${fmt(total)} clicks in all. Newest first.`
+                    : `Nobody has sent ${fmt(TRANSFER.review)} clicks or more yet.`;
+                $('payments').replaceChildren(...payments.map((p) => h('li', null,
+                    h('span', null, nameLink(p.from, 'admin-user-name'), ' → ', nameLink(p.to, 'admin-user-name')),
+                    h('span', null, `${fmt(p.amount)} clicks${STATUS_NAMES[p.status] ? ` (${STATUS_NAMES[p.status]})` : ''}`),
+                    p.note ? h('span', { class: 'admin-flags' }, `“${p.note}”`) : null,
+                    h('span', { class: 'admin-user-joined' }, formatDate(p.at)))));
+            } catch {
+                loaded.delete('payments');
+                $('payments').replaceChildren();
+                summary.replaceChildren('Couldn’t load the payments. ', retryButton('payments'));
+            }
+        }
+
         /* ---------- Tabs ---------- */
 
         const tabs = [...document.querySelectorAll('[role="tab"]')];
         const panels = Object.fromEntries([...document.querySelectorAll('[role="tabpanel"]')].map((p) => [p.dataset.tab, p]));
-        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily, events: loadEvents, weekly: loadWeekly };
+        const loaders = { drawings: loadDrawings, users: loadUsers, daily: loadDaily, events: loadEvents, weekly: loadWeekly, payments: loadPayments };
         const loaded = new Set();
 
         function load(key) {

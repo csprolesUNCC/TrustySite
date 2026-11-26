@@ -55,6 +55,10 @@
                     <button class="btn btn-outline btn-sm" type="button" id="rename-open">Change username</button>
                     <p class="profile-rename-note" id="rename-note"></p>
                 </div>
+                <!-- Someone else's profile, logged in: Trusty Venmo (utils/transfer.js) -->
+                <div class="profile-rename" id="send" hidden>
+                    <button class="btn btn-sm" type="button" id="send-open">Send clicks</button>
+                </div>
             </header>
 
             <section class="section-tight container profile-top" aria-label="About">
@@ -98,6 +102,18 @@
                 </div>
             </section>
 
+            <!-- Your own profile only: Trusty Venmo, sending clicks to anyone and your last payments (utils/transfer.js) -->
+            <section class="section-tight container" id="venmo" aria-labelledby="venmo-title" hidden>
+                <div class="panel">
+                    <div class="profile-look-head">
+                        <h2 class="panel-title" id="venmo-title">Trusty Venmo</h2>
+                        <button class="btn btn-sm" type="button" id="venmo-open">Send clicks</button>
+                    </div>
+                    <p class="muted" id="venmo-rule"></p>
+                    <ul class="profile-payments" id="venmo-list" aria-label="Your last payments"></ul>
+                </div>
+            </section>
+
             <section class="section-tight container" aria-labelledby="stats-title">
                 <div class="section-head">
                     <div>
@@ -130,12 +146,46 @@
                 </div>
             </form>
         </dialog>
+
+        <!-- Sending clicks (utils/transfer.js). The limits are TRANSFER in scripts/transfer.js. -->
+        <dialog class="modal profile-send-dialog" id="send-dialog" aria-labelledby="send-title">
+            <div class="modal-head">
+                <h2 id="send-title">Send clicks</h2>
+                <button class="btn btn-ghost btn-icon" type="button" id="send-close" aria-label="Close">✕</button>
+            </div>
+            <form class="modal-body" id="send-form" novalidate>
+                <p class="profile-send-info" id="send-info"></p>
+                <!-- From your own profile: find who to send to -->
+                <div class="field" id="send-search-field" hidden>
+                    <label for="send-search">Who to send to</label>
+                    <input type="search" id="send-search" maxlength="32" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Start typing a username" aria-describedby="send-search-hint">
+                    <span class="hint" id="send-search-hint" aria-live="polite"></span>
+                </div>
+                <ul class="profile-send-results" id="send-results" aria-label="Matching players"></ul>
+                <p class="profile-send-to" id="send-to"></p>
+                <div class="field">
+                    <label for="send-amount">Clicks</label>
+                    <input type="number" id="send-amount" min="1" step="1" inputmode="numeric" required aria-describedby="send-amount-hint">
+                    <span class="hint" id="send-amount-hint"></span>
+                </div>
+                <div class="field">
+                    <label for="send-note">Note (optional)</label>
+                    <input type="text" id="send-note" maxlength="100" autocomplete="off" placeholder="For the pizza">
+                </div>
+                <p class="form-status" id="send-status" role="status"></p>
+                <div class="btn-row">
+                    <button class="btn" type="submit" id="send-save">Send</button>
+                    <button class="btn btn-ghost" type="button" id="send-cancel">Cancel</button>
+                </div>
+            </form>
+        </dialog>
     </main>
 
     <trusty-footer></trusty-footer>
 
     <script type="module">
-        import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref, styleName, applyTheme, namePreview } from '/scripts/site.js';
+        import { h, fmt, toast, session, sessionReady, sessionExpired, sessionRenamed, onSession, loginHref, profileHref, styleName, applyTheme, namePreview, announceBalance } from '/scripts/site.js';
+        import { TRANSFER, amountProblem } from '/scripts/transfer.js';
         import { DEFAULTS as SHOP_DEFAULTS, itemsOf, nameStyleOf } from '/scripts/shop.js';
         import { safeDrawing, openDrawing, rankBadge, clickIcon } from '/scripts/leaderboard.js';
         import { nextRank, rankProgress, rankFor } from '/scripts/milestones.js';
@@ -355,6 +405,7 @@
             renderBio();
             renderTv();
             loadLook();
+            loadWallet();
             $('stats').replaceChildren(clicksCard(), flappyCard(), drawCard(), trustisCard(), snakeCard(), trustleCard(), dailyCard());
             $('card-btn').hidden = Boolean(profile.house);
             show('profile');
@@ -619,11 +670,199 @@
             }
         });
 
+        /* ---------- Trusty Venmo: sending clicks (utils/transfer.js) ---------- */
+
+        const TRANSFER_API = '/api/leaderboard?action=transfer';
+        const sendDialog = $('send-dialog');
+        const sendSearch = $('send-search');
+        const sendAmount = $('send-amount');
+        const whenFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+        // What the API says about your clicks and payments ({ clicks, canSend, sendableAt, left, house, recent }).
+        let wallet = null;
+        // Who the dialog sends to.
+        let sendTo = null;
+        let searchTimer = 0;
+        let searchSeq = 0;
+        let sending = false;
+
+        const notYet = () => {
+            const at = new Date(wallet.sendableAt);
+            return `Accounts can send clicks once they’re ${TRANSFER.minAgeDays} days old${Number.isNaN(at.getTime()) ? '' : `: yours can from ${joinedFormat.format(at)}`}.`;
+        };
+        const nameLinkOf = (name) => styleName(h('a', { href: profileHref(name) }, name), name);
+
+        function renderSend() {
+            const ready = Boolean(profile && session.loggedIn && wallet && !wallet.house);
+            $('send-open').textContent = profile ? `Send clicks to ${profile.username}` : 'Send clicks';
+            $('send').hidden = !ready || profile.isMe || Boolean(profile.house);
+            $('venmo').hidden = !ready || !profile.isMe;
+            if (!ready || !profile.isMe) return;
+            $('venmo-rule').textContent = wallet.canSend
+                ? `Send your clicks to any player, up to ${fmt(TRANSFER.max)} at a time and ${fmt(TRANSFER.perDay)} a day. Payments can’t be undone, so check the name first.`
+                : notYet();
+            const recent = Array.isArray(wallet.recent) ? wallet.recent : [];
+            $('venmo-list').replaceChildren(...(recent.length ? recent.map((p) => {
+                const at = new Date(p.at);
+                return h('li', null,
+                    h('span', { class: 'profile-payment-amount' }, `${p.sent ? '−' : '+'}${fmt(p.amount)}`),
+                    h('span', null, p.sent ? 'to ' : 'from ', typeof p.name === 'string' ? nameLinkOf(p.name) : 'someone'),
+                    p.note ? h('span', { class: 'profile-payment-note' }, `“${p.note}”`) : null,
+                    Number.isNaN(at.getTime()) ? null : h('span', { class: 'profile-payment-when' }, whenFormat.format(at)));
+            }) : [h('li', { class: 'muted' }, 'No payments yet, either way.')]));
+        }
+
+        async function loadWallet() {
+            if (!session.loggedIn) { wallet = null; renderSend(); return; }
+            try {
+                const res = await fetch(TRANSFER_API);
+                if (res.status === 401) { wallet = null; return; }
+                if (!res.ok) return;
+                wallet = await res.json();
+            } catch { /* no Send clicks this time */ }
+            renderSend();
+        }
+
+        function renderSendInfo() {
+            const info = $('send-info');
+            if (!wallet.canSend) { info.textContent = notYet(); return; }
+            const left = Math.min(wallet.left, TRANSFER.max);
+            info.textContent = `You have ${fmt(wallet.clicks)} clicks${wallet.left < TRANSFER.perDay ? ` and can send ${fmt(wallet.left)} more today` : ''}.`;
+            sendAmount.max = Math.max(1, Math.min(left, wallet.clicks));
+            $('send-amount-hint').textContent = `From ${fmt(TRANSFER.min)} to ${fmt(TRANSFER.max)} at a time.`;
+        }
+
+        function renderSendTo() {
+            $('send-to').replaceChildren(...(sendTo ? ['To: ', styleName(h('span', null, sendTo), sendTo)] : [profile.isMe ? 'Pick who to send to.' : '']));
+            for (const button of $('send-results').querySelectorAll('button')) {
+                button.setAttribute('aria-pressed', String(button.dataset.name === sendTo));
+            }
+        }
+
+        async function searchNames() {
+            const q = sendSearch.value.trim();
+            const seq = ++searchSeq;
+            const hint = $('send-search-hint');
+            if (!q) { $('send-results').replaceChildren(); hint.textContent = ''; return; }
+            try {
+                const res = await fetch(`${TRANSFER_API}&q=${encodeURIComponent(q)}`);
+                if (res.status === 401) { sessionExpired(); return; }
+                const data = await res.json().catch(() => ({}));
+                if (seq !== searchSeq) return; // a newer search is on its way
+                const names = Array.isArray(data.names) ? data.names.filter((n) => typeof n === 'string') : [];
+                hint.textContent = names.length ? `${names.length === 1 ? '1 player' : `${names.length} players`} found.` : `Nobody’s name starts with “${q}”.`;
+                $('send-results').replaceChildren(...names.map((name) => h('li', null,
+                    h('button', {
+                        type: 'button',
+                        class: 'btn btn-outline btn-sm',
+                        dataset: { name },
+                        'aria-pressed': String(name === sendTo),
+                        onclick: () => { sendTo = name; renderSendTo(); sendAmount.focus(); },
+                    }, styleName(h('span', null, name), name)))));
+            } catch {
+                if (seq === searchSeq) hint.textContent = 'Couldn’t look that up. Check your connection?';
+            }
+        }
+
+        function openSend(name) {
+            if (!wallet) return;
+            sendTo = name;
+            const searching = !name;
+            $('send-title').textContent = name ? `Send clicks to ${name}` : 'Send clicks';
+            $('send-search-field').hidden = !searching;
+            sendSearch.value = '';
+            $('send-search-hint').textContent = '';
+            $('send-results').replaceChildren();
+            sendAmount.value = '';
+            sendAmount.removeAttribute('aria-invalid');
+            $('send-note').value = '';
+            $('send-status').textContent = '';
+            $('send-save').disabled = !wallet.canSend;
+            renderSendInfo();
+            renderSendTo();
+            sendDialog.showModal();
+            (searching ? sendSearch : sendAmount).focus();
+        }
+
+        $('send-open').addEventListener('click', () => openSend(profile.username));
+        $('venmo-open').addEventListener('click', () => openSend(null));
+        $('send-close').addEventListener('click', () => sendDialog.close());
+        $('send-cancel').addEventListener('click', () => sendDialog.close());
+        sendDialog.addEventListener('click', (e) => { if (e.target === sendDialog) sendDialog.close(); });
+        sendAmount.addEventListener('input', () => sendAmount.removeAttribute('aria-invalid'));
+        sendSearch.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(searchNames, 250);
+        });
+        // Enter in the search box picks the only match instead of sending.
+        sendSearch.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const only = $('send-results').querySelectorAll('button');
+            if (only.length === 1) only[0].click();
+        });
+
+        $('send-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (sending || !wallet) return;
+            const status = $('send-status');
+            const amount = Number(sendAmount.value);
+            status.dataset.tone = 'error';
+            if (!wallet.canSend) { status.textContent = notYet(); return; }
+            if (!sendTo) { status.textContent = 'Pick who to send to first.'; sendSearch.focus(); return; }
+            const problem = amountProblem(amount)
+                || (amount > wallet.clicks ? `You only have ${fmt(wallet.clicks)} clicks.` : '')
+                || (amount > wallet.left ? `You can only send ${fmt(wallet.left)} more clicks today.` : '');
+            if (problem) {
+                sendAmount.setAttribute('aria-invalid', 'true');
+                status.textContent = problem;
+                sendAmount.focus();
+                return;
+            }
+            if (!confirm(`Send ${fmt(amount)} ${amount === 1 ? 'click' : 'clicks'} to ${sendTo}? This can’t be undone.`)) return;
+            sending = true;
+            $('send-save').disabled = true;
+            status.dataset.tone = 'info';
+            status.textContent = 'Sending…';
+            try {
+                const res = await fetch(TRANSFER_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: sendTo, amount, note: $('send-note').value }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    sessionExpired();
+                    status.dataset.tone = 'error';
+                    status.replaceChildren('Your login expired. ', h('a', { href: loginHref() }, 'Log in again'), ' to send clicks.');
+                    return;
+                }
+                if (Number.isSafeInteger(data.clicks)) { wallet.clicks = data.clicks; announceBalance(data.clicks); }
+                if (Number.isSafeInteger(data.left)) wallet.left = data.left;
+                if (!res.ok) {
+                    status.dataset.tone = 'error';
+                    status.textContent = data.error || 'Couldn’t send those clicks. Try again?';
+                    renderSendInfo();
+                    return;
+                }
+                const to = data.sent && typeof data.sent.to === 'string' ? data.sent.to : sendTo;
+                sendDialog.close();
+                toast(`Sent ${fmt(amount)} ${amount === 1 ? 'click' : 'clicks'} to ${to}!`, 'success');
+                loadWallet();
+            } catch {
+                status.dataset.tone = 'error';
+                status.textContent = 'Couldn’t reach the server. Check your connection and try again.';
+            } finally {
+                sending = false;
+                $('send-save').disabled = !wallet.canSend;
+            }
+        });
+
         // Logging out elsewhere on the page hides the edit and rename buttons.
         onSession(() => {
             if (!profile) return;
             renderRename();
             renderLook();
+            loadWallet();
             if ($('bio-form').hidden) renderBio();
         });
 

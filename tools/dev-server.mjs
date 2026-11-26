@@ -35,6 +35,7 @@ import { cleanEvent, boostFor } from '../scripts/events.js';
 import { QUEST_REWARD, ALL_BONUS, factsOf, paidToday, questStatus, toClaim } from '../scripts/quests.js';
 import { GOLDEN, TOKEN, decide as goldenDecide, prize as goldenPrize } from '../scripts/golden.js';
 import { WEEKLY_BOARDS, DEFAULT_SETTINGS as WEEKLY_DEFAULTS, cleanSettings as cleanWeekly, weekOf, weekBefore, weekEnds, winnersOf } from '../scripts/weekly.js';
+import { TRANSFER, cleanTransfer, sendableAt, sendLeft } from '../scripts/transfer.js';
 import { randomBytes } from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -331,6 +332,46 @@ function weeklyApi(req, url, body) {
   return [200, { week, ends: weekEnds(week), settings: weeklySettings, boards }];
 }
 
+// Trusty Venmo (utils/transfer.js) with the real rules, between the pretend bank's accounts. Everyone here joined
+// long enough ago to send; payments are forgotten on restart.
+const payments = [];
+const MOCK_JOINED = '2025-11-20T00:00:00Z';
+function transferApi(req, url, body) {
+  if (!loggedIn(req)) return [401, { error: 'Log in to send clicks.' }];
+  const me = mockUser(req);
+  const account = bank.account(accountOf(req));
+  const day = dayOf();
+  const q = url.searchParams.get('q');
+  if (req.method === 'GET' && q != null) {
+    const start = q.trim().toLowerCase();
+    return [200, { names: start ? NAMES.filter((n) => n !== me && n.toLowerCase().startsWith(start)).slice(0, 8) : [] }];
+  }
+  const mine = () => ({ clicks: account.clicks, left: sendLeft(account.transfer, day) });
+  if (req.method === 'GET') {
+    const recent = payments.filter((t) => t.from === me || t.to === me).slice(-10).reverse()
+      .map((t) => ({ sent: t.from === me, name: t.from === me ? t.to : t.from, amount: t.amount, note: t.note, at: t.at }));
+    return [200, { ...mine(), joined: MOCK_JOINED, sendableAt: sendableAt(MOCK_JOINED), canSend: true, house: isHouse(me), recent }];
+  }
+  const order = cleanTransfer(body);
+  if (!order) return [400, { error: 'That’s not a payment.' }];
+  if (isHouse(me)) return [403, { error: 'Trusty’s account is the house: it can’t send clicks.' }];
+  const to = NAMES.find((n) => n.toLowerCase() === order.to.toLowerCase());
+  if (!to) return [404, { error: `There’s no one called “${order.to}”.` }];
+  if (to === me) return [400, { error: 'You can’t send clicks to yourself.' }];
+  if (account.clicks < order.amount) return [400, { error: `You only have ${account.clicks} clicks.`, ...mine() }];
+  if (sendLeft(account.transfer, day) < order.amount) return [429, { error: 'That’s more than you can send today.', ...mine() }];
+  const today = (t) => (t && t.day === day ? t : { day, sent: 0, received: 0 });
+  const other = bank.account(`mock-${to}`);
+  account.transfer = today(account.transfer);
+  other.transfer = today(other.transfer);
+  account.clicks -= order.amount;
+  account.transfer.sent += order.amount;
+  other.clicks += order.amount;
+  other.transfer.received += order.amount;
+  payments.push({ id: String(payments.length + 1).padStart(24, '0'), from: me, to, amount: order.amount, note: order.note, at: new Date().toISOString(), status: 'done' });
+  return [200, { sent: { to, amount: order.amount, note: order.note }, ...mine() }];
+}
+
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
 // each game's daily cap) into the pretend bank. Saving a score is pretend: every game is a "new best".
 function gameReward(req, game, body) {
@@ -399,6 +440,7 @@ async function api(req, url, body) {
     if (action === 'event') return eventApi(req, body);
     if (action === 'quests') return questsApi(req, body);
     if (action === 'weekly') return weeklyApi(req, url, body);
+    if (action === 'transfer') return transferApi(req, url, body);
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
@@ -492,6 +534,9 @@ async function api(req, url, body) {
       if (!me) return [401, { error: 'Authentication required' }];
       const view = url.searchParams.get('view');
       if (view === 'daily') return [200, { results: dailyScores.filter((s) => s.flags.length).map((s) => ({ ...s, at: new Date().toISOString() })) }];
+      if (view === 'transfers') {
+        return [200, { payments: payments.filter((t) => t.amount >= TRANSFER.review).reverse().map(({ id, from, to, amount, note, at, status }) => ({ id, from, to, amount, note, at, status })) }];
+      }
       if (view === 'users') return [200, { users: NAMES.map((username, i) => ({ username, createdAt: new Date(Date.now() - i * 864e5).toISOString(), flags: [] })) }];
       return [200, { drawings: [] }];
     }
