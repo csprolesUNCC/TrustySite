@@ -2813,33 +2813,6 @@ dialog.reader::backdrop { background: #1e1f23; }
 }
 
 /* =========================================================================
-   Page turns: going from one page of the site to the next flips the old one away like a notebook page,
-   turning on its left edge to show the new one under it. Browsers without cross-document view transitions
-   just change pages; reduced motion turns it off.
-   ========================================================================= */
-@media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
-}
-::view-transition-group(root) { animation-duration: .4s; }
-::view-transition-old(root) {
-  z-index: 1;
-  transform-origin: left center;
-  animation: page-turn .4s cubic-bezier(.45, 0, .25, 1) both;
-}
-::view-transition-new(root) {
-  mix-blend-mode: normal;
-  animation: page-under .4s ease-out both;
-}
-@keyframes page-turn {
-  0% { transform: perspective(2600px) rotateY(0); filter: brightness(1); }
-  100% { transform: perspective(2600px) rotateY(-100deg); filter: brightness(.78); }
-}
-@keyframes page-under {
-  from { filter: brightness(.9); }
-  to { filter: brightness(1); }
-}
-
-/* =========================================================================
    Motion preferences
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
