@@ -1,4 +1,4 @@
-// Trusty Venmo: sending site clicks to another player, from their profile (pages/profile.html). Pure rules,
+// HayPay: sending site clicks to another player, from their profile (pages/profile.html). Pure rules,
 // shared by the page, the API (utils/transfer.js) and the pretend API (tools/dev-server.mjs).
 //   minAgeDays: an account has to be this many days old before it can send (so nobody can make accounts to farm
 //     the daily bonus, quests and Golden Trusties and pass it all to one player). Anyone can receive.

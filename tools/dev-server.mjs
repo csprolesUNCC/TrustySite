@@ -332,7 +332,7 @@ function weeklyApi(req, url, body) {
   return [200, { week, ends: weekEnds(week), settings: weeklySettings, boards }];
 }
 
-// Trusty Venmo (utils/transfer.js) with the real rules, between the pretend bank's accounts. Everyone here joined
+// HayPay (utils/transfer.js) with the real rules, between the pretend bank's accounts. Everyone here joined
 // long enough ago to send; payments are forgotten on restart.
 const payments = [];
 const MOCK_JOINED = '2025-11-20T00:00:00Z';

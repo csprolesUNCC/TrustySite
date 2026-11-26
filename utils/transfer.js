@@ -6,7 +6,7 @@ import { isHouse } from './house.js';
 import { dayOf } from './bank.js';
 import { TRANSFER, cleanTransfer, canSend, sendableAt, sendLeft } from '../scripts/transfer.js';
 
-// Trusty Venmo: sending site clicks to another player (the Send clicks button on profiles, pages/profile.html),
+// HayPay: sending site clicks to another player (the Send clicks button on profiles, pages/profile.html),
 // served from api/leaderboard.js as ?action=transfer so it doesn't take up another Vercel function. The rules
 // and limits are TRANSFER in scripts/transfer.js.
 //   GET (logged in): { clicks, joined, sendableAt, canSend, left, house, recent }: your clicks, when your account can

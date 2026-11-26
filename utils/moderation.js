@@ -18,7 +18,7 @@ import { listPayments } from './transfer.js';
 //     POST { do: 'remove' | 'dismiss', id, at }: delete a drawing along with its score, or clear its reports.
 //     GET &view=daily: Daily Games results that were flagged or reported (utils/daily.js).
 //     POST { kind: 'daily', do: 'remove' | 'dismiss', id }: take one down, or clear its flags and reports.
-//     GET &view=transfers: Trusty Venmo payments of TRANSFER.review clicks or more, newest first (utils/transfer.js).
+//     GET &view=transfers: HayPay payments of TRANSFER.review clicks or more, newest first (utils/transfer.js).
 // Reports live on the drawing's document in `draw_scores`: `reportedBy` lists everyone who reported it (so
 // nobody can report it twice) and `reports` counts the ones an admin hasn't cleared yet. A new high score
 // replaces the drawing and starts both over (api/draw-api.js).
