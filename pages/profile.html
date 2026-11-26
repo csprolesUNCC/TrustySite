@@ -55,7 +55,7 @@
                     <button class="btn btn-outline btn-sm" type="button" id="rename-open">Change username</button>
                     <p class="profile-rename-note" id="rename-note"></p>
                 </div>
-                <!-- Someone else's profile, logged in: Trusty Venmo (utils/transfer.js) -->
+                <!-- Someone else's profile, logged in: HayPay, sending them clicks (utils/transfer.js) -->
                 <div class="profile-rename" id="send" hidden>
                     <button class="btn btn-sm" type="button" id="send-open">Send clicks</button>
                 </div>
@@ -102,15 +102,15 @@
                 </div>
             </section>
 
-            <!-- Your own profile only: Trusty Venmo, sending clicks to anyone and your last payments (utils/transfer.js) -->
-            <section class="section-tight container" id="venmo" aria-labelledby="venmo-title" hidden>
+            <!-- Your own profile only: HayPay, sending clicks to anyone and your last payments (utils/transfer.js) -->
+            <section class="section-tight container" id="haypay" aria-labelledby="haypay-title" hidden>
                 <div class="panel">
                     <div class="profile-look-head">
-                        <h2 class="panel-title" id="venmo-title">Trusty Venmo</h2>
-                        <button class="btn btn-sm" type="button" id="venmo-open">Send clicks</button>
+                        <h2 class="panel-title" id="haypay-title">HayPay</h2>
+                        <button class="btn btn-sm" type="button" id="haypay-open">Send clicks</button>
                     </div>
-                    <p class="muted" id="venmo-rule"></p>
-                    <ul class="profile-payments" id="venmo-list" aria-label="Your last payments"></ul>
+                    <p class="muted" id="haypay-rule"></p>
+                    <ul class="profile-payments" id="haypay-list" aria-label="Your last payments"></ul>
                 </div>
             </section>
 
@@ -147,10 +147,10 @@
             </form>
         </dialog>
 
-        <!-- Sending clicks (utils/transfer.js). The limits are TRANSFER in scripts/transfer.js. -->
+        <!-- HayPay, sending clicks (utils/transfer.js). The limits are TRANSFER in scripts/transfer.js. -->
         <dialog class="modal profile-send-dialog" id="send-dialog" aria-labelledby="send-title">
             <div class="modal-head">
-                <h2 id="send-title">Send clicks</h2>
+                <h2 id="send-title">HayPay: send clicks</h2>
                 <button class="btn btn-ghost btn-icon" type="button" id="send-close" aria-label="Close">✕</button>
             </div>
             <form class="modal-body" id="send-form" novalidate>
@@ -670,7 +670,7 @@
             }
         });
 
-        /* ---------- Trusty Venmo: sending clicks (utils/transfer.js) ---------- */
+        /* ---------- HayPay: sending clicks to other players (utils/transfer.js) ---------- */
 
         const TRANSFER_API = '/api/leaderboard?action=transfer';
         const sendDialog = $('send-dialog');
@@ -695,13 +695,13 @@
             const ready = Boolean(profile && session.loggedIn && wallet && !wallet.house);
             $('send-open').textContent = profile ? `Send clicks to ${profile.username}` : 'Send clicks';
             $('send').hidden = !ready || profile.isMe || Boolean(profile.house);
-            $('venmo').hidden = !ready || !profile.isMe;
+            $('haypay').hidden = !ready || !profile.isMe;
             if (!ready || !profile.isMe) return;
-            $('venmo-rule').textContent = wallet.canSend
-                ? `Send your clicks to any player, up to ${fmt(TRANSFER.max)} at a time and ${fmt(TRANSFER.perDay)} a day. Payments can’t be undone, so check the name first.`
-                : notYet();
+            $('haypay-rule').textContent = wallet.canSend
+                ? `HayPay is how you send your clicks to another player: up to ${fmt(TRANSFER.max)} at a time and ${fmt(TRANSFER.perDay)} a day. Payments can’t be undone, so check the name first.`
+                : `HayPay is how you send your clicks to another player. ${notYet()}`;
             const recent = Array.isArray(wallet.recent) ? wallet.recent : [];
-            $('venmo-list').replaceChildren(...(recent.length ? recent.map((p) => {
+            $('haypay-list').replaceChildren(...(recent.length ? recent.map((p) => {
                 const at = new Date(p.at);
                 return h('li', null,
                     h('span', { class: 'profile-payment-amount' }, `${p.sent ? '−' : '+'}${fmt(p.amount)}`),
@@ -767,7 +767,7 @@
             if (!wallet) return;
             sendTo = name;
             const searching = !name;
-            $('send-title').textContent = name ? `Send clicks to ${name}` : 'Send clicks';
+            $('send-title').textContent = name ? `HayPay: send clicks to ${name}` : 'HayPay: send clicks';
             $('send-search-field').hidden = !searching;
             sendSearch.value = '';
             $('send-search-hint').textContent = '';
@@ -784,7 +784,7 @@
         }
 
         $('send-open').addEventListener('click', () => openSend(profile.username));
-        $('venmo-open').addEventListener('click', () => openSend(null));
+        $('haypay-open').addEventListener('click', () => openSend(null));
         $('send-close').addEventListener('click', () => sendDialog.close());
         $('send-cancel').addEventListener('click', () => sendDialog.close());
         sendDialog.addEventListener('click', (e) => { if (e.target === sendDialog) sendDialog.close(); });

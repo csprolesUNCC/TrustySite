@@ -22,7 +22,7 @@ const INDEXES = {
     // The weekly boards (utils/weekly.js): each player's best per board per week.
     weekly_scores: [[{ game: 1, week: 1, userId: 1 }, { unique: true }], { game: 1, week: 1, score: -1, timestamp: 1 }, { userId: 1 }],
     weekly_settings: [{ savedAt: -1 }],
-    // Trusty Venmo (utils/transfer.js): each player's payments both ways, and the admin panel's list of big ones.
+    // HayPay (utils/transfer.js): each player's payments both ways, and the admin panel's list of big ones.
     transfers: [{ from: 1, at: -1 }, { to: 1, at: -1 }, { at: -1 }],
 };
 

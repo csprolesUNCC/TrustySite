@@ -26,7 +26,7 @@ import { transferBasis } from '../scripts/transfer.js';
 // Limits: at most `maxStake` on one bet, and once you're `lossPerDay` down or `winPerDay` up for the day (Eastern
 // time, like Trustle) no more bets until midnight; those two grow with your clicks (LIMIT_TIERS in
 // utils/bank-rules.js), and GET says yours. Open bets count as lost until they're settled. Clicks can't
-// be bought: keep it that way, or this stops being play money. They can be sent to another player (Trusty Venmo,
+// be bought: keep it that way, or this stops being play money. They can be sent to another player (HayPay,
 // utils/transfer.js) within its limits, and today's payments are taken back out of the limit's basis.
 
 export { LIMITS, STALE_MS, signedOp };

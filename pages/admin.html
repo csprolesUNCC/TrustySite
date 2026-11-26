@@ -45,7 +45,7 @@
             <header class="page-head container">
                 <p class="eyebrow">Admins only</p>
                 <h1>Admin Panel</h1>
-                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, start events that boost the site’s rewards, set what the weekly leaderboards pay, and see who’s sending big Trusty Venmo payments.</p>
+                <p class="lead">Look over Draw Trusty drawings, usernames and Daily Games results, take down anything that doesn’t belong on the site, start events that boost the site’s rewards, set what the weekly leaderboards pay, and see who’s sending other players big HayPay payments.</p>
             </header>
 
             <section class="section-tight container" aria-label="Admin tools">
@@ -163,7 +163,7 @@
                     <div class="admin-head">
                         <p class="admin-summary" id="payments-summary" role="status"></p>
                     </div>
-                    <ul class="admin-flagged" id="payments" aria-label="Big Trusty Venmo payments, newest first"></ul>
+                    <ul class="admin-flagged" id="payments" aria-label="Big HayPay payments, newest first"></ul>
                 </div>
             </section>
         </div>
@@ -676,7 +676,7 @@
 
         /* ---------- Payments ---------- */
 
-        // Trusty Venmo payments of TRANSFER.review clicks or more (utils/transfer.js), newest first. They can't be
+        // HayPay payments of TRANSFER.review clicks or more (utils/transfer.js), newest first. They can't be
         // undone from here: this is for seeing who's passing clicks to whom.
         const STATUS_NAMES = { pending: 'didn’t finish', refunded: 'refunded' };
 
