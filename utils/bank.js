@@ -3,6 +3,7 @@ import { authenticateUser } from './auth.js';
 import { LIMITS, STALE_MS, GAMES, isBetId, signedOp, maxPayout, windfallOf, limitsFor, limitBasis } from './bank-rules.js';
 import { bigWin } from '../scripts/casino-feed.js';
 import { announceWins } from './lobby-feed.js';
+import { transferBasis } from '../scripts/transfer.js';
 
 // The click bank: betting site clicks at Trusty Blackjack (on your own and at the online tables), Trusty Craps,
 // Trusty Slots, Trusty Poker (a buy-in is one bet; the stack is its payout) and on online Trusty Fever games,
@@ -25,7 +26,8 @@ import { announceWins } from './lobby-feed.js';
 // Limits: at most `maxStake` on one bet, and once you're `lossPerDay` down or `winPerDay` up for the day (Eastern
 // time, like Trustle) no more bets until midnight; those two grow with your clicks (LIMIT_TIERS in
 // utils/bank-rules.js), and GET says yours. Open bets count as lost until they're settled. Clicks can't
-// be bought or sent to anyone: keep it that way, or this stops being play money.
+// be bought: keep it that way, or this stops being play money. They can be sent to another player (Trusty Venmo,
+// utils/transfer.js) within its limits, and today's payments are taken back out of the limit's basis.
 
 export { LIMITS, STALE_MS, signedOp };
 
@@ -49,7 +51,7 @@ export async function stake(col, { userId, betId, amount, game, solo = false }, 
   await rollover(col, userId, today);
   // The basis only goes up during a day (clicking; bets move clicks and net together), so a limit worked out
   // from this read is never more than the player's real one by the time the update runs.
-  const before = await col.findOne({ userId }, { projection: { clicks: 1, 'bank.day': 1, 'bank.net': 1, 'shop.day': 1, 'shop.today': 1 } });
+  const before = await col.findOne({ userId }, { projection: { clicks: 1, 'bank.day': 1, 'bank.net': 1, 'shop.day': 1, 'shop.today': 1, transfer: 1 } });
   const limits = limitsOf(before, today);
   const done = unwrap(await col.findOneAndUpdate(
     {
@@ -78,11 +80,12 @@ export async function stake(col, { userId, betId, amount, game, solo = false }, 
 }
 
 // A player's limits, from their `click_game` document (with at least clicks, bank.day/bank.net and
-// shop.day/shop.today: what they spent in the Item Shop today, utils/shop.js).
+// shop.day/shop.today: what they spent in the Item Shop today, utils/shop.js, and `transfer`: what they sent and
+// received today, utils/transfer.js).
 function limitsOf(doc, today) {
   const net = doc && doc.bank && doc.bank.day === today ? doc.bank.net : 0;
   const spent = doc && doc.shop && doc.shop.day === today ? doc.shop.today : 0;
-  return limitsFor(limitBasis(doc && doc.clicks, net, spent));
+  return limitsFor(limitBasis(doc && doc.clicks, net, spent + transferBasis(doc && doc.transfer, today)));
 }
 
 // Pays one open bet out, once. Returns the player's new { clicks, bank: { net } }, or null if it was already done.
@@ -204,7 +207,7 @@ export async function refundStale(col, userId, now = new Date()) {
 
 export async function status(col, userId, now = new Date()) {
   const refunded = await refundStale(col, userId, now);
-  const doc = await col.findOne({ userId }, { projection: { clicks: 1, bank: 1, 'shop.day': 1, 'shop.today': 1 } });
+  const doc = await col.findOne({ userId }, { projection: { clicks: 1, bank: 1, 'shop.day': 1, 'shop.today': 1, transfer: 1 } });
   const bank = (doc && doc.bank) || {};
   const month = monthOf(now);
   const stats = bank.stats || {};

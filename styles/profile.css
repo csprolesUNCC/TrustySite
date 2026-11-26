@@ -11,6 +11,20 @@
 .profile-rename-note:empty { display: none; }
 .profile-rename-dialog .field { margin-bottom: 12px; }
 
+/* Trusty Venmo: sending clicks (utils/transfer.js) */
+.profile-send-dialog .field { margin-bottom: 12px; }
+.profile-send-to { margin: 0 0 12px; font-weight: 700; overflow-wrap: anywhere; }
+.profile-send-results { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+.profile-send-results:empty { display: none; }
+.profile-send-results button[aria-pressed="true"] { background: var(--highlight); }
+.profile-send-info { margin: 0 0 12px; color: var(--pencil); font-weight: 600; }
+.profile-send-info:empty { display: none; }
+.profile-payments { margin: 12px 0 0; padding: 0; list-style: none; }
+.profile-payments li { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 0; border-top: 1px dashed var(--rule); overflow-wrap: anywhere; }
+.profile-payments li:first-child { border-top: 0; }
+.profile-payment-amount { font-weight: 700; }
+.profile-payment-note, .profile-payment-when { color: var(--pencil); }
+
 /* Your own profile: the Item Shop's themes you own */
 .profile-look-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .profile-look-head .panel-title { margin: 0; }

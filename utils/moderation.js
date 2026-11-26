@@ -6,6 +6,7 @@ import { badWordsIn } from './bad-words.js';
 import { currentAccount } from './rename.js';
 import { GRADER_VERSION } from '../scripts/draw-grader.js';
 import { listFlagged, moderateScore } from './daily.js';
+import { listPayments } from './transfer.js';
 
 // Reporting Draw Trusty drawings, and the admin panel (pages/admin.html). Both are served from existing
 // functions so they don't take up more Vercel functions:
@@ -17,6 +18,7 @@ import { listFlagged, moderateScore } from './daily.js';
 //     POST { do: 'remove' | 'dismiss', id, at }: delete a drawing along with its score, or clear its reports.
 //     GET &view=daily: Daily Games results that were flagged or reported (utils/daily.js).
 //     POST { kind: 'daily', do: 'remove' | 'dismiss', id }: take one down, or clear its flags and reports.
+//     GET &view=transfers: Trusty Venmo payments of TRANSFER.review clicks or more, newest first (utils/transfer.js).
 // Reports live on the drawing's document in `draw_scores`: `reportedBy` lists everyone who reported it (so
 // nobody can report it twice) and `reports` counts the ones an admin hasn't cleared yet. A new high score
 // replaces the drawing and starts both over (api/draw-api.js).
@@ -173,6 +175,10 @@ export default async function adminApi(req, res) {
         if (req.method === 'GET' && view === 'daily') {
             res.setHeader('Cache-Control', 'no-store');
             return res.status(200).json({ results: await listFlagged() });
+        }
+        if (req.method === 'GET' && view === 'transfers') {
+            res.setHeader('Cache-Control', 'no-store');
+            return res.status(200).json({ payments: await listPayments() });
         }
         if (req.method === 'POST') return await moderate(req, res, user);
         return res.status(400).json({ error: 'Invalid request' });

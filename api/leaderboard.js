@@ -17,6 +17,7 @@ import shop from '../utils/shop.js';
 import events from '../utils/events.js';
 import quests from '../utils/quests.js';
 import weekly from '../utils/weekly.js';
+import transfer from '../utils/transfer.js';
 
 export default async (req, res) => {
     // Profile pages (?action=profile, see utils/profile.js), changing your username (?action=rename, see
@@ -28,8 +29,8 @@ export default async (req, res) => {
     // Trusty Slots (?action=slots, see utils/solo-slots.js) and Trusty Poker against the bots (?action=poker, see
     // utils/solo-poker.js), the Daily Games board (?action=daily, see utils/daily.js) and the Item Shop
     // (?action=shop, see utils/shop.js), events and boosts (?action=event, see utils/events.js) and Daily Quests
-    // (?action=quests, see utils/quests.js) and the weekly leaderboards (?action=weekly, see utils/weekly.js) live
-    // here too to save Vercel functions.
+    // (?action=quests, see utils/quests.js), the weekly leaderboards (?action=weekly, see utils/weekly.js) and
+    // sending clicks to another player (?action=transfer, see utils/transfer.js) live here too to save Vercel functions.
     if (req.query.action === 'profile') {
         return profile(req, res);
     }
@@ -80,6 +81,9 @@ export default async (req, res) => {
     }
     if (req.query.action === 'weekly') {
         return weekly(req, res);
+    }
+    if (req.query.action === 'transfer') {
+        return transfer(req, res);
     }
 
     if (req.method !== 'GET') {

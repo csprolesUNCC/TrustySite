@@ -39,8 +39,13 @@ const NAME_COPIES = [
  */
 export async function copyName(userId, username) {
     const db = await connectToDatabase();
-    await Promise.all(NAME_COPIES.map(([collection, field]) =>
-        db.collection(collection).updateMany({ userId: String(userId) }, { $set: { [field]: username } })));
+    await Promise.all([
+        ...NAME_COPIES.map(([collection, field]) =>
+            db.collection(collection).updateMany({ userId: String(userId) }, { $set: { [field]: username } })),
+        // Trusty Venmo payments (utils/transfer.js) keep both names, by who sent and who received.
+        db.collection('transfers').updateMany({ from: String(userId) }, { $set: { fromName: username } }),
+        db.collection('transfers').updateMany({ to: String(userId) }, { $set: { toName: username } }),
+    ]);
 }
 
 /**
