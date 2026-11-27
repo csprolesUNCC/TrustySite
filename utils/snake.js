@@ -3,6 +3,7 @@ import { authenticateUser } from './auth.js';
 import { cachePublic } from './cache.js';
 import { rewardGame } from './game-rewards.js';
 import { recordWeekly } from './weekly.js';
+import { boardBefore, notifyPassed } from './notifications.js';
 
 // The Trusty Snake leaderboard (pages/games/snake.html), served from api/leaderboard.js as ?action=snake so it
 // doesn't take up another Vercel function. `snake_scores` keeps each player's best game.
@@ -54,13 +55,16 @@ async function saveScore(req, res) {
     const saved = { ...game, name: user.username, timestamp: new Date() };
     // Every finished game earns clicks (utils/game-rewards.js), best or not, and goes on this week's board
     // (utils/weekly.js) if it's their best this week.
-    const [reward] = await Promise.all([rewardGame(user, 'snake', game.score), recordWeekly(user, 'snake', game.score)]);
+    // The board as it was, so a new best can tell anyone it passes on the top 10 (utils/notifications.js).
+    const [reward, , top] = await Promise.all([rewardGame(user, 'snake', game.score), recordWeekly(user, 'snake', game.score), boardBefore(collection)]);
 
     // Only ever raise a player's best: replace a lower one, or save their first game.
     const raised = await collection.updateOne({ userId: user.userId, score: { $lt: game.score } }, { $set: saved });
-    if (raised.matchedCount) return res.status(201).json({ message: 'Score saved!', reward });
-    const first = await collection.updateOne({ userId: user.userId }, { $setOnInsert: saved }, { upsert: true });
-    if (first.upsertedCount) return res.status(201).json({ message: 'Score saved!', reward });
+    const first = raised.matchedCount ? null : await collection.updateOne({ userId: user.userId }, { $setOnInsert: saved }, { upsert: true });
+    if (raised.matchedCount || first.upsertedCount) {
+        await notifyPassed('snake', top, user, game.score);
+        return res.status(201).json({ message: 'Score saved!', reward });
+    }
     return res.status(200).json({ message: 'Not a new high score', reward });
 }
 

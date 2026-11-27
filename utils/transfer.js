@@ -4,6 +4,7 @@ import connectToUsersDatabase from './connect.js';
 import { authenticateUser, tokenRevoked } from './auth.js';
 import { isHouse } from './house.js';
 import { dayOf } from './bank.js';
+import { notify } from './notifications.js';
 import { TRANSFER, cleanTransfer, canSend, sendableAt, sendLeft } from '../scripts/transfer.js';
 
 // HayPay: sending site clicks to another player (the Send clicks button on profiles, pages/profile.html),
@@ -129,6 +130,8 @@ export async function send(db, usersDb, account, order, now = new Date()) {
     return [500, { error: 'Couldn’t send those clicks. You still have them: try again?' }];
   }
   await log.updateOne({ _id: record._id }, { $set: { status: 'done' } }).catch((error) => console.error('Transfer: marking it done failed:', error));
+  // The mail button in their header says who sent it (utils/notifications.js).
+  await notify(toId, { kind: 'payment', from: account.username, amount, note }, db);
   console.log(`Transfer: ${account.username} sent ${amount} clicks to ${to.username}`);
   return [200, { sent: { to: to.username, amount, note }, clicks: paid.clicks, left: sendLeft(paid.transfer, today) }];
 }

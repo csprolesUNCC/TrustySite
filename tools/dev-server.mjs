@@ -36,6 +36,7 @@ import { QUEST_REWARD, ALL_BONUS, factsOf, paidToday, questStatus, toClaim } fro
 import { GOLDEN, TOKEN, decide as goldenDecide, prize as goldenPrize } from '../scripts/golden.js';
 import { WEEKLY_BOARDS, DEFAULT_SETTINGS as WEEKLY_DEFAULTS, cleanSettings as cleanWeekly, weekOf, weekBefore, weekEnds, winnersOf } from '../scripts/weekly.js';
 import { TRANSFER, cleanTransfer, sendableAt, sendLeft } from '../scripts/transfer.js';
+import { NOTES } from '../scripts/notifications.js';
 import { randomBytes } from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -369,7 +370,40 @@ function transferApi(req, url, body) {
   other.clicks += order.amount;
   other.transfer.received += order.amount;
   payments.push({ id: String(payments.length + 1).padStart(24, '0'), from: me, to, amount: order.amount, note: order.note, at: new Date().toISOString(), status: 'done' });
+  leaveNote(to, { kind: 'payment', from: me, amount: order.amount, note: order.note });
   return [200, { sent: { to, amount: order.amount, note: order.note }, ...mine() }];
+}
+
+// The header's notifications (utils/notifications.js), kept by name in memory: everyone starts with a sample of
+// each kind, and HayPay payments between the pretend accounts leave real ones.
+const notes = new Map();
+let noteCount = 0;
+const noteId = () => (++noteCount).toString(16).padStart(24, '0');
+function notesOf(name) {
+  if (!notes.has(name)) {
+    const ago = (min) => new Date(Date.now() - min * 60 * 1000).toISOString();
+    const other = NAMES.find((n) => n !== name);
+    notes.set(name, [
+      { kind: 'weekly', game: 'snake', week: weekBefore(weekOf()), place: 2, prize: 1500, at: ago(60 * 26), read: true },
+      { kind: 'passed', game: 'flappy', by: other, rank: 4, at: ago(90), read: false },
+      { kind: 'payment', from: other, amount: 250, note: 'for the hay', at: ago(12), read: false },
+    ].map((n) => ({ ...n, id: noteId() })));
+  }
+  return notes.get(name);
+}
+function leaveNote(name, fields) {
+  notesOf(name).push({ ...fields, id: noteId(), at: new Date().toISOString(), read: false });
+}
+function notificationsApi(req, body) {
+  if (!loggedIn(req)) return [401, { error: 'Authentication required' }];
+  const list = notesOf(mockUser(req));
+  const unread = () => list.filter((n) => !n.read).length;
+  if (req.method === 'POST') {
+    if (!body || body.do !== 'read') return [400, { error: 'Invalid request' }];
+    for (const n of list) if (typeof body.upTo !== 'string' || n.id <= body.upTo) n.read = true;
+    return [200, { unread: unread() }];
+  }
+  return [200, { unread: unread(), notes: [...list].reverse().slice(0, NOTES.shown) }];
 }
 
 // Flappy's, Trustis's and Snake's clicks for a finished game, paid like utils/game-rewards.js pays them (up to
@@ -441,6 +475,7 @@ async function api(req, url, body) {
     if (action === 'quests') return questsApi(req, body);
     if (action === 'weekly') return weeklyApi(req, url, body);
     if (action === 'transfer') return transferApi(req, url, body);
+    if (action === 'notifications') return notificationsApi(req, body);
     if (action === 'update') return [200, { date: today(), headline: 'Pretend update!', text: 'This is tools/dev-server.mjs talking, not the real API.' }];
     if (action === 'fever') {
       const rooms = process.env.FEVER_ROOMS_URL || `ws://${req.headers.host}${LOCAL_ROOMS_PATH}`;
