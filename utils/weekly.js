@@ -3,6 +3,7 @@ import { connectToDatabase } from './db.js';
 import { authenticateUser, isAdmin } from './auth.js';
 import { currentAccount } from './rename.js';
 import { cachePublic } from './cache.js';
+import { notify } from './notifications.js';
 import { WEEKLY_BOARDS, PLACES, DEFAULT_SETTINGS, cleanSettings, winnersOf, weekOf, weekBefore, weekEnds } from '../scripts/weekly.js';
 
 // Weekly leaderboards (rules in scripts/weekly.js), served from api/leaderboard.js as ?action=weekly so they don't
@@ -79,19 +80,23 @@ const topOf = (db, game, week, limit, withIds = false) => db.collection(SCORES)
 
 const playersOf = (db, game, week) => db.collection(SCORES).countDocuments({ game, week, ...live });
 
-async function payPrize(db, winner, payoutId) {
+// The winner's mail button says what they won (utils/notifications.js), once: only from the update that paid it.
+const tellWinner = (db, winner, game, week) => notify(winner.userId, { kind: 'weekly', game, week, place: winner.place, prize: winner.prize }, db);
+
+async function payPrize(db, winner, payoutId, game, week) {
     const col = db.collection('click_game');
     const paid = await col.updateOne(
         { userId: winner.userId, weeklyPrizes: { $ne: payoutId } },
         { $inc: { clicks: winner.prize }, $push: { weeklyPrizes: { $each: [payoutId], $slice: -KEEP_PAID } } }
     );
-    if (paid.matchedCount) return;
+    if (paid.matchedCount) return tellWinner(db, winner, game, week);
     // Nothing matched: either they were already paid, or they've never clicked Trusty and have no document yet.
-    await col.updateOne(
+    const first = await col.updateOne(
         { userId: winner.userId },
         { $setOnInsert: { clicks: winner.prize, username: winner.name, recent: [], weeklyPrizes: [payoutId] } },
         { upsert: true }
     );
+    if (first.upsertedCount) return tellWinner(db, winner, game, week);
 }
 
 async function settleBoard(db, game, week, settings) {
@@ -112,7 +117,7 @@ async function settleBoard(db, game, week, settings) {
         }
     }
     if (payout.done) return;
-    for (const winner of payout.winners) await payPrize(db, winner, _id);
+    for (const winner of payout.winners) await payPrize(db, winner, _id, game, week);
     await payouts.updateOne({ _id }, { $set: { done: true, paidAt: new Date() } });
     if (payout.winners.length) {
         console.log(`Weekly ${game} ${week}: paid ${payout.winners.map((w) => `${w.name} ${w.prize}`).join(', ')}`);

@@ -4,6 +4,7 @@ import { cachePublic } from '../utils/cache.js';
 import { decodePngDataUrl } from '../utils/png.js';
 import { reportDrawing } from '../utils/moderation.js';
 import { recordWeekly } from '../utils/weekly.js';
+import { boardBefore, notifyPassed } from '../utils/notifications.js';
 import { gradeDrawing, GRADER_VERSION } from '../scripts/draw-grader.js';
 
 // Drawings are shown to every visitor, so only accept a real PNG data URL of sane size.
@@ -85,6 +86,8 @@ export default async (req, res) => {
                 return res.status(200).json({ message: 'Not a new high score', score: graded });
             }
 
+            // Anyone this passes on the board's top 10 hears about it (utils/notifications.js).
+            const top = await boardBefore(collection, CURRENT);
             // A new drawing starts with no reports; the old one's reports were about a different picture.
             await collection.updateOne(
                 { userId: user.userId },
@@ -101,6 +104,7 @@ export default async (req, res) => {
                 },
                 { upsert: true }
             );
+            await notifyPassed('draw', top, user, graded);
             return res.status(201).json({ message: 'Score saved!', score: graded });
         }
 

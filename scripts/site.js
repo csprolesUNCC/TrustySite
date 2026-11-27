@@ -2,6 +2,7 @@
 import { rankFor, nextRank, rankProgress, dailyBonus, dayOf, CLICKER, pressPays, pressesPaid, pressesToday, tiredness } from '/scripts/milestones.js';
 import { DEFAULTS as SHOP_DEFAULTS, itemById, cleanStyle, LETTER_FONTS, BY_LETTER } from '/scripts/shop.js';
 import { cleanEvent, isOn, boostLine, whenLine } from '/scripts/events.js';
+import { NOTES, BOARD_LABELS, BOARD_TOP, cleanNote, noteHref, agoLine, ordinal } from '/scripts/notifications.js';
 
 const LS_FLAG = 'isUserLoggedIn';
 const LS_USER = 'username';
@@ -336,6 +337,8 @@ function navList({ dropdowns = false } = {}) {
 
 const ICON_CARET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.4c2.1 1.9 4 3.7 6.1 5.4 1.9-1.9 3.8-3.6 5.9-5.6"/></svg>';
 
+const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.4 6.6c5.8-.5 11.4-.4 17.2.1.3 3.6.3 7.2 0 10.8-5.7.5-11.4.5-17.1 0-.4-3.6-.4-7.3-.1-10.9Z"/><path d="M3.8 7.2c2.8 2.3 5.5 4.3 8.3 6.1 2.9-1.9 5.6-3.9 8.2-6.1"/></svg>';
+
 const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path class="icon-open" d="M4 7c5-.6 11 .4 16-.2M4 12.2c6 .4 10-.5 16 0M4 17.4c4-.4 10 .3 16-.3"/><path class="icon-close" d="M6.2 6c4 4 7.8 8.2 11.8 12.2M18 5.8C14 10 10 14 6 18.2"/></svg>';
 
 // Under their name in the header everyone gets a small Shop button (the Item Shop), and admins an Admin button
@@ -358,7 +361,8 @@ function accountContent({ menu = false } = {}) {
     const under = session.isAdmin
       ? h('a', { class: 'admin-link', href: ADMIN_PAGE, 'aria-current': here(ADMIN_PAGE) }, 'Admin')
       : h('a', { class: 'admin-link shop-link', href: SHOP_PAGE, 'aria-current': here(SHOP_PAGE) }, 'Shop');
-    return [h('div', { class: 'account-who' }, name, under), logOut];
+    // With the full nav showing, the mail button goes next to that button too (setupMail() puts it there).
+    return [h('div', { class: 'account-who' }, name, h('div', { class: 'account-under' }, under)), logOut];
   }
   return [
     h('a', { class: 'btn btn-ghost btn-sm', href: loginHref() }, 'Log in'),
@@ -378,6 +382,12 @@ class TrustyHeader extends HTMLElement {
     // Says rank ups and the daily bonus out loud: the notes that show them under the clicker are only decoration.
     const clickerNews = h('span', { class: 'sr-only', role: 'status' });
 
+    // The mail button: payments, weekly prizes and being passed on a board (setupMail(), below).
+    const mailToggle = h('button', { type: 'button', class: 'mail-toggle', 'aria-expanded': 'false', 'aria-controls': 'mail-panel', 'aria-label': 'Notifications' });
+    mailToggle.innerHTML = ICON_MAIL;
+    const mailPanel = h('div', { class: 'mail-panel', id: 'mail-panel', role: 'region', 'aria-label': 'Notifications', hidden: true });
+    const mail = h('div', { class: 'mail', hidden: true }, mailToggle, mailPanel);
+
     const toggle = h('button', { type: 'button', class: 'menu-toggle', 'aria-expanded': 'false', 'aria-controls': 'mobile-menu', 'aria-label': 'Open menu' });
     toggle.innerHTML = ICON_MENU;
 
@@ -395,13 +405,27 @@ class TrustyHeader extends HTMLElement {
             h('img', { class: 'brand-mark ink', src: FACE, alt: '', width: 40, height: 40 }),
             h('span', { class: 'brand-name' }, 'Trusty ', h('small', null, 'da'), ' Horse')),
           h('nav', { class: 'site-nav', 'aria-label': 'Main' }, navList({ dropdowns: true })),
-          h('div', { class: 'header-actions' }, clicker, clickerNews, desktopAccount, toggle)),
+          h('div', { class: 'header-actions' }, clicker, clickerNews, mail, desktopAccount, toggle)),
         menu));
 
+    // The mail button sits under the name, next to the Shop (or Admin) button, while the full nav shows, so the
+    // header row is no wider; with the nav in the menu it's next to the clicker instead.
+    const actions = desktopAccount.parentElement;
+    const fullNav = window.matchMedia('(min-width: 1240px)');
+    const placeMail = () => {
+      const under = fullNav.matches ? desktopAccount.querySelector('.account-under') : null;
+      if (under) { if (mail.parentElement !== under) under.append(mail); }
+      else if (mail.parentElement !== actions || mail.nextElementSibling !== desktopAccount) actions.insertBefore(mail, desktopAccount);
+    };
+    fullNav.addEventListener('change', placeMail);
+
     const renderAccount = () => {
+      actions.insertBefore(mail, desktopAccount);
       desktopAccount.replaceChildren(...accountContent());
       mobileAccount.replaceChildren(...accountContent({ menu: true }));
       clicker.hidden = !session.loggedIn;
+      mail.hidden = !session.loggedIn;
+      placeMail();
     };
     renderAccount();
     document.addEventListener('trusty:session', renderAccount);
@@ -409,6 +433,7 @@ class TrustyHeader extends HTMLElement {
     setupMenu(toggle, menu);
     this.querySelectorAll('.nav-drop').forEach(setupDropdown);
     setupClicker(clicker, clickerNews);
+    setupMail(mail, mailToggle, mailPanel);
   }
 }
 
@@ -698,6 +723,139 @@ function setupClicker(button, news) {
 
   load();
   document.addEventListener('trusty:session', (e) => { if (e.detail.loggedIn) load(); });
+}
+
+/* ---------- Notifications (scripts/notifications.js) ---------- */
+
+const NOTE_ICONS = { payment: '💸', weekly: '🏆', passed: '🏇' };
+
+// What a notification says. Names come from other players, so they're only ever text (styled like everywhere else).
+function noteBody(note) {
+  const who = (name) => styleName(h('strong', { class: 'mail-name' }, name), name);
+  if (note.kind === 'payment') {
+    return [
+      h('span', null, who(note.from), ` sent you ${clicksWord(note.amount)} on HayPay.`),
+      note.note ? h('span', { class: 'mail-quote' }, `“${note.note}”`) : null,
+    ];
+  }
+  const board = BOARD_LABELS[note.game];
+  if (note.kind === 'weekly') {
+    return [h('span', null, `You came ${ordinal(note.place)} on the ${board} weekly board and won ${clicksWord(note.prize)}!`)];
+  }
+  return [h('span', null, who(note.by), note.rank > BOARD_TOP
+    ? ` passed you on the ${board} board and knocked you out of the top ${BOARD_TOP}.`
+    : ` passed you on the ${board} board. You’re ${ordinal(note.rank)} now.`)];
+}
+
+// The mail button next to the clicker: a count of what's new, and a list that opens under it. Opening it marks
+// everything seen (POST ?action=notifications, utils/notifications.js); what was new stays marked until it closes.
+function setupMail(box, toggle, panel) {
+  const badge = h('span', { class: 'mail-badge', 'aria-hidden': 'true', hidden: true });
+  toggle.append(badge);
+  const empty = h('p', { class: 'mail-empty' }, 'Loading…');
+  const list = h('ol', { class: 'mail-list' });
+  panel.append(h('p', { class: 'mail-title' }, 'Notifications'), empty, list);
+
+  let notes = [];
+  let loaded = false;
+  let asked = 0;
+  let poller = null;
+  const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
+
+  const setUnread = (n) => {
+    const unread = Math.max(0, Math.floor(Number(n) || 0));
+    badge.hidden = !unread;
+    badge.textContent = unread > 9 ? '9+' : String(unread);
+    toggle.setAttribute('aria-label', unread ? `Notifications: ${unread} new` : 'Notifications');
+    toggle.classList.toggle('has-new', unread > 0);
+  };
+
+  const render = () => {
+    empty.hidden = notes.length > 0;
+    if (!notes.length && loaded) {
+      empty.textContent = 'Nothing yet. You’ll hear about it here when someone sends you clicks, you win a weekly board, or someone passes you on a leaderboard.';
+    }
+    list.replaceChildren(...notes.map((note) => h('li', { class: 'mail-item', dataset: note.read ? { kind: note.kind } : { kind: note.kind, unread: '1' } },
+      h('a', { class: 'mail-link', href: noteHref(note) },
+        h('span', { class: 'mail-icon', 'aria-hidden': 'true' }, NOTE_ICONS[note.kind]),
+        h('span', { class: 'mail-text' },
+          note.read ? null : h('span', { class: 'sr-only' }, 'New: '),
+          noteBody(note),
+          note.at ? h('span', { class: 'mail-when' }, agoLine(note.at)) : null)))));
+  };
+
+  const markRead = async () => {
+    if (!notes.some((n) => !n.read)) return;
+    try {
+      const res = await fetch('/api/leaderboard?action=notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ do: 'read', upTo: notes[0].id }),
+      });
+      if (res.ok) setUnread((await res.json()).unread);
+    } catch { /* they stay new until next time */ }
+  };
+
+  const load = async () => {
+    if (!session.loggedIn) return;
+    asked = Date.now();
+    try {
+      const res = await fetch('/api/leaderboard?action=notifications');
+      if (res.status === 401) { sessionExpired(); return; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      notes = (Array.isArray(data && data.notes) ? data.notes : []).map(cleanNote).filter(Boolean);
+      loaded = true;
+      setUnread(data.unread);
+      render();
+      if (isOpen()) markRead();
+    } catch {
+      if (!notes.length) empty.textContent = 'Couldn’t get your notifications. Try again in a bit.';
+    }
+  };
+
+  const setOpen = (open) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    panel.hidden = !open;
+    if (open) {
+      render();
+      load();
+    } else if (notes.some((n) => !n.read)) {
+      // Seen now: they lose their "new" mark for next time.
+      notes = notes.map((n) => ({ ...n, read: true }));
+      render();
+    }
+  };
+  toggle.addEventListener('click', () => setOpen(!isOpen()));
+  box.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) { setOpen(false); toggle.focus(); }
+  });
+  document.addEventListener('click', (e) => { if (isOpen() && !box.contains(e.target)) setOpen(false); });
+
+  // Asked on every page, then every NOTES.pollMs while the tab is looked at, and again when it's looked at after
+  // a minute away.
+  const start = async () => {
+    if (poller || !session.loggedIn) return;
+    const { loggedIn } = await sessionReady;
+    if (!loggedIn || poller) return;
+    poller = setInterval(() => {
+      if (document.visibilityState === 'visible' && session.loggedIn && !isOpen()) load();
+    }, NOTES.pollMs);
+    load();
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && poller && session.loggedIn && Date.now() - asked > 60 * 1000) load();
+  });
+  document.addEventListener('trusty:session', (e) => {
+    if (e.detail.loggedIn) { start(); return; }
+    clearInterval(poller);
+    poller = null;
+    notes = [];
+    loaded = false;
+    setUnread(0);
+    if (isOpen()) setOpen(false);
+  });
+  start();
 }
 
 /* ---------- Footer ---------- */

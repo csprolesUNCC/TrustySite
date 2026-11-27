@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { NOTES } from '../scripts/notifications.js';
 
 const uri = process.env.MONGODB_URI; 
 const client = new MongoClient(uri);
@@ -24,6 +25,8 @@ const INDEXES = {
     weekly_settings: [{ savedAt: -1 }],
     // HayPay (utils/transfer.js): each player's payments both ways, and the admin panel's list of big ones.
     transfers: [{ from: 1, at: -1 }, { to: 1, at: -1 }, { at: -1 }],
+    // The header's notifications (utils/notifications.js): each player's newest, and deleted after NOTES.keepDays.
+    notifications: [{ userId: 1, at: -1 }, { userId: 1, read: 1 }, [{ at: 1 }, { expireAfterSeconds: NOTES.keepDays * 24 * 60 * 60 }]],
 };
 
 let indexed = false;

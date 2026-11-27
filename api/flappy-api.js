@@ -3,6 +3,7 @@ import { authenticateUser } from '../utils/auth.js';
 import { cachePublic } from '../utils/cache.js';
 import { rewardGame } from '../utils/game-rewards.js';
 import { recordWeekly } from '../utils/weekly.js';
+import { boardBefore, notifyPassed } from '../utils/notifications.js';
 
 // Far past anything a person can reach (a pencil every ~1.5 seconds is ~2,400 an hour).
 const MAX_SCORE = 100000;
@@ -35,11 +36,14 @@ export default async (req, res) => {
                 return res.status(200).json({ message: 'Not a new high score', reward });
             }
 
+            // Anyone this passes on the board's top 10 hears about it (utils/notifications.js).
+            const top = await boardBefore(collection);
             await collection.updateOne(
                 { userId: user.userId },
                 { $set: { userId: user.userId, name: user.username, score, timestamp: new Date() } },
                 { upsert: true }
             );
+            await notifyPassed('flappy', top, user, score);
             return res.status(201).json({ message: 'Score updated!', reward });
         }
 
